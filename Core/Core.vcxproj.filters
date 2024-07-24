@@ -1,0 +1,135 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Backend">
+      <UniqueIdentifier>{438d26c8-56c5-4798-8591-7226a3e340ca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Client">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="ImGui">
+      <UniqueIdentifier>{ced1419b-40f2-4c9a-b691-751f6ac09ba8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ImGui\Backend">
+      <UniqueIdentifier>{07e4c605-0367-4e93-95f0-fe675fd888c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Backend\Rendering">
+      <UniqueIdentifier>{ff4d0aa1-eba3-4327-9fc5-4c3b1b522e27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Backend\ECS">
+      <UniqueIdentifier>{4d3bf34b-4ce4-4881-9dfa-1ca5cb3d3c56}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\imgui.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\imgui_demo.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\imgui_draw.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\imgui_tables.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\imgui_widgets.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\backends\imgui_impl_glfw.cpp">
+      <Filter>ImGui\Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\backends\imgui_impl_opengl3.cpp">
+      <Filter>ImGui\Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\backends\imgui_impl_win32.cpp">
+      <Filter>ImGui\Backend</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="PhysicsSystem.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="Core.hpp">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiSystem.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowSystem.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui\imconfig.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui\imgui.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui\imgui_internal.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui\imstb_rectpack.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui\imstb_textedit.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui\imstb_truetype.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui\backends\imgui_impl_glfw.h">
+      <Filter>ImGui\Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui\backends\imgui_impl_opengl3.h">
+      <Filter>ImGui\Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui\backends\imgui_impl_opengl3_loader.h">
+      <Filter>ImGui\Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui\backends\imgui_impl_win32.h">
+      <Filter>ImGui\Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="ComponentArray.hpp">
+      <Filter>Backend\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="ComponentManager.hpp">
+      <Filter>Backend\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineManager.hpp">
+      <Filter>Backend\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityManager.hpp">
+      <Filter>Backend\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="System.hpp">
+      <Filter>Backend\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemManager.hpp">
+      <Filter>Backend\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.hpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.hpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.hpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderProgram.hpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
