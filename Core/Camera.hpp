@@ -10,12 +10,13 @@
 
 #include <Core.hpp>
 #include <glew.h>
-
-#include <glm.hpp>
 #include <GLFW/glfw3.h>
 
+#include <glm.hpp>
 #include <matrix_transform.hpp>
 #include <matrix_clip_space.hpp>
+
+#include <Affine.hpp>
 
 namespace Gep
 {
@@ -28,8 +29,8 @@ namespace Gep
 			, mNearPlane(nearDistance)
 			, mFarPlane(farDistance)
 			, mBack(-glm::normalize(lookAt))
-			, mRight(glm::vec4{glm::normalize(glm::cross(glm::vec3(lookAt),glm::vec3(relativeUp))),0}) // crosses vec4's
-			, mUp(glm::vec4{ glm::normalize(glm::cross(glm::vec3(mBack),glm::vec3(mRight))),0 })
+			, mRight(glm::normalize(cross_product(lookAt, relativeUp))) // crosses vec4's
+			, mUp(cross_product(mBack, mRight))
 		{
 			// near plane width/height
 			mViewport.x = (2.0f) * (mViewport.z) * tanf(glm::radians(fov / 2.0f));
@@ -42,26 +43,32 @@ namespace Gep
 		{
 			return mEyePoint;
 		}
+
 		const glm::vec4& GetBackVector() const 
 		{
 			return mBack;
 		}
+
 		const glm::vec4& GetUpVector() const 
 		{
 			return mUp;
 		}
+
 		const glm::vec4& GetRightVector() const 
 		{
 			return mRight;
 		}
+
 		const glm::vec3& GetViewport() const 
 		{
 			return mViewport;
 		}
+
 		float GetNearPlaneDistance() const
 		{
 			return mNearPlane;
 		}
+
 		float GetFarPlaneDistance() const
 		{
 			return mFarPlane;
@@ -88,7 +95,7 @@ namespace Gep
 
 		glm::mat4 GetView() const
 		{
-			return glm::inverse(GetModel());
+			return affine_inverse(GetModel());
 		}
 
 		// incrementers ///////////////////////////////////////////////////////////////////////////
@@ -112,8 +119,6 @@ namespace Gep
 		}
 
 	private:
-
-	private:
 		// the location where the eye is
 		glm::vec4 mEyePoint;
 
@@ -124,7 +129,7 @@ namespace Gep
 
 		// the orientation of the camera
 		glm::vec4 mBack;
-		glm::vec4 mUp;
 		glm::vec4 mRight;
+		glm::vec4 mUp;
 	};
 }

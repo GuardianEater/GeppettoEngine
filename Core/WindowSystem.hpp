@@ -32,13 +32,17 @@ namespace Client
             , mPrimaryWindow(nullptr)
             , mIO(nullptr)
 		{
+            ///////////////////////////////////////////////////////////////////////////////////////
+            /// GLFW setup ////////////////////////////////////////////////////////////////////////
+
             glfwSetErrorCallback(_glfw_error_callback);
             assert(glfwInit() && "Failed To Create Window");
 
             const char* glsl_version = "#version 430";
-            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
             // Create window with graphics context
             mPrimaryWindow = glfwCreateWindow(1280, 720, "Engine", nullptr, nullptr);
@@ -48,9 +52,7 @@ namespace Client
                 assert("Failed To Create Window");
             }
 
-
             glfwMakeContextCurrent(mPrimaryWindow);
-            glfwSwapInterval(1); // Enable vsync
 
             glewExperimental = GL_TRUE; // Ensure GLEW uses modern techniques for managing OpenGL functionality
             if (glewInit() != GLEW_OK)
@@ -60,19 +62,29 @@ namespace Client
                 assert("Failed To Create Window");
             }
 
-            // Check OpenGL version
+            int display_w = 0;
+            int display_h = 0;
+            glfwGetFramebufferSize(mPrimaryWindow, &display_w, &display_h);
+            glViewport(0, 0, display_w, display_h);
+
+
+            ///////////////////////////////////////////////////////////////////////////////////////
+            /// Check OpenGL version //////////////////////////////////////////////////////////////
+
             const GLubyte* renderer = glGetString(GL_RENDERER);
             const GLubyte* version = glGetString(GL_VERSION);
             std::cout << "Renderer: " << renderer << std::endl;
             std::cout << "OpenGL version supported: " << version << std::endl;
 
 
+            ///////////////////////////////////////////////////////////////////////////////////////
+            /// ImGui setup ///////////////////////////////////////////////////////////////////////
+
             // Setup Dear ImGui context
             IMGUI_CHECKVERSION();
             ImGui::CreateContext();
             mIO = &ImGui::GetIO();
             mIO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-            mIO->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
             mIO->ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
             mIO->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 
@@ -102,7 +114,7 @@ namespace Client
 			
 		}
 
-        void Update(double dt) override
+        void Update(float dt) override
         {
             if (glfwWindowShouldClose(mPrimaryWindow)) mManager.ExitEngine();
 
@@ -118,13 +130,14 @@ namespace Client
 
             if (show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
 
+            //////////////////////////////////////
+            // do rendering here
+            //
+            // 
+            //////////////////////////////////////
+            
             // Rendering
             ImGui::Render();
-            int display_w, display_h;
-            glfwGetFramebufferSize(mPrimaryWindow, &display_w, &display_h);
-            glViewport(0, 0, display_w, display_h);
-            glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-            glClear(GL_COLOR_BUFFER_BIT);
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
             // Update and Render additional Platform Windows

@@ -28,6 +28,18 @@
     <Filter Include="Backend\ECS">
       <UniqueIdentifier>{4d3bf34b-4ce4-4881-9dfa-1ca5cb3d3c56}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Backend\Tools">
+      <UniqueIdentifier>{87ba4eda-5897-465f-a63b-fb16d6009dd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Backend\Rendering\PremadeMeshes">
+      <UniqueIdentifier>{85bbbf72-2dcc-4674-99be-b43125954e74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Backend\Rendering\Shaders">
+      <UniqueIdentifier>{1ec3419c-0041-465d-a146-7470b53043c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Client\Components">
+      <UniqueIdentifier>{9de6b631-c17a-439f-9f48-bdf03a9d30fe}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -131,5 +143,40 @@
     <ClInclude Include="ShaderProgram.hpp">
       <Filter>Backend\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="CompactArray.hpp">
+      <Filter>Backend\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="SphereMesh.hpp">
+      <Filter>Backend\Rendering\PremadeMeshes</Filter>
+    </ClInclude>
+    <ClInclude Include="Affine.hpp">
+      <Filter>Backend\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderSystem.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="RigidBody.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders\PhongRender.frag">
+      <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
+    <None Include="assets\shaders\PhongRender.vert">
+      <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
+    <None Include="assets\shaders\basic.frag">
+      <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
+    <None Include="assets\shaders\basic.vert">
+      <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

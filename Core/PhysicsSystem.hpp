@@ -8,35 +8,21 @@
 
 #pragma once
 
+// core
 #include <Core.hpp>
+#include <glm.hpp>
 
+// backend
 #include <System.hpp>
 #include <EngineManager.hpp>
 
-// external
+// client
 
-#include <glm.hpp>
+#include <Transform.hpp>
+#include <RigidBody.hpp>
 
 namespace Client
 {
-	struct Gravity
-	{
-		glm::dvec3 force;
-	};
-
-	struct RigidBody
-	{
-		glm::dvec3 velocity;
-		glm::dvec3 acceleration;
-	};
-
-	struct Transform
-	{
-		glm::dvec3 position;
-		glm::dvec3 rotation;
-		glm::dvec3 scale;
-	};
-
 	class PhysicsSystem : public Gep::ISystem
 	{
 	public:
@@ -48,19 +34,19 @@ namespace Client
 
 		void Init() {};
 
-		void Update(double dt)
+		void Update(float dt)
 		{
 			for (Gep::Entity entity : mEntities)
 			{
-				RigidBody& rigidBody = mManager.GetComponent<RigidBody>(entity);
+				const glm::vec4 gravity = {0, -1, 0, 0};
+
 				Transform& transform = mManager.GetComponent<Transform>(entity);
-
+				RigidBody& rigidBody = mManager.GetComponent<RigidBody>(entity);
 				// Forces
-				const Gravity& gravity = mManager.GetComponent<Gravity>(entity);
-
+				
 				transform.position += rigidBody.velocity * dt;
 
-				rigidBody.velocity += gravity.force * dt;
+				rigidBody.velocity += gravity * dt;
 			}
 		}
 	};

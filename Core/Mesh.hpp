@@ -16,6 +16,9 @@
 
 namespace Gep
 {
+	/**
+	 * Typical Mesh.
+	 */
 	class Mesh
 	{
 	public:
@@ -44,23 +47,31 @@ namespace Gep
 		}
 
 	public:
-		struct Face
-		{
-			GLuint index1;
-			GLuint index2;
-			GLuint index3;
-		};
-
-		struct Edge
-		{
-			GLuint index1;
-			GLuint index2;
-		};
+		using Face = glm::vec<3, GLuint>;
+		using Edge = glm::vec<2, GLuint>;
+		using Vertex = glm::vec<4, float>;
 
 	public:
-		std::vector<glm::vec4> mVertices;
-		std::vector<glm::vec4> mNormals;
+		std::vector<Vertex> mVertices;
 		std::vector<Face> mFaces;
 		std::vector<Edge> mEdges;
+
+	};
+
+	/**
+	 * Mesh that also contains a normal array.
+	 */
+	class NormalMesh : public Mesh
+	{
+	public:
+		NormalMesh() 
+			: Mesh()
+			, mNormals()
+		{}
+
+		using Normal = glm::vec<4, float>;
+
+	public:
+		std::vector<Normal> mNormals;
 	};
 }

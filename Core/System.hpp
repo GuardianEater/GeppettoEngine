@@ -30,6 +30,6 @@ namespace Gep
 
 		// this is not good because it will call functions that potentially doing nothing, wasting alot of CPU cycles
 		virtual void Init() {};
-		virtual void Update(double dt) {};
+		virtual void Update(float dt) {};
 	};
 }

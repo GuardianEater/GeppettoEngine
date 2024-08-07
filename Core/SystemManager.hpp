@@ -35,7 +35,7 @@ namespace Gep
 			}
 		}
 
-		void Update(double dt)
+		void Update(float dt)
 		{
 			for (const auto& [id, system] : mSystems)
 			{
@@ -92,7 +92,7 @@ namespace Gep
 		// the signatures of all of the systems maps the typeid of a system to its signature
 		std::unordered_map<std::uint64_t, Signature> mSignatures;
 
-		// maps the typeif of a system to the actual system class
+		// maps the typeid of a system to the actual system class
 		std::unordered_map<std::uint64_t, std::shared_ptr<ISystem>> mSystems;
 
 		// reference to the manager that this SystemManager belongs to

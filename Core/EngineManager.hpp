@@ -122,7 +122,7 @@ namespace Gep
 		}
 
 		// updates all systems in the order registered
-		void Update(double dt)
+		void Update(float dt)
 		{
 			mSystemManager->Update(dt);
 		}

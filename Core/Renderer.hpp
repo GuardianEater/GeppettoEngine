@@ -12,10 +12,11 @@
 #include <glew.h>
 
 #include <glm.hpp>
-#include <GLFW/glfw3.h>
+//#include <GLFW/glfw3.h>
 
 #include <Mesh.hpp>
 #include <Camera.hpp>
+#include <CompactArray.hpp>
 
 namespace Gep
 {
@@ -26,8 +27,8 @@ namespace Gep
 			: mProgram(glCreateProgram())
 			, mShaders()
 			, mMeshDatas()
-			, mNextMeshID(0)
-		{}
+		{
+		}
 
 		~IRenderer()
 		{
@@ -42,13 +43,13 @@ namespace Gep
 
 		virtual void LoadComputeShader(const std::filesystem::path& shaderPath) final
 		{
-			GLuint shader = LoadShader(GL_FRAGMENT_SHADER, shaderPath);
+			GLuint shader = LoadShader(GL_COMPUTE_SHADER, shaderPath);
 			mShaders.insert(shader);
 		}
 
 		virtual void LoadVertexShader(const std::filesystem::path& shaderPath) final
 		{
-			GLuint shader = LoadShader(GL_FRAGMENT_SHADER, shaderPath);
+			GLuint shader = LoadShader(GL_VERTEX_SHADER, shaderPath);
 			mShaders.insert(shader);
 		}
 
@@ -57,7 +58,7 @@ namespace Gep
 			// attach all of the loaded shaders
 			for (GLuint shader : mShaders)
 			{
-				glAttachShader(shader, mProgram);
+				glAttachShader(mProgram, shader);
 			}
 
 			// links the program
@@ -66,16 +67,34 @@ namespace Gep
 			// checks for success
 			GLint errorValue = 0;
 			glGetProgramiv(mProgram, GL_LINK_STATUS, &errorValue);
-			if (errorValue) // 0 means success
+			if (!errorValue) // 0 means success
 			{
 				// creates a message buffer
 				std::string message;
-				message.reserve(1024);
+				message.resize(1024);
 
 				// puts the gl info log into the buffer and prints it
 				glGetProgramInfoLog(mProgram, message.capacity(), 0, message.data());
 				std::cout << "Failed to Link OpenGL Program\n" << message << std::endl;
 				throw std::runtime_error("Failed to Link OpenGL Program");
+			}
+
+			// validates the program
+			glValidateProgram(mProgram);
+
+			// checks for success
+			errorValue = 0;
+			glGetProgramiv(mProgram, GL_VALIDATE_STATUS, &errorValue);
+			if (!errorValue) // 0 means success
+			{
+				// creates a message buffer
+				std::string message;
+				message.resize(1024);
+
+				// puts the gl info log into the buffer and prints it
+				glGetProgramInfoLog(mProgram, message.capacity(), 0, message.data());
+				std::cout << "Failed to Validate OpenGL Program\n" << message << std::endl;
+				throw std::runtime_error("Failed to Validate OpenGL Program");
 			}
 
 			// cleanup shaders
@@ -89,31 +108,42 @@ namespace Gep
 			glEnable(GL_DEPTH_TEST);
 		}
 
-		// will load a mesh with the given name and return the meshes id
-		virtual std::uint64_t LoadMesh(const std::filesystem::path& meshFileName) final
+		virtual std::uint64_t LoadMesh(const NormalMesh& mesh)
 		{
-			// later potentially externally load the meshes so different renderers dont have to reload meshes
-			Mesh mesh;
-			mesh.Read(meshFileName);
+			// add the mesh into the internal container
+			const std::uint64_t meshID = mMeshDatas.emplace();
+			MeshData& meshData = mMeshDatas.at(meshID);
+
+			// generate the buffers and bind them to the vao
+			meshData.GenVertexBuffer(mesh);
+			meshData.GenNormalBuffer(mesh);
+			meshData.GenFaceBuffer(mesh);
+			meshData.BindBuffers();
+			meshData.mEdgeCount = mesh.mEdges.size();
 			
-			++mNextMeshID;
-
-			// contructs a meshdata object
-			mMeshDatas.emplace(mNextMeshID, mesh);
-
-			return mNextMeshID;
+			return meshID;
 		}
 
 		virtual void UnloadMesh(std::uint64_t meshID)
 		{
+			MeshData& meshData = mMeshDatas.at(meshID);
+
+			meshData.DeleteBuffers();
+
 			mMeshDatas.erase(meshID);
 		}
 
 		// wether or not to cull backfaces
 		virtual void BackfaceCull(bool enabled = true) final
 		{
-			if (enabled) glEnable(GL_CULL_FACE);
-			else glDisable(GL_CULL_FACE);
+			if (enabled)
+			{
+				glEnable(GL_CULL_FACE);
+			}
+			else
+			{
+				glDisable(GL_CULL_FACE);
+			}
 		}
 
 		// clears the screen with a given color
@@ -127,6 +157,10 @@ namespace Gep
 		// the camera to be used for rendering
 		virtual void SetCamera(const Camera& camera) final
 		{
+			const glm::mat4 pers = camera.GetPerspective();
+			const glm::mat4 view = camera.GetView();
+			const glm::vec4 eye  = camera.GetEyePosition();
+
 			glUseProgram(mProgram);
 			// location -------.
 			//                 |
@@ -136,20 +170,25 @@ namespace Gep
 			//                 |  |  |
 			// data -----------+--+--+------.
 			//                 |  |  |      |
-			glUniformMatrix4fv(0, 1, false, &camera.GetPerspective()[0][0]);
-			glUniformMatrix4fv(1, 1, false, &camera.GetView()[0][0]);
-			glUniform4fv      (4, 1, &camera.GetEyePosition()[0]);
+			glUniformMatrix4fv(0, 1, false, &pers[0][0]);
+			glUniformMatrix4fv(1, 1, false, &view[0][0]);
+			glUniform4fv      (4, 1, &eye[0]);
+
+			glUseProgram(0); // deselect program
 		}
 
 		// sets the modeling transformation
 		virtual void SetModel(const glm::mat4& modelingMatrix) final
 		{
-			glm::mat4 normal = glm::mat4(glm::mat3(glm::inverse(modelingMatrix)));
+			// double cast to truncate uneeded data
+			glm::mat4 normal = glm::mat4(glm::mat3(affine_inverse(modelingMatrix)));
 
 			glUseProgram(mProgram);
 
 			glUniformMatrix4fv(2, 1, false, &modelingMatrix[0][0]);
 			glUniformMatrix4fv(3, 1, true,  &normal[0][0]);
+
+			glUseProgram(0); // deselect program
 		}
 
 		virtual void SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent) final
@@ -159,34 +198,54 @@ namespace Gep
 			glUniform3fv(5, 1, &diffuseCoeff[0]);
 			glUniform3fv(6, 1, &specularCoeff[0]);
 			glUniform1fv(7, 1, &specularExponent);
+
+			glUseProgram(0); // deselect program
 		}
 
-		virtual void CreateLight(std::uint8_t lightID, glm::vec3 position, glm::vec3 color)
+		virtual void CreateLight(const std::uint8_t lightID, const glm::vec3& position, const glm::vec3& color)
 		{
+			glUseProgram(mProgram);
 
+			int True = 1; // lvalue for grandpa openGL
+
+			const std::uint8_t lightLimit = 8;
+
+			glUniform4fv(9 + lightID, 1, &position[0]);
+			glUniform3fv(17 + lightID, 1, &color[0]);
+			glUniform1iv(25 + lightID, 1, &True);
+
+			glUseProgram(0);
 		}
 
 		// sets the ambient light for the current renderer
 		virtual void SetAmbientLight(const glm::vec3& color)
 		{
-			glUseProgram(0);
+			glUseProgram(mProgram);
 
 			glUniform3fv(8, 1, &color[0]);
+
+			glUseProgram(0); // deselect program
 		}
 
 		// the mesh in the mesh id to draw
 		virtual void DrawMesh(std::uint64_t meshID) const
 		{
 			// checks if the mesh id is valid
-			if (!mMeshDatas.contains(meshID)) return;
 			const MeshData& md = mMeshDatas.at(meshID); 
+			constexpr std::uint64_t faceSize = sizeof(Mesh::Face) / sizeof(GLuint);
+			constexpr std::uint64_t edgeSize = sizeof(Mesh::Edge) / sizeof(GLuint);
 
-			glUseProgram(mProgram);
-			
+			glUseProgram(mProgram); // select program 
 			glBindVertexArray(md.mVertexArrayObject); // select vao
-			constexpr std::uint8_t faceSize = sizeof(Mesh::Face) / sizeof(GLuint);
+
+			// draws all of the triangles
+
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
 			glBindVertexArray(0); // deselect vao
+			glUseProgram(0); // deselect program
 		}
 
 
@@ -199,7 +258,7 @@ namespace Gep
 
 			// opens a file
 			std::ifstream inFile(shaderPath);
-			if (!inFile.is_open()) return false;
+			assert(!(!inFile.is_open()) && "Failed to open shader file");
 
 			//reads in all of the data from the file
 			source.assign((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
@@ -218,7 +277,7 @@ namespace Gep
 			{
 				// creates a message buffer
 				std::string message;
-				message.reserve(1024);
+				message.resize(1024);
 
 				// puts the gl info log into the buffer and prints it
 				glGetShaderInfoLog(shaderID, message.capacity(), 0, message.data());
@@ -232,12 +291,47 @@ namespace Gep
 	private:
 		struct MeshData
 		{
-			MeshData(const Mesh& mesh)
-				: mVertexArrayObject()
-				, mVertexBuffer(GenVertexBuffer(mesh))
-				, mNormalBuffer(GenNormalBuffer(mesh))
-				, mFaceBuffer(GenFaceBuffer(mesh))
-				, mFaceCount(mesh.mFaces.size())
+		public:
+			MeshData()
+				: mVertexArrayObject(num_max<GLuint>())
+				, mVertexBuffer(num_max<GLuint>())
+				, mNormalBuffer(num_max<GLuint>())
+				, mFaceBuffer(num_max<GLuint>())
+				, mFaceCount(num_max<size_t>())
+				, mEdgeCount(num_max<size_t>())
+			{
+
+			}
+
+			~MeshData()
+			{
+			}
+
+			void GenVertexBuffer(const Mesh& mesh)
+			{
+				glGenBuffers(1, &mVertexBuffer);
+				glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(Mesh::Vertex) * mesh.mVertices.size(), mesh.mVertices.data(), GL_STATIC_DRAW);
+			}
+			
+			void GenNormalBuffer(const NormalMesh& mesh)
+			{
+				glGenBuffers(1, &mNormalBuffer);
+				glBindBuffer(GL_ARRAY_BUFFER, mNormalBuffer);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(NormalMesh::Normal) * mesh.mNormals.size(), mesh.mNormals.data(), GL_STATIC_DRAW);
+			}
+			
+			void GenFaceBuffer(const Mesh& mesh)
+			{
+				glGenBuffers(1, &mFaceBuffer);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mFaceBuffer);
+				glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Mesh::Face) * mesh.mFaces.size(), mesh.mFaces.data(), GL_STATIC_DRAW);
+
+				mFaceCount = mesh.mFaces.size();
+			}
+
+			// called after all other buffers are generated to finalize vao
+			void BindBuffers()
 			{
 				// vao
 				glGenVertexArrays(1, &mVertexArrayObject);
@@ -260,56 +354,30 @@ namespace Gep
 				glBindVertexArray(0);
 			}
 
-			~MeshData()
+			void DeleteBuffers()
 			{
 				glDeleteBuffers(1, &mFaceBuffer);
 				glDeleteBuffers(1, &mNormalBuffer);
 				glDeleteBuffers(1, &mVertexBuffer);
-				
+
 				glDeleteVertexArrays(1, &mVertexArrayObject);
+
+			#ifdef _DEBUG
+				mVertexArrayObject = num_max<GLuint>();
+				mVertexBuffer = num_max<GLuint>();
+				mNormalBuffer = num_max<GLuint>();
+				mFaceBuffer = num_max<GLuint>();
+				mFaceCount = num_max<GLuint>();
+			#endif // _DEBUG
+
 			}
-
+		public:
 			GLuint mVertexArrayObject;
-
 			GLuint mVertexBuffer;
 			GLuint mNormalBuffer;
 			GLuint mFaceBuffer;
-
 			size_t mFaceCount;
-
-		private:
-			GLuint GenVertexBuffer(const Mesh& mesh) const
-			{
-				GLuint buffer;
-
-				glGenBuffers(1, &buffer);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer);
-				glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(glm::vec4) * mesh.mVertices.size(), mesh.mVertices.data(), GL_STATIC_DRAW);
-
-				return buffer;
-			}
-			
-			GLuint GenNormalBuffer(const Mesh& mesh) const
-			{
-				GLuint buffer;
-
-				glGenBuffers(1, &buffer);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer);
-				glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(glm::vec4) * mesh.mNormals.size(), mesh.mNormals.data(), GL_STATIC_DRAW);
-
-				return buffer;
-			}
-			
-			GLuint GenFaceBuffer(const Mesh& mesh) const
-			{
-				GLuint buffer;
-
-				glGenBuffers(1, &buffer);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer);
-				glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Mesh::Face) * mesh.mFaces.size(), mesh.mFaces.data(), GL_STATIC_DRAW);
-
-				return buffer;
-			}
+			size_t mEdgeCount;
 		};
 
 	private:
@@ -319,10 +387,6 @@ namespace Gep
 		// the shaders used by the program
 		std::set<GLuint> mShaders;
 
-		// info about all current meshes
-		std::map<std::uint64_t, MeshData> mMeshDatas;
-
-		// the ids that are given to the client
-		std::uint64_t mNextMeshID;
+		compact_array<MeshData> mMeshDatas;
 	};
 }
