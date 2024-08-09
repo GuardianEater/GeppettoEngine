@@ -11,13 +11,14 @@
 // core
 #include <Core.hpp>
 #include <glm.hpp>
+#include <gtc/quaternion.hpp>
 
 // backend
 #include <System.hpp>
 #include <EngineManager.hpp>
+#include <Affine.hpp>
 
 // client
-
 #include <Transform.hpp>
 #include <RigidBody.hpp>
 
@@ -42,11 +43,12 @@ namespace Client
 
 				Transform& transform = mManager.GetComponent<Transform>(entity);
 				RigidBody& rigidBody = mManager.GetComponent<RigidBody>(entity);
-				// Forces
 				
-				transform.position += rigidBody.velocity * dt;
+				rigidBody.velocity += rigidBody.acceleration * dt;
 
-				rigidBody.velocity += gravity * dt;
+				transform.position += rigidBody.velocity * dt;				
+
+				transform.rotationAmount += rigidBody.rotationalVelocity * dt;				
 			}
 		}
 	};

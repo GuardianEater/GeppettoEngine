@@ -40,7 +40,7 @@ namespace Gep
             mSignatures[entity] = signature;
         }
 
-        Signature GetSignature(Entity entity)
+        Signature GetSignature(Entity entity) const
         {
             // Put this entity's signature into the array
             return mSignatures[entity];

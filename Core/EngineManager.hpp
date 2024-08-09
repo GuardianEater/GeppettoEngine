@@ -94,6 +94,21 @@ namespace Gep
 			return mComponentManager->GetComponent<ComponentType>(entity);
 		}
 
+		// use sparingly
+		Signature GetSignature(Entity entity) const
+		{
+			return mEntityManager->GetSignature(entity);
+		}
+
+		template <typename ComponentType>
+		bool HasComponent(Entity entity) const
+		{
+			// if it has the transform signature
+			Signature transformSignature;
+			transformSignature.set(mComponentManager->GetComponentID<ComponentType>());
+			return ((mEntityManager->GetSignature(entity) & transformSignature) == transformSignature);
+		}
+
 		template<typename ComponentType>
 		ComponentID GetComponentID()
 		{

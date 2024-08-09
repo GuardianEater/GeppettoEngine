@@ -166,6 +166,7 @@
   <ItemGroup>
     <ClInclude Include="Affine.hpp" />
     <ClInclude Include="Camera.hpp" />
+    <ClInclude Include="Identification.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="RenderSystem.hpp" />
     <ClInclude Include="RigidBody.hpp" />

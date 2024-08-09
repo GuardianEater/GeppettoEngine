@@ -29,8 +29,8 @@ namespace Client
 		RenderSystem(Gep::EngineManager& em)
 			: ISystem(em)
 			, mRenderer()
-			, mCamera(glm::vec4(0, 0, 0, 1) + 10.f * glm::vec4(0, 0, 1, 0), -glm::vec4(0, 0, 1, 0), glm::vec4(0, 1, 0, 0), 80, 1, 0.1f, 100)
-			, mSphereMesh()
+			, mCamera(glm::vec4(0, 0, 0, 1) + 10.f * glm::vec4(0, 0, 1, 0), -glm::vec4(0, 0, 1, 0), glm::vec4(0, 1, 0, 0), 80, 1, 0.1f, 1000)
+			, mSphereMesh(0)
 		{
 			mRenderer.LoadVertexShader("assets\\shaders\\PhongRender.vert");
 			mRenderer.LoadFragmentShader("assets\\shaders\\PhongRender.frag");
@@ -40,9 +40,7 @@ namespace Client
 			mRenderer.SetAmbientLight({ 0.5, 0.5, 0.5 });
 
 			//temporary
-			mSphereMesh = mRenderer.LoadMesh(Gep::SphereMesh(10, 5));
-
-			Gep::Camera camera();
+			mSphereMesh = mRenderer.LoadMesh(Gep::SphereMesh(50, 25));
 		}
 
 		~RenderSystem()
@@ -52,7 +50,7 @@ namespace Client
 
 		void Init() override
 		{
-			mRenderer.CreateLight(0, { 0, 5, 0 }, { 1, 0, 0 });
+			mRenderer.CreateLight(0, { 0, 10, 0 }, { 1, 0, 0 });
 		}
 
 		void Update(float dt) override
@@ -63,8 +61,8 @@ namespace Client
 
 			for (Gep::Entity entity : mEntities)
 			{
-				Transform& transform = mManager.GetComponent<Transform>(entity);
-				Material& material = mManager.GetComponent<Material>(entity);
+				const Transform& transform = mManager.GetComponent<Transform>(entity);
+				const Material& material = mManager.GetComponent<Material>(entity);
 
 				const glm::mat4 model = Gep::scale_matrix(transform.scale)
 									  * Gep::rotation_matrix(transform.rotationAmount, { transform.rotationAxis, 0 }) 

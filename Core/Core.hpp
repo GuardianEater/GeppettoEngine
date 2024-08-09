@@ -38,6 +38,10 @@
 
 #include <chrono>
 #include <limits>
+#include <numeric>
+
+#include <assert.h>
+#include <cassert>
 
 // API Control ////////////////////////////////////////////////////////////////
 
