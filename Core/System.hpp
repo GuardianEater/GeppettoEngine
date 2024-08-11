@@ -10,6 +10,8 @@
 
 #include <Core.hpp>
 
+#include <Events.hpp>
+
 namespace Gep
 {
 	class EngineManager;
@@ -23,6 +25,12 @@ namespace Gep
 			: mEntities()
 			, mManager(em)
 		{}
+
+		void _EntityDestroyed(const Event::EntityDestroyed& eventData)
+		{
+
+		};
+		void _EntityCreated(const Event::EntityCreated& eventData) {};
 
 		EngineManager& mManager;
 

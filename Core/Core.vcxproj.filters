@@ -40,6 +40,9 @@
     <Filter Include="Client\Components">
       <UniqueIdentifier>{9de6b631-c17a-439f-9f48-bdf03a9d30fe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Backend\ECS\Events">
+      <UniqueIdentifier>{4f894227-9150-4917-9ac7-310fdf499a7f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -166,6 +169,15 @@
     </ClInclude>
     <ClInclude Include="Identification.hpp">
       <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="BoundFunction.hpp">
+      <Filter>Backend\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Events.hpp">
+      <Filter>Backend\ECS\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="EventManager.hpp">
+      <Filter>Backend\Rendering\PremadeMeshes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

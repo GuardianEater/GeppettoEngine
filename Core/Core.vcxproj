@@ -165,7 +165,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Affine.hpp" />
+    <ClInclude Include="BoundFunction.hpp" />
     <ClInclude Include="Camera.hpp" />
+    <ClInclude Include="Events.hpp" />
+    <ClInclude Include="EventManager.hpp" />
     <ClInclude Include="Identification.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="RenderSystem.hpp" />

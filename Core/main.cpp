@@ -29,19 +29,19 @@ int main()
 {
 	Gep::EngineManager em;
 
-	// register all components
+	// register all components ////////////////////////////////////////////////////////////////////
 	em.RegisterComponent<Client::RigidBody>();
 	em.RegisterComponent<Client::Material>();
 	em.RegisterComponent<Client::Identification>();
 	em.RegisterComponent<Client::Transform>();
 
-	// register all systems
+	// register all systems ///////////////////////////////////////////////////////////////////////
 	em.RegisterSystem<Client::PhysicsSystem>();
 	em.RegisterSystem<Client::WindowSystem>();
 	em.RegisterSystem<Client::RenderSystem>();
 	em.RegisterSystem<Client::ImGuiSystem>();
 
-	// this makes the physics system require an entity to have the listed components to use physics
+	// set system signature ///////////////////////////////////////////////////////////////////////
 	Gep::Signature physicsSystemSignature;
 	physicsSystemSignature.set(em.GetComponentID<Client::RigidBody>());
 	physicsSystemSignature.set(em.GetComponentID<Client::Transform>());
@@ -135,6 +135,8 @@ int main()
 		
 		// TODO: there is a problem with updates being random because they are in an unordered map
 		em.Update(dt);
+
+		em.StartEvent<Gep::Event::EntityDestroyed>();
 
 		auto endTime = std::chrono::high_resolution_clock::now();
 

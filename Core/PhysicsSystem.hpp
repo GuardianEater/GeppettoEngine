@@ -24,12 +24,16 @@
 
 namespace Client
 {
+
 	class PhysicsSystem : public Gep::ISystem
 	{
 	public:
+
 		PhysicsSystem(Gep::EngineManager& em)
 			: ISystem(em)
-		{};
+		{
+			em.SubscribeToEvent<Gep::Event::EntityDestroyed>(*this, &PhysicsSystem::EntityDestroyed);
+		};
 
 		~PhysicsSystem() = default;
 
@@ -51,5 +55,10 @@ namespace Client
 				transform.rotationAmount += rigidBody.rotationalVelocity * dt;				
 			}
 		}
+
+		void EntityDestroyed(const Gep::Event::EntityDestroyed& eventData)
+		{
+			std::cout << "Physics system just got the entity destroyed event" << std::endl;
+		};
 	};
 }

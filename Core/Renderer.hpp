@@ -64,7 +64,8 @@ namespace Gep
 			// links the program
 			glLinkProgram(mProgram);
 
-			// checks for success
+			// checks for success only in debug mode
+#ifdef _DEBUG
 			GLint errorValue = 0;
 			glGetProgramiv(mProgram, GL_LINK_STATUS, &errorValue);
 			if (!errorValue) // 0 means success
@@ -96,7 +97,7 @@ namespace Gep
 				std::cout << "Failed to Validate OpenGL Program\n" << message << std::endl;
 				throw std::runtime_error("Failed to Validate OpenGL Program");
 			}
-
+#endif // _DEBUG
 			// cleanup shaders
 			for (GLuint shader : mShaders)
 			{
@@ -273,7 +274,8 @@ namespace Gep
 			glCompileShader(shaderID);
 
 			// check for success
-			GLint errorValue;
+#ifdef _DEBUG
+			GLint errorValue = 0;
 			glGetShaderiv(shaderID, GL_COMPILE_STATUS, &errorValue);
 			if (!errorValue) // 0 means success
 			{
@@ -286,7 +288,7 @@ namespace Gep
 				std::cout << "Failed to Compile Shader " << shaderPath.string() << '\n' << message << std::endl;
 				throw std::runtime_error("Failed to Compile Shader");
 			}
-
+#endif // _DEBUG
 			return shaderID;
 		}
 
@@ -364,13 +366,13 @@ namespace Gep
 
 				glDeleteVertexArrays(1, &mVertexArrayObject);
 
-			#ifdef _DEBUG
+#ifdef _DEBUG
 				mVertexArrayObject = num_max<GLuint>();
 				mVertexBuffer = num_max<GLuint>();
 				mNormalBuffer = num_max<GLuint>();
 				mFaceBuffer = num_max<GLuint>();
 				mFaceCount = num_max<GLuint>();
-			#endif // _DEBUG
+#endif // _DEBUG
 
 			}
 		public:

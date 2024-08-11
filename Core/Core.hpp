@@ -39,6 +39,7 @@
 #include <chrono>
 #include <limits>
 #include <numeric>
+#include <functional>
 
 #include <assert.h>
 #include <cassert>

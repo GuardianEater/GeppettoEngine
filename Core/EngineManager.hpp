@@ -13,6 +13,7 @@
 #include <EntityManager.hpp>
 #include <SystemManager.hpp>
 #include <ComponentManager.hpp>
+#include <EventManager.hpp>
 
 namespace Gep
 {
@@ -23,6 +24,7 @@ namespace Gep
 			: mComponentManager(std::make_unique<ComponentManager>())
 			, mEntityManager(std::make_unique<EntityManager>())
 			, mSystemManager(std::make_unique<SystemManager>(*this))
+			, mEventManager(std::make_unique<EventManager>())
 			, mIsRunning(true)
 		{}
 
@@ -46,7 +48,9 @@ namespace Gep
 
 		void DestroyEntity(Entity entity)
 		{
-			return mEntityManager->DestroyEntity(entity);
+			mSystemManager->Event_EntityDestroyed(entity);
+
+			mEntityManager->DestroyEntity(entity);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -142,12 +146,32 @@ namespace Gep
 			mSystemManager->Update(dt);
 		}
 
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+		// event functions //////////////////////////////////////////////////////////////////////////////
 
+		template<typename EventType, typename SystemType, typename MemberFunction>
+		void SubscribeToEvent(SystemType& system, const MemberFunction& mf)
+		{
+			mEventManager->SubscribeToEvent<EventType>(system, mf);
+		}
+
+		template <typename EventType>
+		void SignalEvent(const EventType& eventData)
+		{
+			mEventManager->SignalEvent<EventType>(eventData);
+		}
+
+		template <typename EventType>
+		void StartEvent()
+		{
+			mEventManager->StartEvent<EventType>();
+		}
 
 	private:
 		std::unique_ptr<ComponentManager> mComponentManager;
 		std::unique_ptr<EntityManager> mEntityManager;
 		std::unique_ptr<SystemManager> mSystemManager;
+		std::unique_ptr<EventManager> mEventManager;
 
 		bool mIsRunning;
 	};

@@ -180,8 +180,8 @@ namespace Client
                 {
                     name = identification.name;
                 }
-
-                if (ImGui::CollapsingHeader((name + "##" + std::to_string(entity)).c_str()))
+                bool entityAlive = true;
+                if (ImGui::CollapsingHeader((name + "##" + std::to_string(entity)).c_str(), &entityAlive))
                 {
                     ImGui::Begin((name + "##" + std::to_string(entity)).c_str());
 
@@ -233,6 +233,8 @@ namespace Client
 
                     ImGui::End();
                 }
+                if (!entityAlive)
+                    mManager.SignalEvent<Gep::Event::EntityDestroyed>({entity});
             }
             ImGui::End();
         }
