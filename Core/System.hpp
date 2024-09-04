@@ -22,22 +22,11 @@ namespace Gep
 		ISystem() = delete;
 
 		explicit ISystem(EngineManager& em)
-			: mEntities()
-			, mManager(em)
+			: mManager(em)
 		{}
-
-		void _EntityDestroyed(const Event::EntityDestroyed& eventData)
-		{
-
-		};
-		void _EntityCreated(const Event::EntityCreated& eventData) {};
 
 		EngineManager& mManager;
 
-		std::unordered_set<Entity> mEntities;
-
-		// this is not good because it will call functions that potentially doing nothing, wasting alot of CPU cycles
-		virtual void Init() {};
-		virtual void Update(float dt) {};
+		//std::unordered_set<Entity> mEntities;
 	};
 }

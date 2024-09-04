@@ -12,6 +12,10 @@
 
 #include <glm.hpp>
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <gtx/euler_angles.hpp>
+
+
 namespace Gep
 {
     // inverts an affine matrix more efficiently
@@ -122,4 +126,48 @@ namespace Gep
         return scaleMatrix;
     }
 
+    glm::mat4 perspective(const glm::vec3& viewport, float near, float far)
+    {
+        glm::mat4 result(0);
+
+        // this formula creates the capital pi matrix
+        result[0][0] = (2.0f * viewport.z) / viewport.x;
+        result[1][1] = (2.0f * viewport.z) / viewport.y;
+        result[2][2] = (near + far) / (near - far);
+        result[3][2] = (2.0f * near * far) / (near - far);
+        result[2][3] = -1;
+
+        return result;
+    }
+
+    glm::mat4 rotation(const glm::vec3& eulerRotation)
+    {
+        const glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), glm::radians(eulerRotation.x), glm::vec3(1, 0, 0));
+        const glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(eulerRotation.y), glm::vec3(0, 1, 0));
+        const glm::mat4 rotationZ = glm::rotate(glm::mat4(1.0f), glm::radians(eulerRotation.z), glm::vec3(0, 0, 1));
+
+        // apply the rotation around the world axes
+        return rotationZ * rotationY * rotationX;
+    }
+
+    void yaw(float angle, glm::vec3& right, glm::vec3& back, const glm::vec3& up)
+    {
+        const glm::mat4 rotate = rotation_matrix(angle, { up, 0 });
+        right = rotate * glm::vec4(right, 0);
+        back = rotate * glm::vec4(back, 0);
+    }
+
+    void pitch(float angle, const glm::vec3& right, glm::vec3& back, glm::vec3& up)
+    {
+        const glm::mat4 rotate = rotation_matrix(angle, { right, 0 });
+        up = rotate * glm::vec4(up, 0);
+        back = rotate * glm::vec4(back, 0);
+    }
+
+    void roll(float angle, glm::vec3& right, const glm::vec3& back, glm::vec3& up)
+    {
+        const glm::mat4 rotate = rotation_matrix(angle, { back, 0 });
+        right = rotate * glm::vec4(right, 0);
+        up = rotate * glm::vec4(up, 0);
+    }
 }

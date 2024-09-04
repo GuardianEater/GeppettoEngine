@@ -16,8 +16,7 @@ namespace Client
 	{
 		glm::vec3 velocity;
 		glm::vec3 acceleration;
-
-		float rotationalVelocity;
-		glm::vec3 rotationAxis;
+		glm::vec3 rotationalVelocity;
+		glm::vec3 rotationalAcceleration;
 	};
 }

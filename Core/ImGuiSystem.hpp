@@ -29,15 +29,5 @@ namespace Client
 		ImGuiSystem(Gep::EngineManager& em)
 			: ISystem(em)
 		{}
-
-        void Init() override
-        {
-            
-        }
-
-		void Update(float dt) override
-		{
-		}
-
 	};
 }

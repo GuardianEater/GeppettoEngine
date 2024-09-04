@@ -23,5 +23,13 @@ namespace Gep
 		{
 			Entity entity;
 		};
+
+		struct KeyPressed
+		{
+			int keycode; 
+			int action; // whether the given keycode was held released or pressed, or held
+			int scancode;
+			int modifier; // wether or not shift/ctrl was held down
+		};
 	}
 }

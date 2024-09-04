@@ -43,6 +43,9 @@
     <Filter Include="Backend\ECS\Events">
       <UniqueIdentifier>{4f894227-9150-4917-9ac7-310fdf499a7f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Backend\Application">
+      <UniqueIdentifier>{6b68d449-29e5-406a-a848-8e80ed0b2593}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -71,6 +74,9 @@
     </ClCompile>
     <ClCompile Include="dependencies\imgui\backends\imgui_impl_win32.cpp">
       <Filter>ImGui\Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\imgui_stdlib.cpp">
+      <Filter>ImGui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -125,13 +131,7 @@
     <ClInclude Include="EngineManager.hpp">
       <Filter>Backend\ECS</Filter>
     </ClInclude>
-    <ClInclude Include="EntityManager.hpp">
-      <Filter>Backend\ECS</Filter>
-    </ClInclude>
     <ClInclude Include="System.hpp">
-      <Filter>Backend\ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="SystemManager.hpp">
       <Filter>Backend\ECS</Filter>
     </ClInclude>
     <ClInclude Include="Renderer.hpp">
@@ -177,7 +177,28 @@
       <Filter>Backend\ECS\Events</Filter>
     </ClInclude>
     <ClInclude Include="EventManager.hpp">
+      <Filter>Backend\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="Application.hpp">
+      <Filter>Backend\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptingSystem.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="Script.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui\imgui_stdlib.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="AxisMesh.hpp">
       <Filter>Backend\Rendering\PremadeMeshes</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraComponent.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshComponent.hpp">
+      <Filter>Client\Components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

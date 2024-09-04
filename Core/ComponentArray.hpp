@@ -20,13 +20,20 @@ namespace Gep
 		virtual ~IComponentArray() = default;
 
 		virtual void Event_EntityDestroyed(Entity entity) = 0;
+		virtual void Erase(Entity entity) = 0;
 	};
 
 	template <typename ComponentType>
 	class ComponentArray : public IComponentArray
 	{
 	public:
-		ComponentArray() = default;
+		ComponentArray()
+			: mLastElementIndex(0)
+			, mComponentArray()
+			, mEntityToIndex()
+			, mIndexToEntity()
+		{}
+
 		~ComponentArray() override = default;
 
 		void Insert(Entity entity, const ComponentType& component)
@@ -43,7 +50,7 @@ namespace Gep
 			mLastElementIndex++;
 		}
 
-		void Erase(Entity entity)
+		void Erase(Entity entity) override
 		{
 			// an item is being removed so the last element moves over one
 			mLastElementIndex--;
@@ -70,14 +77,9 @@ namespace Gep
 
 		void Event_EntityDestroyed(Entity entity) override
 		{
-			if (mEntityToIndex.find(entity) != mEntityToIndex.end())
+			if (mEntityToIndex.contains(entity))
 			{
-				// Remove the entity's component if it existed
 				Erase(entity);
-			}
-			else
-			{
-				std::cerr << "wasting time";
 			}
 		}
 

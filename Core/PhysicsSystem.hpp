@@ -32,27 +32,23 @@ namespace Client
 		PhysicsSystem(Gep::EngineManager& em)
 			: ISystem(em)
 		{
-			em.SubscribeToEvent<Gep::Event::EntityDestroyed>(*this, &PhysicsSystem::EntityDestroyed);
 		};
 
 		~PhysicsSystem() = default;
 
-		void Init() {};
-
 		void Update(float dt)
 		{
-			for (Gep::Entity entity : mEntities)
+			std::unordered_set<Gep::Entity>& entities = mManager.GetEntities<Transform, RigidBody>();
+			for (Gep::Entity entity : entities)
 			{
-				const glm::vec4 gravity = {0, -1, 0, 0};
-
 				Transform& transform = mManager.GetComponent<Transform>(entity);
 				RigidBody& rigidBody = mManager.GetComponent<RigidBody>(entity);
 				
+				transform.position += rigidBody.velocity * dt;				
 				rigidBody.velocity += rigidBody.acceleration * dt;
 
-				transform.position += rigidBody.velocity * dt;				
-
-				transform.rotationAmount += rigidBody.rotationalVelocity * dt;				
+				transform.rotation += rigidBody.rotationalVelocity * dt;				
+				rigidBody.rotationalVelocity += rigidBody.rotationalAcceleration * dt;
 			}
 		}
 
@@ -60,5 +56,23 @@ namespace Client
 		{
 			std::cout << "Physics system just got the entity destroyed event" << std::endl;
 		};
+
+		void KeyPressed(const Gep::Event::KeyPressed& eventData)
+		{
+			if (eventData.action == 1)
+			{
+				std::cout << "pressed down" << std::endl;
+			}
+
+			if (eventData.action == 0)
+			{
+				std::cout << "released" << std::endl;
+			}
+
+			if (eventData.action == 2)
+			{
+				std::cout << "held" << std::endl;
+			}
+		}
 	};
 }

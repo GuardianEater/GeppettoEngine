@@ -13,133 +13,159 @@
 // rendering
 #include <Renderer.hpp>
 #include <SphereMesh.hpp>
+#include <Affine.hpp>
 
 // client
 #include <PhysicsSystem.hpp>
 #include <ImGuiSystem.hpp>
 #include <WindowSystem.hpp>
 #include <RenderSystem.hpp>
+#include <ScriptingSystem.hpp>
+#include <CameraComponent.hpp>
 
 // tools
 #include <CompactArray.hpp>
 
-#define OUT_TYPE_HASH(type) std::cout << #type << ": " << typeid(Client::type).hash_code() << std::endl
-
 int main()
 {
+	// start the engine //////////////////////////////////////////////////////////////////////////////
 	Gep::EngineManager em;
+	em.Start();
 
-	// register all components ////////////////////////////////////////////////////////////////////
+	// register all components ///////////////////////////////////////////////////////////////////////
 	em.RegisterComponent<Client::RigidBody>();
 	em.RegisterComponent<Client::Material>();
 	em.RegisterComponent<Client::Identification>();
 	em.RegisterComponent<Client::Transform>();
+	em.RegisterComponent<Client::Script>();
+	em.RegisterComponent<Client::Camera>();
 
-	// register all systems ///////////////////////////////////////////////////////////////////////
+	// register all systems //////////////////////////////////////////////////////////////////////////
 	em.RegisterSystem<Client::PhysicsSystem>();
 	em.RegisterSystem<Client::WindowSystem>();
 	em.RegisterSystem<Client::RenderSystem>();
 	em.RegisterSystem<Client::ImGuiSystem>();
+	em.RegisterSystem<Client::ScriptingSystem>();
 
-	// set system signature ///////////////////////////////////////////////////////////////////////
-	Gep::Signature physicsSystemSignature;
-	physicsSystemSignature.set(em.GetComponentID<Client::RigidBody>());
-	physicsSystemSignature.set(em.GetComponentID<Client::Transform>());
-	em.SetSystemSignature<Client::PhysicsSystem>(physicsSystemSignature);
+	// setup entity groups //////////////////////////////////////////////////////////////////////////
+	em.RegisterGroup<Client::RigidBody, Client::Transform>();
+	em.RegisterGroup<Client::Material, Client::Transform>();
+	em.RegisterGroup<Client::Camera, Client::Transform>();
+	em.RegisterGroup<Client::Script>();
+	em.RegisterGroup(); // empty group with all entities
 
-	Gep::Signature renderSystemSignature;
-	renderSystemSignature.set(em.GetComponentID<Client::Material>());
-	renderSystemSignature.set(em.GetComponentID<Client::Transform>());
-	em.SetSystemSignature<Client::RenderSystem>(renderSystemSignature);
+	// subscribe to events
+	em.SubscribeToEvent<Client::PhysicsSystem, Gep::Event::EntityDestroyed>(&Client::PhysicsSystem::EntityDestroyed);
+	em.SubscribeToEvent<Client::PhysicsSystem, Gep::Event::KeyPressed>(&Client::PhysicsSystem::KeyPressed);
+	em.SubscribeToEvent<Client::RenderSystem, Gep::Event::KeyPressed>(&Client::RenderSystem::KeyEvent);
 
-	Gep::Signature windowSystemSignature; // no requirements will run on all entities
-	em.SetSystemSignature<Client::WindowSystem>(windowSystemSignature);
-
-	OUT_TYPE_HASH(Material);
-	OUT_TYPE_HASH(Transform);
-	OUT_TYPE_HASH(Identification);
-	OUT_TYPE_HASH(RigidBody);
-
-	em.Init();
+	// initialize systems ////////////////////////////////////////////////////////////////////////////
+	em.Initialize<Client::RenderSystem>();
+	em.Initialize<Client::ScriptingSystem>();
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	/// ECS testing
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
-	glm::vec3 gravity = { 0.0, 0.5, 0.0 };
-
-
-	// entity 1 //////////////////////////////
-	Gep::Entity entity1 = em.CreateEntity();
-	em.AddComponent(entity1, Client::Transform
-		{
-			.position = glm::vec3(0, 0, 0),
-			.scale = glm::vec3(5, 5, 5),
-			.rotationAxis = glm::vec3(0, 1, 0),
-			.rotationAmount = 0
-		});
-	em.AddComponent(entity1, Client::RigidBody
-		{
-			.velocity = {0, 0, 0},
-			.acceleration = {0, 0, 0},
-			.rotationalVelocity = 12,
-			.rotationAxis = {0, 0, 0}
-		});
-	em.AddComponent(entity1, Client::Material
-		{
-			.diff_coeff = { 0.5, 1, 0.5 },
-			.spec_coeff = { 0.5, 0.5, 0.5 },
-			.spec_exponent = 5,
-			.meshID = 0
-		});
-	em.AddComponent(entity1, Client::Identification
-		{
-			.name = "Sphere"
-		});
-
-	// entity 2 //////////////////////////////
-
-	for (int i = 0; i < 10; i++)
+	Gep::Entity camera = em.CreateEntity();
 	{
-		Gep::Entity entity2 = em.CreateEntity();
-		em.AddComponent(entity2, Client::Transform
+		float aspect = 1;
+		float nearPlane = 0.1;
+		float farPlane = 1000;
+		float fov = 80;
+
+		glm::vec3 lookAt = -glm::vec3(0, 0, 1);
+		glm::vec3 relativeUp = glm::vec3(0, 1, 0);
+		glm::vec3 viewport{};
+		glm::vec3 back = -glm::normalize(lookAt);
+		glm::vec3 right = glm::normalize(glm::cross(lookAt, relativeUp));
+
+		viewport.x = (2.0f) * (nearPlane) * tanf(glm::radians(fov / 2.0f));
+		viewport.y = viewport.x / aspect;
+		viewport.z = nearPlane;
+
+		em.AddComponent(camera, Client::Transform
+		{
+			.position = glm::vec3(0, 0, 10),
+			.scale = glm::vec3(5, 5, 5),
+			.rotation = glm::vec3(0, 0, 0),
+		});
+		em.AddComponent(camera, Client::Camera
+		{
+			.viewport = viewport,
+			.back = back,
+			.right = right,
+			.up = glm::cross(back, right),
+			.nearPlane = nearPlane,
+			.farPlane = farPlane,
+		});
+		em.AddComponent(camera, Client::Identification
+		{
+			.name = "Camera"
+		});
+	}
+
+	// more entites
+	for (int i = 0; i < 3; i++)
+	{
+		Gep::Entity entity = em.CreateEntity();
+		{
+			em.AddComponent(entity, Client::Transform
 			{
 				.position = glm::vec3(0, 0, 0),
 				.scale = glm::vec3(5, 5, 5),
-				.rotationAxis = glm::vec3(0, 1, 0),
-				.rotationAmount = 0
+				.rotation = glm::vec3(0, 0, 0),
 			});
-		em.AddComponent(entity2, Client::RigidBody
+			em.AddComponent(entity, Client::RigidBody
 			{
 				.velocity = {0, 0, 0},
 				.acceleration = {0, 0, 0},
-				.rotationalVelocity = 12,
-				.rotationAxis = {0, 0, 0}
+				.rotationalVelocity = {0, 0, 0},
+				.rotationalAcceleration = {0, 0, 0}
 			});
-		em.AddComponent(entity2, Client::Material
+			em.AddComponent(entity, Client::Material
 			{
 				.diff_coeff = { 0.5, 1, 0.5 },
 				.spec_coeff = { 0.5, 0.5, 0.5 },
 				.spec_exponent = 5,
 				.meshID = 0
 			});
-		em.AddComponent(entity2, Client::Identification
+			em.AddComponent(entity, Client::Identification
 			{
 				.name = "Sphere"
 			});
+		}
 	}
-	double dt = 0.1;
-	while (em.IsRunning())
+
+
+	
+	double dt = 0.016;
+	while (em.Running())
 	{
 		auto startTime = std::chrono::high_resolution_clock::now();
+		em.FrameStart();
+
+		// update systems /////////////////////////////////////////////////////////////////////////
+		em.Update<Client::PhysicsSystem>(dt);
+		em.Update<Client::RenderSystem>(dt);
+		em.Update<Client::ScriptingSystem>(dt);
+		em.Update<Client::WindowSystem>(dt);
+
+		// render imgui for systems ///////////////////////////////////////////////////////////////
+		em.RenderImGui<Client::RenderSystem>(dt);
 		
-		// TODO: there is a problem with updates being random because they are in an unordered map
-		em.Update(dt);
-
+		// start events ///////////////////////////////////////////////////////////////////////////
 		em.StartEvent<Gep::Event::EntityDestroyed>();
+		em.StartEvent<Gep::Event::KeyPressed>();
 
+		// TODO: make this a ResolveEvents call, or perhaps add that to FrameEnd
+		em.DestroyMarkedComponents();
+		em.DestroyMarkedEntities();
+
+		em.FrameEnd();
 		auto endTime = std::chrono::high_resolution_clock::now();
-
 		dt = std::chrono::duration<float, std::chrono::seconds::period>(endTime - startTime).count();
 	}
+
+	em.End();
 }

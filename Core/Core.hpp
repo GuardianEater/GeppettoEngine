@@ -55,7 +55,7 @@ namespace Gep
 
 	using Signature   = std::bitset<MAX_COMPONETS>; // each bit represents a component that an entity may or may not have
 	using Entity      = std::uint64_t;              // id representing an enity
-	using ComponentID = std::uint8_t;               // id representing a component
+	using ComponentBitPos = std::uint8_t;               // id representing a component
 
 	template <typename num>
 	constexpr num num_max() { return std::numeric_limits<num>().max(); };

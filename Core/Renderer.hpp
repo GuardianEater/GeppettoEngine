@@ -17,6 +17,7 @@
 #include <Mesh.hpp>
 #include <Camera.hpp>
 #include <CompactArray.hpp>
+#include <ShaderProgram.hpp>
 
 namespace Gep
 {
@@ -24,8 +25,7 @@ namespace Gep
 	{
 	public:
 		IRenderer()
-			: mProgram(glCreateProgram())
-			, mShaders()
+			: mProgram()
 			, mMeshDatas()
 		{
 		}
@@ -37,76 +37,17 @@ namespace Gep
 
 		virtual void LoadFragmentShader(const std::filesystem::path& shaderPath) final
 		{
-			GLuint shader = LoadShader(GL_FRAGMENT_SHADER, shaderPath);
-			mShaders.insert(shader);
-		}
-
-		virtual void LoadComputeShader(const std::filesystem::path& shaderPath) final
-		{
-			GLuint shader = LoadShader(GL_COMPUTE_SHADER, shaderPath);
-			mShaders.insert(shader);
+			mProgram.LoadFragmentShader(shaderPath);
 		}
 
 		virtual void LoadVertexShader(const std::filesystem::path& shaderPath) final
 		{
-			GLuint shader = LoadShader(GL_VERTEX_SHADER, shaderPath);
-			mShaders.insert(shader);
+			mProgram.LoadVertexShader(shaderPath);
 		}
 
 		virtual void Compile() final
 		{
-			// attach all of the loaded shaders
-			for (GLuint shader : mShaders)
-			{
-				glAttachShader(mProgram, shader);
-			}
-
-			// links the program
-			glLinkProgram(mProgram);
-
-			// checks for success only in debug mode
-#ifdef _DEBUG
-			GLint errorValue = 0;
-			glGetProgramiv(mProgram, GL_LINK_STATUS, &errorValue);
-			if (!errorValue) // 0 means success
-			{
-				// creates a message buffer
-				std::string message;
-				message.resize(1024);
-
-				// puts the gl info log into the buffer and prints it
-				glGetProgramInfoLog(mProgram, message.capacity(), 0, message.data());
-				std::cout << "Failed to Link OpenGL Program\n" << message << std::endl;
-				throw std::runtime_error("Failed to Link OpenGL Program");
-			}
-
-			// validates the program
-			glValidateProgram(mProgram);
-
-			// checks for success
-			errorValue = 0;
-			glGetProgramiv(mProgram, GL_VALIDATE_STATUS, &errorValue);
-			if (!errorValue) // 0 means success
-			{
-				// creates a message buffer
-				std::string message;
-				message.resize(1024);
-
-				// puts the gl info log into the buffer and prints it
-				glGetProgramInfoLog(mProgram, message.capacity(), 0, message.data());
-				std::cout << "Failed to Validate OpenGL Program\n" << message << std::endl;
-				throw std::runtime_error("Failed to Validate OpenGL Program");
-			}
-#endif // _DEBUG
-			// cleanup shaders
-			for (GLuint shader : mShaders)
-			{
-				glDeleteShader(shader);
-			}
-			mShaders.clear();
-
-			// turn on depth buffer
-			glEnable(GL_DEPTH_TEST);
+			mProgram.Compile();
 		}
 
 		virtual std::uint64_t LoadMesh(const NormalMesh& mesh)
@@ -162,7 +103,7 @@ namespace Gep
 			const glm::mat4 view = camera.GetView();
 			const glm::vec4 eye  = camera.GetEyePosition();
 
-			glUseProgram(mProgram);
+			glUseProgram(mProgram.GetProgramID());
 			// location -------.
 			//                 |
 			// amount ---------+--.
@@ -178,13 +119,31 @@ namespace Gep
 			glUseProgram(0); // deselect program
 		}
 
+		virtual void SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec4& eye)
+		{
+			glUseProgram(mProgram.GetProgramID());
+			// location -------.
+			//                 |
+			// amount ---------+--.
+			//                 |  |
+			// transpose ------+--+--.
+			//                 |  |  |
+			// data -----------+--+--+------.
+			//                 |  |  |      |
+			glUniformMatrix4fv(0, 1, false, &pers[0][0]);
+			glUniformMatrix4fv(1, 1, false, &view[0][0]);
+			glUniform4fv(4, 1, &eye[0]);
+
+			glUseProgram(0); // deselect program
+		}
+
 		// sets the modeling transformation
 		virtual void SetModel(const glm::mat4& modelingMatrix) final
 		{
 			// double cast to truncate uneeded data
 			glm::mat4 normal = glm::mat4(glm::mat3(affine_inverse(modelingMatrix)));
 
-			glUseProgram(mProgram);
+			glUseProgram(mProgram.GetProgramID());
 
 			glUniformMatrix4fv(2, 1, false, &modelingMatrix[0][0]);
 			glUniformMatrix4fv(3, 1, true,  &normal[0][0]);
@@ -194,7 +153,7 @@ namespace Gep
 
 		virtual void SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent) final
 		{
-			glUseProgram(mProgram);
+			glUseProgram(mProgram.GetProgramID());
 
 			glUniform3fv(5, 1, &diffuseCoeff[0]);
 			glUniform3fv(6, 1, &specularCoeff[0]);
@@ -205,7 +164,7 @@ namespace Gep
 
 		virtual void CreateLight(const std::uint8_t lightID, const glm::vec3& position, const glm::vec3& color)
 		{
-			glUseProgram(mProgram);
+			glUseProgram(mProgram.GetProgramID());
 
 			int True = 1; // lvalue for grandpa openGL
 
@@ -221,7 +180,7 @@ namespace Gep
 		// sets the ambient light for the current renderer
 		virtual void SetAmbientLight(const glm::vec3& color)
 		{
-			glUseProgram(mProgram);
+			glUseProgram(mProgram.GetProgramID());
 
 			glUniform3fv(8, 1, &color[0]);
 
@@ -234,9 +193,8 @@ namespace Gep
 			// checks if the mesh id is valid
 			const MeshData& md = mMeshDatas.at(meshID); 
 			constexpr std::uint64_t faceSize = sizeof(Mesh::Face) / sizeof(GLuint);
-			constexpr std::uint64_t edgeSize = sizeof(Mesh::Edge) / sizeof(GLuint);
 
-			glUseProgram(mProgram); // select program 
+			glUseProgram(mProgram.GetProgramID()); // select program 
 			glBindVertexArray(md.mVertexArrayObject); // select vao
 
 			// draws all of the triangles
@@ -386,10 +344,7 @@ namespace Gep
 
 	private:
 		// the program being useds
-		GLuint mProgram;
-
-		// the shaders used by the program
-		std::set<GLuint> mShaders;
+		ShaderProgram mProgram;
 
 		compact_array<MeshData> mMeshDatas;
 	};
