@@ -40,7 +40,8 @@ namespace Gep
             /// GLFW setup ////////////////////////////////////////////////////////////////////////
             glfwSetErrorCallback(GLFW_ErrorCallback);
 
-            assert(glfwInit() && "Failed To Create Window");
+            bool glfwSuccess = glfwInit();
+            assert(glfwSuccess && "Failed To Create Window");
 
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
