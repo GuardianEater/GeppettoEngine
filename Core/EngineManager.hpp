@@ -32,6 +32,12 @@ namespace Gep
 	template <typename T, typename Base>
 	concept TypeInheritsFrom = std::is_base_of_v<Base, T>;
 
+	template <typename T>
+	concept TypeIsComponent = std::is_trivial<T>::value && std::is_standard_layout<T>::value;
+
+	template <typename T>
+	concept TypeIsSystem = std::is_base_of<ISystem, T>::value;
+
 	template<typename EventType>
 	using EventFunction = std::function<void(EventType)>;
 
@@ -185,7 +191,9 @@ namespace Gep
 		template <typename ComponentType>
 		void RegisterComponent()
 		{
-			const std::uint64_t typeID = typeid(ComponentType).hash_code();
+			static_assert(TypeIsComponent<ComponentType>, "Attempting to register a component that is not a POD");
+
+			const uint64_t typeID = typeid(ComponentType).hash_code();
 
 			mComponentIDs[typeID] = mNextComponentID;
 
@@ -194,13 +202,13 @@ namespace Gep
 			++mNextComponentID;
 		}
 
-		template <typename ComponentType>
-		void AddComponent(Entity entity, ComponentType component)
+		template <typename... ComponentTypes>
+		void AddComponent(Entity entity, ComponentTypes... components)
 		{
-			GetComponentArray<ComponentType>()->Insert(entity, component);
+			(GetComponentArray<ComponentTypes>()->Insert(entity, components), ...);
 
 			Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
-			entitySignature.set(GetComponentBitPos<ComponentType>()); // updates the entities signature with the id of the componet
+			((entitySignature.set(GetComponentBitPos<ComponentTypes>())), ...); // updates the entities signature with the id of the componet
 
 			// creates an entity group if it doesnt exist
 			//mEntityGroups[entitySignature].insert(entity);
@@ -208,12 +216,10 @@ namespace Gep
 			SetSignature(entity, entitySignature); // sets the signature of the entity to the signature with the newly added component
 		}
 
-		template<typename ComponentType>
+		template<typename... ComponentTypes>
 		void MarkComponentForDestruction(Entity entity)
 		{
-			const uint64_t componentID = typeid(ComponentType).hash_code();
-
-			mMarkedComponents.push_back({ entity, componentID });
+			(mMarkedComponents.push_back({ entity, typeid(ComponentTypes).hash_code() }), ...);
 		}
 
 		void DestroyMarkedComponents()
@@ -242,12 +248,11 @@ namespace Gep
 			return GetComponentArray<ComponentType>()->GetComponent(entity);
 		}
 
-		template <typename ComponentType>
+		template <typename... ComponentTypes>
 		bool HasComponent(const Entity entity) const
 		{
-			// if it has the transform signature
 			Signature componentSig;
-			componentSig.set(GetComponentBitPos<ComponentType>());
+			(componentSig.set(GetComponentBitPos<ComponentTypes>()), ...); // checks if an entity has all of the given components
 			return ((GetSignature(entity) & componentSig) == componentSig);
 		}
 
@@ -290,6 +295,8 @@ namespace Gep
 		template <typename... ComponentTypes>
 		void RegisterGroup()
 		{
+
+
 			Signature groupSignature;
 
 			// uses folding to create a signature from the arg list
@@ -304,7 +311,7 @@ namespace Gep
 		{
 			static_assert(TypeHasInitialize<SystemType>, "You passed a type to Initialize that has no Initialize function!");
 
-			std::static_pointer_cast<SystemType>(mSystems.at(typeid(SystemType).hash_code()))->Initialize();
+			GetSystem<SystemType>().Initialize();
 		}
 
 		// updates all systems in the order registered
@@ -313,15 +320,15 @@ namespace Gep
 		{
 			static_assert(TypeHasUpdate<SystemType>, "Attempting to update a class with no update!");
 
-			std::static_pointer_cast<SystemType>(mSystems.at(typeid(SystemType).hash_code()))->Update(dt);
+			GetSystem<SystemType>().Update(dt);
 		}
 
 		template<typename SystemType>
 		void RenderImGui(float dt)
 		{
-			static_assert(TypeHasUpdate<SystemType>, "Attempting to update a class with no update!");
+			static_assert(TypeHasUpdate<SystemType>, "Attempting to ImGuiRender a class with no update!");
 
-			std::static_pointer_cast<SystemType>(mSystems.at(typeid(SystemType).hash_code()))->RenderImGui(dt);
+			GetSystem<SystemType>().RenderImGui(dt);
 		}
 
 
@@ -331,9 +338,7 @@ namespace Gep
 		template<typename SystemType, typename EventType, typename MemberFunctionPtr>
 		void SubscribeToEvent(MemberFunctionPtr function)
 		{
-			const uint64_t typeID = typeid(SystemType).hash_code();
-
-			SystemType& system = *std::static_pointer_cast<SystemType>(mSystems.at(typeID)); // call member function
+			SystemType& system = GetSystem<SystemType>(); // call member function
 
 			GetEventFunctions<EventType>().emplace_back(std::bind(function, std::ref(system), std::placeholders::_1));
 		}
@@ -378,6 +383,13 @@ namespace Gep
 		{
 			static std::vector<EventFunction<EventType>> subscribers;
 			return subscribers;
+		}
+
+		template<typename SystemType>
+		SystemType& GetSystem()
+		{
+			const uint64_t typeID = typeid(SystemType).hash_code();
+			return *std::static_pointer_cast<SystemType>(mSystems.at(typeID));
 		}
 
 		// stores the event data for each event

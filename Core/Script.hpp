@@ -14,6 +14,7 @@ namespace Client
 {
 	struct Script
 	{
-		std::string data;
+		//std::string data;
+		char data[256];
 	};
 }

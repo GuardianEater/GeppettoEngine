@@ -110,27 +110,28 @@ int main()
 	{
 		Gep::Entity entity = em.CreateEntity();
 		{
-			em.AddComponent(entity, Client::Transform
+			em.AddComponent(entity, 
+			Client::Transform
 			{
 				.position = glm::vec3(0, 0, 0),
 				.scale = glm::vec3(5, 5, 5),
 				.rotation = glm::vec3(0, 0, 0),
-			});
-			em.AddComponent(entity, Client::RigidBody
+			},
+			Client::RigidBody
 			{
 				.velocity = {0, 0, 0},
 				.acceleration = {0, 0, 0},
 				.rotationalVelocity = {0, 0, 0},
 				.rotationalAcceleration = {0, 0, 0}
-			});
-			em.AddComponent(entity, Client::Material
+			},
+			Client::Material
 			{
 				.diff_coeff = { 0.5, 1, 0.5 },
 				.spec_coeff = { 0.5, 0.5, 0.5 },
 				.spec_exponent = 5,
 				.meshID = 0
-			});
-			em.AddComponent(entity, Client::Identification
+			},
+			Client::Identification
 			{
 				.name = "Sphere"
 			});

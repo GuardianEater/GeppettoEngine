@@ -65,7 +65,7 @@ namespace Client
 					mLua["RigidBody"] = &mManager.GetComponent<RigidBody>(entity);
 				}
 
-				mLua.script(script.data.c_str(), sol::script_pass_on_error);
+				mLua.script(script.data, sol::script_pass_on_error);
 			}
 		}
 	};

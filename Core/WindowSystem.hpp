@@ -138,7 +138,7 @@ namespace Client
                         {
                             Script& script = mManager.GetComponent<Script>(entity);
 
-                            ImGui::InputTextMultiline("Lua", &script.data);
+                            ImGui::InputTextMultiline("Lua", script.data, sizeof(script.data));
                         }
                         if (!hasScript)
                             mManager.MarkComponentForDestruction<Script>(entity);
