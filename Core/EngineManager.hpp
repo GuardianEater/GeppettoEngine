@@ -12,6 +12,7 @@
 
 #include <ComponentArray.hpp>
 #include <System.hpp>
+#include <Events.hpp>
 
 #include <Application.hpp>
 
@@ -38,8 +39,6 @@ namespace Gep
 	template <typename T>
 	concept TypeIsSystem = std::is_base_of<ISystem, T>::value;
 
-	template<typename EventType>
-	using EventFunction = std::function<void(EventType)>;
 
 	class EngineManager
 	{
@@ -401,6 +400,9 @@ namespace Gep
 		}
 
 	private:
+		// events
+		std::vector<std::shared_ptr<Event::IEvent>> mEventQueue; // All events that need to happen
+
 		// entities
 		std::vector<Entity> mAvailableEntities; // list of unused entity ids
 		std::vector<Entity> mMarkedEntities; // entities that are marked to be destroyed

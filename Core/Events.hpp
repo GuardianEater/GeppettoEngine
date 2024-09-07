@@ -12,8 +12,16 @@
 
 namespace Gep
 {
+	template<typename EventType>
+	using EventFunction = std::function<void(EventType)>;
+
 	namespace Event
 	{
+		struct IEvent
+		{
+			virtual ~IEvent() = 0;
+		};
+
 		struct EntityDestroyed
 		{
 			Entity entity;
