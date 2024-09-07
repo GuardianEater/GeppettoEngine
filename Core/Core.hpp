@@ -50,12 +50,12 @@
 
 namespace Gep 
 {
-	constexpr std::uint64_t MAX_ENTITIES = 65536; // the maximum amount of entities in the engine
-	constexpr std::uint8_t MAX_COMPONETS = 32;    // the maximum amout of components that a singular entity can have
+	constexpr uint64_t MAX_ENTITIES = 65536; // the maximum amount of entities in the engine
+	constexpr uint8_t MAX_COMPONETS = 32;    // the maximum amout of components that a singular entity can have
 
-	using Signature   = std::bitset<MAX_COMPONETS>; // each bit represents a component that an entity may or may not have
-	using Entity      = std::uint64_t;              // id representing an enity
-	using ComponentBitPos = std::uint8_t;               // id representing a component
+	using Signature       = std::bitset<MAX_COMPONETS>; // each bit represents a component that an entity may or may not have
+	using Entity          = uint64_t;              // id representing an enity
+	using ComponentBitPos = uint8_t;               // id representing a component
 
 	template <typename num>
 	constexpr num num_max() { return std::numeric_limits<num>().max(); };

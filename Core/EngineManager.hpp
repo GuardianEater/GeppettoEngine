@@ -263,14 +263,6 @@ namespace Gep
 			return ((GetSignature(entity) & componentSig) == componentSig);
 		}
 
-		template<typename ComponentType>
-		ComponentBitPos GetComponentBitPos() const
-		{
-			const std::uint64_t typeID = typeid(ComponentType).hash_code();
-
-			return mComponentIDs.at(typeID);
-		}
-
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		// system functions /////////////////////////////////////////////////////////////////////////////
 
@@ -295,8 +287,6 @@ namespace Gep
 		template <typename... ComponentTypes>
 		void RegisterGroup()
 		{
-
-
 			Signature groupSignature;
 
 			// uses folding to create a signature from the arg list
@@ -398,6 +388,14 @@ namespace Gep
 		{
 			static std::vector<EventType> eventData;
 			return eventData;
+		}
+
+		template<typename ComponentType>
+		ComponentBitPos GetComponentBitPos() const
+		{
+			const std::uint64_t typeID = typeid(ComponentType).hash_code();
+
+			return mComponentIDs.at(typeID);
 		}
 
 	private:
