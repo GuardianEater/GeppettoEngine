@@ -69,28 +69,29 @@ int main()
 
 	Gep::Entity camera = em.CreateEntity();
 	{
-		float aspect = 1;
-		float nearPlane = 0.1;
-		float farPlane = 1000;
-		float fov = 80;
+		const float aspect = 1;
+		const float nearPlane = 0.1;
+		const float farPlane = 1000;
+		const float fov = 80;
 
-		glm::vec3 lookAt = -glm::vec3(0, 0, 1);
-		glm::vec3 relativeUp = glm::vec3(0, 1, 0);
+		const glm::vec3 lookAt = -glm::vec3(0, 0, 1);
+		const glm::vec3 relativeUp = glm::vec3(0, 1, 0);
+		const glm::vec3 back = -glm::normalize(lookAt);
+		const glm::vec3 right = glm::normalize(glm::cross(lookAt, relativeUp));
+
 		glm::vec3 viewport{};
-		glm::vec3 back = -glm::normalize(lookAt);
-		glm::vec3 right = glm::normalize(glm::cross(lookAt, relativeUp));
-
 		viewport.x = (2.0f) * (nearPlane) * tanf(glm::radians(fov / 2.0f));
 		viewport.y = viewport.x / aspect;
 		viewport.z = nearPlane;
 
-		em.AddComponent(camera, Client::Transform
+		em.AddComponent(camera, 
+		Client::Transform
 		{
 			.position = glm::vec3(0, 0, 10),
 			.scale = glm::vec3(5, 5, 5),
 			.rotation = glm::vec3(0, 0, 0),
-		});
-		em.AddComponent(camera, Client::Camera
+		},
+		Client::Camera
 		{
 			.viewport = viewport,
 			.back = back,
@@ -98,8 +99,8 @@ int main()
 			.up = glm::cross(back, right),
 			.nearPlane = nearPlane,
 			.farPlane = farPlane,
-		});
-		em.AddComponent(camera, Client::Identification
+		},
+		Client::Identification
 		{
 			.name = "Camera"
 		});
@@ -119,7 +120,7 @@ int main()
 			},
 			Client::RigidBody
 			{
-				.velocity = {0, 0, 0},
+				.velocity = {0, 0, 0},// Get Pranked Bitch,
 				.acceleration = {0, 0, 0},
 				.rotationalVelocity = {0, 0, 0},
 				.rotationalAcceleration = {0, 0, 0}
@@ -138,8 +139,6 @@ int main()
 		}
 	}
 
-
-	
 	double dt = 0.016;
 	while (em.Running())
 	{
