@@ -1,7 +1,7 @@
 /*****************************************************************//**
  * \file   Identification.hpp
  * \brief  Stores information to identify entities, such as a name
- * 
+ *
  * \author 2018t
  * \date   August 2024
  *********************************************************************/
@@ -10,8 +10,8 @@
 
 namespace Client
 {
-	struct Identification
-	{
-		char name[16];
-	};
+    struct Identification
+    {
+        char name[16];
+    };
 }

@@ -60,8 +60,7 @@ int main()
 	em.SubscribeToEvent<Client::RenderSystem, Gep::Event::KeyPressed>(&Client::RenderSystem::KeyEvent);
 
 	// initialize systems ////////////////////////////////////////////////////////////////////////////
-	em.Initialize<Client::RenderSystem>();
-	em.Initialize<Client::ScriptingSystem>();
+	em.Initialize();
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	/// ECS testing
@@ -146,10 +145,7 @@ int main()
 		em.FrameStart();
 
 		// update systems /////////////////////////////////////////////////////////////////////////
-		em.Update<Client::PhysicsSystem>(dt);
-		em.Update<Client::RenderSystem>(dt);
-		em.Update<Client::ScriptingSystem>(dt);
-		em.Update<Client::WindowSystem>(dt);
+		em.Update(dt);
 
 		// render imgui for systems ///////////////////////////////////////////////////////////////
 		em.RenderImGui<Client::RenderSystem>(dt);
@@ -167,5 +163,6 @@ int main()
 		dt = std::chrono::duration<float, std::chrono::seconds::period>(endTime - startTime).count();
 	}
 
+	em.Exit();
 	em.End();
 }

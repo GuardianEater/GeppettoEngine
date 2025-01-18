@@ -48,7 +48,7 @@
     <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua</IncludePath>
     <SourcePath>$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\lua;$(SourcePath)</SourcePath>
     <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(SolutionDir)x64\Debug;$(LibraryPath)</LibraryPath>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua</IncludePath>
@@ -92,6 +92,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Affine.cpp" />
+    <ClCompile Include="Application.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="dependencies\imgui\backends\imgui_impl_glfw.cpp" />
     <ClCompile Include="dependencies\imgui\backends\imgui_impl_opengl3.cpp" />
     <ClCompile Include="dependencies\imgui\backends\imgui_impl_win32.cpp" />
@@ -101,18 +104,25 @@
     <ClCompile Include="dependencies\imgui\imgui_stdlib.cpp" />
     <ClCompile Include="dependencies\imgui\imgui_tables.cpp" />
     <ClCompile Include="dependencies\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="EngineManager.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="PhysicsSystem.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="RenderSystem.cpp" />
+    <ClCompile Include="ScriptingSystem.cpp" />
+    <ClCompile Include="ShaderProgram.cpp" />
+    <ClCompile Include="SphereMesh.cpp" />
+    <ClCompile Include="WindowSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Affine.hpp" />
     <ClInclude Include="Application.hpp" />
     <ClInclude Include="AxisMesh.hpp" />
-    <ClInclude Include="BoundFunction.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="CameraComponent.hpp" />
     <ClInclude Include="dependencies\imgui\imgui_stdlib.h" />
     <ClInclude Include="Events.hpp" />
-    <ClInclude Include="EventManager.hpp" />
     <ClInclude Include="Identification.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="MeshComponent.hpp" />
@@ -135,12 +145,11 @@
     <ClInclude Include="dependencies\imgui\imstb_textedit.h" />
     <ClInclude Include="dependencies\imgui\imstb_truetype.h" />
     <ClInclude Include="EngineManager.hpp" />
-    <ClInclude Include="ComponentManager.hpp" />
     <ClInclude Include="ImGuiSystem.hpp" />
     <ClInclude Include="Mesh.hpp" />
     <ClInclude Include="PhysicsSystem.hpp" />
     <ClInclude Include="Renderer.hpp" />
-    <ClInclude Include="System.hpp" />
+    <ClInclude Include="ISystem.hpp" />
     <ClInclude Include="ShaderProgram.hpp" />
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="WindowSystem.hpp" />
@@ -150,6 +159,9 @@
     <None Include="assets\shaders\basic.vert" />
     <None Include="assets\shaders\PhongRender.frag" />
     <None Include="assets\shaders\PhongRender.vert" />
+    <None Include="CompactArray.inl" />
+    <None Include="ComponentArray.inl" />
+    <None Include="EngineManager.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,7 +1,7 @@
 /*****************************************************************//**
  * \file   Transform.hpp
  * \brief  transform component, stores position data
- * 
+ *
  * \author 2018t
  * \date   August 2024
  *********************************************************************/
@@ -12,10 +12,10 @@
 
 namespace Client
 {
-	struct Transform
-	{
-		glm::vec3 position;
-		glm::vec3 scale;
-		glm::vec3 rotation;
-	};
+    struct Transform
+    {
+        glm::vec3 position;
+        glm::vec3 scale;
+        glm::vec3 rotation;
+    };
 }

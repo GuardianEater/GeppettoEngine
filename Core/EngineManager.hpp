@@ -1,7 +1,7 @@
 /*****************************************************************//**
  * \file   EngineManager.hpp
  * \brief  the core manager of all of the other managers
- * 
+ *
  * \author 2018t
  * \date   July 2024
  *********************************************************************/
@@ -11,415 +11,196 @@
 #include <Core.hpp>
 
 #include <ComponentArray.hpp>
-#include <System.hpp>
+#include <ISystem.hpp>
 #include <Events.hpp>
 
 #include <Application.hpp>
 
 namespace Gep
 {
-	template <typename T>
-	concept TypeHasInitialize = requires(T t)
-	{
-		{ t.Initialize() } -> std::same_as<void>;
-	};
-
-	template <typename T>
-	concept TypeHasUpdate = requires(T t, float dt)
-	{
-		{ t.Update(dt) } -> std::same_as<void>;
-	};
-
-	template <typename T, typename Base>
-	concept TypeInheritsFrom = std::is_base_of_v<Base, T>;
-
-	template <typename T>
-	concept TypeIsComponent = std::is_trivial<T>::value && std::is_standard_layout<T>::value;
-
-	template <typename T>
-	concept TypeIsSystem = std::is_base_of<ISystem, T>::value;
-
-
-	class EngineManager
-	{
-	public:
-		EngineManager()
-			: mAvailableEntities()
-			, mMarkedEntities()
-			, mEntitySignatures()
-			, mComponentIDs()
-			, mMarkedComponents()
-			, mComponentArrays()
-			, mNextComponentID(0)
-			, mIsRunning(true)
-		{
-			for (Entity entity = 0; entity < MAX_ENTITIES; ++entity)
-			{
-				mAvailableEntities.push_back(entity);
-			}
-
-			mApplication.SetKeyCallback(*this, &EngineManager::SignalEvent<Event::KeyPressed>);
-		}
-
-		///////////////////////////////////////////////////////////////////////////////////////////
-		// foundational functions /////////////////////////////////////////////////////////////////
-
-		void Start()
-		{
-			mApplication.Initialize_GLFW();
-			mApplication.Initialize_ImGui();
-		}
-
-		void End()
-		{
-			mApplication.End_ImGui();
-			mApplication.End_GLFW();
-		}
-
-		void FrameStart()
-		{
-			mApplication.FrameStart_GLFW();
-			mApplication.FrameStart_ImGui();
-		}
-
-		void FrameEnd()
-		{
-			mApplication.FrameEnd_ImGui();
-			mApplication.FrameEnd_GLFW();
-		}
-
-		bool Running() const
-		{
-			return mApplication.Running();
-		}
-
-		/////////////////////////////////////////////////////////////////////////////////////////////////
-		// entity functions /////////////////////////////////////////////////////////////////////////////
-
-		void SetSignature(Entity entity, Signature signature)
-		{
-			// Put this entity's signature into the array
-			mEntitySignatures[entity] = signature;
-
-			for (auto& [groupSignature, entities] : mEntityGroups)
-			{
-				// checks if the entities signature is the same as the groups signature, if so add the entity to the group
-				if ((signature & groupSignature) == groupSignature)
-				{
-					entities.insert(entity);
-				}
-				else
-				{
-					entities.erase(entity);
-				}
-			}
-		}
-
-		Signature GetSignature(Entity entity) const
-		{
-			// Put this entity's signature into the array
-			return mEntitySignatures.at(entity);
-		}
-
-		void MarkEntityForDestruction(Entity entity)
-		{
-			SignalEvent<Event::EntityDestroyed>({ entity });// calls subscriber functions 
-
-			mMarkedEntities.push_back(entity);
-		}
-
-		void DestroyMarkedEntities()
-		{
-			for (const Entity entity : mMarkedEntities)
-			{
-				DestroyEntity(entity);
-			}
-
-			mMarkedEntities.clear();
-		}
-
-		// adds the id back to the id pool
-		void DestroyEntity(const Entity entity)
-		{
-			// destroys each component on an entity if it has one
-			for (const auto& [componentID, componentArray] : mComponentArrays)
-			{
-				if (HasComponent(entity, componentID))
-					DestroyComponent(entity, componentID);
-			}
-
-			// removes the entity from any systems it might have been in
-			for (auto& [groupSignature, entities] : mEntityGroups)
-				entities.erase(entity);
-
-			mEntitySignatures[entity].reset();
-
-			mAvailableEntities.push_back(entity);
-		}
-
-		Entity CreateEntity()
-		{
-			Entity id = mAvailableEntities.back();
-			mAvailableEntities.pop_back();
-
-			SetSignature(id, 0);
-
-			return id;
-		}
-
-		template <typename... ComponentTypes>
-		std::unordered_set<Entity>& GetEntities()
-		{
-			Signature groupSignature;
-
-			// uses folding to create a signature from the arg list
-			((groupSignature.set(GetComponentBitPos<ComponentTypes>())), ...);
-
-#ifdef _DEBUG
-			if (!mEntityGroups.contains(groupSignature))
-			{
-				throw std::logic_error("The given group was not registered! You Must First Register The group!");
-			}
-#endif // _DEBUG
-			return mEntityGroups.at(groupSignature);
-		}
-
-		/////////////////////////////////////////////////////////////////////////////////////////////////
-		// component functions //////////////////////////////////////////////////////////////////////////
-
-		template <typename ComponentType>
-		void RegisterComponent()
-		{
-			static_assert(TypeIsComponent<ComponentType>, "Attempting to register a component that is not a POD");
-
-			const uint64_t typeID = typeid(ComponentType).hash_code();
-
-			mComponentIDs[typeID] = mNextComponentID;
-
-			mComponentArrays[typeID] = std::make_shared<ComponentArray<ComponentType>>();
-
-			++mNextComponentID;
-		}
-
-		template <typename... ComponentTypes>
-		void AddComponent(Entity entity, ComponentTypes... components)
-		{
-			(GetComponentArray<ComponentTypes>()->Insert(entity, components), ...);
-
-			Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
-			((entitySignature.set(GetComponentBitPos<ComponentTypes>())), ...); // updates the entities signature with the id of the componet
-
-			// creates an entity group if it doesnt exist
-			//mEntityGroups[entitySignature].insert(entity);
-
-			SetSignature(entity, entitySignature); // sets the signature of the entity to the signature with the newly added component
-		}
-
-		template<typename... ComponentTypes>
-		void MarkComponentForDestruction(Entity entity)
-		{
-			(mMarkedComponents.push_back({ entity, typeid(ComponentTypes).hash_code() }), ...);
-		}
-
-		void DestroyMarkedComponents()
-		{
-			for (const auto& [entity, componentID] : mMarkedComponents)
-			{
-				DestroyComponent(entity, componentID);
-			}
-
-			mMarkedComponents.clear();
-		}
-
-		void DestroyComponent(Entity entity, uint64_t component)
-		{
-			GetComponentArray(component)->Erase(entity);
-
-			Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
-			entitySignature.set(mComponentIDs.at(component), false); // removes the components id from the entities signature
-
-			SetSignature(entity, entitySignature); // sets the signature of the entity to the signature with the newly removed component
-		}
-
-		template<typename ComponentType>
-		ComponentType& GetComponent(Entity entity)
-		{
-			return GetComponentArray<ComponentType>()->GetComponent(entity);
-		}
-
-		template <typename... ComponentTypes>
-		bool HasComponent(const Entity entity) const
-		{
-			Signature componentSig;
-			(componentSig.set(GetComponentBitPos<ComponentTypes>()), ...); // checks if an entity has all of the given components
-			return ((GetSignature(entity) & componentSig) == componentSig);
-		}
-
-		bool HasComponent(const Entity entity, const uint64_t componentID) const
-		{
-			Signature componentSig;
-			componentSig.set(mComponentIDs.at(componentID));
-			return ((GetSignature(entity) & componentSig) == componentSig);
-		}
-
-		/////////////////////////////////////////////////////////////////////////////////////////////////
-		// system functions /////////////////////////////////////////////////////////////////////////////
-
-		template <typename SystemType>
-		void RegisterSystem()
-		{
-			static_assert(TypeInheritsFrom<SystemType, ISystem>, "SystemType must inherit from ISystem");
-
-			const uint64_t typeID = typeid(SystemType).hash_code();
-
-			mSystems[typeID] = std::make_shared<SystemType>(*this);
-		}
-
-		template <typename SystemType>
-		void SetSystemSignature(Signature signature)
-		{
-			const uint64_t typeID = typeid(SystemType).hash_code();
-
-			mSystemSignatures[typeID] = signature;
-		}
-
-		template <typename... ComponentTypes>
-		void RegisterGroup()
-		{
-			Signature groupSignature;
-
-			// uses folding to create a signature from the arg list
-			((groupSignature.set(GetComponentBitPos<ComponentTypes>())), ...);
-
-			mEntityGroups[groupSignature];
-		}
-
-		// initializes all systems in the order registered
-		template <typename SystemType>
-		void Initialize()
-		{
-			static_assert(TypeHasInitialize<SystemType>, "You passed a type to Initialize that has no Initialize function!");
-
-			GetSystem<SystemType>().Initialize();
-		}
-
-		// updates all systems in the order registered
-		template<typename SystemType>
-		void Update(float dt)
-		{
-			static_assert(TypeHasUpdate<SystemType>, "Attempting to update a class with no update!");
-
-			GetSystem<SystemType>().Update(dt);
-		}
-
-		template<typename SystemType>
-		void RenderImGui(float dt)
-		{
-			static_assert(TypeHasUpdate<SystemType>, "Attempting to ImGuiRender a class with no update!");
-
-			GetSystem<SystemType>().RenderImGui(dt);
-		}
-
-
-		/////////////////////////////////////////////////////////////////////////////////////////////////
-		// event functions //////////////////////////////////////////////////////////////////////////////
-
-		template<typename SystemType, typename EventType, typename MemberFunctionPtr>
-		void SubscribeToEvent(MemberFunctionPtr function)
-		{
-			SystemType& system = GetSystem<SystemType>(); // call member function
-
-			GetEventFunctions<EventType>().emplace_back(std::bind(function, std::ref(system), std::placeholders::_1));
-		}
-
-		template <typename EventType>
-		void SignalEvent(const EventType& eventData)
-		{
-			GetEventData<EventType>().push_back(eventData);
-		}
-
-		template <typename EventType>
-		void StartEvent()
-		{
-			// the order of these for loops is preference
-			for (const EventType& eventData : GetEventData<EventType>())
-			{
-				for (EventFunction<EventType>& eventFunction : GetEventFunctions<EventType>())
-				{
-					eventFunction(eventData);
-				}
-			}
-			GetEventData<EventType>().clear();
-		}
-
-	private:
-		template <typename ComponentType>
-		std::shared_ptr<ComponentArray<ComponentType>> GetComponentArray()
-		{
-			const std::uint64_t typeID = typeid(ComponentType).hash_code();
-
-			return std::static_pointer_cast<ComponentArray<ComponentType>>(mComponentArrays.at(typeID));
-		}
-
-		std::shared_ptr<IComponentArray> GetComponentArray(uint64_t typeID)
-		{
-			return mComponentArrays.at(typeID);
-		}
-
-		// keeps a lists of subscribers for each type of event
-		template<typename EventType>
-		std::vector<EventFunction<EventType>>& GetEventFunctions()
-		{
-			static std::vector<EventFunction<EventType>> subscribers;
-			return subscribers;
-		}
-
-		template<typename SystemType>
-		SystemType& GetSystem()
-		{
-			const uint64_t typeID = typeid(SystemType).hash_code();
-			return *std::static_pointer_cast<SystemType>(mSystems.at(typeID));
-		}
-
-		// stores the event data for each event
-		template<typename EventType>
-		std::vector<EventType>& GetEventData()
-		{
-			static std::vector<EventType> eventData;
-			return eventData;
-		}
-
-		template<typename ComponentType>
-		ComponentBitPos GetComponentBitPos() const
-		{
-			const std::uint64_t typeID = typeid(ComponentType).hash_code();
-
-			return mComponentIDs.at(typeID);
-		}
-
-	private:
-		// events
-		std::vector<std::shared_ptr<Event::IEvent>> mEventQueue; // All events that need to happen
-
-		// entities
-		std::vector<Entity> mAvailableEntities; // list of unused entity ids
-		std::vector<Entity> mMarkedEntities; // entities that are marked to be destroyed
-		std::unordered_map<Entity, Signature> mEntitySignatures; // this keeps track of which components an entity has
-		std::unordered_map<Signature, std::unordered_set<Entity>> mEntityGroups; // used by systems, holds all entities with a matching components
-
-		// components
-		ComponentBitPos mNextComponentID; // used for assigning bits in an entities signature
-		std::unordered_map<uint64_t, ComponentBitPos> mComponentIDs; // maps the type id to the component
-		std::vector<std::pair<Entity, uint64_t>> mMarkedComponents;   // The entity and the Entities component type ids.
-		std::unordered_map<uint64_t, std::shared_ptr<IComponentArray>> mComponentArrays; // maps the component typeid to an array of the component
-
-		// systems
-		std::unordered_map<uint64_t, Signature> mSystemSignatures; // the signatures of all of the systems maps the typeid of a system to its signature
-		std::unordered_map<uint64_t, std::shared_ptr<ISystem>> mSystems;// maps the typeid of a system to the actual system class
-
-
-		Application mApplication;
-
-		bool mIsRunning;
-	};
+    template <typename T>
+    concept TypeHasInitialize = requires(T t)
+    {
+        { t.Initialize() } -> std::same_as<void>;
+    };
+
+    template <typename T>
+    concept TypeHasUpdate = requires(T t, float dt)
+    {
+        { t.Update(dt) } -> std::same_as<void>;
+    };
+
+    template <typename T>
+    concept TypeHasExit = requires(T t)
+    {
+        { t.Exit() } -> std::same_as<void>;
+    };
+
+    template <typename T, typename Base>
+    concept TypeInheritsFrom = std::is_base_of_v<Base, T>;
+
+    template <typename T>
+    concept TypeIsComponent = std::is_trivial<T>::value && std::is_standard_layout<T>::value;
+
+    template <typename T>
+    concept TypeIsSystem = std::is_base_of<ISystem, T>::value;
+
+
+    using SystemUpdateFunction = void(ISystem::*)(float);
+    using SytemVoidFunction = void(ISystem::*)(float);
+
+    class EngineManager
+    {
+    public:
+        EngineManager();
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        // foundational functions /////////////////////////////////////////////////////////////////
+
+        void Start();
+
+        void End();
+
+        void FrameStart();
+
+        void FrameEnd();
+
+        bool Running() const;
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////
+        // entity functions /////////////////////////////////////////////////////////////////////////////
+
+        void SetSignature(Entity entity, Signature signature);
+
+        Signature GetSignature(Entity entity) const;
+
+        void MarkEntityForDestruction(Entity entity);
+
+        void DestroyMarkedEntities();
+
+        // adds the id back to the id pool
+        void DestroyEntity(const Entity entity);
+
+        Entity CreateEntity();
+
+        template <typename... ComponentTypes>
+        std::unordered_set<Entity>& GetEntities();
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////
+        // component functions //////////////////////////////////////////////////////////////////////////
+
+        template <typename ComponentType>
+        void RegisterComponent();
+
+        template <typename... ComponentTypes>
+        void AddComponent(Entity entity, ComponentTypes... components);
+
+        template<typename... ComponentTypes>
+        void MarkComponentForDestruction(Entity entity);
+
+        void DestroyMarkedComponents();
+
+        void DestroyComponent(Entity entity, uint64_t component);
+
+        template<typename ComponentType>
+        ComponentType& GetComponent(Entity entity);
+
+        template <typename... ComponentTypes>
+        bool HasComponent(const Entity entity) const;
+
+        bool HasComponent(const Entity entity, const uint64_t componentID) const;
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////
+        // system functions /////////////////////////////////////////////////////////////////////////////
+
+        template <typename SystemType>
+        void RegisterSystem();
+
+        template <typename SystemType>
+        void SetSystemSignature(Signature signature);
+
+        template <typename... ComponentTypes>
+        void RegisterGroup();
+
+        // initializes all systems in the order registered
+        template <typename SystemType>
+        void Initialize();
+
+        void Initialize();
+
+        void Update(float dt);
+
+        void Exit();
+
+        template<typename SystemType>
+        void Update(float dt);
+
+        template <typename SystemType>
+        void Exit();
+
+        template<typename SystemType>
+        void RenderImGui(float dt);
+
+
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////
+        // event functions //////////////////////////////////////////////////////////////////////////////
+
+        template<typename SystemType, typename EventType, typename MemberFunctionPtr>
+        void SubscribeToEvent(MemberFunctionPtr function);
+
+        template <typename EventType>
+        void SignalEvent(const EventType& eventData);
+
+        template <typename EventType>
+        void StartEvent();
+
+    private:
+        std::shared_ptr<IComponentArray> GetComponentArray(uint64_t typeID);
+
+        template <typename ComponentType>
+        std::shared_ptr<ComponentArray<ComponentType>> GetComponentArray();
+
+        // keeps a lists of subscribers for each type of event
+        template<typename EventType>
+        std::vector<EventFunction<EventType>>& GetEventFunctions();
+
+        template<typename SystemType>
+        SystemType& GetSystem();
+
+        // stores the event data for each event
+        template<typename EventType>
+        std::vector<EventType>& GetEventData();
+
+        template<typename ComponentType>
+        ComponentBitPos GetComponentBitPos() const;
+
+    private:
+        // events
+        std::vector<std::shared_ptr<Event::IEvent>> mEventQueue; // All events that need to happen
+
+        // entities
+        std::vector<Entity> mAvailableEntities; // list of unused entity ids
+        std::vector<Entity> mMarkedEntities; // entities that are marked to be destroyed
+        std::unordered_map<Entity, Signature> mEntitySignatures; // this keeps track of which components an entity has
+        std::unordered_map<Signature, std::unordered_set<Entity>> mEntityGroups; // used by systems, holds all entities with a matching components
+
+        // components
+        ComponentBitPos mNextComponentID; // used for assigning bits in an entities signature
+        std::unordered_map<uint64_t, ComponentBitPos> mComponentIDs; // maps the type id to the component
+        std::vector<std::pair<Entity, uint64_t>> mMarkedComponents;   // The entity and the Entities component type ids.
+        std::unordered_map<uint64_t, std::shared_ptr<IComponentArray>> mComponentArrays; // maps the component typeid to an array of the component
+
+        // systems
+        std::unordered_map<uint64_t, Signature> mSystemSignatures; // the signatures of all of the systems maps the typeid of a system to its signature
+        std::unordered_map<uint64_t, std::shared_ptr<ISystem>> mSystems;// maps the typeid of a system to the actual system class
+
+        std::vector <std::shared_ptr<ISystem>> mSystemsToUpdate; // the list of systems that need to be updated
+
+        Application mApplication;
+
+        bool mIsRunning;
+    };
 }
+
+#include "EngineManager.inl"

@@ -78,6 +78,42 @@
     <ClCompile Include="dependencies\imgui\imgui_stdlib.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="Application.cpp">
+      <Filter>Backend\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineManager.cpp">
+      <Filter>Backend\ECS</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Affine.cpp">
+      <Filter>Backend\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="SphereMesh.cpp">
+      <Filter>Backend\Rendering\PremadeMeshes</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderProgram.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysicsSystem.cpp">
+      <Filter>Client</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderSystem.cpp">
+      <Filter>Client</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptingSystem.cpp">
+      <Filter>Client</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowSystem.cpp">
+      <Filter>Client</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PhysicsSystem.hpp">
@@ -125,13 +161,10 @@
     <ClInclude Include="ComponentArray.hpp">
       <Filter>Backend\ECS</Filter>
     </ClInclude>
-    <ClInclude Include="ComponentManager.hpp">
-      <Filter>Backend\ECS</Filter>
-    </ClInclude>
     <ClInclude Include="EngineManager.hpp">
       <Filter>Backend\ECS</Filter>
     </ClInclude>
-    <ClInclude Include="System.hpp">
+    <ClInclude Include="ISystem.hpp">
       <Filter>Backend\ECS</Filter>
     </ClInclude>
     <ClInclude Include="Renderer.hpp">
@@ -170,14 +203,8 @@
     <ClInclude Include="Identification.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
-    <ClInclude Include="BoundFunction.hpp">
-      <Filter>Backend\Tools</Filter>
-    </ClInclude>
     <ClInclude Include="Events.hpp">
       <Filter>Backend\ECS\Events</Filter>
-    </ClInclude>
-    <ClInclude Include="EventManager.hpp">
-      <Filter>Backend\ECS</Filter>
     </ClInclude>
     <ClInclude Include="Application.hpp">
       <Filter>Backend\Application</Filter>
@@ -213,6 +240,15 @@
     </None>
     <None Include="assets\shaders\basic.vert">
       <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
+    <None Include="ComponentArray.inl">
+      <Filter>Backend\ECS</Filter>
+    </None>
+    <None Include="EngineManager.inl">
+      <Filter>Backend\ECS</Filter>
+    </None>
+    <None Include="CompactArray.inl">
+      <Filter>Backend\Tools</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 /*****************************************************************//**
  * \file   Camera.hpp
- * \brief  Implementation for a camera 
- * 
+ * \brief  Implementation for a camera
+ *
  * \author 2018t
  * \date   July 2024
  *********************************************************************/
@@ -20,116 +20,37 @@
 
 namespace Gep
 {
-	class Camera
-	{
-	public:
-		Camera(const glm::vec4& position, const glm::vec4& lookAt, const glm::vec4& relativeUp, float fov, float aspect, float nearDistance, float farDistance)
-			: mEyePoint(position)
-			, mViewport({0, 0, nearDistance})
-			, mNearPlane(nearDistance)
-			, mFarPlane(farDistance)
-			, mBack(-glm::normalize(lookAt))
-			, mRight(glm::normalize(cross_product(lookAt, relativeUp))) // crosses vec4's
-			, mUp(cross_product(mBack, mRight))
-		{
-			// near plane width/height
-			mViewport.x = (2.0f) * (mViewport.z) * tanf(glm::radians(fov / 2.0f));
-			mViewport.y = mViewport.x / aspect;
-		}
+    class Camera
+    {
+    public:
+        Camera(const glm::vec4& position, const glm::vec4& lookAt, const glm::vec4& relativeUp, float fov, float aspect, float nearDistance, float farDistance);
 
-		// getter /////////////////////////////////////////////////////////////////////////////////
+        // getter /////////////////////////////////////////////////////////////////////////////////
 
-		const glm::vec4& GetEyePosition() const
-		{
-			return mEyePoint;
-		}
+        const glm::vec4& GetEyePosition() const;
+        const glm::vec4& GetBackVector() const;
+        const glm::vec4& GetUpVector() const;
+        const glm::vec4& GetRightVector() const;
+        const glm::vec3& GetViewport() const;
+        float GetNearPlaneDistance() const;
+        float GetFarPlaneDistance() const;
+        glm::mat4 GetPerspective() const;
+        glm::mat4 GetModel() const;
+        glm::mat4 GetView() const;
 
-		const glm::vec4& GetBackVector() const 
-		{
-			return mBack;
-		}
+        // incrementers ///////////////////////////////////////////////////////////////////////////
 
-		const glm::vec4& GetUpVector() const 
-		{
-			return mUp;
-		}
+        void Zoom(float amount);
+        void Forward(float amount);
+        void RotateYaw();
 
-		const glm::vec4& GetRightVector() const 
-		{
-			return mRight;
-		}
-
-		const glm::vec3& GetViewport() const 
-		{
-			return mViewport;
-		}
-
-		float GetNearPlaneDistance() const
-		{
-			return mNearPlane;
-		}
-
-		float GetFarPlaneDistance() const
-		{
-			return mFarPlane;
-		}
-
-		glm::mat4 GetPerspective() const
-		{
-			glm::mat4 result(0);
-
-			// this formula creates the capital pi matrix
-			result[0][0] = (2.0f * mViewport.z) / mViewport.x;
-			result[1][1] = (2.0f * mViewport.z) / mViewport.y;
-			result[2][2] = (mNearPlane + mFarPlane) / (mNearPlane - mFarPlane);
-			result[3][2] = (2.0f * mNearPlane * mFarPlane) / (mNearPlane - mFarPlane);
-			result[2][3] = -1;
-
-			return result;
-		}
-
-		glm::mat4 GetModel() const
-		{
-			return glm::mat4(mRight, mUp, mBack, mEyePoint);
-		}
-
-		glm::mat4 GetView() const
-		{
-			return affine_inverse(GetModel());
-		}
-
-		// incrementers ///////////////////////////////////////////////////////////////////////////
-
-		// zooms in the camera by an amount
-		void Zoom(float amount)
-		{
-			mViewport *= amount;
-		}
-
-		// moves the camera forward by an amount
-		void Forward(float amount)
-		{
-			mEyePoint -= (amount * glm::normalize(mBack));
-		}
-
-		// rotates around the up vector
-		void RotateYaw()
-		{
-			
-		}
-
-	private:
-		// the location where the eye is
-		glm::vec4 mEyePoint;
-
-		// camera specifications
-		glm::vec3 mViewport; // x->width y->height z->Distance
-		float mNearPlane;
-		float mFarPlane;
-
-		// the orientation of the camera
-		glm::vec4 mBack;
-		glm::vec4 mRight;
-		glm::vec4 mUp;
-	};
+    private:
+        glm::vec4 mEyePoint;
+        glm::vec3 mViewport;
+        float mNearPlane;
+        float mFarPlane;
+        glm::vec4 mBack;
+        glm::vec4 mRight;
+        glm::vec4 mUp;
+    };
 }
