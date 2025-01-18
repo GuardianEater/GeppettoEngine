@@ -1,7 +1,7 @@
 /*****************************************************************//**
  * \file   ImGuiSystem.hpp
  * \brief  System that operates imgui
- * 
+ *
  * \author 2018t
  * \date   July 2024
  *********************************************************************/
@@ -10,7 +10,7 @@
 
 #include <Core.hpp>
 
-// backend
+ // backend
 #include <imgui.h>
 #include <ISystem.hpp>
 
@@ -18,16 +18,12 @@
 
 namespace Client
 {
-	struct ImGuiComponent
-	{
-
-	};
-
-	class ImGuiSystem : public Gep::ISystem
-	{
-	public:
-		ImGuiSystem(Gep::EngineManager& em)
-			: ISystem(em)
-		{}
-	};
+    class ImGuiSystem : public Gep::ISystem
+    {
+    public:
+        ImGuiSystem(Gep::EngineManager& em)
+            : ISystem(em)
+        {
+        }
+    };
 }

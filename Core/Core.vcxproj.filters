@@ -46,6 +46,9 @@
     <Filter Include="Backend\Application">
       <UniqueIdentifier>{6b68d449-29e5-406a-a848-8e80ed0b2593}</UniqueIdentifier>
     </Filter>
+    <Filter Include="reflect-cpp">
+      <UniqueIdentifier>{b9d00df6-cfc9-4e46-ad68-1f5fa4f75a40}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -113,6 +116,15 @@
     </ClCompile>
     <ClCompile Include="WindowSystem.cpp">
       <Filter>Client</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\reflect-cpp\src\reflectcpp.cpp">
+      <Filter>reflect-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\reflect-cpp\src\reflectcpp_json.cpp">
+      <Filter>reflect-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\reflect-cpp\src\yyjson.c">
+      <Filter>reflect-cpp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
