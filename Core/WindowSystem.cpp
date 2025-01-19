@@ -32,130 +32,130 @@ namespace Client
 
     void WindowSystem::DrawEntitiesWindow()
     {
-        std::unordered_set<Gep::Entity>& entities = mManager.GetEntities();
+        std::vector<Gep::Entity>& entities = mManager.GetEntities();
 
-        ImGui::Begin("Entities");
-        for (Gep::Entity entity : entities)
-        {
-            Identification& identification = mManager.GetComponent<Identification>(entity);
+        //ImGui::Begin("Entities");
+        //for (Gep::Entity entity : entities)
+        //{
+        //    Identification& identification = mManager.GetComponent<Identification>(entity);
 
-            bool hasTransform = mManager.HasComponent<Transform>(entity);
-            bool hasRigidBody = mManager.HasComponent<RigidBody>(entity);
-            bool hasMaterial = mManager.HasComponent<Material>(entity);
-            bool hasScript = mManager.HasComponent<Script>(entity);
-            bool hasIdentification = mManager.HasComponent<Identification>(entity);
+        //    bool hasTransform = mManager.HasComponent<Transform>(entity);
+        //    bool hasRigidBody = mManager.HasComponent<RigidBody>(entity);
+        //    bool hasMaterial = mManager.HasComponent<Material>(entity);
+        //    bool hasScript = mManager.HasComponent<Script>(entity);
+        //    bool hasIdentification = mManager.HasComponent<Identification>(entity);
 
-            std::string name;
-            if (hasIdentification)
-                name = identification.name;
+        //    std::string name;
+        //    if (hasIdentification)
+        //        name = identification.name;
 
-            bool entityAlive = true; // if switched to false will destroy the entity
-            if (ImGui::CollapsingHeader((name + "##" + std::to_string(entity)).c_str(), &entityAlive))
-            {
-                ImGui::Begin((name + "##" + std::to_string(entity)).c_str());
+        //    bool entityAlive = true; // if switched to false will destroy the entity
+        //    if (ImGui::CollapsingHeader((name + "##" + std::to_string(entity)).c_str(), &entityAlive))
+        //    {
+        //        ImGui::Begin((name + "##" + std::to_string(entity)).c_str());
 
-                if (hasIdentification)
-                {
-                    if (ImGui::CollapsingHeader(typeid(Identification).name(), &hasIdentification))
-                    {
-                        static char newName[16];
-                        if (ImGui::InputText("Name", newName, sizeof(newName), ImGuiInputTextFlags_EnterReturnsTrue))
-                        {
-                            strcpy(&identification.name[0], newName);
-                        }
-                    }
-                    if (!hasIdentification)
-                        mManager.MarkComponentForDestruction<Identification>(entity);
-                }
+        //        if (hasIdentification)
+        //        {
+        //            if (ImGui::CollapsingHeader(typeid(Identification).name(), &hasIdentification))
+        //            {
+        //                static char newName[16];
+        //                if (ImGui::InputText("Name", newName, sizeof(newName), ImGuiInputTextFlags_EnterReturnsTrue))
+        //                {
+        //                    strcpy(&identification.name[0], newName);
+        //                }
+        //            }
+        //            if (!hasIdentification)
+        //                mManager.MarkComponentForDestruction<Identification>(entity);
+        //        }
 
-                if (hasTransform)
-                {
-                    if (ImGui::CollapsingHeader(typeid(Transform).name(), &hasTransform))
-                    {
-                        Transform& transform = mManager.GetComponent<Transform>(entity);
-                        ImGui::DragFloat3("Position", &transform.position[0]);
-                        ImGui::DragFloat3("Scale", &transform.scale[0]);
-                        ImGui::DragFloat3("Rotation", &transform.rotation[0]);
-                    }
-                    if (!hasTransform)
-                        mManager.MarkComponentForDestruction<Transform>(entity);
-                }
+        //        if (hasTransform)
+        //        {
+        //            if (ImGui::CollapsingHeader(typeid(Transform).name(), &hasTransform))
+        //            {
+        //                Transform& transform = mManager.GetComponent<Transform>(entity);
+        //                ImGui::DragFloat3("Position", &transform.position[0]);
+        //                ImGui::DragFloat3("Scale", &transform.scale[0]);
+        //                ImGui::DragFloat3("Rotation", &transform.rotation[0]);
+        //            }
+        //            if (!hasTransform)
+        //                mManager.MarkComponentForDestruction<Transform>(entity);
+        //        }
 
-                if (hasRigidBody)
-                {
-                    if (ImGui::CollapsingHeader(typeid(RigidBody).name(), &hasRigidBody))
-                    {
-                        RigidBody& rigidbody = mManager.GetComponent<RigidBody>(entity);
-                        ImGui::DragFloat3("Velocity", &rigidbody.velocity[0]);
-                        ImGui::DragFloat3("Acceleration", &rigidbody.acceleration[0]);
-                        ImGui::DragFloat3("Rotational Velocity", &rigidbody.rotationalVelocity[0]);
-                        ImGui::DragFloat3("Rotational Acceleration", &rigidbody.rotationalAcceleration[0]);
-                    }
-                    if (!hasRigidBody)
-                        mManager.MarkComponentForDestruction<RigidBody>(entity);
-                }
+        //        if (hasRigidBody)
+        //        {
+        //            if (ImGui::CollapsingHeader(typeid(RigidBody).name(), &hasRigidBody))
+        //            {
+        //                RigidBody& rigidbody = mManager.GetComponent<RigidBody>(entity);
+        //                ImGui::DragFloat3("Velocity", &rigidbody.velocity[0]);
+        //                ImGui::DragFloat3("Acceleration", &rigidbody.acceleration[0]);
+        //                ImGui::DragFloat3("Rotational Velocity", &rigidbody.rotationalVelocity[0]);
+        //                ImGui::DragFloat3("Rotational Acceleration", &rigidbody.rotationalAcceleration[0]);
+        //            }
+        //            if (!hasRigidBody)
+        //                mManager.MarkComponentForDestruction<RigidBody>(entity);
+        //        }
 
-                if (hasMaterial)
-                {
-                    if (ImGui::CollapsingHeader(typeid(Material).name(), &hasMaterial))
-                    {
-                        Material& material = mManager.GetComponent<Material>(entity);
-                        ImGui::DragFloat3("Specular Color", &material.spec_coeff[0]);
-                        ImGui::DragFloat("Shine", &material.spec_exponent);
-                        ImGui::ColorPicker3("Color", &material.diff_coeff[0]);
-                    }
-                    if (!hasMaterial)
-                        mManager.MarkComponentForDestruction<Material>(entity);
-                }
+        //        if (hasMaterial)
+        //        {
+        //            if (ImGui::CollapsingHeader(typeid(Material).name(), &hasMaterial))
+        //            {
+        //                Material& material = mManager.GetComponent<Material>(entity);
+        //                ImGui::DragFloat3("Specular Color", &material.spec_coeff[0]);
+        //                ImGui::DragFloat("Shine", &material.spec_exponent);
+        //                ImGui::ColorPicker3("Color", &material.diff_coeff[0]);
+        //            }
+        //            if (!hasMaterial)
+        //                mManager.MarkComponentForDestruction<Material>(entity);
+        //        }
 
-                if (hasScript)
-                {
-                    if (ImGui::CollapsingHeader(typeid(Script).name(), &hasScript))
-                    {
-                        Script& script = mManager.GetComponent<Script>(entity);
-                        ImGui::InputTextMultiline("Lua", script.data, sizeof(script.data));
-                    }
-                    if (!hasScript)
-                        mManager.MarkComponentForDestruction<Script>(entity);
-                }
+        //        if (hasScript)
+        //        {
+        //            if (ImGui::CollapsingHeader(typeid(Script).name(), &hasScript))
+        //            {
+        //                Script& script = mManager.GetComponent<Script>(entity);
+        //                ImGui::InputTextMultiline("Lua", &script.data);
+        //            }
+        //            if (!hasScript)
+        //                mManager.MarkComponentForDestruction<Script>(entity);
+        //        }
 
-                if (ImGui::BeginPopupContextWindow("Entity", ImGuiPopupFlags_::ImGuiPopupFlags_NoOpenOverItems
-                    | ImGuiPopupFlags_::ImGuiPopupFlags_MouseButtonRight))
-                {
-                    if (ImGui::TreeNode("AddComponent"))
-                    {
-                        if (ImGui::MenuItem("Identification"))
-                        {
-                            mManager.AddComponent<Identification>(entity, {});
-                        }
-                        if (ImGui::MenuItem("Transform"))
-                        {
-                            mManager.AddComponent<Transform>(entity, {});
-                        }
-                        if (ImGui::MenuItem("RigidBody"))
-                        {
-                            mManager.AddComponent<RigidBody>(entity, {});
-                        }
-                        if (ImGui::MenuItem("Material"))
-                        {
-                            mManager.AddComponent<Material>(entity, {});
-                        }
-                        if (ImGui::MenuItem("Script"))
-                        {
-                            mManager.AddComponent<Script>(entity, {});
-                        }
+        //        if (ImGui::BeginPopupContextWindow("Entity", ImGuiPopupFlags_::ImGuiPopupFlags_NoOpenOverItems
+        //            | ImGuiPopupFlags_::ImGuiPopupFlags_MouseButtonRight))
+        //        {
+        //            if (ImGui::TreeNode("AddComponent"))
+        //            {
+        //                if (ImGui::MenuItem("Identification"))
+        //                {
+        //                    mManager.AddComponent<Identification>(entity, {});
+        //                }
+        //                if (ImGui::MenuItem("Transform"))
+        //                {
+        //                    mManager.AddComponent<Transform>(entity, {});
+        //                }
+        //                if (ImGui::MenuItem("RigidBody"))
+        //                {
+        //                    mManager.AddComponent<RigidBody>(entity, {});
+        //                }
+        //                if (ImGui::MenuItem("Material"))
+        //                {
+        //                    mManager.AddComponent<Material>(entity, {});
+        //                }
+        //                if (ImGui::MenuItem("Script"))
+        //                {
+        //                    mManager.AddComponent<Script>(entity, {});
+        //                }
 
-                        ImGui::TreePop();
-                    }
-                    ImGui::EndPopup();
-                }
+        //                ImGui::TreePop();
+        //            }
+        //            ImGui::EndPopup();
+        //        }
 
-                ImGui::End();
-            }
+        //        ImGui::End();
+        //    }
 
-            if (!entityAlive)
-                mManager.MarkEntityForDestruction(entity);
-        }
+        //    if (!entityAlive)
+        //        mManager.MarkEntityForDestruction(entity);
+        //}
 
         if (ImGui::BeginPopupContextWindow())
         {
@@ -166,7 +166,7 @@ namespace Client
             ImGui::EndPopup();
         }
 
-        ImGui::End();
+        //ImGui::End();
     }
 
     void WindowSystem::DrawUtilitiesWindow(float dt)

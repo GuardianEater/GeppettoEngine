@@ -14,9 +14,9 @@ namespace Client
 {
     struct Material
     {
-        glm::vec3 diff_coeff; // color
-        glm::vec3 spec_coeff; // shine color
-        float spec_exponent; // amount of shine
-        size_t meshID;
+        glm::vec3 diff_coeff = { 0.5f, 1.0f, 0.5f }; // color
+        glm::vec3 spec_coeff = { 0.5f, 0.5f, 0.5f }; // shine color
+        float spec_exponent = 5; // amount of shine
+        size_t meshID{};
     };
 }

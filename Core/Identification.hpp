@@ -12,6 +12,6 @@ namespace Client
 {
     struct Identification
     {
-        char name[16];
+        std::string name = "";
     };
 }

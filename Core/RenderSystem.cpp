@@ -40,7 +40,7 @@ namespace Client
     {
         mRenderer.Clear();
 
-        const std::unordered_set<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
+        const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
         for (Gep::Entity cameraEntity : cameras)
         {
             const Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
@@ -52,7 +52,7 @@ namespace Client
 
             mRenderer.SetCamera(pers, view, { camTransform.position, 1 });
 
-            const std::unordered_set<Gep::Entity>& entities = mManager.GetEntities<Transform, Material>();
+            const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform, Material>();
             for (Gep::Entity entity : entities)
             {
                 const Transform& transform = mManager.GetComponent<Transform>(entity);
@@ -73,7 +73,7 @@ namespace Client
 
     void RenderSystem::HandleInputs(float dt)
     {
-        const std::unordered_set<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
+        const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
         const float movementSpeed = 10 * dt;
 
         for (Gep::Entity cam : cameras)

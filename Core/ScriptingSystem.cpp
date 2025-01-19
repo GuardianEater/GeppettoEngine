@@ -42,7 +42,7 @@ namespace Client
 
     void ScriptingSystem::Update(float dt)
     {
-        std::unordered_set<Gep::Entity>& entities = mManager.GetEntities<Script>();
+        std::vector<Gep::Entity>& entities = mManager.GetEntities<Script>();
         for (Gep::Entity entity : entities)
         {
             Script& script = mManager.GetComponent<Client::Script>(entity);

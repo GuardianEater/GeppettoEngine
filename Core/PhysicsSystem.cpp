@@ -20,7 +20,7 @@ namespace Client
 
     void PhysicsSystem::Update(float dt)
     {
-        std::unordered_set<Gep::Entity>& entities = mManager.GetEntities<Transform, RigidBody>();
+        std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform, RigidBody>();
         for (Gep::Entity entity : entities)
         {
             Transform& transform = mManager.GetComponent<Transform>(entity);

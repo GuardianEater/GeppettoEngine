@@ -8,13 +8,20 @@
 
 #pragma once
 
-#include <Core.hpp>
+#include "Core.hpp"
 
-#include <ComponentArray.hpp>
-#include <ISystem.hpp>
-#include <Events.hpp>
+#include "ComponentArray.hpp"
+#include "ISystem.hpp"
+#include "Events.hpp"
 
-#include <Application.hpp>
+#include "Application.hpp"
+#include "TypeList.hpp"
+
+#include "Logger.hpp"
+#include "TypeID.hpp"
+
+#include <rfl.hpp>
+#include <rfl/json.hpp>
 
 namespace Gep
 {
@@ -36,6 +43,18 @@ namespace Gep
         { t.Exit() } -> std::same_as<void>;
     };
 
+    template <typename T>
+    concept TypeHasOnComponentsRegisteredConcept = requires(T t, Gep::type_list<int> componentTypes)
+    {
+        { t.template OnComponentsRegistered<int>(componentTypes) } -> std::same_as<void>;
+    };
+
+    template <typename T>
+    struct TypeHasOnComponentsRegistered : std::false_type {};
+    template <typename T>
+    requires TypeHasOnComponentsRegisteredConcept<T>
+    struct TypeHasOnComponentsRegistered<T> : std::true_type {};
+
     template <typename T, typename Base>
     concept TypeInheritsFrom = std::is_base_of_v<Base, T>;
 
@@ -45,9 +64,24 @@ namespace Gep
     template <typename T>
     concept TypeIsSystem = std::is_base_of<ISystem, T>::value;
 
+    /// doesnt seems to work...
+    template <typename T>
+    concept TypeIsReflectable = requires(T t)
+    {
+        { rfl::json::write(t) } -> std::same_as<std::string>;
+    };
 
     using SystemUpdateFunction = void(ISystem::*)(float);
     using SytemVoidFunction = void(ISystem::*)(float);
+
+
+    struct EntityData
+    {
+        Entity parent{};
+        Signature signature{};
+
+        std::vector<Entity> children{};
+    };
 
     class EngineManager
     {
@@ -67,6 +101,9 @@ namespace Gep
 
         bool Running() const;
 
+        template <typename... ComponentTypes, typename... SystemTypes>
+        void RegisterTypes(Gep::type_list<ComponentTypes...> componentTypes, Gep::type_list<SystemTypes...> systemTypes);
+
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // entity functions /////////////////////////////////////////////////////////////////////////////
 
@@ -83,8 +120,23 @@ namespace Gep
 
         Entity CreateEntity();
 
+        void AttachEntity(Entity parent, Entity child);
+
+        void DetachEntity(Entity child);
+
+        bool HasParent(Entity entity) const;
+
+        std::vector<Entity> GetChildren(Entity parent);
+
         template <typename... ComponentTypes>
-        std::unordered_set<Entity>& GetEntities();
+        std::vector<Entity>& GetEntities();
+
+        bool EntityExists(Entity entity) const;
+
+        std::vector<Signature> GetComponentSignatures(Entity entity);
+        
+        template <typename ComponentType>
+        Signature GetComponentSignature();
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // component functions //////////////////////////////////////////////////////////////////////////
@@ -122,25 +174,11 @@ namespace Gep
         template <typename... ComponentTypes>
         void RegisterGroup();
 
-        // initializes all systems in the order registered
-        template <typename SystemType>
-        void Initialize();
-
         void Initialize();
 
         void Update(float dt);
 
         void Exit();
-
-        template<typename SystemType>
-        void Update(float dt);
-
-        template <typename SystemType>
-        void Exit();
-
-        template<typename SystemType>
-        void RenderImGui(float dt);
-
 
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -182,8 +220,8 @@ namespace Gep
         // entities
         std::vector<Entity> mAvailableEntities; // list of unused entity ids
         std::vector<Entity> mMarkedEntities; // entities that are marked to be destroyed
-        std::unordered_map<Entity, Signature> mEntitySignatures; // this keeps track of which components an entity has
-        std::unordered_map<Signature, std::unordered_set<Entity>> mEntityGroups; // used by systems, holds all entities with a matching components
+        std::unordered_map<Signature, std::vector<Entity>> mEntityGroups; // used by systems, holds all entities with a matching components
+        std::unordered_map<Entity, EntityData> mEntityDatas; // maps from an entity -> all of data
 
         // components
         ComponentBitPos mNextComponentID; // used for assigning bits in an entities signature

@@ -12,8 +12,22 @@
 
 namespace Gep
 {
+    template<typename ...ComponentTypes, typename ...SystemTypes>
+    inline void EngineManager::RegisterTypes(Gep::type_list<ComponentTypes...> componentTypes, Gep::type_list<SystemTypes...> systemTypes)
+    {
+        (RegisterComponent<ComponentTypes>(), ...);
+        (RegisterSystem<SystemTypes>(), ...);
+
+        auto systemsWithOnComponentsRegistered = systemTypes.filter<TypeHasOnComponentsRegistered>();
+
+        systemsWithOnComponentsRegistered.for_each([&]<typename SystemType>()
+        {
+            this->GetSystem<SystemType>().template OnComponentsRegistered<ComponentTypes...>(componentTypes);
+        });
+    }
+
     template<typename ...ComponentTypes>
-    inline std::unordered_set<Entity>& EngineManager::GetEntities()
+    inline std::vector<Entity>& EngineManager::GetEntities()
     {
         Signature groupSignature;
 
@@ -29,10 +43,18 @@ namespace Gep
         return mEntityGroups.at(groupSignature);
     }
 
+    template<typename ComponentType>
+    inline Signature EngineManager::GetComponentSignature()
+    {
+        return Signature().set(GetComponentBitPos<ComponentType>());
+    }
+
     template <typename ComponentType>
     void EngineManager::RegisterComponent()
     {
-        static_assert(TypeIsComponent<ComponentType>, "Attempting to register a component that is not a POD");
+        static_assert(TypeIsReflectable<ComponentType>, "ComponentType must be a trivial struct");
+
+        Log::Info("Registering Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]...");
 
         const uint64_t typeID = typeid(ComponentType).hash_code();
 
@@ -41,11 +63,19 @@ namespace Gep
         mComponentArrays[typeID] = std::make_shared<ComponentArray<ComponentType>>();
 
         ++mNextComponentID;
+
+        Log::Info("Registered Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
     }
 
     template <typename... ComponentTypes>
     void EngineManager::AddComponent(Entity entity, ComponentTypes... components)
     {
+        // formats the component types into a string
+        std::ostringstream oss; ((oss << GetTypeInfo<ComponentTypes>().PrettyName() << ", "), ...);
+        std::string componentsString = oss.str().substr(0, oss.str().size() - 2);
+
+        Log::Trace("Adding Component(s): [", componentsString, "] to entity:", entity, "...");
+
         (GetComponentArray<ComponentTypes>()->Insert(entity, components), ...);
 
         Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
@@ -55,6 +85,8 @@ namespace Gep
         //mEntityGroups[entitySignature].insert(entity);
 
         SetSignature(entity, entitySignature); // sets the signature of the entity to the signature with the newly added component
+
+        Log::Trace("Added Component(s)");
     }
 
     template<typename... ComponentTypes>
@@ -81,12 +113,15 @@ namespace Gep
     void EngineManager::RegisterSystem()
     {
         static_assert(TypeInheritsFrom<SystemType, ISystem>, "SystemType must inherit from ISystem");
+        Log::Info("Registering System: [", GetTypeInfo<SystemType>().PrettyName(), "]...");
 
         const uint64_t typeID = typeid(SystemType).hash_code();
 
         mSystems[typeID] = std::make_shared<SystemType>(*this);
 
         mSystemsToUpdate.push_back(mSystems.at(typeID));
+
+        Log::Info("Registered System: [", GetTypeInfo<SystemType>().PrettyName(), "]");
     }
 
     template <typename SystemType>
@@ -106,39 +141,6 @@ namespace Gep
         ((groupSignature.set(GetComponentBitPos<ComponentTypes>())), ...);
 
         mEntityGroups[groupSignature];
-    }
-
-    // initializes all systems in the order registered
-    template <typename SystemType>
-    void EngineManager::Initialize()
-    {
-        static_assert(TypeHasInitialize<SystemType>, "You passed a type to Initialize that has no Initialize function!");
-
-        GetSystem<SystemType>().Initialize();
-    }
-
-    template<typename SystemType>
-    void EngineManager::Update(float dt)
-    {
-        static_assert(TypeHasUpdate<SystemType>, "Attempting to update a class with no update!");
-
-        GetSystem<SystemType>().Update(dt);
-    }
-
-    template <typename SystemType>
-    void EngineManager::Exit()
-    {
-        static_assert(TypeHasExit<SystemType>, "You passed a type to Exit that has no Exit function!");
-
-        GetSystem<SystemType>().Exit();
-    }
-
-    template<typename SystemType>
-    void EngineManager::RenderImGui(float dt)
-    {
-        static_assert(TypeHasUpdate<SystemType>, "Attempting to ImGuiRender a class with no update!");
-
-        GetSystem<SystemType>().RenderImGui(dt);
     }
 
     template<typename SystemType, typename EventType, typename MemberFunctionPtr>

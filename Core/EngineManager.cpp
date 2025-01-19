@@ -13,7 +13,7 @@ namespace Gep
     EngineManager::EngineManager()
         : mAvailableEntities()
         , mMarkedEntities()
-        , mEntitySignatures()
+        , mEntityDatas()
         , mComponentIDs()
         , mMarkedComponents()
         , mComponentArrays()
@@ -60,30 +60,44 @@ namespace Gep
     void EngineManager::SetSignature(Entity entity, Signature signature)
     {
         // Put this entity's signature into the array
-        mEntitySignatures[entity] = signature;
+        mEntityDatas[entity].signature = signature;
 
         for (auto& [groupSignature, entities] : mEntityGroups)
         {
             // checks if the entities signature is the same as the groups signature, if so add the entity to the group
             if ((signature & groupSignature) == groupSignature)
             {
-                entities.insert(entity);
+                // if the entity is not in the group, add it
+                if (std::find(entities.begin(), entities.end(), entity) == entities.end())
+                    entities.push_back(entity);
             }
             else
             {
-                entities.erase(entity);
+                // if the entity is in the group, remove it
+                entities.erase(std::remove(entities.begin(), entities.end(), entity), entities.end());
             }
         }
     }
 
     Signature EngineManager::GetSignature(Entity entity) const
     {
+        if (!EntityExists(entity))
+        {
+            Log::Error("Entity does not exist");
+            return Signature();
+        }
         // Put this entity's signature into the array
-        return mEntitySignatures.at(entity);
+        return mEntityDatas.at(entity).signature;
     }
 
     void EngineManager::MarkEntityForDestruction(Entity entity)
     {
+        if (!EntityExists(entity))
+        {
+            Log::Error("Entity does not exist");
+            return;
+        }
+
         SignalEvent<Event::EntityDestroyed>({ entity });// calls subscriber functions 
 
         mMarkedEntities.push_back(entity);
@@ -111,21 +125,149 @@ namespace Gep
 
         // removes the entity from any systems it might have been in
         for (auto& [groupSignature, entities] : mEntityGroups)
-            entities.erase(entity);
+            entities.erase(std::remove(entities.begin(), entities.end(), entity), entities.end());
 
-        mEntitySignatures[entity].reset();
+        mEntityDatas[entity].signature.reset();
+
+        // for each child of the entity, remove the parent
+        for (Entity child : GetChildren(entity))
+        {
+            DetachEntity(child);
+        }
 
         mAvailableEntities.push_back(entity);
+
+        Log::Trace("Destroyed Entity: [", entity, "]");
     }
 
     Entity EngineManager::CreateEntity()
     {
         Entity id = mAvailableEntities.back();
         mAvailableEntities.pop_back();
-
         SetSignature(id, 0);
 
+        Log::Trace("Created Entity: [", id, "]");
+
         return id;
+    }
+
+    void EngineManager::AttachEntity(Entity parent, Entity child)
+    {
+        if (!EntityExists(parent))
+        {
+            Log::Error("Parent entity does not exist");
+            return;
+        }
+
+        if (!EntityExists(child))
+        {
+            Log::Error("Child entity does not exist");
+            return;
+        }
+
+        if (mEntityDatas[child].parent == parent)
+        {
+            Log::Error("Child is already attached to this parent");
+            return;
+        }
+
+        // if the new child has a parent currently, remove the child from its parent
+        Entity otherParent = mEntityDatas[child].parent;
+        if (EntityExists(otherParent))
+        {
+            DetachEntity(child);
+        }
+
+        mEntityDatas.at(parent).children.push_back(child);
+        mEntityDatas.at(child).parent = parent;
+    }
+
+    // 
+    void EngineManager::DetachEntity(Entity child)
+    {
+        if (!EntityExists(child))
+        {
+            Log::Error("Entity does not exist");
+            return;
+        }
+
+        if (!HasParent(child))
+        {
+            Log::Error("Entity does not have a parent");
+            return;
+        }
+
+        Entity parent = mEntityDatas[child].parent;
+        if (!EntityExists(parent))
+        {
+            Log::Error("Parent entity does not exist");
+            return;
+        }
+
+        std::vector<Entity>& children = mEntityDatas[parent].children;
+        children.erase(std::remove(children.begin(), children.end(), child), children.end());
+        mEntityDatas.at(child).parent = INVALID_ENTITY;
+    }
+
+    bool EngineManager::HasParent(Entity entity) const
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Error("Entity does not exist");
+            return false;
+        }
+
+        return (mEntityDatas.at(entity).parent != INVALID_ENTITY);
+    }
+
+    std::vector<Entity> EngineManager::GetChildren(Entity parent)
+    {
+        if (!EntityExists(parent))
+        {
+            Log::Error("Entity does not exist");
+            return std::vector<Entity>();
+        }
+
+        return mEntityDatas.at(parent).children;
+    }
+
+    bool EngineManager::EntityExists(Entity entity) const
+    {
+        if (entity == INVALID_ENTITY)
+        {
+            return false;
+        }
+
+        if (!mEntityDatas.contains(entity))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    std::vector<Signature> EngineManager::GetComponentSignatures(Entity entity)
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Error("Entity does not exist");
+            return std::vector<Signature>();
+        }
+
+        Signature entitySignature = GetSignature(entity);
+
+        std::vector<Signature> componentSignatures;
+
+        for (int i = 0; i < entitySignature.size(); ++i)
+        {
+            if (entitySignature[i])
+            {
+                Signature componentSig; componentSig.set(i);
+                componentSignatures.push_back(componentSig);
+            }
+        }
+
+        return componentSignatures;
     }
 
     void EngineManager::DestroyMarkedComponents()
@@ -140,6 +282,12 @@ namespace Gep
 
     void EngineManager::DestroyComponent(Entity entity, uint64_t component)
     {
+        if (!EntityExists(entity))
+        {
+            Log::Error("Entity does not exist");
+            return;
+        }
+
         GetComponentArray(component)->Erase(entity);
 
         Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
@@ -150,6 +298,12 @@ namespace Gep
 
     bool EngineManager::HasComponent(const Entity entity, const uint64_t componentID) const
     {
+        if (!EntityExists(entity))
+        {
+            Log::Error("Entity does not exist");
+            return false;
+        }
+
         Signature componentSig;
         componentSig.set(mComponentIDs.at(componentID));
         return ((GetSignature(entity) & componentSig) == componentSig);

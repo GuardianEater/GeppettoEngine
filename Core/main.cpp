@@ -23,41 +23,46 @@
 #include <ScriptingSystem.hpp>
 #include <CameraComponent.hpp>
 
+#include "Logger.hpp"
+
 #include <rfl.hpp>
 #include <rfl/json.hpp>
-
-struct Test
-{
-    int a = 5;
-    float b = 2.5f;
-};
 
 // tools
 #include <CompactArray.hpp>
 
 int main()
 {
-    std::string json = rfl::json::write(Test{});
+    Gep::Log::SetPrintLevel(Gep::Log::LogLevel::info);
+    Gep::Log::SetOutputFile("log.txt");
 
+    Gep::Log::Important("Welcome To The Gep Engine!");
 
     // start the engine //////////////////////////////////////////////////////////////////////////////
     Gep::EngineManager em;
     em.Start();
 
-    // register all components ///////////////////////////////////////////////////////////////////////
-    em.RegisterComponent<Client::RigidBody>();
-    em.RegisterComponent<Client::Material>();
-    em.RegisterComponent<Client::Identification>();
-    em.RegisterComponent<Client::Transform>();
-    em.RegisterComponent<Client::Script>();
-    em.RegisterComponent<Client::Camera>();
+    // list of all components ///////////////////////////////////////////////////////////////////////
+    Gep::type_list<
+        Client::Identification,
+        Client::Transform,
+        Client::RigidBody,
+        Client::Material,
+        Client::Script,
+        Client::Camera
+    > componentTypes;
 
-    // register all systems //////////////////////////////////////////////////////////////////////////
-    em.RegisterSystem<Client::PhysicsSystem>();
-    em.RegisterSystem<Client::WindowSystem>();
-    em.RegisterSystem<Client::RenderSystem>();
-    em.RegisterSystem<Client::ImGuiSystem>();
-    em.RegisterSystem<Client::ScriptingSystem>();
+    // list of all systems //////////////////////////////////////////////////////////////////////////
+    Gep::type_list<
+        Client::PhysicsSystem,
+        Client::WindowSystem,
+        Client::RenderSystem,
+        Client::ImGuiSystem,
+        Client::ScriptingSystem
+    > systemTypes;
+
+    // register all types ////////////////////////////////////////////////////////////////////////////
+    em.RegisterTypes(componentTypes, systemTypes);
 
     // setup entity groups //////////////////////////////////////////////////////////////////////////
     em.RegisterGroup<Client::RigidBody, Client::Transform>();
@@ -70,6 +75,7 @@ int main()
     em.SubscribeToEvent<Client::PhysicsSystem, Gep::Event::EntityDestroyed>(&Client::PhysicsSystem::EntityDestroyed);
     em.SubscribeToEvent<Client::PhysicsSystem, Gep::Event::KeyPressed>(&Client::PhysicsSystem::KeyPressed);
     em.SubscribeToEvent<Client::RenderSystem, Gep::Event::KeyPressed>(&Client::RenderSystem::KeyEvent);
+
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.Initialize();
@@ -102,15 +108,7 @@ int main()
               .scale = glm::vec3(5, 5, 5),
               .rotation = glm::vec3(0, 0, 0),
             },
-            Client::Camera
-            {
-              .viewport = viewport,
-              .back = back,
-              .right = right,
-              .up = glm::cross(back, right),
-              .nearPlane = nearPlane,
-              .farPlane = farPlane,
-            },
+            Client::Camera{},
             Client::Identification
             {
               .name = "Camera"
@@ -131,7 +129,7 @@ int main()
                 },
                 Client::RigidBody
                 {
-                  .velocity = {0, 0, 0},// Get Pranked Bitch,
+                  .velocity = {0, 0, 0},
                   .acceleration = {0, 0, 0},
                   .rotationalVelocity = {0, 0, 0},
                   .rotationalAcceleration = {0, 0, 0}
@@ -150,6 +148,43 @@ int main()
         }
     }
 
+    Gep::Entity e1 = em.CreateEntity();
+    {
+        em.AddComponent(e1,
+            Client::Transform{},
+            Client::Material{},
+            Client::Identification
+            {
+              .name = "SphereParent"
+            });
+    }
+
+    Gep::Entity e2 = em.CreateEntity();
+    {
+        em.AddComponent(e2,
+            Client::Transform{},
+            Client::Material{},
+            Client::Identification
+            {
+              .name = "SphereChild1"
+            });
+    }
+
+    Gep::Entity e3 = em.CreateEntity();
+    {
+        em.AddComponent(e3,
+            Client::Transform{},
+            Client::Material{},
+            Client::Identification
+            {
+              .name = "SphereChild2"
+            });
+    }
+
+    em.AttachEntity(e1, e2);
+    em.AttachEntity(e1, e3);
+    
+
     double dt = 0.016;
     while (em.Running())
     {
@@ -158,9 +193,6 @@ int main()
 
         // update systems /////////////////////////////////////////////////////////////////////////
         em.Update(dt);
-
-        // render imgui for systems ///////////////////////////////////////////////////////////////
-        em.RenderImGui<Client::RenderSystem>(dt);
 
         // start events ///////////////////////////////////////////////////////////////////////////
         em.StartEvent<Gep::Event::EntityDestroyed>();
