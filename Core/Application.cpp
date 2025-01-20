@@ -89,10 +89,17 @@ namespace Gep
         if (mIO->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             style.WindowRounding = 0.0f;
-            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
             style.FramePadding.y = 8;
             style.ItemSpacing.y = 4;
             style.FrameBorderSize = 3;
+            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+            style.Colors[ImGuiCol_TitleBgActive]  = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+            style.Colors[ImGuiCol_Header]         = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+            style.Colors[ImGuiCol_HeaderHovered]  = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+            style.Colors[ImGuiCol_HeaderActive]   = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
+            style.Colors[ImGuiCol_FrameBg]        = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+            style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+            style.Colors[ImGuiCol_FrameBgActive]  = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
         }
 
         // Setup Platform/Renderer backends

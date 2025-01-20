@@ -45,13 +45,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty</IncludePath>
+    <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb</IncludePath>
     <SourcePath>$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\src\**\*.cpp;$(SourcePath)</SourcePath>
     <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(SolutionDir)x64\Debug;$(LibraryPath)</LibraryPath>
     <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua</IncludePath>
+    <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb</IncludePath>
     <SourcePath>$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\lua;$(SourcePath)</SourcePath>
     <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(SolutionDir)x64\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
@@ -96,6 +96,8 @@
     <ClCompile Include="Affine.cpp" />
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Core.cpp" />
+    <ClCompile Include="CubeMesh.cpp" />
     <ClCompile Include="dependencies\imgui\backends\imgui_impl_glfw.cpp" />
     <ClCompile Include="dependencies\imgui\backends\imgui_impl_opengl3.cpp" />
     <ClCompile Include="dependencies\imgui\backends\imgui_impl_win32.cpp" />
@@ -109,6 +111,7 @@
     <ClCompile Include="dependencies\reflect-cpp\src\reflectcpp_json.cpp" />
     <ClCompile Include="dependencies\reflect-cpp\src\yyjson.c" />
     <ClCompile Include="EngineManager.cpp" />
+    <ClCompile Include="ImGuiSystem.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
@@ -127,16 +130,19 @@
     <ClInclude Include="AxisMesh.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="CameraComponent.hpp" />
+    <ClInclude Include="CubeMesh.hpp" />
     <ClInclude Include="dependencies\imgui\imgui_stdlib.h" />
     <ClInclude Include="Events.hpp" />
     <ClInclude Include="Identification.hpp" />
     <ClInclude Include="Logger.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="MeshComponent.hpp" />
+    <ClInclude Include="reflect-cpp-extra.hpp" />
     <ClInclude Include="RenderSystem.hpp" />
     <ClInclude Include="RigidBody.hpp" />
     <ClInclude Include="Script.hpp" />
     <ClInclude Include="ScriptingSystem.hpp" />
+    <ClInclude Include="SerializationSystem.hpp" />
     <ClInclude Include="SphereMesh.hpp" />
     <ClInclude Include="CompactArray.hpp" />
     <ClInclude Include="ComponentArray.hpp" />
@@ -171,7 +177,12 @@
     <None Include="CompactArray.inl" />
     <None Include="ComponentArray.inl" />
     <None Include="EngineManager.inl" />
+    <None Include="forward.fs" />
+    <None Include="forward.vs" />
+    <None Include="ImGuiSystem.inl" />
     <None Include="Logger.inl" />
+    <None Include="main.frag" />
+    <None Include="main.vert" />
     <None Include="TypeList.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

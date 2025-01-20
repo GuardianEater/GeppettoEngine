@@ -16,6 +16,9 @@
 #include <CompactArray.hpp>
 #include <ShaderProgram.hpp>
 
+#include "stb_image.h"
+#include "Logger.hpp"
+
 namespace Gep
 {
 		class IRenderer
@@ -26,9 +29,13 @@ namespace Gep
 
 				virtual void LoadFragmentShader(const std::filesystem::path& shaderPath) final;
 				virtual void LoadVertexShader(const std::filesystem::path& shaderPath) final;
+				virtual void LoadMesh(const std::string& name, const Mesh& mesh);
+        virtual void LoadImage(const std::string& name, const std::filesystem::path& imagePath);
+        virtual void SetTexture(const std::string& textureName) final;
+        virtual void ToggleWireframes() final;
+        virtual void ToggleTextures() final;
 				virtual void Compile() final;
-				virtual std::uint64_t LoadMesh(const NormalMesh& mesh);
-				virtual void UnloadMesh(std::uint64_t meshID);
+				virtual void UnloadMesh(const std::string& name);
 				virtual void BackfaceCull(bool enabled = true) final;
 				virtual void Clear(const glm::vec3& color = { 0, 0, 0 }) final;
 				virtual void SetCamera(const Camera& camera) final;
@@ -37,7 +44,7 @@ namespace Gep
 				virtual void SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent) final;
 				virtual void CreateLight(const std::uint8_t lightID, const glm::vec3& position, const glm::vec3& color);
 				virtual void SetAmbientLight(const glm::vec3& color);
-				virtual void DrawMesh(std::uint64_t meshID) const;
+				virtual void DrawMesh(const std::string& meshID) const;
 
 		private:
 				GLuint LoadShader(GLenum shaderType, const std::filesystem::path& shaderPath);
@@ -50,7 +57,6 @@ namespace Gep
 						~MeshData();
 
 						void GenVertexBuffer(const Mesh& mesh);
-						void GenNormalBuffer(const NormalMesh& mesh);
 						void GenFaceBuffer(const Mesh& mesh);
 						void BindBuffers();
 						void DeleteBuffers();
@@ -58,7 +64,6 @@ namespace Gep
 				public:
 						GLuint mVertexArrayObject;
 						GLuint mVertexBuffer;
-						GLuint mNormalBuffer;
 						GLuint mFaceBuffer;
 						size_t mFaceCount;
 						size_t mEdgeCount;
@@ -66,6 +71,11 @@ namespace Gep
 
 		private:
 				ShaderProgram mProgram;
-				compact_array<MeshData> mMeshDatas;
+				//compact_array<MeshData> mMeshDatas;
+        bool mWireframeMode = false;
+        bool mUseTextures = false;
+
+        std::unordered_map<std::string, GLuint> mTextures;
+        std::unordered_map<std::string, MeshData> mMeshDatas;
 		};
 }

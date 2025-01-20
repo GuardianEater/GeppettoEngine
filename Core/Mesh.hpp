@@ -20,38 +20,21 @@ namespace Gep
 		/**
 		 * Typical Mesh.
 		 */
-		class Mesh
+    struct Vertex
+    {
+        glm::vec3 position;
+        glm::vec3 normal;
+        glm::vec2 texCoord;
+    };
+
+		struct Mesh
 		{
-		public:
-				Mesh();
-				Mesh(const std::filesystem::path& meshFile);
+				using Face   = glm::vec<3, GLuint>;
+				using Edge   = glm::vec<2, GLuint>;
 
-				void Read(const std::filesystem::path& meshFile);
-				size_t FaceCount() const;
-
-		public:
-				using Face = glm::vec<3, GLuint>;
-				using Edge = glm::vec<2, GLuint>;
-				using Vertex = glm::vec<4, float>;
-
-		public:
 				std::vector<Vertex> mVertices;
 				std::vector<Face> mFaces;
 				std::vector<Edge> mEdges;
-		};
-
-		/**
-		 * Mesh that also contains a normal array.
-		 */
-		class NormalMesh : public Mesh
-		{
-		public:
-				NormalMesh();
-
-				using Normal = glm::vec<4, float>;
-
-		public:
-				std::vector<Normal> mNormals;
 		};
 }
 

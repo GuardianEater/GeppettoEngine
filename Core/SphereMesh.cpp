@@ -10,12 +10,11 @@
 
 namespace Gep
 {
-    SphereMesh::SphereMesh(const size_t size_m, const size_t size_n) : NormalMesh()
+    SphereMesh::SphereMesh(const size_t size_m, const size_t size_n) : Mesh()
     {
         const size_t north = size_m * (size_n - 1);
         const size_t south = size_m * (size_n - 1) + 1;
 
-        mNormals.resize(size_m * (size_n - 1) + 2);
         mVertices.resize(size_m * (size_n - 1) + 2);
 
         for (size_t i = 1; i < size_n; ++i)
@@ -27,20 +26,18 @@ namespace Gep
                 const size_t index = size_m * (i - 1) + j;
                 const float phi = 2 * PI * j / size_m;
 
-                mNormals[index].x = sin(theta) * cos(phi);
-                mNormals[index].y = sin(theta) * sin(phi);
-                mNormals[index].z = cos(theta);
-                mNormals[index].w = 0;
+                mVertices[index].normal.x = sin(theta) * cos(phi);
+                mVertices[index].normal.y = sin(theta) * sin(phi);
+                mVertices[index].normal.z = cos(theta);
             }
         }
 
-        mNormals[north] = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
-        mNormals[south] = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+        mVertices[north].normal = glm::vec3(0.0f, 0.0f, 1.0f);
+        mVertices[south].normal = glm::vec3(0.0f, 0.0f, -1.0f);
 
-        for (size_t n = 0; n < mNormals.size(); ++n)
+        for (size_t n = 0; n < mVertices.size(); ++n)
         {
-            mVertices[n] = mNormals[n];
-            mVertices[n].w = 1;
+            mVertices[n].position = mVertices[n].normal;
         }
 
         for (size_t i = 2; i < size_n; ++i)

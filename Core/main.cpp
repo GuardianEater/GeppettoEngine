@@ -16,11 +16,13 @@
 #include <Affine.hpp>
 
 // client
-#include <PhysicsSystem.hpp>
-#include <ImGuiSystem.hpp>
-#include <WindowSystem.hpp>
-#include <RenderSystem.hpp>
-#include <ScriptingSystem.hpp>
+#include "PhysicsSystem.hpp"
+#include "ImGuiSystem.hpp"
+#include "WindowSystem.hpp"
+#include "RenderSystem.hpp"
+#include "ScriptingSystem.hpp"
+#include "SerializationSystem.hpp"
+
 #include <CameraComponent.hpp>
 
 #include "Logger.hpp"
@@ -58,7 +60,8 @@ int main()
         Client::WindowSystem,
         Client::RenderSystem,
         Client::ImGuiSystem,
-        Client::ScriptingSystem
+        Client::ScriptingSystem,
+        Client::SerializationSystem
     > systemTypes;
 
     // register all types ////////////////////////////////////////////////////////////////////////////
@@ -85,107 +88,58 @@ int main()
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     Gep::Entity camera = em.CreateEntity();
-    {
-        const float aspect = 1;
-        const float nearPlane = 0.1;
-        const float farPlane = 1000;
-        const float fov = 80;
-
-        const glm::vec3 lookAt = -glm::vec3(0, 0, 1);
-        const glm::vec3 relativeUp = glm::vec3(0, 1, 0);
-        const glm::vec3 back = -glm::normalize(lookAt);
-        const glm::vec3 right = glm::normalize(glm::cross(lookAt, relativeUp));
-
-        glm::vec3 viewport{};
-        viewport.x = (2.0f) * (nearPlane)*tanf(glm::radians(fov / 2.0f));
-        viewport.y = viewport.x / aspect;
-        viewport.z = nearPlane;
-
-        em.AddComponent(camera,
-            Client::Transform
-            {
-              .position = glm::vec3(0, 0, 10),
-              .scale = glm::vec3(5, 5, 5),
-              .rotation = glm::vec3(0, 0, 0),
-            },
-            Client::Camera{},
-            Client::Identification
-            {
-              .name = "Camera"
-            });
-    }
+    em.AddComponent(camera,
+        Client::Transform{ {0, 0, 7} },
+        Client::Camera{},
+        Client::Identification{ "Camera" }
+    );
 
     // more entites
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 15; i++)
     {
+        // get a random position
+        float x = (rand() % 10) - 5;
+        float y = (rand() % 10) - 5;
+        float z = (rand() % 10) - 5;
+
         Gep::Entity entity = em.CreateEntity();
-        {
-            em.AddComponent(entity,
-                Client::Transform
-                {
-                  .position = glm::vec3(0, 0, 0),
-                  .scale = glm::vec3(5, 5, 5),
-                  .rotation = glm::vec3(0, 0, 0),
-                },
-                Client::RigidBody
-                {
-                  .velocity = {0, 0, 0},
-                  .acceleration = {0, 0, 0},
-                  .rotationalVelocity = {0, 0, 0},
-                  .rotationalAcceleration = {0, 0, 0}
-                },
-                Client::Material
-                {
-                  .diff_coeff = { 0.5, 1, 0.5 },
-                  .spec_coeff = { 0.5, 0.5, 0.5 },
-                  .spec_exponent = 5,
-                  .meshID = 0
-                },
-                Client::Identification
-                {
-                  .name = "Sphere"
-                });
-        }
+        em.AddComponent(entity,
+            Client::Transform{ {x, y, z} },
+            Client::RigidBody{},
+            Client::Material{ "Sphere" },
+            Client::Identification{ "Sphere" }
+        );
     }
 
     Gep::Entity e1 = em.CreateEntity();
-    {
-        em.AddComponent(e1,
-            Client::Transform{},
-            Client::Material{},
-            Client::Identification
-            {
-              .name = "SphereParent"
-            });
-    }
+    em.AddComponent(e1,
+        Client::Transform{},
+        Client::Material{ "Cube" },
+        Client::Identification{ "CubeParent" }
+    );
+    
 
     Gep::Entity e2 = em.CreateEntity();
-    {
-        em.AddComponent(e2,
-            Client::Transform{},
-            Client::Material{},
-            Client::Identification
-            {
-              .name = "SphereChild1"
-            });
-    }
+    em.AddComponent(e2,
+        Client::Transform{},
+        Client::Material{ "Cube" },
+        Client::Identification{ "CubeChild1" }
+    );
+    
 
     Gep::Entity e3 = em.CreateEntity();
-    {
-        em.AddComponent(e3,
-            Client::Transform{},
-            Client::Material{},
-            Client::Identification
-            {
-              .name = "SphereChild2"
-            });
-    }
+    em.AddComponent(e3,
+        Client::Transform{},
+        Client::Material{ "Cube" },
+        Client::Identification{ "CubeChild2" }
+    );
+    
 
     em.AttachEntity(e1, e2);
     em.AttachEntity(e1, e3);
-    
 
-    double dt = 0.016;
+
+    float dt = 0.016f;
     while (em.Running())
     {
         auto startTime = std::chrono::high_resolution_clock::now();

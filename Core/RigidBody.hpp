@@ -14,9 +14,9 @@ namespace Client
 {
     struct RigidBody
     {
-        glm::vec3 velocity;
-        glm::vec3 acceleration;
-        glm::vec3 rotationalVelocity;
-        glm::vec3 rotationalAcceleration;
+        glm::vec3 velocity{};
+        glm::vec3 acceleration{};
+        glm::vec3 rotationalVelocity{};
+        glm::vec3 rotationalAcceleration{};
     };
 }

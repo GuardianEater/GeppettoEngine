@@ -14,7 +14,7 @@
 
 namespace Gep
 {
-    class SphereMesh : public NormalMesh
+    class SphereMesh : public Mesh
     {
     public:
         SphereMesh(const size_t size_m, const size_t size_n);

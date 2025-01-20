@@ -36,25 +36,104 @@ namespace Gep
 				mProgram.Compile();
 		}
 
-		std::uint64_t IRenderer::LoadMesh(const NormalMesh& mesh)
+		void IRenderer::LoadMesh(const std::string& name, const Mesh& mesh)
 		{
-				const std::uint64_t meshID = mMeshDatas.emplace();
-				MeshData& meshData = mMeshDatas.at(meshID);
+        if (mMeshDatas.find(name) != mMeshDatas.end())
+        {
+            Gep::Log::Error("Cannot load mesh: [", name, "] a mesh with that name has already been loaded");
+            return;
+        }
+
+				MeshData& meshData = mMeshDatas[name];
 
 				meshData.GenVertexBuffer(mesh);
-				meshData.GenNormalBuffer(mesh);
 				meshData.GenFaceBuffer(mesh);
 				meshData.BindBuffers();
 				meshData.mEdgeCount = mesh.mEdges.size();
-
-				return meshID;
 		}
 
-		void IRenderer::UnloadMesh(std::uint64_t meshID)
+		void IRenderer::LoadImage(const std::string& name, const std::filesystem::path& imagePath)
 		{
-				MeshData& meshData = mMeshDatas.at(meshID);
+        if (mTextures.contains(name))
+        {
+            Gep::Log::Error("Cannot load image: [", name, "] that name has already been loaded");
+            return;
+        }
+
+        if (!std::filesystem::exists(imagePath))
+        {
+            Gep::Log::Error("Cannot load image: [", imagePath.string(), "] the file does not exist");
+            return;
+        }
+
+        int width, height, channels;
+        unsigned char* image = stbi_load(imagePath.string().c_str(), &width, &height, &channels, 0);
+
+        if (image == nullptr)
+        {
+            Gep::Log::Error("Failed to load image: [", imagePath.string(), "]");
+            return;
+        }
+
+        GLuint& texture = mTextures[name];
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+
+        GLenum format = (channels == 4) ? GL_RGBA : GL_RGB;
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, image);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        stbi_image_free(image);
+
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		}
+
+		void IRenderer::SetTexture(const std::string& textureName)
+    {
+				glUseProgram(mProgram.GetProgramID());
+
+				if (textureName.empty())
+				{
+						glBindTexture(GL_TEXTURE_2D, 0);
+            glUniform1i(10, false);
+            return;
+				}
+
+        if (!mTextures.contains(textureName))
+        {
+            Gep::Log::Error("Cannot set texture: [", textureName, "] a texture with that name has not been loaded");
+						glBindTexture(GL_TEXTURE_2D, 0);
+						glUniform1i(10, false);
+            return;
+        }
+
+				GLuint texture = mTextures[textureName];
+
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, texture);
+        glUniform1i(10, mUseTextures);
+		}
+
+		void IRenderer::ToggleWireframes()
+		{
+        mWireframeMode = !mWireframeMode;
+		}
+
+		void IRenderer::UnloadMesh(const std::string& name)
+		{
+        if (mMeshDatas.find(name) == mMeshDatas.end())
+        {
+            Gep::Log::Error("Cannot unload mesh: [", name, "] a mesh with that name has not been loaded");
+            return;
+        }
+
+				MeshData& meshData = mMeshDatas.at(name);
 				meshData.DeleteBuffers();
-				mMeshDatas.erase(meshID);
+				mMeshDatas.erase(name);
 		}
 
 		void IRenderer::BackfaceCull(bool enabled)
@@ -117,6 +196,18 @@ namespace Gep
 				glUseProgram(0);
 		}
 
+    // toggle textures
+    void IRenderer::ToggleTextures()
+    {
+        glUseProgram(mProgram.GetProgramID());
+
+        mUseTextures = !mUseTextures;
+        glUniform1i(10, mUseTextures);
+
+        glUseProgram(0);
+    }
+
+
 		void IRenderer::CreateLight(const std::uint8_t lightID, const glm::vec3& position, const glm::vec3& color)
 		{
 				glUseProgram(mProgram.GetProgramID());
@@ -125,9 +216,9 @@ namespace Gep
 
 				const std::uint8_t lightLimit = 8;
 
-				glUniform4fv(9 + lightID, 1, &position[0]);
-				glUniform3fv(17 + lightID, 1, &color[0]);
-				glUniform1iv(25 + lightID, 1, &True);
+				glUniform4fv(11 + lightID, 1, &position[0]);
+				glUniform3fv(19 + lightID, 1, &color[0]);
+				glUniform1iv(27 + lightID, 1, &True);
 
 				glUseProgram(0);
 		}
@@ -139,17 +230,23 @@ namespace Gep
 				glUseProgram(0);
 		}
 
-		void IRenderer::DrawMesh(std::uint64_t meshID) const
+		void IRenderer::DrawMesh(const std::string& meshName) const
 		{
-				const MeshData& md = mMeshDatas.at(meshID);
+        if (mMeshDatas.find(meshName) == mMeshDatas.end())
+        {
+            Gep::Log::Error("Cannot draw mesh: [", meshName, "] a mesh with that name has not been loaded");
+            return;
+        }
+
+				const MeshData& md = mMeshDatas.at(meshName);
 				constexpr std::uint64_t faceSize = sizeof(Mesh::Face) / sizeof(GLuint);
 
 				glUseProgram(mProgram.GetProgramID());
 				glBindVertexArray(md.mVertexArrayObject);
 
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				if (mWireframeMode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				if (mWireframeMode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 				glBindVertexArray(0);
 				glUseProgram(0);
@@ -188,7 +285,6 @@ namespace Gep
 		IRenderer::MeshData::MeshData()
 				: mVertexArrayObject(num_max<GLuint>())
 				, mVertexBuffer(num_max<GLuint>())
-				, mNormalBuffer(num_max<GLuint>())
 				, mFaceBuffer(num_max<GLuint>())
 				, mFaceCount(num_max<size_t>())
 				, mEdgeCount(num_max<size_t>())
@@ -203,14 +299,7 @@ namespace Gep
 		{
 				glGenBuffers(1, &mVertexBuffer);
 				glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
-				glBufferData(GL_ARRAY_BUFFER, sizeof(Mesh::Vertex) * mesh.mVertices.size(), mesh.mVertices.data(), GL_STATIC_DRAW);
-		}
-
-		void IRenderer::MeshData::GenNormalBuffer(const NormalMesh& mesh)
-		{
-				glGenBuffers(1, &mNormalBuffer);
-				glBindBuffer(GL_ARRAY_BUFFER, mNormalBuffer);
-				glBufferData(GL_ARRAY_BUFFER, sizeof(NormalMesh::Normal) * mesh.mNormals.size(), mesh.mNormals.data(), GL_STATIC_DRAW);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh.mVertices.size(), mesh.mVertices.data(), GL_STATIC_DRAW);
 		}
 
 		void IRenderer::MeshData::GenFaceBuffer(const Mesh& mesh)
@@ -228,12 +317,14 @@ namespace Gep
 				glBindVertexArray(mVertexArrayObject);
 
 				glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
-				glVertexAttribPointer(0, 4, GL_FLOAT, false, 0, 0);
+				glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, position));
 				glEnableVertexAttribArray(0);
 
-				glBindBuffer(GL_ARRAY_BUFFER, mNormalBuffer);
-				glVertexAttribPointer(1, 4, GL_FLOAT, false, 0, 0);
+				glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, normal));
 				glEnableVertexAttribArray(1);
+
+				glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
+				glEnableVertexAttribArray(2);
 
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mFaceBuffer);
 
@@ -243,14 +334,12 @@ namespace Gep
 		void IRenderer::MeshData::DeleteBuffers()
 		{
 				glDeleteBuffers(1, &mFaceBuffer);
-				glDeleteBuffers(1, &mNormalBuffer);
 				glDeleteBuffers(1, &mVertexBuffer);
 				glDeleteVertexArrays(1, &mVertexArrayObject);
 
 #ifdef _DEBUG
 				mVertexArrayObject = num_max<GLuint>();
 				mVertexBuffer = num_max<GLuint>();
-				mNormalBuffer = num_max<GLuint>();
 				mFaceBuffer = num_max<GLuint>();
 				mFaceCount = num_max<GLuint>();
 #endif // _DEBUG

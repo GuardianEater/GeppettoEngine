@@ -28,6 +28,7 @@ namespace Client
         glm::vec3 viewport{
             2.0f * nearPlane * glm::tan(glm::radians(80.0f / 2.0f)),        // the width of the viewport
             2.0f * nearPlane * glm::tan(glm::radians(80.0f / 2.0f)) / 1.0f, // the height of the viewport
-            nearPlane };                                                    // the depth of the viewport
+            nearPlane                                                       // the depth of the viewport
+        };                                                    
     };
 }

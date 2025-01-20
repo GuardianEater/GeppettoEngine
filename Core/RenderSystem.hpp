@@ -12,10 +12,11 @@
 #include <Core.hpp>
 
 // backend
-#include <ISystem.hpp>
-#include <EngineManager.hpp>
-#include <Renderer.hpp>
-#include <SphereMesh.hpp>
+#include "ISystem.hpp"
+#include "EngineManager.hpp"
+#include "Renderer.hpp"
+#include "SphereMesh.hpp"
+#include "CubeMesh.hpp"
 
 // client
 #include <Transform.hpp>
@@ -38,8 +39,6 @@ namespace Client
 
     private:
         Gep::IRenderer mRenderer;
-        std::unordered_map<std::string, Gep::Mesh> mLoadedMeshes;
-        size_t mSphereMesh;
     };
 }
 

@@ -7,14 +7,12 @@
  *********************************************************************/
 
 #include "RenderSystem.hpp"
-#include <iostream>
 
 namespace Client
 {
     RenderSystem::RenderSystem(Gep::EngineManager& em)
         : ISystem(em)
         , mRenderer()
-        , mSphereMesh(0)
     {
         mRenderer.LoadVertexShader("assets\\shaders\\PhongRender.vert");
         mRenderer.LoadFragmentShader("assets\\shaders\\PhongRender.frag");
@@ -23,12 +21,15 @@ namespace Client
         mRenderer.BackfaceCull();
         mRenderer.SetAmbientLight({ 0.5, 0.5, 0.5 });
 
-        mSphereMesh = mRenderer.LoadMesh(Gep::SphereMesh(50, 25));
+        mRenderer.LoadImage("test", "assets\\textures\\test.jpg");
+        mRenderer.LoadMesh("Sphere", Gep::SphereMesh(10, 10));
+        mRenderer.LoadMesh("Cube", Gep::CubeMesh());
     }
 
     RenderSystem::~RenderSystem()
     {
-        mRenderer.UnloadMesh(mSphereMesh);
+        mRenderer.UnloadMesh("Sphere");
+        mRenderer.UnloadMesh("Cube");
     }
 
     void RenderSystem::Initialize()
@@ -59,12 +60,13 @@ namespace Client
                 const Material& material = mManager.GetComponent<Material>(entity);
 
                 const glm::mat4 model = Gep::translation_matrix(transform.position)
-                    * Gep::rotation(transform.rotation)
-                    * Gep::scale_matrix(transform.scale);
+                                      * Gep::rotation(transform.rotation)
+                                      * Gep::scale_matrix(transform.scale);
 
                 mRenderer.SetModel(model);
                 mRenderer.SetMaterial(material.diff_coeff, material.spec_coeff, material.spec_exponent);
-                mRenderer.DrawMesh(material.meshID);
+                mRenderer.SetTexture(material.textureName);
+                mRenderer.DrawMesh(material.meshName);
             }
         }
 
@@ -110,6 +112,33 @@ namespace Client
             {
                 const glm::vec3 downward = -glm::normalize(camera.up) * movementSpeed;
                 transform.position += downward;
+            }
+
+            GLFWwindow* window = glfwGetCurrentContext();
+
+            static bool isTKeyPressed = false;
+            static bool isYKeyPressed = false;
+
+            // Handle T key for textures
+            if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
+                if (!isTKeyPressed) { // Key was just pressed
+                    mRenderer.ToggleTextures();
+                    isTKeyPressed = true;
+                }
+            }
+            else {
+                isTKeyPressed = false; // Reset when key is released
+            }
+
+            // Handle Y key for wireframes
+            if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
+                if (!isYKeyPressed) { // Key was just pressed
+                    mRenderer.ToggleWireframes();
+                    isYKeyPressed = true;
+                }
+            }
+            else {
+                isYKeyPressed = false; // Reset when key is released
             }
         }
     }

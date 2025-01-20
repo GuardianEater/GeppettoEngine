@@ -43,13 +43,13 @@ namespace Gep
     private:
         size_t mLastElementIndex{}; // amount of items current in the component array
 
-        std::array<ComponentType, MAX_ENTITIES> mComponentArray;
+        std::array<ComponentType, MAX_ENTITIES> mComponentArray{};
 
         // given an entity gives the index of the entity into the component array
-        std::unordered_map<Entity, std::uint64_t> mEntityToIndex;
+        std::unordered_map<Entity, std::uint64_t> mEntityToIndex{};
 
         // given the index into the component array gives the associated entity 
-        std::unordered_map<std::uint64_t, Entity> mIndexToEntity;
+        std::unordered_map<std::uint64_t, Entity> mIndexToEntity{};
     };
 }
 
