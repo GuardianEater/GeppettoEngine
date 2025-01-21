@@ -31,6 +31,11 @@ namespace Client
 
         ImGui::Begin("Entities");
 
+        if (ImGui::Button("Create"))
+        {
+            mManager.CreateEntity();
+        }
+
         DrawEntities(parents);
 
         ImGui::End(); // Entities
@@ -43,7 +48,10 @@ namespace Client
             std::string displayName = "Entity: " + std::to_string(entity);
             if (mManager.HasComponent<Identification>(entity))
             {
-                displayName = mManager.GetComponent<Identification>(entity).name;
+                Identification& id = mManager.GetComponent<Identification>(entity);
+
+                if (!id.name.empty())
+                    displayName = id.name;
             }
 
             displayName += "###" + std::to_string(entity);
@@ -51,6 +59,37 @@ namespace Client
             ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f)); // Increase padding
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10.0f, 7.0f)); // Increase vertical padding
             bool open = ImGui::TreeNodeEx(displayName.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_FramePadding);
+
+            // Add context menu
+            if (ImGui::BeginPopupContextItem())
+            {
+                if (ImGui::MenuItem("Delete"))
+                {
+                    mManager.MarkEntityForDestruction(entity);
+                }
+                ImGui::EndPopup();
+            }
+
+            // Add drag and drop source
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+            {
+                ImGui::SetDragDropPayload("ENTITY", &entity, sizeof(Gep::Entity));
+                ImGui::Text("Dragging %s", displayName.c_str());
+                ImGui::EndDragDropSource();
+            }
+
+            // Add drag and drop target
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY"))
+                {
+                    Gep::Entity droppedEntity = *(const Gep::Entity*)payload->Data;
+                    mManager.AttachEntity(entity, droppedEntity);
+                }
+                ImGui::EndDragDropTarget();
+            }
+
+
             ImGui::PopStyleVar(2);
 
             if (open)

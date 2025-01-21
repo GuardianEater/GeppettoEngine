@@ -135,11 +135,14 @@
     <ClCompile Include="Mesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClCompile>
-    <ClCompile Include="CubeMesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Core.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CubeMesh.cpp">
+      <Filter>Backend\Rendering\Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="IcosphereMesh.cpp">
+      <Filter>Backend\Rendering\Meshes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -274,6 +277,9 @@
     </ClInclude>
     <ClInclude Include="TextureComponent.hpp">
       <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="IcosphereMesh.hpp">
+      <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

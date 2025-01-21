@@ -15,8 +15,10 @@
 #include "ISystem.hpp"
 #include "EngineManager.hpp"
 #include "Renderer.hpp"
+
 #include "SphereMesh.hpp"
 #include "CubeMesh.hpp"
+#include "IcosphereMesh.hpp"
 
 // client
 #include "Transform.hpp"

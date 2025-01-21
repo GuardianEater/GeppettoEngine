@@ -95,22 +95,13 @@ int main() try
         Client::Identification{ "Camera" }
     );
 
-    // more entites
-    for (int i = 0; i < 15; i++)
-    {
-        // get a random position
-        float x = (rand() % 10) - 5;
-        float y = (rand() % 10) - 5;
-        float z = (rand() % 10) - 5;
-
-        Gep::Entity entity = em.CreateEntity();
-        em.AddComponent(entity,
-            Client::Transform{ {x, y, z} },
-            Client::RigidBody{},
-            Client::Material{ "Sphere" },
-            Client::Identification{ "Sphere" }
-        );
-    }
+    Gep::Entity entity = em.CreateEntity();
+    em.AddComponent(entity,
+        Client::Transform{ {-3.0f, 3.0f, -3.0f} },
+        Client::RigidBody{},
+        Client::Material{ "Sphere" },
+        Client::Identification{ "Sphere" }
+    );
 
     Gep::Entity e1 = em.CreateEntity();
     em.AddComponent(e1,

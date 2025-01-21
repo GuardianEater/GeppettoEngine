@@ -18,8 +18,10 @@ namespace Gep
         /// GLFW setup ////////////////////////////////////////////////////////////////////////
         glfwSetErrorCallback(GLFW_ErrorCallback);
 
-        bool glfwSuccess = glfwInit();
-        assert(glfwSuccess && "Failed To Create Window");
+        if (glfwInit() != GLFW_TRUE)
+        {
+            Gep::Log::Critical("Failed To Create Window");
+        }
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -31,8 +33,7 @@ namespace Gep
         if (!mPrimaryWindow)
         {
             glfwTerminate();
-            assert("Failed To Create Window");
-            throw std::runtime_error("Failed to create window");
+            Gep::Log::Critical("Failed To Create Window");
         }
 
         glfwMakeContextCurrent(mPrimaryWindow);
@@ -49,7 +50,7 @@ namespace Gep
         {
             glfwDestroyWindow(mPrimaryWindow);
             glfwTerminate();
-            assert("Failed To Create Window");
+            Gep::Log::Critical("Failed To Create Window");
         }
 
         int display_w = 0;
@@ -63,8 +64,8 @@ namespace Gep
 
         const GLubyte* renderer = glGetString(GL_RENDERER);
         const GLubyte* version = glGetString(GL_VERSION);
-        std::cout << "Renderer: " << renderer << std::endl;
-        std::cout << "OpenGL version supported: " << version << std::endl;
+        Gep::Log::Info("Renderer: ", renderer);
+        Gep::Log::Info("OpenGL version supported: ", version);
     }
 
     void Application::Initialize_ImGui()
@@ -163,19 +164,19 @@ namespace Gep
 
     void Application::GLFW_ErrorCallback(int error, const char* description)
     {
-        std::cerr << "GLFW Error (" << error << ") " << description << std::endl;
+        Gep::Log::Critical("GLFW Error [", error, "] ", description);
     }
 
     void Application::GLFW_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
-        mKeyCallbackFunc({ key, action, scancode, mods });
+        //mKeyCallbackFunc({ key, action, scancode, mods });
     }
 
     void Application::GLFW_MouseCallback(GLFWwindow* window, int button, int action, int mods)
     {
-        std::cout << "Button: [" << button << "]" << std::endl
-            << "Action: [" << action << "]" << std::endl
-            << "Mods:   [" << mods << "]" << std::endl << std::endl;
+        //std::cout << "Button: [" << button << "]" << std::endl
+        //    << "Action: [" << action << "]" << std::endl
+        //    << "Mods:   [" << mods << "]" << std::endl << std::endl;
     }
 
     void Application::GLFW_WindowResizeCallback(GLFWwindow* window, int width, int height)

@@ -59,6 +59,12 @@ namespace Gep
 
     void EngineManager::SetSignature(Entity entity, Signature signature)
     {
+        if (!EntityExists(entity))
+        {
+            Log::Error("SetSignature() failed, Entity: [", entity, "] does not exist");
+            return;
+        }
+
         // Put this entity's signature into the array
         mEntityDatas[entity].signature = signature;
 
@@ -83,7 +89,7 @@ namespace Gep
     {
         if (!EntityExists(entity))
         {
-            Log::Error("Entity does not exist");
+            Log::Error("GetSignature() failed, Entity: [", entity, "] does not exist");
             return Signature();
         }
         // Put this entity's signature into the array
@@ -94,7 +100,7 @@ namespace Gep
     {
         if (!EntityExists(entity))
         {
-            Log::Error("Entity does not exist");
+            Log::Error("MarkEntityForDestruction() failed, Entity: [", entity, "] does not exist");
             return;
         }
 
@@ -114,7 +120,7 @@ namespace Gep
     }
 
     // adds the id back to the id pool
-    void EngineManager::DestroyEntity(const Entity entity)
+    void EngineManager::DestroyEntity(Entity entity)
     {
         // destroys each component on an entity if it has one
         for (const auto& [componentID, componentArray] : mComponentArrays)
@@ -127,14 +133,14 @@ namespace Gep
         for (auto& [groupSignature, entities] : mEntityGroups)
             entities.erase(std::remove(entities.begin(), entities.end(), entity), entities.end());
 
-        mEntityDatas[entity].signature.reset();
-
         // for each child of the entity, remove the parent
         for (Entity child : GetChildren(entity))
-        {
             DetachEntity(child);
-        }
+        
+        if (HasParent(entity))
+            DetachEntity(entity);
 
+        mEntityDatas.erase(entity);
         mAvailableEntities.push_back(entity);
 
         Log::Trace("Destroyed Entity: [", entity, "]");
@@ -144,6 +150,7 @@ namespace Gep
     {
         Entity id = mAvailableEntities.back();
         mAvailableEntities.pop_back();
+        mEntityDatas[id];
         SetSignature(id, 0);
 
         Log::Trace("Created Entity: [", id, "]");
@@ -155,25 +162,24 @@ namespace Gep
     {
         if (!EntityExists(parent))
         {
-            Log::Error("Parent entity does not exist");
+            Log::Error("AttachEntity() failed, Parent Entity: [", parent, "] does not exist");
             return;
         }
 
         if (!EntityExists(child))
         {
-            Log::Error("Child entity does not exist");
+            Log::Error("AttachEntity() failed, Child Entity: [", child, "] does not exist");
             return;
         }
 
         if (mEntityDatas[child].parent == parent)
         {
-            Log::Error("Child is already attached to this parent");
+            Log::Error("AttachEntity() failed, Child Entity: [", child, "] is already attached to Parent Entity: [", parent, "]");
             return;
         }
 
         // if the new child has a parent currently, remove the child from its parent
-        Entity otherParent = mEntityDatas[child].parent;
-        if (EntityExists(otherParent))
+        if (HasParent(child))
         {
             DetachEntity(child);
         }
@@ -187,22 +193,17 @@ namespace Gep
     {
         if (!EntityExists(child))
         {
-            Log::Error("Entity does not exist");
+            Log::Error("DetachEntity() failed, Entity: [", child, "] does not exist");
             return;
         }
 
         if (!HasParent(child))
         {
-            Log::Error("Entity does not have a parent");
+            Log::Error("DetachEntity() failed, Entity: [", child, "] does not have a parent");
             return;
         }
 
         Entity parent = mEntityDatas[child].parent;
-        if (!EntityExists(parent))
-        {
-            Log::Error("Parent entity does not exist");
-            return;
-        }
 
         std::vector<Entity>& children = mEntityDatas[parent].children;
         children.erase(std::remove(children.begin(), children.end(), child), children.end());
@@ -213,18 +214,51 @@ namespace Gep
     {
         if (!EntityExists(entity))
         {
-            Log::Error("Entity does not exist");
+            Log::Error("HasParent() failed, Entity: [", entity,"] does not exist");
             return false;
         }
 
-        return (mEntityDatas.at(entity).parent != INVALID_ENTITY);
+        if (mEntityDatas.at(entity).parent == INVALID_ENTITY)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    Entity EngineManager::GetParent(Entity child)
+    {
+        if (!EntityExists(child))
+        {
+            Log::Error("GetParent() failed, Entity: [", child, "] does not exist");
+            return INVALID_ENTITY;
+        }
+
+        return mEntityDatas.at(child).parent;
+    }
+
+    std::vector<Entity> EngineManager::GetSiblings(Entity entity)
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Error("GetSiblings() failed, Entity: [", entity, "] does not exist");
+            return std::vector<Entity>();
+        }
+        Entity parent = GetParent(entity);
+        if (parent == INVALID_ENTITY)
+        {
+            Log::Error("GetSiblings() failed, Entity: [", entity, "] does not have a parent");
+            return std::vector<Entity>();
+        }
+
+        return GetChildren(parent);
     }
 
     std::vector<Entity> EngineManager::GetChildren(Entity parent)
     {
         if (!EntityExists(parent))
         {
-            Log::Error("Entity does not exist");
+            Log::Error("GetChildren() failed, Entity: [", parent, "] does not exist");
             return std::vector<Entity>();
         }
 
@@ -250,7 +284,7 @@ namespace Gep
     {
         if (!EntityExists(entity))
         {
-            Log::Error("Entity does not exist");
+            Log::Error("GetComponentSignatures() failed, Entity: [", entity, "] does not exist");
             return std::vector<Signature>();
         }
 
@@ -284,7 +318,7 @@ namespace Gep
     {
         if (!EntityExists(entity))
         {
-            Log::Error("Entity does not exist");
+            Log::Error("DestroyComponent() failed, Entity: [", entity, "] does not exist");
             return;
         }
 
@@ -300,7 +334,7 @@ namespace Gep
     {
         if (!EntityExists(entity))
         {
-            Log::Error("Entity does not exist");
+            Log::Error("HasComponent() failed, Entity: [", entity, "] does not exist");
             return false;
         }
 

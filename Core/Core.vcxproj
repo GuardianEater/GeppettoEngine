@@ -111,6 +111,7 @@
     <ClCompile Include="dependencies\reflect-cpp\src\reflectcpp_json.cpp" />
     <ClCompile Include="dependencies\reflect-cpp\src\yyjson.c" />
     <ClCompile Include="EngineManager.cpp" />
+    <ClCompile Include="IcosphereMesh.cpp" />
     <ClCompile Include="ImGuiSystem.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
@@ -133,6 +134,7 @@
     <ClInclude Include="CubeMesh.hpp" />
     <ClInclude Include="dependencies\imgui\imgui_stdlib.h" />
     <ClInclude Include="Events.hpp" />
+    <ClInclude Include="IcosphereMesh.hpp" />
     <ClInclude Include="Identification.hpp" />
     <ClInclude Include="Logger.hpp" />
     <ClInclude Include="Material.hpp" />

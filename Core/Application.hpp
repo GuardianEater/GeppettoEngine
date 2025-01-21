@@ -10,7 +10,8 @@
 
 #include <Core.hpp>
 
-#include <Events.hpp>
+#include "Events.hpp"
+#include "Logger.hpp"
 
 #include <glew.h>
 #include <GLFW/glfw3.h>

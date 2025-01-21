@@ -24,6 +24,7 @@ namespace Client
         mRenderer.LoadImage("test", "assets\\textures\\test.jpg");
         mRenderer.LoadMesh("Sphere", Gep::SphereMesh(10, 10));
         mRenderer.LoadMesh("Cube", Gep::CubeMesh());
+        mRenderer.LoadMesh("Icosphere", Gep::Icosphere(3));
     }
 
     RenderSystem::~RenderSystem()

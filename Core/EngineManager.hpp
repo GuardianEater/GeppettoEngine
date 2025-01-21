@@ -91,55 +91,60 @@ namespace Gep
         ///////////////////////////////////////////////////////////////////////////////////////////
         // foundational functions /////////////////////////////////////////////////////////////////
 
-        void Start();
+        template <typename... ComponentTypes, typename... SystemTypes>
+        void RegisterTypes(Gep::type_list<ComponentTypes...> componentTypes, Gep::type_list<SystemTypes...> systemTypes);
 
-        void End();
+        template <typename... ComponentTypes>
+        void RegisterGroup();
+
+        void Start();
+        void Initialize();
 
         void FrameStart();
-
+        void Update(float dt);
         void FrameEnd();
+
+        void Exit();
+        void End();
 
         bool Running() const;
 
-        template <typename... ComponentTypes, typename... SystemTypes>
-        void RegisterTypes(Gep::type_list<ComponentTypes...> componentTypes, Gep::type_list<SystemTypes...> systemTypes);
+
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // entity functions /////////////////////////////////////////////////////////////////////////////
 
-        void SetSignature(Entity entity, Signature signature);
+        Entity CreateEntity();
+        void DestroyEntity(Entity entity);
+        bool EntityExists(Entity entity) const;
 
+        void SetSignature(Entity entity, Signature signature);
         Signature GetSignature(Entity entity) const;
 
         void MarkEntityForDestruction(Entity entity);
-
         void DestroyMarkedEntities();
 
-        // adds the id back to the id pool
-        void DestroyEntity(const Entity entity);
-
-        Entity CreateEntity();
-
         void AttachEntity(Entity parent, Entity child);
-
         void DetachEntity(Entity child);
 
         bool HasParent(Entity entity) const;
+        Entity GetParent(Entity child);
 
+        std::vector<Entity> GetSiblings(Entity entity);
         std::vector<Entity> GetChildren(Entity parent);
 
         template <typename... ComponentTypes>
         std::vector<Entity>& GetEntities();
 
-        bool EntityExists(Entity entity) const;
-
-        std::vector<Signature> GetComponentSignatures(Entity entity);
         
-        template <typename ComponentType>
-        Signature GetComponentSignature();
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // component functions //////////////////////////////////////////////////////////////////////////
+
+        std::vector<Signature> GetComponentSignatures(Entity entity);
+
+        template <typename ComponentType>
+        Signature GetComponentSignature();
 
         template <typename ComponentType>
         void RegisterComponent();
@@ -166,6 +171,8 @@ namespace Gep
         template <typename ComponentType>
         bool ComponentIsRegistered() const;
 
+
+
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // system functions /////////////////////////////////////////////////////////////////////////////
 
@@ -175,14 +182,6 @@ namespace Gep
         template <typename SystemType>
         void SetSystemSignature(Signature signature);
 
-        template <typename... ComponentTypes>
-        void RegisterGroup();
-
-        void Initialize();
-
-        void Update(float dt);
-
-        void Exit();
 
 
         /////////////////////////////////////////////////////////////////////////////////////////////////

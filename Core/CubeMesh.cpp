@@ -2,7 +2,7 @@
  * \file   CubeMesh.cpp
  * \brief  Implementation of the CubeMesh
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold
  * \date   January 2025
  *********************************************************************/
 

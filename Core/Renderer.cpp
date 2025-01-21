@@ -231,11 +231,6 @@ namespace Gep
 				glBindVertexArray(md.mVertexArrayObject);
 
         glUniform1i(10, mUseTextures);
-				//if (mUseTextures)
-				//{
-    //        glActiveTexture(GL_TEXTURE0);
-    //        glBindTexture(GL_TEXTURE_2D, mTextures.at("test"));
-				//}
 
 				if (mWireframeMode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
