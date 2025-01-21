@@ -95,6 +95,14 @@ int main() try
         Client::Identification{ "Camera" }
     );
 
+    Gep::Entity floor = em.CreateEntity();
+    em.AddComponent(floor,
+        Client::Transform{ {0, -3, 0},  {10, 1, 10} },
+        Client::Material{ "Cube" },
+        Client::Texture{ "Checker" },
+        Client::Identification{ "Floor" }
+    );
+
     Gep::Entity entity = em.CreateEntity();
     em.AddComponent(entity,
         Client::Transform{ {-3.0f, 3.0f, -3.0f} },
@@ -105,32 +113,43 @@ int main() try
 
     Gep::Entity e1 = em.CreateEntity();
     em.AddComponent(e1,
-        Client::Transform{},
+        Client::Transform{ {-4, -1, -7}, {1, 1, 1}, {1, 16, 1} },
         Client::Material{ "Cube" },
-        Client::Texture{ "test" },
-        Client::Identification{ "CubeParent" }
+        Client::Texture{ "Fox" },
+        Client::Identification{ "Fox Box" }
     );
-    
 
     Gep::Entity e2 = em.CreateEntity();
     em.AddComponent(e2,
-        Client::Transform{},
+        Client::Transform{ {-8, -1, -4}, {1,1,1}, {0, 80, 0} },
         Client::Material{ "Cube" },
-        Client::Identification{ "CubeChild1" }
+        Client::Texture{ "Raccoon" },
+        Client::Identification{ "Raccube" }
     );
-    
 
-    Gep::Entity e3 = em.CreateEntity();
-    em.AddComponent(e3,
-        Client::Transform{},
+    Gep::Entity e4 = em.CreateEntity();
+    em.AddComponent(e4,
+        Client::Transform{ {-7, 0, -7}, {1, 2, 1}, {0, 45, 0} },
         Client::Material{ "Cube" },
-        Client::Identification{ "CubeChild2" }
+        Client::Texture{ "Kurisu" },
+        Client::Identification{ "Kurisu" }
     );
-    
 
-    em.AttachEntity(e1, e2);
-    em.AttachEntity(e1, e3);
+    Gep::Entity e5 = em.CreateEntity();
+    em.AddComponent(e5,
+        Client::Transform{ { 6, 1, -5 }, { 1, 1, 1 }, { 0, -23, 0 } },
+        Client::Material{ "Cube" },
+        Client::Texture{ "Okayu1" },
+        Client::Identification{ "Okayu1" }
+    );
 
+    Gep::Entity e6 = em.CreateEntity();
+    em.AddComponent(e6,
+        Client::Transform{ { 6, -1, -5 }, { 2, 1, 2 }, { 0, -45, 0 } },
+        Client::Material{ "Cube" },
+        Client::Texture{ "Okayu2" },
+        Client::Identification{ "Okayu2" }
+    );
 
     float dt = 0.016f;
     while (em.Running())
@@ -159,6 +178,7 @@ int main() try
 }
 catch (const std::exception& e)
 {
+    Gep::Log::Error("Caught exception: ", e.what());
     return 1;
 }
 catch (...)

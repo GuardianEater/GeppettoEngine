@@ -66,7 +66,12 @@ namespace Gep
             return;
         }
 
-        int width, height, channels;
+				int width, height, channels;
+				if (!stbi_info(imagePath.string().c_str(), &width, &height, &channels))
+				{
+						Gep::Log::Error("Failed to get image info: [", imagePath.string(), "]");
+						return;
+				}
         unsigned char* image = stbi_load(imagePath.string().c_str(), &width, &height, &channels, 0);
 
         if (image == nullptr)
@@ -85,10 +90,10 @@ namespace Gep
 
         stbi_image_free(image);
 
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+				//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		}
 

@@ -21,7 +21,13 @@ namespace Client
         mRenderer.BackfaceCull();
         mRenderer.SetAmbientLight({ 0.5, 0.5, 0.5 });
 
-        mRenderer.LoadImage("test", "assets\\textures\\test.jpg");
+        mRenderer.LoadImage("Fox", "assets\\textures\\Fox.jpg");
+        mRenderer.LoadImage("Raccoon", "assets\\textures\\Raccoon.jpg");// warped
+        mRenderer.LoadImage("Kurisu", "assets\\textures\\Kurisu.png");  // warped
+        mRenderer.LoadImage("Checker", "assets\\textures\\Checker.jpg");
+        mRenderer.LoadImage("Okayu1", "assets\\textures\\Okayu1.jpg");
+        mRenderer.LoadImage("Okayu2", "assets\\textures\\Okayu2.PNG");
+
         mRenderer.LoadMesh("Sphere", Gep::SphereMesh(10, 10));
         mRenderer.LoadMesh("Cube", Gep::CubeMesh());
         mRenderer.LoadMesh("Icosphere", Gep::Icosphere(3));

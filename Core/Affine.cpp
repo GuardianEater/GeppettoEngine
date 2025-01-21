@@ -24,17 +24,12 @@ namespace Gep
     glm::vec4 cross_product(const glm::vec4& u, const glm::vec4& v)
     {
         const glm::vec3 crossed = glm::cross(glm::vec3(u), glm::vec3(v));
-        return glm::vec4(crossed, 0);
+        return glm::vec4(crossed, 0.0f);
     }
 
     glm::mat4 translation_matrix(const glm::vec3& v)
     {
-        glm::mat4 translateMatrix(1);
-        translateMatrix[3][0] = v.x;
-        translateMatrix[3][1] = v.y;
-        translateMatrix[3][2] = v.z;
-        translateMatrix[3][3] = 1.0f;
-        return translateMatrix;
+        return glm::translate(glm::mat4(1.0f), v);
     }
 
     glm::mat4 rotation_matrix(float deg, const glm::vec4& rot_axis)
@@ -80,11 +75,7 @@ namespace Gep
 
     glm::mat4 scale_matrix(const glm::vec3& scale)
     {
-        glm::mat4 scaleMatrix(1);
-        scaleMatrix[0][0] = scale.x;
-        scaleMatrix[1][1] = scale.y;
-        scaleMatrix[2][2] = scale.z;
-        return scaleMatrix;
+        return glm::scale(glm::mat4(1.0f), scale);
     }
 
     glm::mat4 perspective(const glm::vec3& viewport, float near, float far)
@@ -100,10 +91,10 @@ namespace Gep
 
     glm::mat4 rotation(const glm::vec3& eulerRotation)
     {
-        const glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), glm::radians(eulerRotation.x), glm::vec3(1, 0, 0));
-        const glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(eulerRotation.y), glm::vec3(0, 1, 0));
-        const glm::mat4 rotationZ = glm::rotate(glm::mat4(1.0f), glm::radians(eulerRotation.z), glm::vec3(0, 0, 1));
-        return rotationZ * rotationY * rotationX;
+        glm::mat4 rotX = glm::rotate(glm::mat4(1.0f), glm::radians(eulerRotation.x), glm::vec3(1, 0, 0));
+        glm::mat4 rotY = glm::rotate(glm::mat4(1.0f), glm::radians(eulerRotation.y), glm::vec3(0, 1, 0));
+        glm::mat4 rotZ = glm::rotate(glm::mat4(1.0f), glm::radians(eulerRotation.z), glm::vec3(0, 0, 1));
+        return rotZ * rotY * rotX; // Note the order of multiplication
     }
 
     void yaw(float angle, glm::vec3& right, glm::vec3& back, const glm::vec3& up)
