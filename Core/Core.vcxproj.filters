@@ -272,6 +272,9 @@
     <ClInclude Include="CubeMesh.hpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
+    <ClInclude Include="TextureComponent.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">

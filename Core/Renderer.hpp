@@ -44,7 +44,7 @@ namespace Gep
 				virtual void SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent) final;
 				virtual void CreateLight(const std::uint8_t lightID, const glm::vec3& position, const glm::vec3& color);
 				virtual void SetAmbientLight(const glm::vec3& color);
-				virtual void DrawMesh(const std::string& meshID) const;
+				virtual void DrawMesh(const std::string& meshID);
 
 		private:
 				GLuint LoadShader(GLenum shaderType, const std::filesystem::path& shaderPath);

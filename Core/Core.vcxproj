@@ -164,6 +164,7 @@
     <ClInclude Include="Renderer.hpp" />
     <ClInclude Include="ISystem.hpp" />
     <ClInclude Include="ShaderProgram.hpp" />
+    <ClInclude Include="TextureComponent.hpp" />
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="TypeID.hpp" />
     <ClInclude Include="TypeList.hpp" />

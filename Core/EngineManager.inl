@@ -52,7 +52,11 @@ namespace Gep
     template <typename ComponentType>
     void EngineManager::RegisterComponent()
     {
-        static_assert(TypeIsReflectable<ComponentType>, "ComponentType must be a trivial struct");
+        if (ComponentIsRegistered<ComponentType>())
+        {
+            Log::Error("RegisterComponent() Failed, Component: [", GetTypeInfo<ComponentType>().PrettyName(), "] is already registered!");
+            return;
+        }
 
         Log::Info("Registering Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]...");
 
@@ -70,23 +74,37 @@ namespace Gep
     template <typename... ComponentTypes>
     void EngineManager::AddComponent(Entity entity, ComponentTypes... components)
     {
-        // formats the component types into a string
-        std::ostringstream oss; ((oss << GetTypeInfo<ComponentTypes>().PrettyName() << ", "), ...);
-        std::string componentsString = oss.str().substr(0, oss.str().size() - 2);
+        if (!EntityExists(entity))
+        {
+            Log::Error("AddComponent() Failed, Entity: [", entity, "] does not exist!");
+            return;
+        }
 
-        Log::Trace("Adding Component(s): [", componentsString, "] to entity:", entity, "...");
+        ([&](const auto& component)
+        {
+            using ComponentType = std::decay_t<decltype(component)>;
 
-        (GetComponentArray<ComponentTypes>()->Insert(entity, components), ...);
+            if (!ComponentIsRegistered<ComponentType>())
+            {
+                Log::Error("AddComponent() Failed, Component: [", GetTypeInfo<decltype(component)>().PrettyName(), "] is not registered!");
+                return;
+            }
 
-        Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
-        ((entitySignature.set(GetComponentBitPos<ComponentTypes>())), ...); // updates the entities signature with the id of the componet
+            Log::Trace("Adding Component: [", GetTypeInfo<ComponentType>().PrettyName(), "] to entity: [", entity, "]...");
+            // formats the component types into a string
 
-        // creates an entity group if it doesnt exist
-        //mEntityGroups[entitySignature].insert(entity);
+            GetComponentArray<ComponentType>()->Insert(entity, component);
 
-        SetSignature(entity, entitySignature); // sets the signature of the entity to the signature with the newly added component
+            Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
+            entitySignature.set(GetComponentBitPos<ComponentType>()); // updates the entities signature with the id of the componet
 
-        Log::Trace("Added Component(s)");
+            // creates an entity group if it doesnt exist
+            //mEntityGroups[entitySignature].insert(entity);
+
+            SetSignature(entity, entitySignature); // sets the signature of the entity to the signature with the newly added component
+
+            Log::Trace("Successfully added component: [", GetTypeInfo<ComponentType>().PrettyName(), "] to entity: [", entity, "]");
+        }(components), ...);
     }
 
     template<typename... ComponentTypes>
@@ -98,15 +116,53 @@ namespace Gep
     template<typename ComponentType>
     ComponentType& EngineManager::GetComponent(Entity entity)
     {
+        if (!EntityExists(entity))
+        {
+            Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not exist!");
+        }
+
+        if (!ComponentIsRegistered<ComponentType>())
+        {
+            Log::Critical("GetComponent() Failed, Component: [", GetTypeInfo<ComponentType>().PrettyName(), "] is not registered!");
+        }
+
+        if (!HasComponent<ComponentType>(entity))
+        {
+            Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not have Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
+        }
+
         return GetComponentArray<ComponentType>()->GetComponent(entity);
     }
 
     template <typename... ComponentTypes>
     bool EngineManager::HasComponent(const Entity entity) const
     {
+        if (!EntityExists(entity))
+        {
+            Log::Error("HasComponent() Failed, Entity: [", entity, "] does not exist!");
+            return false;
+        }
+
         Signature componentSig;
-        (componentSig.set(GetComponentBitPos<ComponentTypes>()), ...); // checks if an entity has all of the given components
+        Gep::type_list<ComponentTypes...> componentTypes;
+        componentTypes.for_each([&]<typename ComponentType>()
+        {
+            if (!ComponentIsRegistered<ComponentType>())
+            {
+                Log::Error("HasComponent() Failed, Component: [", GetTypeInfo<ComponentType>().PrettyName(), "] is not registered!");
+                return;
+            }
+
+            componentSig.set(GetComponentBitPos<ComponentType>()); // checks if an entity has all of the given components
+        });
+
         return ((GetSignature(entity) & componentSig) == componentSig);
+    }
+
+    template<typename ComponentType>
+    inline bool EngineManager::ComponentIsRegistered() const
+    {
+        return mComponentIDs.contains(typeid(ComponentType).hash_code());
     }
 
     template <typename SystemType>

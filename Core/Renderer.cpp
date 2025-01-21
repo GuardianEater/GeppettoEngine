@@ -92,32 +92,6 @@ namespace Gep
 
 		}
 
-		void IRenderer::SetTexture(const std::string& textureName)
-    {
-				glUseProgram(mProgram.GetProgramID());
-
-				if (textureName.empty())
-				{
-						glBindTexture(GL_TEXTURE_2D, 0);
-            glUniform1i(10, false);
-            return;
-				}
-
-        if (!mTextures.contains(textureName))
-        {
-            Gep::Log::Error("Cannot set texture: [", textureName, "] a texture with that name has not been loaded");
-						glBindTexture(GL_TEXTURE_2D, 0);
-						glUniform1i(10, false);
-            return;
-        }
-
-				GLuint texture = mTextures[textureName];
-
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, texture);
-        glUniform1i(10, mUseTextures);
-		}
-
 		void IRenderer::ToggleWireframes()
 		{
         mWireframeMode = !mWireframeMode;
@@ -168,6 +142,23 @@ namespace Gep
 				glUseProgram(0);
 		}
 
+		void IRenderer::SetTexture(const std::string& textureName)
+		{
+				glUseProgram(mProgram.GetProgramID());
+
+				if (!mTextures.contains(textureName))
+				{
+						Gep::Log::Error("Cannot set texture: [", textureName, "] a texture with that name has not been loaded");
+						glBindTexture(GL_TEXTURE_2D, 0);
+						return;
+				}
+
+				glBindTexture(GL_TEXTURE_2D, mTextures.at(textureName));
+				mUseTextures = true;
+
+        glUseProgram(0);
+		}
+
 		void IRenderer::SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec4& eye)
 		{
 				glUseProgram(mProgram.GetProgramID());
@@ -199,12 +190,7 @@ namespace Gep
     // toggle textures
     void IRenderer::ToggleTextures()
     {
-        glUseProgram(mProgram.GetProgramID());
-
         mUseTextures = !mUseTextures;
-        glUniform1i(10, mUseTextures);
-
-        glUseProgram(0);
     }
 
 
@@ -230,7 +216,7 @@ namespace Gep
 				glUseProgram(0);
 		}
 
-		void IRenderer::DrawMesh(const std::string& meshName) const
+		void IRenderer::DrawMesh(const std::string& meshName)
 		{
         if (mMeshDatas.find(meshName) == mMeshDatas.end())
         {
@@ -244,10 +230,19 @@ namespace Gep
 				glUseProgram(mProgram.GetProgramID());
 				glBindVertexArray(md.mVertexArrayObject);
 
+        glUniform1i(10, mUseTextures);
+				//if (mUseTextures)
+				//{
+    //        glActiveTexture(GL_TEXTURE0);
+    //        glBindTexture(GL_TEXTURE_2D, mTextures.at("test"));
+				//}
+
 				if (mWireframeMode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
 				if (mWireframeMode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+        mUseTextures = false;
+        //glBindTexture(GL_TEXTURE_2D, 0);
 				glBindVertexArray(0);
 				glUseProgram(0);
 		}

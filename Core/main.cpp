@@ -33,7 +33,7 @@
 // tools
 #include <CompactArray.hpp>
 
-int main()
+int main() try
 {
     Gep::Log::SetPrintLevel(Gep::Log::LogLevel::info);
     Gep::Log::SetOutputFile("log.txt");
@@ -51,7 +51,8 @@ int main()
         Client::RigidBody,
         Client::Material,
         Client::Script,
-        Client::Camera
+        Client::Camera,
+        Client::Texture
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////
@@ -115,6 +116,7 @@ int main()
     em.AddComponent(e1,
         Client::Transform{},
         Client::Material{ "Cube" },
+        Client::Texture{ "test" },
         Client::Identification{ "CubeParent" }
     );
     
@@ -163,4 +165,12 @@ int main()
 
     em.Exit();
     em.End();
+}
+catch (const std::exception& e)
+{
+    return 1;
+}
+catch (...)
+{
+    return 1;
 }

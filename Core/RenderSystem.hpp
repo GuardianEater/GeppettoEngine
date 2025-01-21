@@ -19,9 +19,10 @@
 #include "CubeMesh.hpp"
 
 // client
-#include <Transform.hpp>
-#include <Material.hpp>
-#include <CameraComponent.hpp>
+#include "Transform.hpp"
+#include "Material.hpp"
+#include "CameraComponent.hpp"
+#include "TextureComponent.hpp"
 
 namespace Client
 {

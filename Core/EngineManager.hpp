@@ -157,10 +157,14 @@ namespace Gep
         template<typename ComponentType>
         ComponentType& GetComponent(Entity entity);
 
+        // if the entity has all of the listed components
         template <typename... ComponentTypes>
         bool HasComponent(const Entity entity) const;
 
         bool HasComponent(const Entity entity, const uint64_t componentID) const;
+
+        template <typename ComponentType>
+        bool ComponentIsRegistered() const;
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // system functions /////////////////////////////////////////////////////////////////////////////
@@ -225,7 +229,7 @@ namespace Gep
 
         // components
         ComponentBitPos mNextComponentID; // used for assigning bits in an entities signature
-        std::unordered_map<uint64_t, ComponentBitPos> mComponentIDs; // maps the type id to the component
+        std::unordered_map<uint64_t, ComponentBitPos> mComponentIDs; // maps the type id to the component bit position
         std::vector<std::pair<Entity, uint64_t>> mMarkedComponents;   // The entity and the Entities component type ids.
         std::unordered_map<uint64_t, std::shared_ptr<IComponentArray>> mComponentArrays; // maps the component typeid to an array of the component
 

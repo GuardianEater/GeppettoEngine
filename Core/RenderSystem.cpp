@@ -65,7 +65,13 @@ namespace Client
 
                 mRenderer.SetModel(model);
                 mRenderer.SetMaterial(material.diff_coeff, material.spec_coeff, material.spec_exponent);
-                mRenderer.SetTexture(material.textureName);
+                
+                if (mManager.HasComponent<Texture>(entity))
+                {
+                    const Texture& texture = mManager.GetComponent<Texture>(entity);
+                    mRenderer.SetTexture(texture.textureName);
+                }
+
                 mRenderer.DrawMesh(material.meshName);
             }
         }
