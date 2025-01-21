@@ -19,7 +19,8 @@ namespace Client
         mRenderer.Compile();
 
         mRenderer.BackfaceCull();
-        mRenderer.SetAmbientLight({ 0.5, 0.5, 0.5 });
+        mRenderer.SetAmbientLight({ 0.2, 0.2, 0.2 });
+        mRenderer.CreateLight(0, { 0, 10, 0 }, { 1, 1, 1 });
 
         mRenderer.LoadImage("Fox", "assets\\textures\\Fox.jpg");
         mRenderer.LoadImage("Raccoon", "assets\\textures\\Raccoon.jpg");// warped
