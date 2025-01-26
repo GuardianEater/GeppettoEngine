@@ -62,9 +62,12 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <PrecompiledHeaderFile />
+      <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
       <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -81,8 +84,11 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <PrecompiledHeaderFile />
+      <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
       <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -98,24 +104,64 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="CubeMesh.cpp" />
-    <ClCompile Include="dependencies\imgui\backends\imgui_impl_glfw.cpp" />
-    <ClCompile Include="dependencies\imgui\backends\imgui_impl_opengl3.cpp" />
-    <ClCompile Include="dependencies\imgui\backends\imgui_impl_win32.cpp" />
-    <ClCompile Include="dependencies\imgui\imgui.cpp" />
-    <ClCompile Include="dependencies\imgui\imgui_demo.cpp" />
-    <ClCompile Include="dependencies\imgui\imgui_draw.cpp" />
-    <ClCompile Include="dependencies\imgui\imgui_stdlib.cpp" />
-    <ClCompile Include="dependencies\imgui\imgui_tables.cpp" />
-    <ClCompile Include="dependencies\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="dependencies\reflect-cpp\src\reflectcpp.cpp" />
-    <ClCompile Include="dependencies\reflect-cpp\src\reflectcpp_json.cpp" />
-    <ClCompile Include="dependencies\reflect-cpp\src\yyjson.c" />
+    <ClCompile Include="dependencies\imgui\backends\imgui_impl_glfw.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\backends\imgui_impl_opengl3.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\backends\imgui_impl_win32.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\imgui.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\imgui_demo.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\imgui_draw.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\imgui_stdlib.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\imgui_tables.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui\imgui_widgets.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="dependencies\reflect-cpp\src\reflectcpp.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="dependencies\reflect-cpp\src\reflectcpp_json.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="dependencies\reflect-cpp\src\yyjson.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="EngineManager.cpp" />
     <ClCompile Include="IcosphereMesh.cpp" />
     <ClCompile Include="ImGuiSystem.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="PhysicsSystem.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
@@ -139,6 +185,7 @@
     <ClInclude Include="Logger.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="MeshComponent.hpp" />
+    <ClInclude Include="pch.hpp" />
     <ClInclude Include="reflect-cpp-extra.hpp" />
     <ClInclude Include="RenderSystem.hpp" />
     <ClInclude Include="RigidBody.hpp" />
@@ -146,7 +193,7 @@
     <ClInclude Include="ScriptingSystem.hpp" />
     <ClInclude Include="SerializationSystem.hpp" />
     <ClInclude Include="SphereMesh.hpp" />
-    <ClInclude Include="CompactArray.hpp" />
+    <ClInclude Include="KeyedVector.hpp" />
     <ClInclude Include="ComponentArray.hpp" />
     <ClInclude Include="Core.hpp" />
     <ClInclude Include="dependencies\imgui\backends\imgui_impl_glfw.h" />
@@ -177,7 +224,7 @@
     <None Include="assets\shaders\basic.vert" />
     <None Include="assets\shaders\PhongRender.frag" />
     <None Include="assets\shaders\PhongRender.vert" />
-    <None Include="CompactArray.inl" />
+    <None Include="KeyedVector.inl" />
     <None Include="ComponentArray.inl" />
     <None Include="EngineManager.inl" />
     <None Include="forward.fs" />

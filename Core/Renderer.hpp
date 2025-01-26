@@ -13,7 +13,6 @@
 #include <glm.hpp>
 #include <Mesh.hpp>
 #include <Camera.hpp>
-#include <CompactArray.hpp>
 #include <ShaderProgram.hpp>
 
 #include "stb_image.h"
@@ -71,7 +70,7 @@ namespace Gep
 
 		private:
 				ShaderProgram mProgram;
-				//compact_array<MeshData> mMeshDatas;
+				//keyed_vector<MeshData> mMeshDatas;
         bool mWireframeMode = false;
         bool mUseTextures = false;
 

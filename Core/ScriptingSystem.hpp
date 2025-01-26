@@ -10,7 +10,6 @@
 
 #include <ISystem.hpp>
 #include <Script.hpp>
-#include <sol/sol.hpp>
 #include "EngineManager.hpp"
 
 namespace Client
@@ -22,9 +21,6 @@ namespace Client
 
         void Initialize();
         void Update(float dt);
-
-    private:
-        sol::state mLua;
     };
 }
 

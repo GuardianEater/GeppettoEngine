@@ -25,7 +25,7 @@ namespace Gep
     class ComponentArray : public IComponentArray
     {
     public:
-        ComponentArray() = default;
+        ComponentArray() noexcept;
         ~ComponentArray() override = default;
 
         // adds a component to the array attached to the entity

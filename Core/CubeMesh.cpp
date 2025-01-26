@@ -6,6 +6,8 @@
  * \date   January 2025
  *********************************************************************/
 
+#include "pch.hpp"
+
 #include "CubeMesh.hpp"
 
 namespace Gep

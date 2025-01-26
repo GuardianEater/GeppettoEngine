@@ -6,6 +6,8 @@
  * \date   August 2024
  *********************************************************************/
 
+#include "pch.hpp"
+
 #include "Affine.hpp"
 
 namespace Gep

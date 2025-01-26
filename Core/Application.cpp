@@ -6,6 +6,8 @@
  * \date   January 2025
  *********************************************************************/
 
+#include "pch.hpp"
+
 #include "Application.hpp"
 
 namespace Gep
@@ -119,6 +121,8 @@ namespace Gep
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
+
     }
 
     void Application::FrameEnd_ImGui()

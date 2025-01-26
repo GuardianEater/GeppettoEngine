@@ -50,8 +50,30 @@ namespace Client
 
     class ImGuiSystem : public Gep::ISystem
     {
+    private:
+        struct imBool
+        {
+            bool value = false;
+
+            operator bool() const { return value; }
+        };
+
+        struct EntitySelection
+        {
+            Gep::Entity entity = Gep::INVALID_ENTITY;
+            bool selected = false;
+
+            void Draw()
+            {
+                ImGui::Checkbox("##Select", &selected);
+                ImGui::SameLine();
+                ImGui::Text("Entity: %llu", entity);
+            }
+        };
+
+        std::unordered_map<Gep::Signature, std::function<void(Gep::Entity)>> mComponentInspectorPanels;
+
     public:
-        std::unordered_map<Gep::Signature, std::function<void(Gep::Entity)>> mComponentFunctions;
 
         ImGuiSystem(Gep::EngineManager& em);
 

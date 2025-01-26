@@ -6,6 +6,8 @@
  * \date   July 2024
  *********************************************************************/
 
+#include "pch.hpp"
+
 #include "Renderer.hpp"
 
 namespace Gep
@@ -54,48 +56,47 @@ namespace Gep
 
 		void IRenderer::LoadImage(const std::string& name, const std::filesystem::path& imagePath)
 		{
-        if (mTextures.contains(name))
-        {
-            Gep::Log::Error("Cannot load image: [", name, "] that name has already been loaded");
-            return;
-        }
+				if (mTextures.contains(name)) {
+						Gep::Log::Error("Cannot load image: [", name, "] that name has already been loaded");
+						return;
+				}
 
-        if (!std::filesystem::exists(imagePath))
-        {
-            Gep::Log::Error("Cannot load image: [", imagePath.string(), "] the file does not exist");
-            return;
-        }
+				if (!std::filesystem::exists(imagePath)) {
+						Gep::Log::Error("Cannot load image: [", imagePath.string(), "] the file does not exist");
+						return;
+				}
 
 				int width, height, channels;
-				if (!stbi_info(imagePath.string().c_str(), &width, &height, &channels))
-				{
+				if (!stbi_info(imagePath.string().c_str(), &width, &height, &channels)) {
 						Gep::Log::Error("Failed to get image info: [", imagePath.string(), "]");
 						return;
 				}
-        unsigned char* image = stbi_load(imagePath.string().c_str(), &width, &height, &channels, 0);
 
-        if (image == nullptr)
-        {
-            Gep::Log::Error("Failed to load image: [", imagePath.string(), "]");
-            return;
-        }
+				int required_channels = 4; // Force RGBA
+				unsigned char* image = stbi_load(imagePath.string().c_str(), &width, &height, &channels, required_channels);
+				if (!image) {
+						Gep::Log::Error("Failed to load image: [", imagePath.string(), "]");
+						return;
+				}
 
-        GLuint& texture = mTextures[name];
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
+				GLuint& texture = mTextures[name];
+				glGenTextures(1, &texture);
+				glBindTexture(GL_TEXTURE_2D, texture);
 
-        GLenum format = (channels == 4) ? GL_RGBA : GL_RGB;
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, image);
-        glGenerateMipmap(GL_TEXTURE_2D);
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Ensure proper alignment
+				GLenum format = (required_channels == 4) ? GL_RGBA : GL_RGB;
+				glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, image);
 
-        stbi_image_free(image);
+				glGenerateMipmap(GL_TEXTURE_2D);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-				//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-				//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-				//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-				//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
+				glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
+				stbi_image_free(image);
 		}
+
 
 		void IRenderer::ToggleWireframes()
 		{

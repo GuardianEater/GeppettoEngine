@@ -46,7 +46,10 @@ namespace Gep
     template<typename ComponentType>
     inline Signature EngineManager::GetComponentSignature()
     {
-        return Signature().set(GetComponentBitPos<ComponentType>());
+        // TODO: remove
+        uint64_t componentID = mComponentTypeToID.at(typeid(ComponentType));
+
+        return mComponentDatas.at(componentID).signature;
     }
 
     template <typename ComponentType>
@@ -60,15 +63,20 @@ namespace Gep
 
         Log::Info("Registering Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]...");
 
-        const uint64_t typeID = typeid(ComponentType).hash_code();
+        const uint64_t componentID      = mComponentDatas.emplace();
+        ComponentData& newComponentData = mComponentDatas.at(componentID);
 
-        mComponentIDs[typeID] = mNextComponentID;
+        newComponentData.signature.set(componentID);
+        newComponentData.bitPos = componentID;
+        newComponentData.name   = GetTypeInfo<ComponentType>().PrettyName();
+        newComponentData.array  = std::make_shared<ComponentArray<ComponentType>>();
+        newComponentData.add    = [&](Entity entity) { AddComponent<ComponentType>(entity, ComponentType{}); };
+        newComponentData.remove = [&](Entity entity) { DestroyComponent<ComponentType>(entity); };
+        newComponentData.copy   = [&](Entity to, Entity from) { CopyComponent<ComponentType>(to, from); };
 
-        mComponentArrays[typeID] = std::make_shared<ComponentArray<ComponentType>>();
+        mComponentTypeToID[typeid(ComponentType)] = componentID;
 
-        ++mNextComponentID;
-
-        Log::Info("Registered Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
+        Log::Info("Registered Component: [", GetTypeInfo<ComponentType>().PrettyName(), "] with id: [", componentID, "]");
     }
 
     template <typename... ComponentTypes>
@@ -107,10 +115,42 @@ namespace Gep
         }(components), ...);
     }
 
+    template<typename ...ComponentTypes>
+    inline void EngineManager::CopyComponent(Entity to, Entity from)
+    {
+        // Use a fold expression to iterate over the component types
+        ([&]()
+        {
+            using ComponentType = ComponentTypes;
+
+            // destroy the component if 'to' already has it
+            if (HasComponent<ComponentType>(to))
+                DestroyComponent<ComponentType>(to);
+
+            // if 'from' has the component, copy it to 'to'
+            if (HasComponent<ComponentType>(from))
+                AddComponent<ComponentType>(to, GetComponent<ComponentType>(from));
+            
+            // otherwise, log an error
+            else
+                Log::Error("Copy failed, Entity: [", from, "] does not have Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
+        }(), ...);
+    }
+
     template<typename... ComponentTypes>
     void EngineManager::MarkComponentForDestruction(Entity entity)
     {
-        (mMarkedComponents.push_back({ entity, typeid(ComponentTypes).hash_code() }), ...);
+        // TODO: remove mComponentTypeToID
+        (mMarkedComponents.push_back({ entity, mComponentTypeToID.at(typeid(ComponentTypes)) }), ...);
+    }
+
+    template<typename ComponentType>
+    inline void EngineManager::DestroyComponent(Entity entity)
+    {
+        // TODO: remove
+        const uint64_t componentID = mComponentTypeToID.at(typeid(ComponentType));
+
+        DestroyComponent(componentID, entity);
     }
 
     template<typename ComponentType>
@@ -135,7 +175,7 @@ namespace Gep
     }
 
     template <typename... ComponentTypes>
-    bool EngineManager::HasComponent(const Entity entity) const
+    bool EngineManager::HasComponent(Entity entity) const
     {
         if (!EntityExists(entity))
         {
@@ -143,18 +183,8 @@ namespace Gep
             return false;
         }
 
-        Signature componentSig;
-        Gep::type_list<ComponentTypes...> componentTypes;
-        componentTypes.for_each([&]<typename ComponentType>()
-        {
-            if (!ComponentIsRegistered<ComponentType>())
-            {
-                Log::Error("HasComponent() Failed, Component: [", GetTypeInfo<ComponentType>().PrettyName(), "] is not registered!");
-                return;
-            }
-
-            componentSig.set(GetComponentBitPos<ComponentType>()); // checks if an entity has all of the given components
-        });
+        Signature componentSig = 0;
+        ((componentSig.set(GetComponentBitPos<ComponentTypes>())), ...);
 
         return ((GetSignature(entity) & componentSig) == componentSig);
     }
@@ -162,7 +192,24 @@ namespace Gep
     template<typename ComponentType>
     inline bool EngineManager::ComponentIsRegistered() const
     {
-        return mComponentIDs.contains(typeid(ComponentType).hash_code());
+        // TODO: remove
+        return mComponentTypeToID.contains(typeid(ComponentType));
+
+        //return mComponentDatas.contains(componentID);
+    }
+
+    template<typename Func>
+    requires std::invocable<Func, const ComponentData&>
+    inline void EngineManager::ForEachComponent(Entity entity, Func lamda)
+    {
+        Signature entitySignature = GetSignature(entity);
+        while (entitySignature.any())
+        {
+            const size_t componentID = _tzcnt_u64(entitySignature.to_ullong());
+            entitySignature.reset(componentID);
+
+            lamda(mComponentDatas.at(componentID));
+        }
     }
 
     template <typename SystemType>
@@ -230,9 +277,10 @@ namespace Gep
     template <typename ComponentType>
     std::shared_ptr<ComponentArray<ComponentType>> EngineManager::GetComponentArray()
     {
-        const std::uint64_t typeID = typeid(ComponentType).hash_code();
+        // TODO: remove
+        const uint64_t componentID = mComponentTypeToID.at(typeid(ComponentType));
 
-        return std::static_pointer_cast<ComponentArray<ComponentType>>(mComponentArrays.at(typeID));
+        return std::static_pointer_cast<ComponentArray<ComponentType>>(GetComponentArray(componentID));
     }
 
     // keeps a lists of subscribers for each type of event
@@ -261,8 +309,9 @@ namespace Gep
     template<typename ComponentType>
     ComponentBitPos EngineManager::GetComponentBitPos() const
     {
-        const std::uint64_t typeID = typeid(ComponentType).hash_code();
+        // TODO: remove
+        const uint64_t componentID = mComponentTypeToID.at(typeid(ComponentType));
 
-        return mComponentIDs.at(typeID);
+        return mComponentDatas.at(componentID).bitPos;
     }
 }

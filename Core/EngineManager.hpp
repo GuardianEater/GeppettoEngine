@@ -19,30 +19,14 @@
 
 #include "Logger.hpp"
 #include "TypeID.hpp"
+#include "KeyedVector.hpp"
 
+#include <span>
 #include <rfl.hpp>
 #include <rfl/json.hpp>
 
 namespace Gep
 {
-    template <typename T>
-    concept TypeHasInitialize = requires(T t)
-    {
-        { t.Initialize() } -> std::same_as<void>;
-    };
-
-    template <typename T>
-    concept TypeHasUpdate = requires(T t, float dt)
-    {
-        { t.Update(dt) } -> std::same_as<void>;
-    };
-
-    template <typename T>
-    concept TypeHasExit = requires(T t)
-    {
-        { t.Exit() } -> std::same_as<void>;
-    };
-
     template <typename T>
     concept TypeHasOnComponentsRegisteredConcept = requires(T t, Gep::type_list<int> componentTypes)
     {
@@ -64,23 +48,30 @@ namespace Gep
     template <typename T>
     concept TypeIsSystem = std::is_base_of<ISystem, T>::value;
 
-    /// doesnt seems to work...
-    template <typename T>
-    concept TypeIsReflectable = requires(T t)
-    {
-        { rfl::json::write(t) } -> std::same_as<std::string>;
-    };
-
     using SystemUpdateFunction = void(ISystem::*)(float);
     using SytemVoidFunction = void(ISystem::*)(float);
 
-
+    // per entity data
     struct EntityData
     {
-        Entity parent{};
-        Signature signature{};
+        Entity parent{ INVALID_ENTITY }; // the parent of the entity, if it doesnt have a parent it is INVALID_ENTITY
+        Signature signature{}; // the signature of the entity
 
-        std::vector<Entity> children{};
+        std::vector<Entity> children{}; // any children of the entity
+    };
+
+    // static data for components
+    struct ComponentData
+    {
+        Signature signature{}; // the signature of the component
+        uint8_t bitPos{}; // the position of the component in the signature
+        std::string name{};
+
+        std::function<void(Entity)> add{}; // a function that adds this component to the given entity
+        std::function<void(Entity)> remove{}; // a function that removes this component from the given entity
+        std::function<void(Entity to, Entity from)> copy{}; // a function that copies this component from one entity to another
+
+        std::shared_ptr<IComponentArray> array{}; // where all of the components of this type are stored
     };
 
     class EngineManager
@@ -115,6 +106,7 @@ namespace Gep
         // entity functions /////////////////////////////////////////////////////////////////////////////
 
         Entity CreateEntity();
+        Entity DuplicateEntity(Entity entity);
         void DestroyEntity(Entity entity);
         bool EntityExists(Entity entity) const;
 
@@ -151,25 +143,37 @@ namespace Gep
 
         template <typename... ComponentTypes>
         void AddComponent(Entity entity, ComponentTypes... components);
+        
+        template <typename... ComponentTypes>
+        void CopyComponent(Entity to, Entity from);
+
+        const Gep::keyed_vector<ComponentData>& GetComponentDatas() const;
+
 
         template<typename... ComponentTypes>
         void MarkComponentForDestruction(Entity entity);
 
         void DestroyMarkedComponents();
 
-        void DestroyComponent(Entity entity, uint64_t component);
+        template<typename ComponentType>
+        void DestroyComponent(Entity entity);
+        void DestroyComponent(uint64_t componentID, Entity entity);
 
         template<typename ComponentType>
         ComponentType& GetComponent(Entity entity);
 
         // if the entity has all of the listed components
         template <typename... ComponentTypes>
-        bool HasComponent(const Entity entity) const;
-
-        bool HasComponent(const Entity entity, const uint64_t componentID) const;
+        bool HasComponent(Entity entity) const;
+        bool HasComponent(uint64_t componentID, Entity entity) const;
 
         template <typename ComponentType>
         bool ComponentIsRegistered() const;
+
+        // the lamda is required to take a const ComponentData& as a parameter and return void
+        template <typename Func>
+        requires std::invocable<Func, const ComponentData&>
+        void ForEachComponent(Entity entity, Func lamda);
 
 
 
@@ -197,7 +201,7 @@ namespace Gep
         void StartEvent();
 
     private:
-        std::shared_ptr<IComponentArray> GetComponentArray(uint64_t typeID);
+        std::shared_ptr<IComponentArray> GetComponentArray(uint64_t componentID);
 
         template <typename ComponentType>
         std::shared_ptr<ComponentArray<ComponentType>> GetComponentArray();
@@ -221,21 +225,19 @@ namespace Gep
         std::vector<std::shared_ptr<Event::IEvent>> mEventQueue; // All events that need to happen
 
         // entities
-        std::vector<Entity> mAvailableEntities; // list of unused entity ids
         std::vector<Entity> mMarkedEntities; // entities that are marked to be destroyed
         std::unordered_map<Signature, std::vector<Entity>> mEntityGroups; // used by systems, holds all entities with a matching components
-        std::unordered_map<Entity, EntityData> mEntityDatas; // maps from an entity -> all of data
+        Gep::keyed_vector<EntityData> mEntityDatas; // maps from an entity -> all of data
 
         // components
-        ComponentBitPos mNextComponentID; // used for assigning bits in an entities signature
-        std::unordered_map<uint64_t, ComponentBitPos> mComponentIDs; // maps the type id to the component bit position
-        std::vector<std::pair<Entity, uint64_t>> mMarkedComponents;   // The entity and the Entities component type ids.
-        std::unordered_map<uint64_t, std::shared_ptr<IComponentArray>> mComponentArrays; // maps the component typeid to an array of the component
+        Gep::keyed_vector<ComponentData> mComponentDatas; // maps from a component type -> all of the data
+        ComponentBitPos mNextComponentBitPos; // used for assigning bits in an entities signature
+        std::vector<std::pair<uint64_t, Entity>> mMarkedComponents;   // The entity and the Entities component type ids.
+        std::unordered_map<std::type_index, uint64_t> mComponentTypeToID; // maps a component type to its id
 
         // systems
         std::unordered_map<uint64_t, Signature> mSystemSignatures; // the signatures of all of the systems maps the typeid of a system to its signature
         std::unordered_map<uint64_t, std::shared_ptr<ISystem>> mSystems;// maps the typeid of a system to the actual system class
-
         std::vector <std::shared_ptr<ISystem>> mSystemsToUpdate; // the list of systems that need to be updated
 
         Application mApplication;

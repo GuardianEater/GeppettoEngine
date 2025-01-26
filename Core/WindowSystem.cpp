@@ -6,6 +6,8 @@
  * \date   July 2024
  *********************************************************************/
 
+#include "pch.hpp"
+
 #include "WindowSystem.hpp"
 #include <numeric>
 #include <algorithm>

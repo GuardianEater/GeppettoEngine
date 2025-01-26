@@ -36,7 +36,7 @@ namespace Client
         {
             componentTypes.for_each([&]<typename ComponentType>()
             {
-                mComponentFunctions[mManager.GetComponentSignature<ComponentType>()] = [&](Gep::Entity entity)
+                mComponentInspectorPanels[mManager.GetComponentSignature<ComponentType>()] = [&](Gep::Entity entity)
                     {
                         Gep::Log::Info("Saving Component: [", Gep::GetTypeInfo<ComponentType>().PrettyName(), "]");
                         const ComponentType& component = mManager.GetComponent<ComponentType>(entity);
@@ -59,7 +59,7 @@ namespace Client
                 std::vector<Gep::Signature> componentSignatures = mManager.GetComponentSignatures(entity);
                 for (const Gep::Signature componentSignature : componentSignatures)
                 {
-                    mComponentFunctions[componentSignature](entity);
+                    mComponentInspectorPanels[componentSignature](entity);
                 }
             }
 
@@ -67,6 +67,6 @@ namespace Client
         }
 
     private:
-        std::unordered_map<Gep::Signature, std::function<void(Gep::Entity)>> mComponentFunctions;
+        std::unordered_map<Gep::Signature, std::function<void(Gep::Entity)>> mComponentInspectorPanels;
     };
 }

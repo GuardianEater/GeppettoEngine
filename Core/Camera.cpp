@@ -6,6 +6,8 @@
  * \date   July 2024
  *********************************************************************/
 
+#include "pch.hpp"
+
 #include "Camera.hpp"
 
 namespace Gep

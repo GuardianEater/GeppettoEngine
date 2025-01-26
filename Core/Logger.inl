@@ -53,7 +53,7 @@ namespace Gep
     void Log::FormatLog(LogLevel level, Args&&... args)
     {
         std::ostringstream oss;
-        oss << "[" << GetCurrentTime() << "] [" << rfl::enum_to_string(level) << "] ";
+        oss << "[" << GetCurrentTime() << "] ";
         (oss << ... << args);
 
         if (level >= mPrintLevel)

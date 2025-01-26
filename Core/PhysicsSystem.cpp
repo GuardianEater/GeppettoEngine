@@ -6,7 +6,19 @@
  * \date   July 2024
  *********************************************************************/
 
+#include "pch.hpp"
+
+// this
 #include "PhysicsSystem.hpp"
+
+ // components
+#include <Transform.hpp>
+#include <RigidBody.hpp>
+
+// engine
+#include <EngineManager.hpp>
+
+// std
 #include <iostream>
 
 namespace Client

@@ -10,8 +10,6 @@
 
 #include <Core.hpp>
 
-#include <Events.hpp>
-
 namespace Gep
 {
 	class EngineManager;

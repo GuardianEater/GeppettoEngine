@@ -6,25 +6,25 @@
  * \date   January 2025
  *********************************************************************/
 
+#include "pch.hpp"
+
 #include "EngineManager.hpp"
+
+#include "KeyedVector.hpp"
+
+#include "Logger.hpp"
 
 namespace Gep
 {
     EngineManager::EngineManager()
-        : mAvailableEntities()
-        , mMarkedEntities()
+        : mMarkedEntities()
         , mEntityDatas()
-        , mComponentIDs()
         , mMarkedComponents()
-        , mComponentArrays()
-        , mNextComponentID(0)
+        , mComponentDatas()
+        , mNextComponentBitPos(0)
         , mIsRunning(true)
+        , mEntityGroups()
     {
-        for (Entity entity = 0; entity < MAX_ENTITIES; ++entity)
-        {
-            mAvailableEntities.push_back(entity);
-        }
-
         mApplication.SetKeyCallback(*this, &EngineManager::SignalEvent<Event::KeyPressed>);
     }
 
@@ -123,10 +123,10 @@ namespace Gep
     void EngineManager::DestroyEntity(Entity entity)
     {
         // destroys each component on an entity if it has one
-        for (const auto& [componentID, componentArray] : mComponentArrays)
+        for (const auto& componentData : mComponentDatas)
         {
-            if (HasComponent(entity, componentID))
-                DestroyComponent(entity, componentID);
+            if (HasComponent(componentData.bitPos, entity))
+                DestroyComponent(componentData.bitPos, entity);
         }
 
         // removes the entity from any systems it might have been in
@@ -141,21 +141,31 @@ namespace Gep
             DetachEntity(entity);
 
         mEntityDatas.erase(entity);
-        mAvailableEntities.push_back(entity);
 
         Log::Trace("Destroyed Entity: [", entity, "]");
     }
 
     Entity EngineManager::CreateEntity()
     {
-        Entity id = mAvailableEntities.back();
-        mAvailableEntities.pop_back();
-        mEntityDatas[id];
+        Entity id = mEntityDatas.insert({});
         SetSignature(id, 0);
 
         Log::Trace("Created Entity: [", id, "]");
 
         return id;
+    }
+
+    Entity EngineManager::DuplicateEntity(Entity entity)
+    {
+        // get the components off of the entity
+        Entity newEntity = CreateEntity();
+
+        ForEachComponent(entity, [&](const ComponentData& componentData)
+        {
+            componentData.copy(newEntity, entity);
+        });
+
+        return newEntity;
     }
 
     void EngineManager::AttachEntity(Entity parent, Entity child)
@@ -304,17 +314,22 @@ namespace Gep
         return componentSignatures;
     }
 
+    const Gep::keyed_vector<ComponentData>& EngineManager::GetComponentDatas() const
+    {
+        return mComponentDatas;
+    }
+
     void EngineManager::DestroyMarkedComponents()
     {
-        for (const auto& [entity, componentID] : mMarkedComponents)
+        for (const auto& [componentID, entity] : mMarkedComponents)
         {
-            DestroyComponent(entity, componentID);
+            DestroyComponent(componentID, entity);
         }
 
         mMarkedComponents.clear();
     }
 
-    void EngineManager::DestroyComponent(Entity entity, uint64_t component)
+    void EngineManager::DestroyComponent(uint64_t componentID, Entity entity)
     {
         if (!EntityExists(entity))
         {
@@ -322,15 +337,17 @@ namespace Gep
             return;
         }
 
-        GetComponentArray(component)->Erase(entity);
+        GetComponentArray(componentID)->Erase(entity);
 
         Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
-        entitySignature.set(mComponentIDs.at(component), false); // removes the components id from the entities signature
+        Signature componentSignature = mComponentDatas.at(componentID).signature; // gets the signature of the component
+
+        entitySignature &= ~componentSignature; // removes the component from the entity signature
 
         SetSignature(entity, entitySignature); // sets the signature of the entity to the signature with the newly removed component
     }
 
-    bool EngineManager::HasComponent(const Entity entity, const uint64_t componentID) const
+    bool EngineManager::HasComponent(uint64_t componentType, Entity entity) const
     {
         if (!EntityExists(entity))
         {
@@ -338,8 +355,7 @@ namespace Gep
             return false;
         }
 
-        Signature componentSig;
-        componentSig.set(mComponentIDs.at(componentID));
+        Signature componentSig = mComponentDatas.at(componentType).signature;
         return ((GetSignature(entity) & componentSig) == componentSig);
     }
 
@@ -369,8 +385,8 @@ namespace Gep
         }
     }
 
-    std::shared_ptr<IComponentArray> EngineManager::GetComponentArray(uint64_t typeID)
+    std::shared_ptr<IComponentArray> EngineManager::GetComponentArray(uint64_t componentID)
     {
-        return mComponentArrays.at(typeID);
+        return mComponentDatas.at(componentID).array;
     }
 }

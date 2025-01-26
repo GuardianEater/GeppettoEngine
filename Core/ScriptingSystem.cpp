@@ -6,12 +6,17 @@
  * \date   August 2024
  *********************************************************************/
 
+#include "pch.hpp"
+
 #include "ScriptingSystem.hpp"
 #include <Transform.hpp>
 #include <RigidBody.hpp>
+#include <sol/sol.hpp>
 
 namespace Client
 {
+    static sol::state lua;
+
     ScriptingSystem::ScriptingSystem(Gep::EngineManager& em)
         : ISystem(em)
     {
@@ -19,21 +24,21 @@ namespace Client
 
     void ScriptingSystem::Initialize()
     {
-        mLua.open_libraries();
+        lua.open_libraries();
 
-        mLua.new_usertype<glm::vec3>("Vec3",
+        lua.new_usertype<glm::vec3>("Vec3",
             "x", &glm::vec3::x,
             "y", &glm::vec3::y,
             "z", &glm::vec3::z
         );
 
-        mLua.new_usertype<Client::Transform>("Transform",
+        lua.new_usertype<Client::Transform>("Transform",
             "position", &Transform::position,
             "scale", &Transform::scale,
             "rotation", &Transform::rotation
         );
 
-        mLua.new_usertype<Client::RigidBody>("RigidBody",
+        lua.new_usertype<Client::RigidBody>("RigidBody",
             "velocity", &RigidBody::velocity,
             "acceleration", &RigidBody::acceleration,
             "rotational", &RigidBody::rotationalVelocity
@@ -49,14 +54,14 @@ namespace Client
 
             if (mManager.HasComponent<Transform>(entity))
             {
-                mLua["Transform"] = &mManager.GetComponent<Transform>(entity);
+                lua["Transform"] = &mManager.GetComponent<Transform>(entity);
             }
             if (mManager.HasComponent<RigidBody>(entity))
             {
-                mLua["RigidBody"] = &mManager.GetComponent<RigidBody>(entity);
+                lua["RigidBody"] = &mManager.GetComponent<RigidBody>(entity);
             }
 
-            mLua.script(script.data, sol::script_pass_on_error);
+            lua.script(script.data, sol::script_pass_on_error);
         }
     }
 }

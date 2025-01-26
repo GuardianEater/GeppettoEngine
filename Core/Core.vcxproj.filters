@@ -144,6 +144,7 @@
     <ClCompile Include="IcosphereMesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClCompile>
+    <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PhysicsSystem.hpp">
@@ -206,7 +207,7 @@
     <ClInclude Include="ShaderProgram.hpp">
       <Filter>Backend\Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="CompactArray.hpp">
+    <ClInclude Include="KeyedVector.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
     <ClInclude Include="SphereMesh.hpp">
@@ -281,6 +282,7 @@
     <ClInclude Include="IcosphereMesh.hpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
+    <ClInclude Include="pch.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">
@@ -301,7 +303,7 @@
     <None Include="EngineManager.inl">
       <Filter>Backend\ECS</Filter>
     </None>
-    <None Include="CompactArray.inl">
+    <None Include="KeyedVector.inl">
       <Filter>Backend\Tools</Filter>
     </None>
     <None Include="TypeList.inl">

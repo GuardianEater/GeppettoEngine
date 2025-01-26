@@ -17,18 +17,36 @@ namespace Client
     {
         componentTypes.for_each([&]<typename ComponentType>()
         {
-            mComponentFunctions[mManager.GetComponentSignature<ComponentType>()] = [&](Gep::Entity entity)
+            mComponentInspectorPanels[mManager.GetComponentSignature<ComponentType>()] = [&](Gep::Entity entity)
             {
-                if (ImGui::CollapsingHeader(Gep::GetTypeInfo<ComponentType>().PrettyName().c_str()))
+                std::string componentName = Gep::GetTypeInfo<ComponentType>().PrettyName();
+
+                bool open = ImGui::CollapsingHeader(componentName.c_str());
+
+                if (ImGui::BeginPopupContextItem())
+                {
+                    if (ImGui::MenuItem("Delete"))
+                    {
+                        mManager.DestroyComponent<ComponentType>(entity);
+                    }
+                    ImGui::EndPopup();
+                }
+
+                if (open)
                 {
                     ComponentType& component = mManager.GetComponent<ComponentType>(entity);
 
                     const auto view = rfl::to_view(component);
 
+                    // this draws each type inside of the component
                     view.apply([&](const auto& f)
                     {
                         DrawType(f.name(), *f.value());
                     });
+
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
                 }
             };
         });

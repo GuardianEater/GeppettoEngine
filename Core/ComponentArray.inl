@@ -12,6 +12,10 @@
 
 namespace Gep
 {
+    template<typename ComponentType>
+    inline ComponentArray<ComponentType>::ComponentArray() noexcept
+    {}
+
     template <typename ComponentType>
     void ComponentArray<ComponentType>::Insert(Entity entity, const ComponentType& component)
     {

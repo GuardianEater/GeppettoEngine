@@ -6,16 +6,9 @@
  * \date   July 2024
  *********************************************************************/
 
- // core
-#include <Core.hpp>
-#include <EngineManager.hpp>
+#include "pch.hpp"
 
-// rendering
-#include <Renderer.hpp>
-#include <SphereMesh.hpp>
-#include <Affine.hpp>
-
-// client
+// systems
 #include "PhysicsSystem.hpp"
 #include "ImGuiSystem.hpp"
 #include "WindowSystem.hpp"
@@ -23,15 +16,19 @@
 #include "ScriptingSystem.hpp"
 #include "SerializationSystem.hpp"
 
-#include <CameraComponent.hpp>
+// components
+#include "CameraComponent.hpp"
+#include "Identification.hpp"
+#include "Material.hpp"
+#include "RigidBody.hpp"
+#include "Script.hpp"
+#include "Transform.hpp"
+#include "TextureComponent.hpp"
 
+// engine
+#include "Core.hpp"
+#include "EngineManager.hpp"
 #include "Logger.hpp"
-
-#include <rfl.hpp>
-#include <rfl/json.hpp>
-
-// tools
-#include <CompactArray.hpp>
 
 int main() try
 {
@@ -107,7 +104,7 @@ int main() try
     em.AddComponent(entity,
         Client::Transform{ {-3.0f, 3.0f, -3.0f} },
         Client::RigidBody{},
-        Client::Material{ "Sphere" },
+        Client::Material{ "Icosphere" },
         Client::Identification{ "Sphere" }
     );
 

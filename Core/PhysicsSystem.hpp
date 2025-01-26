@@ -8,19 +8,19 @@
 
 #pragma once
 
- // core
-#include <Core.hpp>
-#include <glm.hpp>
-#include <gtc/quaternion.hpp>
-
 // backend
 #include <ISystem.hpp>
-#include <EngineManager.hpp>
-#include <Affine.hpp>
 
-// client
-#include <Transform.hpp>
-#include <RigidBody.hpp>
+namespace Gep
+{
+    namespace Event
+    {
+        struct EntityDestroyed;
+        struct KeyPressed;
+    }
+
+    class EngineManager;
+}
 
 namespace Client
 {

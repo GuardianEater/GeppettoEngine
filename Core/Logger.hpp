@@ -14,8 +14,6 @@
 #include <sstream>
 #include <mutex>
 
-#include <rfl.hpp>
-
 namespace Gep
 {
     namespace Color

@@ -6,6 +6,8 @@
  * \date   August 2024
  *********************************************************************/
 
+#include "pch.hpp"
+
 #include "RenderSystem.hpp"
 
 namespace Client
@@ -23,11 +25,12 @@ namespace Client
         mRenderer.CreateLight(0, { 0, 10, 0 }, { 1, 1, 1 });
 
         mRenderer.LoadImage("Fox", "assets\\textures\\Fox.jpg");
-        mRenderer.LoadImage("Raccoon", "assets\\textures\\Raccoon.jpg");// warped
-        mRenderer.LoadImage("Kurisu", "assets\\textures\\Kurisu.png");  // warped
+        mRenderer.LoadImage("Raccoon", "assets\\textures\\Raccoon.jpg");
+        mRenderer.LoadImage("Kurisu", "assets\\textures\\Kurisu.png");
         mRenderer.LoadImage("Checker", "assets\\textures\\Checker.jpg");
         mRenderer.LoadImage("Okayu1", "assets\\textures\\Okayu1.jpg");
         mRenderer.LoadImage("Okayu2", "assets\\textures\\Okayu2.PNG");
+        mRenderer.LoadImage("Peko", "assets\\textures\\Peko.jpg");
 
         mRenderer.LoadMesh("Sphere", Gep::SphereMesh(10, 10));
         mRenderer.LoadMesh("Cube", Gep::CubeMesh());
@@ -127,6 +130,7 @@ namespace Client
                 const glm::vec3 downward = -glm::normalize(camera.up) * movementSpeed;
                 transform.position += downward;
             }
+
 
             GLFWwindow* window = glfwGetCurrentContext();
 
