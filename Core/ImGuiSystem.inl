@@ -17,7 +17,7 @@ namespace Client
     {
         componentTypes.for_each([&]<typename ComponentType>()
         {
-            mComponentInspectorPanels[mManager.GetComponentSignature<ComponentType>()] = [&](Gep::Entity entity)
+            mComponentInspectorPanels.push_back([&](Gep::Entity entity)
             {
                 std::string componentName = Gep::GetTypeInfo<ComponentType>().PrettyName();
 
@@ -48,7 +48,7 @@ namespace Client
                     ImGui::Separator();
                     ImGui::Spacing();
                 }
-            };
+            });
         });
     }
 

@@ -46,7 +46,11 @@ namespace Gep
     void Log::Critical(Args&&... args)
     {
         FormatLog(LogLevel::critical, std::forward<Args>(args)...);
+#ifdef _DEBUG
+        __debugbreak();
+#else // _DEBUG
         throw std::runtime_error("Critical Error");
+#endif // _DEBUG
     }
 
     template <typename... Args>

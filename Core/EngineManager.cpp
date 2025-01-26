@@ -26,6 +26,9 @@ namespace Gep
         , mEntityGroups()
     {
         mApplication.SetKeyCallback(*this, &EngineManager::SignalEvent<Event::KeyPressed>);
+
+        // needed so the unerlying vector does not reallocate.
+        mComponentDatas.reserve(MAX_COMPONETS);
     }
 
     void EngineManager::Start()
@@ -125,8 +128,8 @@ namespace Gep
         // destroys each component on an entity if it has one
         for (const auto& componentData : mComponentDatas)
         {
-            if (HasComponent(componentData.bitPos, entity))
-                DestroyComponent(componentData.bitPos, entity);
+            if (HasComponent(componentData.index, entity))
+                DestroyComponent(componentData.index, entity);
         }
 
         // removes the entity from any systems it might have been in

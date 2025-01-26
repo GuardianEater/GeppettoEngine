@@ -17,6 +17,65 @@ namespace Client
     {
     }
 
+    std::string ImGuiSystem::GetEntityDisplayName(Gep::Entity entity)
+    {
+        std::string displayName = "Entity: " + std::to_string(entity);
+        if (mManager.HasComponent<Identification>(entity))
+        {
+            Identification& id = mManager.GetComponent<Identification>(entity);
+
+            if (!id.name.empty())
+                displayName = id.name;
+        }
+
+        displayName += "###" + std::to_string(entity);
+
+        return displayName;
+    }
+
+    void ImGuiSystem::DrawInspectorPanel(Gep::Entity entity)
+    {
+        std::string displayName = GetEntityDisplayName(entity);
+
+        ImGui::SetNextWindowSize(ImVec2(400.0f, 1000.0f));
+        ImGui::Begin(std::string("Inspector: " + displayName).c_str());
+
+        ImGui::Text("Entity: %d", entity);
+        ImGui::Dummy({ 0.0f, 10.0f });
+
+        mManager.ForEachComponent(entity, [&](const Gep::ComponentData& componentData)
+        {
+            mComponentInspectorPanels[componentData.index](entity);
+        });
+
+        ImGui::Dummy({ 0.0f, 10.0f });
+
+        ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+        ImGui::PushStyleColor(ImGuiCol_Header, buttonColor);
+
+        // Calculate the text size and available space
+        if (ImGui::CollapsingHeader("Add Component"))
+        {
+            for (auto& componentData : mManager.GetComponentDatas())
+            {
+                if (componentData.has(entity)) continue;
+
+                if (ImGui::Button(componentData.name.c_str(), { ImGui::GetContentRegionAvail().x, 30.0f }))
+                {
+                    componentData.add(entity);
+                }
+            }
+        }
+
+        if (ImGui::Button("Duplicate", { ImGui::GetContentRegionAvail().x, 30.0f }))
+        {
+            mManager.DuplicateEntity(entity);
+        }
+
+        ImGui::PopStyleColor(); // button color
+        ImGui::End(); // Inspector
+    }
+
     void ImGuiSystem::Update(float dt)
     {
         std::vector<Gep::Entity>& entities = mManager.GetEntities();
@@ -47,21 +106,12 @@ namespace Client
     {
         for (Gep::Entity entity : entities)
         {
-            std::string displayName = "Entity: " + std::to_string(entity);
-            if (mManager.HasComponent<Identification>(entity))
-            {
-                Identification& id = mManager.GetComponent<Identification>(entity);
-
-                if (!id.name.empty())
-                    displayName = id.name;
-            }
-
-            displayName += "###" + std::to_string(entity);
+            std::string displayName = GetEntityDisplayName(entity);
 
             ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f)); // Increase padding
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10.0f, 7.0f)); // Increase vertical padding
 
-            bool open = ImGui::TreeNodeEx(displayName.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_FramePadding);
+            bool open = ImGui::TreeNodeEx(displayName.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding);
             
             // Add context menu
             if (ImGui::BeginPopupContextItem())
@@ -97,49 +147,10 @@ namespace Client
 
             if (open)
             {
-
-                ImGui::SetNextWindowSize(ImVec2(400.0f, 1000.0f));
-                ImGui::Begin(std::string("Inspector: " + displayName).c_str());
-
-                ImGui::Text("Entity: %d", entity);
-                ImGui::Dummy({ 0.0f, 10.0f });
-
-                std::vector<Gep::Signature> componentSignatures = mManager.GetComponentSignatures(entity);
-
-                for (const Gep::Signature componentSignature : componentSignatures)
-                {
-                    mComponentInspectorPanels[componentSignature](entity);
-                }
-
-                ImGui::Dummy({ 0.0f, 10.0f });
-
-                ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
-                ImGui::PushStyleColor(ImGuiCol_Header, buttonColor);
-
-                // Calculate the text size and available space
-                if (ImGui::CollapsingHeader("Add Component"))
-                {
-                    mManager.ForEachComponent(entity, [&](const Gep::ComponentData& componentData)
-                    {
-                        if (ImGui::Button(componentData.name.c_str(), { ImGui::GetContentRegionAvail().x, 30.0f }))
-                        {
-                            componentData.add(entity);
-                        }
-                    });
-                }
-
-                if (ImGui::Button("Duplicate", { ImGui::GetContentRegionAvail().x, 30.0f }))
-                {
-                    mManager.DuplicateEntity(entity);
-                }
-
-                ImGui::PopStyleColor(); // button color
-                ImGui::End(); // Inspector
-
+                DrawInspectorPanel(entity);
                 DrawEntities(mManager.GetChildren(entity));
                 ImGui::TreePop();
             }
-
         }
     }
 

@@ -64,9 +64,10 @@ namespace Gep
     struct ComponentData
     {
         Signature signature{}; // the signature of the component
-        uint8_t bitPos{}; // the position of the component in the signature
+        uint8_t index{}; // the position of the component in the signature
         std::string name{};
 
+        std::function<bool(Entity)> has{}; // a function that checks if the entity has this component
         std::function<void(Entity)> add{}; // a function that adds this component to the given entity
         std::function<void(Entity)> remove{}; // a function that removes this component from the given entity
         std::function<void(Entity to, Entity from)> copy{}; // a function that copies this component from one entity to another

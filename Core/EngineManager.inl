@@ -67,12 +67,13 @@ namespace Gep
         ComponentData& newComponentData = mComponentDatas.at(componentID);
 
         newComponentData.signature.set(componentID);
-        newComponentData.bitPos = componentID;
+        newComponentData.index = componentID;
         newComponentData.name   = GetTypeInfo<ComponentType>().PrettyName();
         newComponentData.array  = std::make_shared<ComponentArray<ComponentType>>();
         newComponentData.add    = [&](Entity entity) { AddComponent<ComponentType>(entity, ComponentType{}); };
-        newComponentData.remove = [&](Entity entity) { DestroyComponent<ComponentType>(entity); };
+        newComponentData.remove = [&](Entity entity) { DestroyComponent(newComponentData.index, entity); };
         newComponentData.copy   = [&](Entity to, Entity from) { CopyComponent<ComponentType>(to, from); };
+        newComponentData.has    = [&](Entity entity) { return HasComponent(newComponentData.index, entity); };
 
         mComponentTypeToID[typeid(ComponentType)] = componentID;
 
@@ -312,6 +313,6 @@ namespace Gep
         // TODO: remove
         const uint64_t componentID = mComponentTypeToID.at(typeid(ComponentType));
 
-        return mComponentDatas.at(componentID).bitPos;
+        return mComponentDatas.at(componentID).index;
     }
 }
