@@ -30,14 +30,20 @@ namespace Client
                 displayName = id.name;
         }
 
-        displayName += "###" + std::to_string(entity);
+        displayName += " [" + std::to_string(entity) + "]";
 
         return displayName;
     }
 
     void ImGuiSystem::DrawInspectorPanel()
     {
-        if (mSelectedEntities.size() == 0) return;
+        if (mSelectedEntities.size() == 0)
+        {
+            ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
+            ImGui::Text("No Entity Selected");
+            ImGui::End(); // Inspector
+            return;
+        }
 
         ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
         if (mSelectedEntities.size() > 1)
@@ -139,6 +145,7 @@ namespace Client
             {
                 mManager.MarkEntityForDestruction(selectedEntity);
             }
+            mSelectedEntities.clear();
         }
 
         // duplicate selected entities
@@ -162,6 +169,7 @@ namespace Client
         {
             ImGui::PushID(entity);
 
+            // the identification component aquired here returns the wrong name
             std::string displayName = GetEntityDisplayName(entity);
 
             ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f)); // Increase padding
@@ -193,7 +201,7 @@ namespace Client
                 const std::vector<Gep::Entity>& activeCameras = mManager.GetEntities<Client::Camera, Client::Transform>();
                 for (Gep::Entity camera : activeCameras)
                 {
-                    if (mManager.HasComponent<Client::Transform>(entity)) 
+                    if (mManager.HasComponent<Client::Transform>(entity) && !mManager.HasComponent<Client::Camera>(entity))
                     {
                         const glm::vec3 camPosition = mManager.GetComponent<Client::Transform>(camera).position;
                         const glm::vec3 targetPosition = mManager.GetComponent<Client::Transform>(entity).position;

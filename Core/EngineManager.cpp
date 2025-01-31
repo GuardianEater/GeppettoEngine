@@ -125,12 +125,10 @@ namespace Gep
     // adds the id back to the id pool
     void EngineManager::DestroyEntity(Entity entity)
     {
-        // destroys each component on an entity if it has one
-        for (const auto& componentData : mComponentDatas)
+        ForEachComponent(entity, [&](const ComponentData& componentData)
         {
-            if (HasComponent(componentData.index, entity))
-                DestroyComponent(componentData.index, entity);
-        }
+            DestroyComponent(componentData.index, entity);
+        });
 
         // removes the entity from any systems it might have been in
         for (auto& [groupSignature, entities] : mEntityGroups)
@@ -340,7 +338,8 @@ namespace Gep
             return;
         }
 
-        GetComponentArray(componentID)->Erase(entity);
+        //GetComponentArray(componentID)->Erase(entity);
+        GetComponentArray(componentID)->Event_EntityDestroyed(entity);
 
         Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
         Signature componentSignature = mComponentDatas.at(componentID).signature; // gets the signature of the component

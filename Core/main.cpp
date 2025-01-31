@@ -102,8 +102,8 @@ int main() try
         Client::Identification{ "Floor" }
     );
 
-    Gep::Entity entity = em.CreateEntity();
-    em.AddComponent(entity,
+    Gep::Entity sphere = em.CreateEntity();
+    em.AddComponent(sphere,
         Client::Transform{ {-3.0f, 3.0f, -3.0f} },
         Client::RigidBody{},
         Client::Material{ "Icosphere" },
@@ -149,6 +149,22 @@ int main() try
         Client::Texture{ "Okayu2" },
         Client::Identification{ "Okayu2" }
     );
+
+    //for (int i = 0; i < 100; ++i)
+    //{
+    //    // randomize the position
+    //    float x = static_cast<float>(rand() % 10) - 5.0f;
+    //    float y = static_cast<float>(rand() % 10) - 5.0f;
+    //    float z = static_cast<float>(rand() % 10) - 5.0f;
+
+    //    Gep::Entity e = em.CreateEntity();
+    //    em.AddComponent(e,
+    //        Client::Transform{ {x, y, z}, {1, 1, 1}, {0, 0, 0} },
+    //        Client::Material{ "Cube" },
+    //        Client::Texture{ "Checker" },
+    //        Client::Identification{ "Cube" + std::to_string(i) }
+    //    );
+    //}
 
     float dt = 0.016f;
     while (em.Running())
