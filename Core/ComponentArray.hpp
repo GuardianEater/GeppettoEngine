@@ -41,9 +41,7 @@ namespace Gep
         void Event_EntityDestroyed(Entity entity) override;
 
     private:
-        size_t mLastElementIndex{}; // amount of items current in the component array
-
-        std::array<ComponentType, MAX_ENTITIES> mComponentArray{};
+        std::vector <ComponentType> mComponentArray{}; // the array of components
 
         // given an entity gives the index of the entity into the component array
         std::unordered_map<Entity, std::uint64_t> mEntityToIndex{};

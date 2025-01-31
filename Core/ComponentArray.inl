@@ -19,36 +19,29 @@ namespace Gep
     template <typename ComponentType>
     void ComponentArray<ComponentType>::Insert(Entity entity, const ComponentType& component)
     {
-        // maps the entity to the last element in the array
-        mEntityToIndex[entity] = mLastElementIndex;
-
-        // then maps the index to the entity
-        mIndexToEntity[mLastElementIndex] = entity;
-
-        mComponentArray[mLastElementIndex] = component;
-
-        // an item was added so the last element needs to move over one
-        mLastElementIndex++;
+        size_t newIndex = mComponentArray.size();
+        mEntityToIndex[entity] = newIndex;
+        mIndexToEntity[newIndex] = entity;
+        mComponentArray.push_back(component);
     }
 
     template <typename ComponentType>
     void ComponentArray<ComponentType>::Erase(Entity entity)
     {
-        // an item is being removed so the last element moves over one
-        mLastElementIndex--;
-        size_t entityIndex = mEntityToIndex[entity];
+        size_t indexOfRemovedEntity = mEntityToIndex[entity];
+        size_t indexOfLastComponent = mComponentArray.size() - 1;
 
-        // moves the last component in the componentarray to the hole where the 'deleted' compoent was
-        mComponentArray[entityIndex] = mComponentArray[mLastElementIndex];
+        // move the last element to the hole left by the removed element
+        mComponentArray[indexOfRemovedEntity] = mComponentArray[indexOfLastComponent];
 
-        // this is the entity at the back of the array
-        Entity entityOfLastElement = mIndexToEntity[mLastElementIndex];
+        Entity entityOfLastElement = mIndexToEntity[indexOfLastComponent];
+        mEntityToIndex[entityOfLastElement] = indexOfRemovedEntity;
+        mIndexToEntity[indexOfRemovedEntity] = entityOfLastElement;
 
-        mEntityToIndex[entityOfLastElement] = entityIndex;
-        mIndexToEntity[entityIndex] = entityOfLastElement;
+        mComponentArray.pop_back();
 
         mEntityToIndex.erase(entity);
-        mIndexToEntity.erase(entityIndex);
+        mIndexToEntity.erase(indexOfLastComponent);
     }
 
     template <typename ComponentType>
