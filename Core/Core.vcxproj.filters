@@ -283,6 +283,9 @@
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
     <ClInclude Include="pch.hpp" />
+    <ClInclude Include="ActiveCameraComponent.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">

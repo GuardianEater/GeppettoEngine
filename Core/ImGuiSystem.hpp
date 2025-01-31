@@ -52,11 +52,12 @@ namespace Client
     {
     private:
         std::string GetEntityDisplayName(Gep::Entity entity);
-        void DrawInspectorPanel(Gep::Entity entity);
+        void DrawInspectorPanel();
 
     private:
 
-        std::unordered_map<Gep::Entity, bool> mEntitySelections;
+        std::unordered_set<Gep::Entity> mSelectedEntities; // entities that are selected in the hierarchy
+        std::unordered_set<Gep::Entity> mOpenedEntities; // entities that have been opened in the hierarchy
 
         std::vector<std::function<void(Gep::Entity)>> mComponentInspectorPanels; // component index -> function to draw the inspector
 

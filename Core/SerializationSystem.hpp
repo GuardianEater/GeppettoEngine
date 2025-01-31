@@ -36,13 +36,16 @@ namespace Client
         {
             componentTypes.for_each([&]<typename ComponentType>()
             {
-                mComponentInspectorPanels[mManager.GetComponentSignature<ComponentType>()] = [&](Gep::Entity entity)
-                    {
-                        Gep::Log::Info("Saving Component: [", Gep::GetTypeInfo<ComponentType>().PrettyName(), "]");
-                        const ComponentType& component = mManager.GetComponent<ComponentType>(entity);
+                mSaveComponentFunctions.push_back([&](Gep::Entity entity)
+                {
+                    ComponentType& component = mManager.GetComponent<ComponentType>(entity);
 
-                        //std::string json = rfl::json::write(component);
-                    };
+                    std::string componentName = Gep::GetTypeInfo<ComponentType>().PrettyName();
+                    
+                    std::string json = rfl::json::write(component);
+
+                    Gep::Log::Info(componentName, ": ", json);
+                });
             });
         }
 
@@ -54,19 +57,18 @@ namespace Client
             {
                 Gep::Log::Info("Saving Entity: [", entity, "]");
 
-                //rapidjson::Value entityValue(rapidjson::kObjectType);
-
-                std::vector<Gep::Signature> componentSignatures = mManager.GetComponentSignatures(entity);
-                for (const Gep::Signature componentSignature : componentSignatures)
+                mManager.ForEachComponent(entity, [&](const Gep::ComponentData& componentData)
                 {
-                    mComponentInspectorPanels[componentSignature](entity);
-                }
+                    mSaveComponentFunctions[componentData.index](entity);
+                });
             }
 
             //std::ofstream file("save.json");
         }
 
     private:
-        std::unordered_map<Gep::Signature, std::function<void(Gep::Entity)>> mComponentInspectorPanels;
+
+        // component index -> function that saves the component
+        std::vector<std::function<void(Gep::Entity)>> mSaveComponentFunctions;
     };
 }

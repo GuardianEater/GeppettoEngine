@@ -56,7 +56,15 @@ namespace Client
         for (Gep::Entity cameraEntity : cameras)
         {
             const Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
-            const Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
+            Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
+
+            // convert the camera's rotation to radians
+            glm::vec3 camRotation = glm::radians(camTransform.rotation);
+
+            // calculate the camera's right, up, and back vectors from the transforms rotation
+            cam.right = { cos(camRotation.y), 0, sin(camRotation.y) };
+            cam.up = { sin(camRotation.x) * sin(camRotation.y), cos(camRotation.x), -sin(camRotation.x) * cos(camRotation.y) };
+            cam.back = glm::normalize(glm::cross(cam.right, cam.up));
 
             const glm::mat4 pers = Gep::perspective(cam.viewport, cam.nearPlane, cam.farPlane);
             const glm::mat4 model = glm::mat4({ cam.right, 0 }, { cam.up, 0 }, { cam.back, 0 }, { camTransform.position, 1 });

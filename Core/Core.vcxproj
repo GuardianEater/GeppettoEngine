@@ -172,6 +172,7 @@
     <ClCompile Include="WindowSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ActiveCameraComponent.hpp" />
     <ClInclude Include="Affine.hpp" />
     <ClInclude Include="Application.hpp" />
     <ClInclude Include="AxisMesh.hpp" />

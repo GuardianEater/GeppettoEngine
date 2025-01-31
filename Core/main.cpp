@@ -18,6 +18,7 @@
 
 // components
 #include "CameraComponent.hpp"
+#include "ActiveCameraComponent.hpp"
 #include "Identification.hpp"
 #include "Material.hpp"
 #include "RigidBody.hpp"
@@ -48,6 +49,7 @@ int main() try
         Client::RigidBody,
         Client::Material,
         Client::Script,
+        Client::ActiveCamera,
         Client::Camera,
         Client::Texture
     > componentTypes;
