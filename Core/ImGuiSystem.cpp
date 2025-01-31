@@ -118,7 +118,7 @@ namespace Client
             mManager.CreateEntity();
         }
 
-        DrawEntities(parents);
+        DrawEntities(parents, dt);
 
         // detach entities if they are dropped on the hierarchy panel
         ImGui::Dummy(ImGui::GetContentRegionAvail());
@@ -162,7 +162,7 @@ namespace Client
         ImGui::End(); // Entities
     }
 
-    void ImGuiSystem::DrawEntities(const std::vector<Gep::Entity>& entities)
+    void ImGuiSystem::DrawEntities(const std::vector<Gep::Entity>& entities, float dt)
     {
         size_t index = 0;
         for (Gep::Entity entity : entities)
@@ -226,7 +226,7 @@ namespace Client
                 {
                     glm::vec3& currentRotation = mManager.GetComponent<Client::Transform>(camera).rotation;
 
-                    currentRotation = glm::mix(currentRotation, targetRotation, 0.01);
+                    currentRotation = glm::mix(currentRotation, targetRotation, 0.005f);
 
                     if (glm::length(targetRotation - currentRotation) < 0.001)
                     {
@@ -322,7 +322,7 @@ namespace Client
 
             if (isOpen)
             {
-                DrawEntities(mManager.GetChildren(entity));
+                DrawEntities(mManager.GetChildren(entity), dt);
                 ImGui::TreePop();
             }
 

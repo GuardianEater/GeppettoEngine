@@ -166,6 +166,13 @@ namespace Gep
             componentData.copy(newEntity, entity);
         });
 
+        std::vector<Entity> children = GetChildren(entity);
+        for (Entity child : children)
+        {
+            Entity newChild = DuplicateEntity(child);
+            AttachEntity(newEntity, newChild);
+        }
+
         return newEntity;
     }
 
