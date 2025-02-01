@@ -14,7 +14,6 @@
 #include "ISystem.hpp"
 #include "Events.hpp"
 
-#include "Application.hpp"
 #include "TypeList.hpp"
 
 #include "Logger.hpp"
@@ -89,7 +88,6 @@ namespace Gep
         template <typename... ComponentTypes>
         void RegisterGroup();
 
-        void Start();
         void Initialize();
 
         void FrameStart();
@@ -97,7 +95,6 @@ namespace Gep
         void FrameEnd();
 
         void Exit();
-        void End();
 
         bool Running() const;
 
@@ -240,8 +237,6 @@ namespace Gep
         std::unordered_map<uint64_t, Signature> mSystemSignatures; // the signatures of all of the systems maps the typeid of a system to its signature
         std::unordered_map<uint64_t, std::shared_ptr<ISystem>> mSystems;// maps the typeid of a system to the actual system class
         std::vector <std::shared_ptr<ISystem>> mSystemsToUpdate; // the list of systems that need to be updated
-
-        Application mApplication;
 
         bool mIsRunning;
     };

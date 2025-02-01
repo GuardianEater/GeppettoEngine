@@ -39,6 +39,7 @@ namespace Client
         void HandleInputs(float dt);
         void RenderImGui(float dt);
         void KeyEvent(const Gep::Event::KeyPressed& eventData);
+        void WindowResizeEvent(const Gep::Event::WindowResize& eventData);
 
     private:
         Gep::IRenderer mRenderer;

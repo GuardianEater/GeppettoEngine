@@ -178,6 +178,10 @@ namespace Client
     void RenderSystem::KeyEvent(const Gep::Event::KeyPressed& eventData)
     {
     }
+
+    void RenderSystem::WindowResizeEvent(const Gep::Event::WindowResize& eventData)
+    {
+    }
 }
 
 

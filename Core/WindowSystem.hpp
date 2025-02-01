@@ -34,11 +34,32 @@ namespace Client
     public:
         WindowSystem(Gep::EngineManager& em);
 
-        void Update(float dt);
+        void Initialize() override;
+        void FrameStart() override;
+        void FrameEnd() override;
+        void Exit() override;
 
     private:
-        void DrawMeshesWindow();
-        void DrawEntitiesWindow();
+        void Initialize_ImGui();
+        void FrameStart_ImGui();
+        void FrameEnd_ImGui();
+        void End_ImGui();
+
+        void Initialize_GLFW();
+        void FrameStart_GLFW();
+        void FrameEnd_GLFW();
+        void End_GLFW();
+
+        static void GLFW_ErrorCallback(int error, const char* description);
+        static void GLFW_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+        static void GLFW_MouseCallback(GLFWwindow* window, int button, int action, int mods);
+        static void GLFW_WindowResizeCallback(GLFWwindow* window, int width, int height);
+        static void GLFW_WindowPositionCallback(GLFWwindow* window, int x, int y);
+
+    private:
+        GLFWwindow* mPrimaryWindow;
+        ImGuiIO* mIO;
+
         void DrawUtilitiesWindow(float dt);
 
         template <size_t Size>

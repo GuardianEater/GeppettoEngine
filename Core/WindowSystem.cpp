@@ -9,6 +9,8 @@
 #include "pch.hpp"
 
 #include "WindowSystem.hpp"
+
+
 #include <numeric>
 #include <algorithm>
 
@@ -16,14 +18,107 @@ namespace Client
 {
     WindowSystem::WindowSystem(Gep::EngineManager& em)
         : ISystem(em)
+        , mPrimaryWindow(nullptr)
+        , mIO(nullptr)
+    {
+        Initialize_GLFW();
+        Initialize_ImGui();
+    }
+
+    void WindowSystem::Initialize()
     {
     }
 
-    void WindowSystem::Update(float dt)
+    void WindowSystem::FrameStart()
     {
-        //DrawEntitiesWindow();
-        DrawUtilitiesWindow(dt);
-        //DrawMeshesWindow();
+        FrameStart_GLFW();
+        FrameStart_ImGui();
+    }
+
+    void WindowSystem::FrameEnd()
+    {
+        FrameEnd_ImGui();
+        FrameEnd_GLFW();
+    }
+
+    void WindowSystem::Exit()
+    {
+        End_ImGui();
+        End_GLFW();
+    }
+
+    void WindowSystem::Initialize_ImGui()
+    {
+        ///////////////////////////////////////////////////////////////////////////////////////
+        /// ImGui setup ///////////////////////////////////////////////////////////////////////
+        const char* glsl_version = "#version 430";
+
+        // Setup Dear ImGui context
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        mIO = &ImGui::GetIO();
+        mIO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+        mIO->ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+        mIO->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+
+        // Setup Dear ImGui style
+        ImGui::StyleColorsDark();
+
+        // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
+        ImGuiStyle& style = ImGui::GetStyle();
+        if (mIO->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            style.WindowRounding = 0.0f;
+            style.FramePadding.y = 8;
+            style.ItemSpacing.y = 4;
+            style.FrameBorderSize = 3;
+            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+            style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+            style.Colors[ImGuiCol_Header] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+            style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+            style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
+            style.Colors[ImGuiCol_FrameBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+            style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+            style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
+        }
+
+        // Setup Platform/Renderer backends
+        ImGui_ImplGlfw_InitForOpenGL(mPrimaryWindow, true);
+        ImGui_ImplOpenGL3_Init(glsl_version);
+    }
+
+    void WindowSystem::FrameStart_ImGui()
+    {
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
+    }
+
+    void WindowSystem::FrameEnd_ImGui()
+    {
+        // Rendering
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        // Update and Render additional Platform Windows
+        // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
+        //  For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
+        if (mIO->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
+    }
+
+    void WindowSystem::End_ImGui()
+    {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
     }
 
     void WindowSystem::DrawUtilitiesWindow(float dt)
@@ -126,6 +221,99 @@ namespace Client
                 ImGui::Text("Minimum FPS: %.3f", minimum);
             }
         }
+    }
+    void WindowSystem::Initialize_GLFW()
+    {
+        ///////////////////////////////////////////////////////////////////////////////////////
+        /// GLFW setup ////////////////////////////////////////////////////////////////////////
+        glfwSetErrorCallback(GLFW_ErrorCallback);
+
+        if (glfwInit() != GLFW_TRUE)
+        {
+            Gep::Log::Critical("Failed To Create Window");
+        }
+
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+
+        // Create window with graphics context
+        mPrimaryWindow = glfwCreateWindow(720, 720, "Engine", nullptr, nullptr);
+        if (!mPrimaryWindow)
+        {
+            glfwTerminate();
+            Gep::Log::Critical("Failed To Create Window");
+        }
+
+        glfwMakeContextCurrent(mPrimaryWindow);
+        glfwSwapInterval(0); // disable vsync
+
+        // set event functions
+        glfwSetKeyCallback(mPrimaryWindow, GLFW_KeyCallback);
+        glfwSetMouseButtonCallback(mPrimaryWindow, GLFW_MouseCallback);
+        glfwSetWindowSizeCallback(mPrimaryWindow, GLFW_WindowResizeCallback);
+        glfwSetWindowPosCallback(mPrimaryWindow, GLFW_WindowPositionCallback);
+
+        glewExperimental = GL_TRUE; // Ensure GLEW uses modern techniques for managing OpenGL functionality
+        if (glewInit() != GLEW_OK)
+        {
+            glfwDestroyWindow(mPrimaryWindow);
+            glfwTerminate();
+            Gep::Log::Critical("Failed To Create Window");
+        }
+
+        int display_w = 0;
+        int display_h = 0;
+        glfwGetFramebufferSize(mPrimaryWindow, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////
+        /// Check OpenGL version //////////////////////////////////////////////////////////////
+
+        const GLubyte* renderer = glGetString(GL_RENDERER);
+        const GLubyte* version = glGetString(GL_VERSION);
+        Gep::Log::Info("Renderer: ", renderer);
+        Gep::Log::Info("OpenGL version supported: ", version);
+    }
+
+    void WindowSystem::FrameStart_GLFW()
+    {
+        glfwPollEvents();
+    }
+
+    void WindowSystem::FrameEnd_GLFW()
+    {
+        glfwSwapBuffers(mPrimaryWindow);
+    }
+
+    void WindowSystem::End_GLFW()
+    {
+        glfwDestroyWindow(mPrimaryWindow);
+        glfwTerminate();
+    }
+
+    void WindowSystem::GLFW_ErrorCallback(int error, const char* description)
+    {
+        Gep::Log::Critical("GLFW Error [", error, "] ", description);
+    }
+
+    void WindowSystem::GLFW_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+    {
+    }
+
+    void WindowSystem::GLFW_MouseCallback(GLFWwindow* window, int button, int action, int mods)
+    {
+    }
+
+    void WindowSystem::GLFW_WindowResizeCallback(GLFWwindow* window, int width, int height)
+    {
+
+    }
+
+    void WindowSystem::GLFW_WindowPositionCallback(GLFWwindow* window, int x, int y)
+    {
     }
 }
 

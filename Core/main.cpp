@@ -40,7 +40,6 @@ int main() try
 
     // start the engine //////////////////////////////////////////////////////////////////////////////
     Gep::EngineManager em;
-    em.Start();
 
     // list of all components ///////////////////////////////////////////////////////////////////////
     Gep::type_list<
@@ -56,8 +55,8 @@ int main() try
 
     // list of all systems //////////////////////////////////////////////////////////////////////////
     Gep::type_list<
-        Client::PhysicsSystem,
         Client::WindowSystem,
+        Client::PhysicsSystem,
         Client::RenderSystem,
         Client::ImGuiSystem,
         Client::ScriptingSystem,
@@ -78,7 +77,7 @@ int main() try
     em.SubscribeToEvent<Client::PhysicsSystem, Gep::Event::EntityDestroyed>(&Client::PhysicsSystem::EntityDestroyed);
     em.SubscribeToEvent<Client::PhysicsSystem, Gep::Event::KeyPressed>(&Client::PhysicsSystem::KeyPressed);
     em.SubscribeToEvent<Client::RenderSystem, Gep::Event::KeyPressed>(&Client::RenderSystem::KeyEvent);
-
+    em.SubscribeToEvent<Client::RenderSystem, Gep::Event::WindowResize>(&Client::RenderSystem::WindowResizeEvent);
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.Initialize();
@@ -189,7 +188,6 @@ int main() try
     }
 
     em.Exit();
-    em.End();
 }
 catch (const std::exception& e)
 {

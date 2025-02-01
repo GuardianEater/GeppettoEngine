@@ -81,9 +81,6 @@
     <ClCompile Include="dependencies\imgui\imgui_stdlib.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="Application.cpp">
-      <Filter>Backend\Application</Filter>
-    </ClCompile>
     <ClCompile Include="EngineManager.cpp">
       <Filter>Backend\ECS</Filter>
     </ClCompile>
@@ -233,9 +230,6 @@
     </ClInclude>
     <ClInclude Include="Events.hpp">
       <Filter>Backend\ECS\Events</Filter>
-    </ClInclude>
-    <ClInclude Include="Application.hpp">
-      <Filter>Backend\Application</Filter>
     </ClInclude>
     <ClInclude Include="ScriptingSystem.hpp">
       <Filter>Client</Filter>

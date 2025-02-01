@@ -25,39 +25,31 @@ namespace Gep
         , mIsRunning(true)
         , mEntityGroups()
     {
-        mApplication.SetKeyCallback(*this, &EngineManager::SignalEvent<Event::KeyPressed>);
-
         // needed so the unerlying vector does not reallocate.
         mComponentDatas.reserve(MAX_COMPONETS);
     }
 
-    void EngineManager::Start()
-    {
-        mApplication.Initialize_GLFW();
-        mApplication.Initialize_ImGui();
-    }
-
-    void EngineManager::End()
-    {
-        mApplication.End_ImGui();
-        mApplication.End_GLFW();
-    }
-
     void EngineManager::FrameStart()
     {
-        mApplication.FrameStart_GLFW();
-        mApplication.FrameStart_ImGui();
+        // loop though all of the systems in order and call their start functions
+        for (auto& system : mSystemsToUpdate)
+        {
+            system->FrameStart();
+        }
     }
 
     void EngineManager::FrameEnd()
     {
-        mApplication.FrameEnd_ImGui();
-        mApplication.FrameEnd_GLFW();
+        // loop though all of the systems in referse order and call their exit functions
+        for (auto systemIt = mSystemsToUpdate.rbegin(); systemIt != mSystemsToUpdate.rend(); ++systemIt)
+        {
+            (*systemIt)->FrameEnd();
+        }
     }
 
     bool EngineManager::Running() const
     {
-        return mApplication.Running();
+        return true;
     }
 
     void EngineManager::SetSignature(Entity entity, Signature signature)
