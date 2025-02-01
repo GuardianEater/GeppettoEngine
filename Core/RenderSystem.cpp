@@ -46,6 +46,8 @@ namespace Client
     void RenderSystem::Initialize()
     {
         //mRenderer.CreateLight(0, { 0, 10, 0 }, { 1, 0, 0 });
+        mManager.SubscribeToEvent<Gep::Event::KeyPressed>(this, &Client::RenderSystem::KeyEvent);
+        mManager.SubscribeToEvent<Gep::Event::WindowResize>(this, &Client::RenderSystem::WindowResizeEvent);
     }
 
     void RenderSystem::Update(float dt)
@@ -181,6 +183,17 @@ namespace Client
 
     void RenderSystem::WindowResizeEvent(const Gep::Event::WindowResize& eventData)
     {
+        glViewport(0, 0, eventData.width, eventData.height);
+
+        const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
+        for (Gep::Entity cameraEntity : cameras)
+        {
+            // update the aspect ratio of the camera
+            Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
+            cam.viewport.y = cam.viewport.x / eventData.width * eventData.height;
+            cam.viewport.z = cam.nearPlane;
+            cam.viewport.x = 2.0f * cam.nearPlane * glm::tan(glm::radians(80.0f / 2.0f));
+        }
     }
 }
 

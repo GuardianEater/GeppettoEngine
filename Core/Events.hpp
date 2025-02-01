@@ -45,5 +45,9 @@ namespace Gep
             int width;
             int height;
         };
+
+        struct WindowClosing
+        {
+        };
     }
 }

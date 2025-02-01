@@ -247,12 +247,17 @@ namespace Gep
         mEntityGroups[groupSignature];
     }
 
-    template<typename SystemType, typename EventType, typename MemberFunctionPtr>
-    void EngineManager::SubscribeToEvent(MemberFunctionPtr function)
+    template<typename EventType, typename FunctionType>
+    inline void EngineManager::SubscribeToEvent(FunctionType function)
     {
-        SystemType& system = GetSystem<SystemType>(); // call member function
+        GetEventFunctions<EventType>().emplace_back(function);
+    }
 
-        GetEventFunctions<EventType>().emplace_back(std::bind(function, std::ref(system), std::placeholders::_1));
+    template<typename EventType, typename ClassType, typename MemberFunctionType>
+    inline void EngineManager::SubscribeToEvent(ClassType* object, MemberFunctionType memberFunction)
+    {
+        EventFunction<EventType> eventFunction = std::bind(memberFunction, object, std::placeholders::_1);
+        GetEventFunctions<EventType>().emplace_back(eventFunction);
     }
 
     template <typename EventType>

@@ -189,8 +189,11 @@ namespace Gep
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // event functions //////////////////////////////////////////////////////////////////////////////
 
-        template<typename SystemType, typename EventType, typename MemberFunctionPtr>
-        void SubscribeToEvent(MemberFunctionPtr function);
+        template<typename EventType, typename FunctionType>
+        void SubscribeToEvent(FunctionType function);
+
+        template <typename EventType, typename ClassType, typename MemberFunctionType>
+        void SubscribeToEvent(ClassType* object, MemberFunctionType memberFunction);
 
         template <typename EventType>
         void SignalEvent(const EventType& eventData);
@@ -217,6 +220,8 @@ namespace Gep
 
         template<typename ComponentType>
         ComponentBitPos GetComponentBitPos() const;
+
+        void OnWindowClosing(const Event::WindowClosing& event);
 
     private:
         // events

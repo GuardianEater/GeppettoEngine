@@ -248,6 +248,7 @@ namespace Client
 
         glfwMakeContextCurrent(mPrimaryWindow);
         glfwSwapInterval(0); // disable vsync
+        glfwSetWindowUserPointer(mPrimaryWindow, this);
 
         // set event functions
         glfwSetKeyCallback(mPrimaryWindow, GLFW_KeyCallback);
@@ -285,6 +286,10 @@ namespace Client
 
     void WindowSystem::FrameEnd_GLFW()
     {
+        if (glfwWindowShouldClose(mPrimaryWindow))
+        {
+            mManager.SignalEvent<Gep::Event::WindowClosing>({});
+        }
         glfwSwapBuffers(mPrimaryWindow);
     }
 
@@ -301,6 +306,8 @@ namespace Client
 
     void WindowSystem::GLFW_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
+        WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+        if (ws) ws->mManager.SignalEvent<Gep::Event::KeyPressed>({ key, scancode, action, mods });
     }
 
     void WindowSystem::GLFW_MouseCallback(GLFWwindow* window, int button, int action, int mods)
@@ -309,7 +316,8 @@ namespace Client
 
     void WindowSystem::GLFW_WindowResizeCallback(GLFWwindow* window, int width, int height)
     {
-
+        WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+        if (ws) ws->mManager.SignalEvent<Gep::Event::WindowResize>({ width, height });
     }
 
     void WindowSystem::GLFW_WindowPositionCallback(GLFWwindow* window, int x, int y)

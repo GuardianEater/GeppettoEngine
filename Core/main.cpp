@@ -56,9 +56,9 @@ int main() try
     // list of all systems //////////////////////////////////////////////////////////////////////////
     Gep::type_list<
         Client::WindowSystem,
-        Client::PhysicsSystem,
         Client::RenderSystem,
         Client::ImGuiSystem,
+        Client::PhysicsSystem,
         Client::ScriptingSystem,
         Client::SerializationSystem
     > systemTypes;
@@ -72,12 +72,6 @@ int main() try
     em.RegisterGroup<Client::Camera, Client::Transform>();
     em.RegisterGroup<Client::Script>();
     em.RegisterGroup(); // empty group with all entities
-
-    // subscribe to events
-    em.SubscribeToEvent<Client::PhysicsSystem, Gep::Event::EntityDestroyed>(&Client::PhysicsSystem::EntityDestroyed);
-    em.SubscribeToEvent<Client::PhysicsSystem, Gep::Event::KeyPressed>(&Client::PhysicsSystem::KeyPressed);
-    em.SubscribeToEvent<Client::RenderSystem, Gep::Event::KeyPressed>(&Client::RenderSystem::KeyEvent);
-    em.SubscribeToEvent<Client::RenderSystem, Gep::Event::WindowResize>(&Client::RenderSystem::WindowResizeEvent);
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.Initialize();
@@ -177,6 +171,8 @@ int main() try
         // start events ///////////////////////////////////////////////////////////////////////////
         em.StartEvent<Gep::Event::EntityDestroyed>();
         em.StartEvent<Gep::Event::KeyPressed>();
+        em.StartEvent<Gep::Event::WindowResize>();
+        em.StartEvent<Gep::Event::WindowClosing>();
 
         // TODO: make this a ResolveEvents call, or perhaps add that to FrameEnd
         em.DestroyMarkedComponents();

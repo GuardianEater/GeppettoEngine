@@ -25,6 +25,7 @@ namespace Gep
         , mIsRunning(true)
         , mEntityGroups()
     {
+        SubscribeToEvent<Event::WindowClosing>(this, &EngineManager::OnWindowClosing);
         // needed so the unerlying vector does not reallocate.
         mComponentDatas.reserve(MAX_COMPONETS);
     }
@@ -49,7 +50,7 @@ namespace Gep
 
     bool EngineManager::Running() const
     {
-        return true;
+        return mIsRunning;
     }
 
     void EngineManager::SetSignature(Entity entity, Signature signature)
@@ -389,5 +390,10 @@ namespace Gep
     std::shared_ptr<IComponentArray> EngineManager::GetComponentArray(uint64_t componentID)
     {
         return mComponentDatas.at(componentID).array;
+    }
+
+    void EngineManager::OnWindowClosing(const Event::WindowClosing& event)
+    {
+        mIsRunning = false;
     }
 }
