@@ -57,9 +57,9 @@ int main() try
     Gep::type_list<
         Client::WindowSystem,
         Client::RenderSystem,
+        Client::ScriptingSystem,
         Client::ImGuiSystem,
         Client::PhysicsSystem,
-        Client::ScriptingSystem,
         Client::SerializationSystem
     > systemTypes;
 

@@ -39,24 +39,41 @@ namespace Client
     {
         componentTypes.for_each([&]<typename ComponentType>()
         {
+            std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
+            ComponentType component{};
+            ComponentType* componentPtr = &component;
+            auto tempView = rfl::to_view(component);
+
+            auto luaComponentType = mLua.new_usertype<ComponentType>(typeName.c_str(), sol::no_constructor);
+
+            tempView.apply([&](const auto& field)
+            {
+                using FieldType = std::remove_reference_t<decltype(*field.value())>;
+
+                static const size_t pointerDiff = reinterpret_cast<size_t>(field.value()) - reinterpret_cast<size_t>(componentPtr);
+                const std::string_view fieldName = field.name();
+
+                luaComponentType[fieldName] = sol::property(
+                [&](const ComponentType& c) -> FieldType
+                {
+                    FieldType* fieldPtr = reinterpret_cast<FieldType*>(reinterpret_cast<size_t>(&c) + pointerDiff);
+
+                    return *fieldPtr;
+                },
+                [&](ComponentType& c, FieldType value)
+                { 
+                    FieldType* fieldPtr = reinterpret_cast<FieldType*>(reinterpret_cast<size_t>(&c) + pointerDiff);
+
+                    *fieldPtr = value; 
+                });
+            });
+
             mSetComponentMemberReferences.push_back([&](Gep::Entity entity, sol::table& entityTable)
             {
                 ComponentType& component = mManager.GetComponent<ComponentType>(entity);
                 std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
 
-                auto view = rfl::to_view(component);
-
-                sol::table componentTable = mLua.create_table();
-                view.apply([&](const auto& field)
-                {
-                    using FieldType = std::remove_reference_t<decltype(*field.value())>;
-                    const std::string fieldName(field.name());
-                    auto& fieldValue = *field.value();
-
-                    componentTable[fieldName] = field.value();
-                });
-
-                entityTable[typeName] = componentTable;
+                entityTable[typeName] = &component;
             });
         });
     }

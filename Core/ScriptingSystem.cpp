@@ -73,9 +73,18 @@ namespace Client
         };
 
         mLua.new_usertype<glm::vec3>("vec3",
-            "x", &glm::vec3::x,
-            "y", &glm::vec3::y,
-            "z", &glm::vec3::z
+            "x", sol::property(
+                [](const glm::vec3& v) -> float { return v.x; },
+                [](glm::vec3& v, float value) { v.x = value; }
+            ),
+            "y", sol::property(
+                [](const glm::vec3& v) -> float { return v.y; },
+                [](glm::vec3& v, float value) { v.y = value; }
+            ),
+            "z", sol::property(
+                [](const glm::vec3& v) -> float { return v.z; },
+                [](glm::vec3& v, float value) { v.z = value; }
+            )
         );
     }
 
