@@ -1,5 +1,5 @@
 /*****************************************************************//**
- * \file   Icosphere.hpp
+ * \file   IcosphereMesh.hpp
  * \brief  Sphere made of triangles
  * 
  * \author Travis Gronvold (travis.gronvold@digipen.edu)
@@ -14,9 +14,9 @@
 
 namespace Gep
 {
-    struct Icosphere : public Mesh
+    struct IcosphereMesh : public Mesh
     {
-        Icosphere(const size_t subdivisions = 3);
+        IcosphereMesh(const size_t subdivisions = 3);
 
     private:
         void CreateIcosahedron();

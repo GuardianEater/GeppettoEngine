@@ -100,7 +100,7 @@ namespace Gep
             return;
         }
 
-        SignalEvent<Event::EntityDestroyed>({ entity });// calls subscriber functions 
+        SignalEvent(Event::EntityDestroyed{ .entity = entity });// calls subscriber functions 
 
         mMarkedEntities.push_back(entity);
     }
@@ -384,6 +384,24 @@ namespace Gep
         for (auto systemIt = mSystemsToUpdate.rbegin(); systemIt != mSystemsToUpdate.rend(); ++systemIt)
         {
             (*systemIt)->Exit();
+        }
+    }
+
+    void EngineManager::ResolveEvents()
+    {
+        //for each type of event
+        while (!mEventQueue.empty())
+        {
+            const auto& [id, eventData] = mEventQueue.front();
+
+            //get the subscribers for this event type
+            const auto& subscribers = mEventDatas[id].subscribers;
+            for (auto& subscriber : subscribers)
+            {
+                subscriber(eventData);
+            }
+
+            mEventQueue.pop_front();
         }
     }
 

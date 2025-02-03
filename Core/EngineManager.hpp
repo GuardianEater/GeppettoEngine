@@ -26,10 +26,27 @@
 
 namespace Gep
 {
+
+    using void_unique_ptr = std::unique_ptr<void, void(*)(void*)>;
+
+    template <typename T, typename... Args>
+    void_unique_ptr make_unique_void_ptr(Args&&... args)
+    {
+        std::unique_ptr<T> ptr = std::make_unique<T>(std::forward<Args>(args)...);
+
+        return void_unique_ptr(ptr.release(), [](void* p) { delete static_cast<T*>(p); });
+    }
+
     template <typename T>
     concept TypeHasOnComponentsRegisteredConcept = requires(T t, Gep::type_list<int> componentTypes)
     {
         { t.template OnComponentsRegistered<int>(componentTypes) } -> std::same_as<void>;
+    };
+
+    template <typename T, typename Func, typename... FuncArgs>
+    concept IsInvocableMember = std::is_member_function_pointer_v<Func> && requires(T* obj, Func func, FuncArgs... args) 
+    {
+        { (obj->*func)(std::forward<FuncArgs>(args)...) } -> std::same_as<void>;
     };
 
     template <typename T>
@@ -72,6 +89,12 @@ namespace Gep
         std::function<void(Entity to, Entity from)> copy{}; // a function that copies this component from one entity to another
 
         std::shared_ptr<IComponentArray> array{}; // where all of the components of this type are stored
+    };
+
+    struct EventData
+    {
+        uint8_t index{};
+        std::deque<std::function<void(const Gep::void_unique_ptr&)>> subscribers{};
     };
 
     class EngineManager
@@ -190,16 +213,17 @@ namespace Gep
         // event functions //////////////////////////////////////////////////////////////////////////////
 
         template<typename EventType, typename FunctionType>
+        requires std::invocable<FunctionType, const EventType&>
         void SubscribeToEvent(FunctionType function);
 
         template <typename EventType, typename ClassType, typename MemberFunctionType>
+        requires IsInvocableMember<ClassType, MemberFunctionType, const EventType&>
         void SubscribeToEvent(ClassType* object, MemberFunctionType memberFunction);
 
         template <typename EventType>
         void SignalEvent(const EventType& eventData);
 
-        template <typename EventType>
-        void StartEvent();
+        void ResolveEvents();
 
     private:
         std::shared_ptr<IComponentArray> GetComponentArray(uint64_t componentID);
@@ -225,7 +249,8 @@ namespace Gep
 
     private:
         // events
-        std::vector<std::shared_ptr<Event::IEvent>> mEventQueue; // All events that need to happen
+        std::unordered_map<std::type_index, EventData> mEventDatas; // typeindex of the event -> the functions that are subscribed to that event
+        std::deque<std::pair<std::type_index, Gep::void_unique_ptr>> mEventQueue; // the queue of events that need to be resolved pair<index of the event, the event itself>
 
         // entities
         std::vector<Entity> mMarkedEntities; // entities that are marked to be destroyed
@@ -234,9 +259,9 @@ namespace Gep
 
         // components
         Gep::keyed_vector<ComponentData> mComponentDatas; // maps from a component type -> all of the data
+        std::unordered_map<std::type_index, uint64_t> mComponentTypeToID; // maps a component type to its id
         ComponentBitPos mNextComponentBitPos; // used for assigning bits in an entities signature
         std::vector<std::pair<uint64_t, Entity>> mMarkedComponents;   // The entity and the Entities component type ids.
-        std::unordered_map<std::type_index, uint64_t> mComponentTypeToID; // maps a component type to its id
 
         // systems
         std::unordered_map<uint64_t, Signature> mSystemSignatures; // the signatures of all of the systems maps the typeid of a system to its signature

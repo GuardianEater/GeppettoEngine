@@ -12,6 +12,30 @@
 
 namespace Gep
 {
+    enum GLVertexAttributeLocation : GLint
+		{
+        Position,
+        Normal,
+        TexCoord
+		};
+		enum GLUniformLocation : GLint
+		{
+				Perspective, // perspective projection matrix
+				ViewMatrix,
+				ModelMatrix,
+				NormalMatrix,
+				Eye,
+				DiffuseCoefficient,
+				SpecularCoefficient,
+				SpecularExponent,
+				AmbientColor,
+        TextureSampler,
+        UseTexture,
+
+        LightCount,
+				IsOutlinePass,
+		};
+
 		IRenderer::IRenderer()
 				: mProgram()
 				, mMeshDatas()
@@ -36,6 +60,7 @@ namespace Gep
 		void IRenderer::Compile()
 		{
 				mProgram.Compile();
+				SetUpLightSSBO();
 		}
 
 		void IRenderer::LoadMesh(const std::string& name, const Mesh& mesh)
@@ -165,12 +190,18 @@ namespace Gep
         glUseProgram(0);
 		}
 
+		void IRenderer::SetHighlight()
+		{
+				mIsOutlinePass = true;
+		}
+
 		void IRenderer::SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec4& eye)
 		{
 				glUseProgram(mProgram.GetProgramID());
-				glUniformMatrix4fv(0, 1, false, &pers[0][0]);
-				glUniformMatrix4fv(1, 1, false, &view[0][0]);
-				glUniform4fv(4, 1, &eye[0]);
+				glUniformMatrix4fv(GLUniformLocation::Perspective, 1, false, &pers[0][0]);
+				glUniformMatrix4fv(GLUniformLocation::ViewMatrix,  1, false, &view[0][0]);
+
+				glUniform4fv(GLUniformLocation::Eye, 1, &eye[0]);
 				glUseProgram(0);
 		}
 
@@ -179,17 +210,17 @@ namespace Gep
 				glm::mat4 normal = glm::mat4(glm::mat3(affine_inverse(modelingMatrix)));
 
 				glUseProgram(mProgram.GetProgramID());
-				glUniformMatrix4fv(2, 1, false, &modelingMatrix[0][0]);
-				glUniformMatrix4fv(3, 1, true, &normal[0][0]);
+				glUniformMatrix4fv(GLUniformLocation::ModelMatrix,  1, false, &modelingMatrix[0][0]);
+				glUniformMatrix4fv(GLUniformLocation::NormalMatrix, 1, true, &normal[0][0]);
 				glUseProgram(0);
 		}
 
 		void IRenderer::SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent)
 		{
 				glUseProgram(mProgram.GetProgramID());
-				glUniform3fv(5, 1, &diffuseCoeff[0]);
-				glUniform3fv(6, 1, &specularCoeff[0]);
-				glUniform1fv(7, 1, &specularExponent);
+				glUniform3fv(GLUniformLocation::DiffuseCoefficient,  1, &diffuseCoeff[0]);
+				glUniform3fv(GLUniformLocation::SpecularCoefficient, 1, &specularCoeff[0]);
+				glUniform1fv(GLUniformLocation::SpecularExponent,    1, &specularExponent);
 				glUseProgram(0);
 		}
 
@@ -199,26 +230,10 @@ namespace Gep
         mUseTextures = !mUseTextures;
     }
 
-
-		void IRenderer::CreateLight(const std::uint8_t lightID, const glm::vec3& position, const glm::vec3& color)
-		{
-				glUseProgram(mProgram.GetProgramID());
-
-				int True = 1;
-
-				const std::uint8_t lightLimit = 8;
-
-				glUniform4fv(11 + lightID, 1, &position[0]);
-				glUniform3fv(19 + lightID, 1, &color[0]);
-				glUniform1iv(27 + lightID, 1, &True);
-
-				glUseProgram(0);
-		}
-
 		void IRenderer::SetAmbientLight(const glm::vec3& color)
 		{
 				glUseProgram(mProgram.GetProgramID());
-				glUniform3fv(8, 1, &color[0]);
+				glUniform3fv(GLUniformLocation::AmbientColor, 1, &color[0]);
 				glUseProgram(0);
 		}
 
@@ -233,18 +248,50 @@ namespace Gep
 				const MeshData& md = mMeshDatas.at(meshName);
 				constexpr std::uint64_t faceSize = sizeof(Mesh::Face) / sizeof(GLuint);
 
+        DrawLights();
+
 				glUseProgram(mProgram.GetProgramID());
 				glBindVertexArray(md.mVertexArrayObject);
-
-        glUniform1i(10, mUseTextures);
+        glUniform1i(GLUniformLocation::UseTexture, mUseTextures);
 
 				if (mWireframeMode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
 				if (mWireframeMode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        mUseTextures = false;
         //glBindTexture(GL_TEXTURE_2D, 0);
 				glBindVertexArray(0);
+				glUseProgram(0);
+
+        mUseTextures = false;
+        mLightData.clear();
+		}
+
+    void IRenderer::AddLight(const glm::vec3& color, const glm::vec3& position, float intensity)
+		{
+				LightData& data = mLightData.emplace_back();
+
+        data.position = position;
+        data.color = color;
+        data.intensity = intensity;
+		}
+
+		void IRenderer::SetUpLightSSBO()
+		{
+				glGenBuffers(1, &mLightSSBO);
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, mLightSSBO);
+				glBufferData(GL_SHADER_STORAGE_BUFFER, 1 * sizeof(LightData), nullptr, GL_DYNAMIC_DRAW);
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mLightSSBO);
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+		}
+
+		void IRenderer::DrawLights()
+		{
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, mLightSSBO);
+				glBufferData(GL_SHADER_STORAGE_BUFFER, mLightData.size() * sizeof(LightData), mLightData.data(), GL_DYNAMIC_DRAW);
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+				glUseProgram(mProgram.GetProgramID());
+				glUniform1i(GLUniformLocation::LightCount, static_cast<int>(mLightData.size()));
 				glUseProgram(0);
 		}
 
@@ -313,13 +360,13 @@ namespace Gep
 				glBindVertexArray(mVertexArrayObject);
 
 				glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
-				glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, position));
+				glVertexAttribPointer(GLVertexAttributeLocation::Position, 3, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, position));
 				glEnableVertexAttribArray(0);
 
-				glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+				glVertexAttribPointer(GLVertexAttributeLocation::Normal, 3, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, normal));
 				glEnableVertexAttribArray(1);
 
-				glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
+				glVertexAttribPointer(GLVertexAttributeLocation::TexCoord, 2, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
 				glEnableVertexAttribArray(2);
 
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mFaceBuffer);

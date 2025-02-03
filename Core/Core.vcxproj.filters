@@ -142,6 +142,9 @@
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="QuadMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PhysicsSystem.hpp">
@@ -280,6 +283,12 @@
     <ClInclude Include="ActiveCameraComponent.hpp">
       <Filter>Client</Filter>
     </ClInclude>
+    <ClInclude Include="LightComponent.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="QuadMesh.hpp">
+      <Filter>Backend\Rendering\Meshes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">
@@ -312,16 +321,22 @@
     <None Include="ImGuiSystem.inl">
       <Filter>Client</Filter>
     </None>
-    <None Include="main.frag">
+    <None Include="assets\shaders\forward.frag">
       <Filter>Backend\Rendering\Shaders</Filter>
     </None>
-    <None Include="main.vert">
+    <None Include="assets\shaders\forward.vert">
       <Filter>Backend\Rendering\Shaders</Filter>
     </None>
-    <None Include="forward.fs">
+    <None Include="assets\shaders\main.frag">
       <Filter>Backend\Rendering\Shaders</Filter>
     </None>
-    <None Include="forward.vs">
+    <None Include="assets\shaders\main.vert">
+      <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
+    <None Include="assets\shaders\FlatShading.frag">
+      <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
+    <None Include="assets\shaders\FlatShading.vert">
       <Filter>Backend\Rendering\Shaders</Filter>
     </None>
   </ItemGroup>

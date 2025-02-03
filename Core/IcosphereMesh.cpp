@@ -1,5 +1,5 @@
 /*****************************************************************//**
- * \file   Icosphere.cpp
+ * \file   IcosphereMesh.cpp
  * \brief  
  * 
  * \author Travis Gronvold (travis.gronvold@digipen.edu)
@@ -12,12 +12,12 @@
 
 namespace Gep
 {
-    void Icosphere::Subdivide(size_t subdivisions)
+    void IcosphereMesh::Subdivide(size_t subdivisions)
     {
 
     }
 
-    void Icosphere::RefineTriangles(size_t recursionLevel)
+    void IcosphereMesh::RefineTriangles(size_t recursionLevel)
     {
         for (int i = 0; i < recursionLevel; i++)
         {
@@ -38,7 +38,7 @@ namespace Gep
         }
     }
 
-    size_t Icosphere::GetMiddlePoint(size_t p1, size_t p2)
+    size_t IcosphereMesh::GetMiddlePoint(size_t p1, size_t p2)
     {
         // first check if we have it already
         bool firstIsSmaller = p1 < p2;
@@ -66,7 +66,7 @@ namespace Gep
 
 
     // Create initial icosahedron
-    void Icosphere::CreateIcosahedron()
+    void IcosphereMesh::CreateIcosahedron()
     {
         const float phi = (1.0f + std::sqrt(5.0f)) / 2.0f; // Golden ratio
 
@@ -114,7 +114,7 @@ namespace Gep
         };
     }
 
-    Icosphere::Icosphere(const size_t subdivisions)
+    IcosphereMesh::IcosphereMesh(const size_t subdivisions)
     {
         CreateIcosahedron();
         RefineTriangles(subdivisions);

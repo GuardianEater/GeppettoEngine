@@ -164,6 +164,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="PhysicsSystem.cpp" />
+    <ClCompile Include="QuadMesh.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="ScriptingSystem.cpp" />
@@ -183,10 +184,12 @@
     <ClInclude Include="Events.hpp" />
     <ClInclude Include="IcosphereMesh.hpp" />
     <ClInclude Include="Identification.hpp" />
+    <ClInclude Include="LightComponent.hpp" />
     <ClInclude Include="Logger.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="MeshComponent.hpp" />
     <ClInclude Include="pch.hpp" />
+    <ClInclude Include="QuadMesh.hpp" />
     <ClInclude Include="reflect-cpp-extra.hpp" />
     <ClInclude Include="RenderSystem.hpp" />
     <ClInclude Include="RigidBody.hpp" />
@@ -223,17 +226,19 @@
   <ItemGroup>
     <None Include="assets\shaders\basic.frag" />
     <None Include="assets\shaders\basic.vert" />
+    <None Include="assets\shaders\FlatShading.frag" />
+    <None Include="assets\shaders\FlatShading.vert" />
+    <None Include="assets\shaders\forward.frag" />
+    <None Include="assets\shaders\forward.vert" />
+    <None Include="assets\shaders\main.frag" />
+    <None Include="assets\shaders\main.vert" />
     <None Include="assets\shaders\PhongRender.frag" />
     <None Include="assets\shaders\PhongRender.vert" />
     <None Include="KeyedVector.inl" />
     <None Include="ComponentArray.inl" />
     <None Include="EngineManager.inl" />
-    <None Include="forward.fs" />
-    <None Include="forward.vs" />
     <None Include="ImGuiSystem.inl" />
     <None Include="Logger.inl" />
-    <None Include="main.frag" />
-    <None Include="main.vert" />
     <None Include="TypeList.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

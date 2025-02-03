@@ -252,7 +252,8 @@ namespace Client
 
         // set event functions
         glfwSetKeyCallback(mPrimaryWindow, GLFW_KeyCallback);
-        glfwSetMouseButtonCallback(mPrimaryWindow, GLFW_MouseCallback);
+        glfwSetMouseButtonCallback(mPrimaryWindow, GLFW_MouseButtonCallback);
+        glfwSetCursorPosCallback(mPrimaryWindow, GLFW_MousePositionCallback);
         glfwSetWindowSizeCallback(mPrimaryWindow, GLFW_WindowResizeCallback);
         glfwSetWindowPosCallback(mPrimaryWindow, GLFW_WindowPositionCallback);
 
@@ -310,8 +311,19 @@ namespace Client
         if (ws) ws->mManager.SignalEvent<Gep::Event::KeyPressed>({ key, scancode, action, mods });
     }
 
-    void WindowSystem::GLFW_MouseCallback(GLFWwindow* window, int button, int action, int mods)
+    void WindowSystem::GLFW_MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     {
+        WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+        if (ws) ws->mManager.SignalEvent<Gep::Event::MouseClicked>({ button, action, mods });
+    }
+
+    void WindowSystem::GLFW_MousePositionCallback(GLFWwindow* window, double x, double y)
+    {
+        static double prevX = 0, prevY = 0;
+        WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+        if (ws) ws->mManager.SignalEvent<Gep::Event::MouseMoved>({ x, y, prevX, prevY});
+        prevX = x;
+        prevY = y;
     }
 
     void WindowSystem::GLFW_WindowResizeCallback(GLFWwindow* window, int width, int height)
@@ -322,6 +334,8 @@ namespace Client
 
     void WindowSystem::GLFW_WindowPositionCallback(GLFWwindow* window, int x, int y)
     {
+        WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+        if (ws) ws->mManager.SignalEvent<Gep::Event::WindowMoved>({ x, y });
     }
 }
 

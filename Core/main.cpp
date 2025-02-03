@@ -25,6 +25,7 @@
 #include "Script.hpp"
 #include "Transform.hpp"
 #include "TextureComponent.hpp"
+#include "LightComponent.hpp"
 
 // engine
 #include "Core.hpp"
@@ -50,7 +51,8 @@ int main() try
         Client::Script,
         Client::ActiveCamera,
         Client::Camera,
-        Client::Texture
+        Client::Texture,
+        Client::Light
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////
@@ -70,6 +72,7 @@ int main() try
     em.RegisterGroup<Client::RigidBody, Client::Transform>();
     em.RegisterGroup<Client::Material, Client::Transform>();
     em.RegisterGroup<Client::Camera, Client::Transform>();
+    em.RegisterGroup<Client::Light, Client::Transform>();
     em.RegisterGroup<Client::Script>();
     em.RegisterGroup(); // empty group with all entities
 
@@ -143,6 +146,20 @@ int main() try
         Client::Identification{ "Okayu2" }
     );
 
+    Gep::Entity light1 = em.CreateEntity();
+    em.AddComponent(light1,
+        Client::Transform{ {10, 2, 0} },
+        Client::Light{ {0.2f, 0.2f, 1}, 1.0f },
+        Client::Identification{ "Light1" }
+    );
+
+    Gep::Entity light2 = em.CreateEntity();
+    em.AddComponent(light2,
+        Client::Transform{ {-10, 2, 0} },
+        Client::Light{ {1, 0.2f, 0.2f}, 1.0f },
+        Client::Identification{ "Light2" }
+    );
+
     //for (int i = 0; i < 100; ++i)
     //{
     //    // randomize the position
@@ -169,10 +186,7 @@ int main() try
         em.Update(dt);
 
         // start events ///////////////////////////////////////////////////////////////////////////
-        em.StartEvent<Gep::Event::EntityDestroyed>();
-        em.StartEvent<Gep::Event::KeyPressed>();
-        em.StartEvent<Gep::Event::WindowResize>();
-        em.StartEvent<Gep::Event::WindowClosing>();
+        em.ResolveEvents();
 
         // TODO: make this a ResolveEvents call, or perhaps add that to FrameEnd
         em.DestroyMarkedComponents();

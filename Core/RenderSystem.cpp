@@ -16,13 +16,12 @@ namespace Client
         : ISystem(em)
         , mRenderer()
     {
-        mRenderer.LoadVertexShader("assets\\shaders\\PhongRender.vert");
-        mRenderer.LoadFragmentShader("assets\\shaders\\PhongRender.frag");
+        mRenderer.LoadVertexShader("assets\\shaders\\FlatShading.vert");
+        mRenderer.LoadFragmentShader("assets\\shaders\\FlatShading.frag");
         mRenderer.Compile();
 
         mRenderer.BackfaceCull();
         mRenderer.SetAmbientLight({ 0.2, 0.2, 0.2 });
-        mRenderer.CreateLight(0, { 0, 10, 0 }, { 1, 1, 1 });
 
         mRenderer.LoadImage("Fox", "assets\\textures\\Fox.jpg");
         mRenderer.LoadImage("Raccoon", "assets\\textures\\Raccoon.jpg");
@@ -32,9 +31,10 @@ namespace Client
         mRenderer.LoadImage("Okayu2", "assets\\textures\\Okayu2.PNG");
         mRenderer.LoadImage("Peko", "assets\\textures\\Peko.jpg");
 
+        mRenderer.LoadMesh("Quad", Gep::QuadMesh());
         mRenderer.LoadMesh("Sphere", Gep::SphereMesh(10, 10));
         mRenderer.LoadMesh("Cube", Gep::CubeMesh());
-        mRenderer.LoadMesh("Icosphere", Gep::Icosphere(3));
+        mRenderer.LoadMesh("Icosphere", Gep::IcosphereMesh(3));
     }
 
     RenderSystem::~RenderSystem()
@@ -46,8 +46,9 @@ namespace Client
     void RenderSystem::Initialize()
     {
         //mRenderer.CreateLight(0, { 0, 10, 0 }, { 1, 0, 0 });
-        mManager.SubscribeToEvent<Gep::Event::KeyPressed>(this, &Client::RenderSystem::KeyEvent);
         mManager.SubscribeToEvent<Gep::Event::WindowResize>(this, &Client::RenderSystem::WindowResizeEvent);
+        mManager.SubscribeToEvent<Gep::Event::MouseMoved>(this, &Client::RenderSystem::MouseMovedEvent);
+        mManager.SubscribeToEvent<Gep::Event::MouseClicked>(this, &Client::RenderSystem::MouseClickedEvent);
     }
 
     void RenderSystem::Update(float dt)
@@ -93,6 +94,17 @@ namespace Client
                     mRenderer.SetTexture(texture.textureName);
                 }
 
+                const std::vector<Gep::Entity>& lights = mManager.GetEntities<Light, Transform>();
+                for (Gep::Entity lightEntity : lights)
+                {
+                    const Light& light = mManager.GetComponent<Light>(lightEntity);
+                    const Transform& lightTransform = mManager.GetComponent<Transform>(lightEntity);
+
+                    mRenderer.AddLight(light.color, lightTransform.position, light.intensity);
+                }
+
+                if (material.selected) mRenderer.SetHighlight();
+
                 mRenderer.DrawMesh(material.meshName);
             }
         }
@@ -105,40 +117,38 @@ namespace Client
         const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
         const float movementSpeed = 10 * dt;
 
+
         for (Gep::Entity cam : cameras)
         {
             Transform& transform = mManager.GetComponent<Transform>(cam);
             Camera& camera = mManager.GetComponent<Camera>(cam);
 
+            glm::vec3 forward = glm::normalize(glm::vec3(-camera.back.x, 0.0f, -camera.back.z));
+            glm::vec3 rightward = glm::normalize(glm::vec3(camera.right.x, 0.0f, camera.right.z));
+
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_W))
             {
-                const glm::vec3 forward = -glm::normalize(camera.back) * movementSpeed;
-                transform.position += forward;
+                transform.position += forward * movementSpeed;
             }
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_S))
             {
-                const glm::vec3 backward = glm::normalize(camera.back) * movementSpeed;
-                transform.position += backward;
+                transform.position -= forward * movementSpeed;
             }
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_A))
             {
-                const glm::vec3 leftward = -glm::normalize(camera.right) * movementSpeed;
-                transform.position += leftward;
+                transform.position -= rightward * movementSpeed;
             }
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_D))
             {
-                const glm::vec3 rightward = glm::normalize(camera.right) * movementSpeed;
-                transform.position += rightward;
+                transform.position += rightward * movementSpeed;
             }
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_SPACE))
             {
-                const glm::vec3 upward = glm::normalize(camera.up) * movementSpeed;
-                transform.position += upward;
+                transform.position += glm::vec3(0.0f, movementSpeed, 0.0f);
             }
             if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_LEFT_SHIFT))
             {
-                const glm::vec3 downward = -glm::normalize(camera.up) * movementSpeed;
-                transform.position += downward;
+                transform.position -= glm::vec3(0.0f, movementSpeed, 0.0f);
             }
 
 
@@ -177,10 +187,6 @@ namespace Client
         ImGui::End();
     }
 
-    void RenderSystem::KeyEvent(const Gep::Event::KeyPressed& eventData)
-    {
-    }
-
     void RenderSystem::WindowResizeEvent(const Gep::Event::WindowResize& eventData)
     {
         glViewport(0, 0, eventData.width, eventData.height);
@@ -193,6 +199,42 @@ namespace Client
             cam.viewport.y = cam.viewport.x / eventData.width * eventData.height;
             cam.viewport.z = cam.nearPlane;
             cam.viewport.x = 2.0f * cam.nearPlane * glm::tan(glm::radians(80.0f / 2.0f));
+        }
+    }
+
+    void RenderSystem::MouseMovedEvent(const Gep::Event::MouseMoved& eventData)
+    {
+        // only while right mouse button is pressed
+        if (glfwGetMouseButton(glfwGetCurrentContext(), GLFW_MOUSE_BUTTON_RIGHT) != GLFW_PRESS) return;
+
+
+        float sensitivity = 0.3f;
+
+        const double dx = (eventData.x - eventData.prevX) * sensitivity;
+        const double dy = (eventData.y - eventData.prevY) * sensitivity;
+
+        const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
+
+        for (Gep::Entity cameraEntity : cameras)
+        {
+            Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
+            Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
+            camTransform.rotation.y += dx;
+            camTransform.rotation.x += dy;
+            if (camTransform.rotation.x > 89.0f) camTransform.rotation.x = 89.0f;
+            if (camTransform.rotation.x < -89.0f) camTransform.rotation.x = -89.0f;
+        }
+    }
+
+    void RenderSystem::MouseClickedEvent(const Gep::Event::MouseClicked& eventData)
+    {
+        if (eventData.action == GLFW_PRESS && eventData.button == GLFW_MOUSE_BUTTON_RIGHT)
+        {
+            glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+        else if (eventData.action == GLFW_RELEASE && eventData.button == GLFW_MOUSE_BUTTON_RIGHT)
+        {
+            glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
     }
 }

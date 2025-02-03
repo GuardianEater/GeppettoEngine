@@ -17,13 +17,10 @@ namespace Gep
 
     namespace Event
     {
-        struct IEvent
-        {
-            virtual ~IEvent() = 0;
-        };
+        struct IEvent{};
 
         struct EntityDestroyed
-        {
+        { 
             Entity entity;
         };
 
@@ -46,8 +43,35 @@ namespace Gep
             int height;
         };
 
+        struct WindowMoved
+        {
+            int x;
+            int y;
+        };
+
         struct WindowClosing
         {
+        };
+
+        struct MouseMoved
+        {
+            double x;
+            double y;
+            double prevX;
+            double prevY;
+        };
+
+        struct MouseClicked
+        {
+            int button;
+            int action;
+            int modifier;
+        };
+
+        template <typename ComponentType>
+        struct ComponentAdded
+        {
+            Entity entity; // the entity the component was added to
         };
     }
 }

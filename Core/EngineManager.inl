@@ -112,6 +112,8 @@ namespace Gep
 
             SetSignature(entity, entitySignature); // sets the signature of the entity to the signature with the newly added component
 
+            SignalEvent(Event::ComponentAdded<ComponentType>{ entity });
+
             Log::Trace("Successfully added component: [", GetTypeInfo<ComponentType>().PrettyName(), "] to entity: [", entity, "]");
         }(components), ...);
     }
@@ -248,36 +250,29 @@ namespace Gep
     }
 
     template<typename EventType, typename FunctionType>
+    requires std::invocable<FunctionType, const EventType&>
     inline void EngineManager::SubscribeToEvent(FunctionType function)
     {
-        GetEventFunctions<EventType>().emplace_back(function);
+        mEventDatas[typeid(EventType)].subscribers.emplace_back([function](const Gep::void_unique_ptr& eventData)
+        {
+            function(*static_cast<EventType*>(eventData.get()));
+        });
     }
 
     template<typename EventType, typename ClassType, typename MemberFunctionType>
+    requires IsInvocableMember<ClassType, MemberFunctionType, const EventType&>
     inline void EngineManager::SubscribeToEvent(ClassType* object, MemberFunctionType memberFunction)
     {
-        EventFunction<EventType> eventFunction = std::bind(memberFunction, object, std::placeholders::_1);
-        GetEventFunctions<EventType>().emplace_back(eventFunction);
+        mEventDatas[typeid(EventType)].subscribers.emplace_back([object, memberFunction](const Gep::void_unique_ptr& eventData)
+        {
+            (object->*memberFunction)(*static_cast<EventType*>(eventData.get()));
+        });
     }
 
     template <typename EventType>
     void EngineManager::SignalEvent(const EventType& eventData)
     {
-        GetEventData<EventType>().push_back(eventData);
-    }
-
-    template <typename EventType>
-    void EngineManager::StartEvent()
-    {
-        // the order of these for loops is preference
-        for (const EventType& eventData : GetEventData<EventType>())
-        {
-            for (EventFunction<EventType>& eventFunction : GetEventFunctions<EventType>())
-            {
-                eventFunction(eventData);
-            }
-        }
-        GetEventData<EventType>().clear();
+        mEventQueue.emplace_back(typeid(EventType), make_unique_void_ptr<EventType>(eventData));
     }
 
     template <typename ComponentType>

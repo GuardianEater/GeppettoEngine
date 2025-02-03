@@ -16,15 +16,18 @@
 #include "EngineManager.hpp"
 #include "Renderer.hpp"
 
+// Meshes
 #include "SphereMesh.hpp"
 #include "CubeMesh.hpp"
 #include "IcosphereMesh.hpp"
+#include "QuadMesh.hpp"
 
 // client
 #include "Transform.hpp"
 #include "Material.hpp"
 #include "CameraComponent.hpp"
 #include "TextureComponent.hpp"
+#include "LightComponent.hpp"
 
 namespace Client
 {
@@ -38,8 +41,11 @@ namespace Client
         void Update(float dt);
         void HandleInputs(float dt);
         void RenderImGui(float dt);
-        void KeyEvent(const Gep::Event::KeyPressed& eventData);
+
+    private:
         void WindowResizeEvent(const Gep::Event::WindowResize& eventData);
+        void MouseMovedEvent(const Gep::Event::MouseMoved& eventData);
+        void MouseClickedEvent(const Gep::Event::MouseClicked& eventData);
 
     private:
         Gep::IRenderer mRenderer;

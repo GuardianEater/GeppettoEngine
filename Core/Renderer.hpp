@@ -31,6 +31,7 @@ namespace Gep
 				virtual void LoadMesh(const std::string& name, const Mesh& mesh);
         virtual void LoadImage(const std::string& name, const std::filesystem::path& imagePath);
         virtual void SetTexture(const std::string& textureName) final;
+				virtual void SetHighlight();
         virtual void ToggleWireframes() final;
         virtual void ToggleTextures() final;
 				virtual void Compile() final;
@@ -41,12 +42,16 @@ namespace Gep
 				virtual void SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec4& eye);
 				virtual void SetModel(const glm::mat4& modelingMatrix) final;
 				virtual void SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent) final;
-				virtual void CreateLight(const std::uint8_t lightID, const glm::vec3& position, const glm::vec3& color);
 				virtual void SetAmbientLight(const glm::vec3& color);
 				virtual void DrawMesh(const std::string& meshID);
+				void AddLight(const glm::vec3& color,  const glm::vec3& position, float intensity);
+				void DrawLights();
 
 		private:
 				GLuint LoadShader(GLenum shaderType, const std::filesystem::path& shaderPath);
+				void SetUpLightSSBO();
+
+				GLuint mSSBO;
 
 		private:
 				struct MeshData
@@ -73,8 +78,19 @@ namespace Gep
 				//keyed_vector<MeshData> mMeshDatas;
         bool mWireframeMode = false;
         bool mUseTextures = false;
+        bool mIsOutlinePass = false;
 
         std::unordered_map<std::string, GLuint> mTextures;
         std::unordered_map<std::string, MeshData> mMeshDatas;
+
+				struct LightData
+				{
+						alignas(16) glm::vec3 position;
+						alignas(16) glm::vec3 color;
+            float intensity;
+				};
+
+				GLuint mLightSSBO;
+				std::vector<LightData> mLightData;
 		};
 }

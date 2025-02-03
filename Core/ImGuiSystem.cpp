@@ -12,6 +12,8 @@
 
 #include "CameraComponent.hpp"
 #include "Transform.hpp"
+#include "Material.hpp"
+
 namespace Client
 {
     ImGuiSystem::ImGuiSystem(Gep::EngineManager& em)
@@ -58,6 +60,11 @@ namespace Client
         }
 
         Gep::Entity entity = *mSelectedEntities.begin();
+        if (mManager.HasComponent<Client::Material>(entity))
+        {
+            Client::Material& material = mManager.GetComponent<Client::Material>(entity);
+            material.selected = true;
+        }
 
         std::string displayName = GetEntityDisplayName(entity);
 

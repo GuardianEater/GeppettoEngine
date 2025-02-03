@@ -52,7 +52,8 @@ namespace Client
 
         static void GLFW_ErrorCallback(int error, const char* description);
         static void GLFW_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-        static void GLFW_MouseCallback(GLFWwindow* window, int button, int action, int mods);
+        static void GLFW_MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+        static void GLFW_MousePositionCallback(GLFWwindow* window, double x, double y);
         static void GLFW_WindowResizeCallback(GLFWwindow* window, int width, int height);
         static void GLFW_WindowPositionCallback(GLFWwindow* window, int x, int y);
 
