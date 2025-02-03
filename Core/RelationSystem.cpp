@@ -17,19 +17,16 @@ namespace Client
 {
     void RelationSystem::Update(float dt)
     {
+        // Retrieve all entities with Transform and Parent components.
         const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform, Parent>();
-        for (Gep::Entity entity : entities)
-        {
-            Parent& parent = mManager.GetComponent<Parent>(entity);
-            Transform& parentTransform = mManager.GetComponent<Transform>(entity);
 
-            glm::vec3 positionDelta = parentTransform.position - parentTransform.previousPosition;
 
-            for (Gep::Entity childEntity : parent.children)
-            {
-                Transform& childTransform = mManager.GetComponent<Transform>(childEntity);
-                childTransform.position += positionDelta;
-            }
-        }
     }
+
+
+    void RelationSystem::UpdateEntity(Gep::Entity entity, const glm::vec3& parentDelta)
+    {
+
+    }
+
 }

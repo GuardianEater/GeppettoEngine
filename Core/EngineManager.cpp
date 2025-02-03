@@ -130,8 +130,9 @@ namespace Gep
             entities.erase(std::remove(entities.begin(), entities.end(), entity), entities.end());
 
         // for each child of the entity, remove the parent
-        for (Entity child : GetChildren(entity))
-            DetachEntity(child);
+        if (HasChild(entity))
+            for (Entity child : GetChildren(entity))
+                DetachEntity(child);
         
         if (HasParent(entity))
             DetachEntity(entity);
@@ -161,11 +162,17 @@ namespace Gep
             componentData.copy(newEntity, entity);
         });
 
-        std::vector<Entity> children = GetChildren(entity);
-        for (Entity child : children)
+        if (HasComponent<Client::Parent>(newEntity))
+            GetComponent<Client::Parent>(newEntity).children.clear();
+
+        if (HasChild(entity))
         {
-            Entity newChild = DuplicateEntity(child);
-            AttachEntity(newEntity, newChild);
+            std::vector<Entity> children = GetChildren(entity);
+            for (Entity child : children)
+            {
+                Entity newChild = DuplicateEntity(child);
+                AttachEntity(newEntity, newChild);
+            }
         }
 
         return newEntity;

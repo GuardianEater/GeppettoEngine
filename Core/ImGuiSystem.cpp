@@ -50,6 +50,10 @@ namespace Client
         ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
         if (mSelectedEntities.size() > 1)
         {
+            ImGui::Text("%d Entities Selected", mSelectedEntities.size());
+
+            ImGui::Separator();
+
             for (Gep::Entity entity : mSelectedEntities)
             {
                 std::string displayName = GetEntityDisplayName(entity);
@@ -133,8 +137,16 @@ namespace Client
         {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY"))
             {
-                Gep::Entity droppedEntity = *(const Gep::Entity*)payload->Data;
-                mManager.DetachEntity(droppedEntity);
+                Gep::Entity* droppedEntities = (Gep::Entity*)payload->Data;
+                size_t droppedEntityCount = payload->DataSize / sizeof(Gep::Entity);
+                std::set<Gep::Entity> droppedEntitiesSet(droppedEntities, droppedEntities + droppedEntityCount);
+
+                for (Gep::Entity droppedEntity : droppedEntitiesSet)
+                {
+                    mManager.DetachEntity(droppedEntity);
+                }
+                mSelectedEntities.clear();
+                
             }
             ImGui::EndDragDropTarget();
         }
@@ -245,10 +257,9 @@ namespace Client
             const bool isCtrlPressed = ImGui::GetIO().KeyCtrl;
             const bool isShiftPressed = ImGui::GetIO().KeyShift;
 
-            if (ImGui::IsItemDeactivated() && !isCtrlPressed && !isShiftPressed)
+            if (ImGui::IsItemDeactivated() && !isCtrlPressed && !isShiftPressed && mSelectedEntities.size() > 1)
             {
                 mSelectedEntities.clear();
-                mSelectedEntities.insert(entity);
             }
 
             // bool open = ImGui::TreeNodeEx(displayName.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding);
@@ -261,6 +272,14 @@ namespace Client
                         mSelectedEntities.erase(entity);
                     else
                         mSelectedEntities.insert(entity);
+                }
+                else
+                {
+                    if (mSelectedEntities.size() <= 1)
+                    {
+                        mSelectedEntities.clear();
+                        mSelectedEntities.insert(entity);
+                    }
                 }
 
                 static size_t lastSelectedIndex = std::numeric_limits<size_t>::max(); // Invalid index initially
@@ -299,11 +318,18 @@ namespace Client
             {
                 if (ImGui::MenuItem("Delete"))
                 {
-                    mManager.MarkEntityForDestruction(entity);
+                    for (Gep::Entity selectedEntity : mSelectedEntities)
+                    {
+                        mManager.MarkEntityForDestruction(selectedEntity);
+                    }
+                    mSelectedEntities.clear();
                 }
                 if (ImGui::MenuItem("Duplicate"))
                 {
-                    mManager.DuplicateEntity(entity);
+                    for (Gep::Entity selectedEntity : mSelectedEntities)
+                    {
+                        mManager.DuplicateEntity(selectedEntity);
+                    }
                 }
                 ImGui::EndPopup();
             }
