@@ -30,9 +30,11 @@ namespace Client
         PhysicsSystem(Gep::EngineManager& em);
         ~PhysicsSystem();
 
-        void Update(float dt);
+        void Update(float dt) override;
         void EntityDestroyed(const Gep::Event::EntityDestroyed& eventData);
         void KeyPressed(const Gep::Event::KeyPressed& eventData);
+
+        void FrameEnd() override;
     };
 }
 

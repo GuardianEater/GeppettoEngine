@@ -177,6 +177,27 @@ namespace Gep
         return GetComponentArray<ComponentType>()->GetComponent(entity);
     }
 
+    template<typename ComponentType>
+    inline const ComponentType& EngineManager::GetComponent(Entity entity) const
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not exist!");
+        }
+
+        if (!ComponentIsRegistered<ComponentType>())
+        {
+            Log::Critical("GetComponent() Failed, Component: [", GetTypeInfo<ComponentType>().PrettyName(), "] is not registered!");
+        }
+
+        if (!HasComponent<ComponentType>(entity))
+        {
+            Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not have Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
+        }
+
+        return GetComponentArray<ComponentType>()->GetComponent(entity);
+    }
+
     template <typename... ComponentTypes>
     bool EngineManager::HasComponent(Entity entity) const
     {
@@ -279,6 +300,14 @@ namespace Gep
     std::shared_ptr<ComponentArray<ComponentType>> EngineManager::GetComponentArray()
     {
         // TODO: remove
+        const uint64_t componentID = mComponentTypeToID.at(typeid(ComponentType));
+
+        return std::static_pointer_cast<ComponentArray<ComponentType>>(GetComponentArray(componentID));
+    }
+
+    template<typename ComponentType>
+    inline const std::shared_ptr<ComponentArray<ComponentType>> EngineManager::GetComponentArray() const
+    {
         const uint64_t componentID = mComponentTypeToID.at(typeid(ComponentType));
 
         return std::static_pointer_cast<ComponentArray<ComponentType>>(GetComponentArray(componentID));

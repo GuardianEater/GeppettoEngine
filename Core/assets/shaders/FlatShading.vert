@@ -10,7 +10,6 @@ layout(location=0) uniform mat4 persp_matrix;
 layout(location=1) uniform mat4 view_matrix;
 layout(location=2) uniform mat4 model_matrix;
 layout(location=3) uniform mat4 normal_matrix;
-layout(location=12) uniform bool isOutlinePass;
 
 // out to fragment shader //////////////////////////////////////////////////////
 layout(location=0) flat out vec4 world_normal;
@@ -20,9 +19,6 @@ layout(location=2) out vec2 uv_out;
 void main(void)
 {
   world_position = model_matrix * position;
-  if (isOutlinePass) {
-    world_position += normalize(world_position) * 0.05;
-  }
 
   world_normal = normalize(normal_matrix * normal);
 

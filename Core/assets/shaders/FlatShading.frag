@@ -14,7 +14,8 @@ layout(location=8) uniform vec3 ambient_color;
 layout(location=9) uniform sampler2D texture_sampler;
 layout(location=10) uniform bool use_texture;
 layout(location=11) uniform int light_count;
-layout(location=12) uniform bool isOutlinePass;
+layout(location=12) uniform bool isSolidColor;
+layout(location=13) uniform vec3 solidColor;
 
 struct Light
 {
@@ -33,15 +34,17 @@ out vec4 frag_color; // the resulting pixel color
 
 void main(void)
 {
-    if (isOutlinePass)
+    if (isSolidColor)
     {
-        frag_color = vec4(0.0, 0.5, 1.0, 1.0);
+        // still acount for texture and diffuse color
+        vec3 textureColor = use_texture ? texture(texture_sampler, uv).rgb : vec3(1.0);
+        frag_color = vec4(solidColor, 1.0);
         return;
     }
 
     vec3 position = world_position.xyz;
     vec3 normal = world_normal.xyz;
-    vec3 lighting = vec3(0.0);
+    vec3 lighting = vec3(0.0f);
     for (int i = 0; i < light_count; ++i)
     {
         vec3 lightDir = normalize(lights[i].position - position);
@@ -62,5 +65,6 @@ void main(void)
         // final color
         lighting += (diffuse + specular) * textureColor * lights[i].intensity;
     }
+
     frag_color = vec4(lighting, 1.0);
 }

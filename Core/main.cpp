@@ -15,6 +15,7 @@
 #include "RenderSystem.hpp"
 #include "ScriptingSystem.hpp"
 #include "SerializationSystem.hpp"
+#include "RelationSystem.hpp"
 
 // components
 #include "CameraComponent.hpp"
@@ -26,6 +27,8 @@
 #include "Transform.hpp"
 #include "TextureComponent.hpp"
 #include "LightComponent.hpp"
+#include "ParentComponent.hpp"
+#include "ChildComponent.hpp"
 
 // engine
 #include "Core.hpp"
@@ -52,7 +55,9 @@ int main() try
         Client::ActiveCamera,
         Client::Camera,
         Client::Texture,
-        Client::Light
+        Client::Light,
+        Client::Parent,
+        Client::Child
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////
@@ -62,7 +67,8 @@ int main() try
         Client::ScriptingSystem,
         Client::ImGuiSystem,
         Client::PhysicsSystem,
-        Client::SerializationSystem
+        Client::SerializationSystem,
+        Client::RelationSystem
     > systemTypes;
 
     // register all types ////////////////////////////////////////////////////////////////////////////
@@ -73,6 +79,10 @@ int main() try
     em.RegisterGroup<Client::Material, Client::Transform>();
     em.RegisterGroup<Client::Camera, Client::Transform>();
     em.RegisterGroup<Client::Light, Client::Transform>();
+    em.RegisterGroup<Client::Transform>();
+    em.RegisterGroup<Client::Transform, Client::Child>();
+    em.RegisterGroup<Client::Transform, Client::Parent>();
+
     em.RegisterGroup<Client::Script>();
     em.RegisterGroup(); // empty group with all entities
 
@@ -146,18 +156,22 @@ int main() try
         Client::Identification{ "Okayu2" }
     );
 
+    em.AttachEntity(e5, e6);
+
     Gep::Entity light1 = em.CreateEntity();
     em.AddComponent(light1,
-        Client::Transform{ {10, 2, 0} },
+        Client::Transform{ {10, 2, 0}, {0.2f, 0.2f, 0.2f} },
         Client::Light{ {0.2f, 0.2f, 1}, 1.0f },
-        Client::Identification{ "Light1" }
+        Client::Identification{ "Blue Light" },
+        Client::Material{ "Icosphere" }
     );
 
     Gep::Entity light2 = em.CreateEntity();
     em.AddComponent(light2,
-        Client::Transform{ {-10, 2, 0} },
+        Client::Transform{ {-10, 2, 0}, {0.2f, 0.2f, 0.2f} },
         Client::Light{ {1, 0.2f, 0.2f}, 1.0f },
-        Client::Identification{ "Light2" }
+        Client::Identification{ "Red Light" },
+        Client::Material{ "Icosphere" }
     );
 
     //for (int i = 0; i < 100; ++i)

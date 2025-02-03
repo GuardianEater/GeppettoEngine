@@ -165,6 +165,7 @@
     </ClCompile>
     <ClCompile Include="PhysicsSystem.cpp" />
     <ClCompile Include="QuadMesh.cpp" />
+    <ClCompile Include="RelationSystem.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="ScriptingSystem.cpp" />
@@ -179,6 +180,7 @@
     <ClInclude Include="AxisMesh.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="CameraComponent.hpp" />
+    <ClInclude Include="ChildComponent.hpp" />
     <ClInclude Include="CubeMesh.hpp" />
     <ClInclude Include="dependencies\imgui\imgui_stdlib.h" />
     <ClInclude Include="Events.hpp" />
@@ -188,9 +190,11 @@
     <ClInclude Include="Logger.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="MeshComponent.hpp" />
+    <ClInclude Include="ParentComponent.hpp" />
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="QuadMesh.hpp" />
     <ClInclude Include="reflect-cpp-extra.hpp" />
+    <ClInclude Include="RelationSystem.hpp" />
     <ClInclude Include="RenderSystem.hpp" />
     <ClInclude Include="RigidBody.hpp" />
     <ClInclude Include="Script.hpp" />
@@ -217,6 +221,7 @@
     <ClInclude Include="Renderer.hpp" />
     <ClInclude Include="ISystem.hpp" />
     <ClInclude Include="ShaderProgram.hpp" />
+    <ClInclude Include="Tags.hpp" />
     <ClInclude Include="TextureComponent.hpp" />
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="TypeID.hpp" />

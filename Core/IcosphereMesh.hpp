@@ -20,6 +20,7 @@ namespace Gep
 
     private:
         void CreateIcosahedron();
+        glm::vec2 CalculateUVs(const glm::vec3& position);
         void Subdivide(size_t subdivisions);
         void RefineTriangles(size_t recursionLevel);
         size_t GetMiddlePoint(size_t p1, size_t p2);

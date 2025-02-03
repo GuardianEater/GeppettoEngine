@@ -105,6 +105,12 @@ namespace Client
 
                 if (material.selected) mRenderer.SetHighlight();
 
+                if (mManager.HasComponent<Client::Light>(entity))
+                {
+                    Light& light = mManager.GetComponent<Client::Light>(entity);
+                    mRenderer.SetSolidColor(light.color * light.intensity);
+                }
+
                 mRenderer.DrawMesh(material.meshName);
             }
         }

@@ -32,6 +32,7 @@ namespace Gep
         virtual void LoadImage(const std::string& name, const std::filesystem::path& imagePath);
         virtual void SetTexture(const std::string& textureName) final;
 				virtual void SetHighlight();
+        virtual void SetSolidColor(const glm::vec3& color) final;
         virtual void ToggleWireframes() final;
         virtual void ToggleTextures() final;
 				virtual void Compile() final;
@@ -79,6 +80,8 @@ namespace Gep
         bool mWireframeMode = false;
         bool mUseTextures = false;
         bool mIsOutlinePass = false;
+        bool mUseSolidColor = false;
+        glm::vec3 mSolidColor;
 
         std::unordered_map<std::string, GLuint> mTextures;
         std::unordered_map<std::string, MeshData> mMeshDatas;

@@ -68,5 +68,17 @@ namespace Client
             std::cout << "held" << std::endl;
         }
     }
+
+    void PhysicsSystem::FrameEnd()
+    {
+        const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform>();
+        for (Gep::Entity entity : entities)
+        {
+            Transform& transform = mManager.GetComponent<Transform>(entity);
+            transform.previousPosition = transform.position;
+            transform.previousRotation = transform.rotation;
+            transform.previousScale = transform.scale;
+        }
+    }
 }
 

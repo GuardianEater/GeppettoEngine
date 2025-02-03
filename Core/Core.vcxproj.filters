@@ -145,6 +145,9 @@
     <ClCompile Include="QuadMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RelationSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PhysicsSystem.hpp">
@@ -288,6 +291,18 @@
     </ClInclude>
     <ClInclude Include="QuadMesh.hpp">
       <Filter>Backend\Rendering\Meshes</Filter>
+    </ClInclude>
+    <ClInclude Include="RelationSystem.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="Tags.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="ChildComponent.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="ParentComponent.hpp">
+      <Filter>Client\Components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

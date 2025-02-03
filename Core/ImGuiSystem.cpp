@@ -241,14 +241,19 @@ namespace Client
                     }
                 }
             }
+            // Multi-selection logic (Ctrl or Shift key)
+            const bool isCtrlPressed = ImGui::GetIO().KeyCtrl;
+            const bool isShiftPressed = ImGui::GetIO().KeyShift;
+
+            if (ImGui::IsItemDeactivated() && !isCtrlPressed && !isShiftPressed)
+            {
+                mSelectedEntities.clear();
+                mSelectedEntities.insert(entity);
+            }
 
             // bool open = ImGui::TreeNodeEx(displayName.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding);
             if (ImGui::IsItemClicked()) 
             {
-                // Multi-selection logic (Ctrl or Shift key)
-                const bool isCtrlPressed = ImGui::GetIO().KeyCtrl;
-                const bool isShiftPressed = ImGui::GetIO().KeyShift;
-
                 // If the control key is pressed, add the entity to the selection, or remove it if it is already selected
                 if (isCtrlPressed)
                 {
@@ -256,11 +261,6 @@ namespace Client
                         mSelectedEntities.erase(entity);
                     else
                         mSelectedEntities.insert(entity);
-                }
-                else
-                {
-                    mSelectedEntities.clear();
-                    mSelectedEntities.insert(entity);
                 }
 
                 static size_t lastSelectedIndex = std::numeric_limits<size_t>::max(); // Invalid index initially
@@ -311,7 +311,9 @@ namespace Client
             // Add drag and drop source
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
             {
-                ImGui::SetDragDropPayload("ENTITY", &entity, sizeof(Gep::Entity));
+                std::vector<Gep::Entity> selectedEntities(mSelectedEntities.begin(), mSelectedEntities.end());
+
+                ImGui::SetDragDropPayload("ENTITY", selectedEntities.data(), selectedEntities.size() * sizeof(Gep::Entity));
                 ImGui::Text("Dragging %s", displayName.c_str());
                 ImGui::EndDragDropSource();
             }
@@ -321,15 +323,29 @@ namespace Client
             {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY"))
                 {
-                    Gep::Entity droppedEntity = *(const Gep::Entity*)payload->Data;
-                    mManager.AttachEntity(entity, droppedEntity);
+                    Gep::Entity* droppedEntities = (Gep::Entity*)payload->Data;
+                    size_t droppedEntityCount = payload->DataSize / sizeof(Gep::Entity);
+                    std::set<Gep::Entity> droppedEntitiesSet(droppedEntities, droppedEntities + droppedEntityCount);
+
+                    // only allow dropping entities onto entities that are not selected
+                    if (!droppedEntitiesSet.contains(entity))
+                    {
+                        for (Gep::Entity droppedEntity : droppedEntitiesSet)
+                        {
+                            mManager.AttachEntity(entity, droppedEntity);
+                        }
+                        mSelectedEntities.clear();
+                    }
+                    //mManager.AttachEntity(entity, droppedEntity);
                 }
                 ImGui::EndDragDropTarget();
             }
 
             if (isOpen)
             {
-                DrawEntities(mManager.GetChildren(entity), dt);
+                if (mManager.HasChild(entity))
+                    DrawEntities(mManager.GetChildren(entity), dt);
+
                 ImGui::TreePop();
             }
 

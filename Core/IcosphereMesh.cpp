@@ -56,7 +56,7 @@ namespace Gep
         Vertex middle = {
             glm::normalize((point1.position + point2.position) / 2.0f),
             glm::normalize((point1.normal + point2.normal) / 2.0f),
-            {}
+            CalculateUVs(glm::normalize((point1.position + point2.position)))
         };
         size_t index = mVertices.size();
         mVertices.push_back(middle);
@@ -112,6 +112,13 @@ namespace Gep
             { 8, 6, 7 },
             { 9, 8, 1 },
         };
+    }
+
+    glm::vec2 IcosphereMesh::CalculateUVs(const glm::vec3& position)
+    {
+        float u = 0.5f + atan2(position.z, position.x) / (2 * glm::pi<float>());
+        float v = 0.5f - asin(position.y) / glm::pi<float>();
+        return { u, v };
     }
 
     IcosphereMesh::IcosphereMesh(const size_t subdivisions)

@@ -70,10 +70,10 @@ namespace Gep
     // per entity data
     struct EntityData
     {
-        Entity parent{ INVALID_ENTITY }; // the parent of the entity, if it doesnt have a parent it is INVALID_ENTITY
+        //Entity parent{ INVALID_ENTITY }; // the parent of the entity, if it doesnt have a parent it is INVALID_ENTITY
         Signature signature{}; // the signature of the entity
 
-        std::vector<Entity> children{}; // any children of the entity
+        //std::vector<Entity> children{}; // any children of the entity
     };
 
     // static data for components
@@ -143,8 +143,9 @@ namespace Gep
         bool HasParent(Entity entity) const;
         Entity GetParent(Entity child);
 
-        std::vector<Entity> GetSiblings(Entity entity);
-        std::vector<Entity> GetChildren(Entity parent);
+        const std::vector<Entity>& GetSiblings(Entity entity);
+        const std::vector<Entity>& GetChildren(Entity parent);
+        bool HasChild(Entity parent) const;
 
         template <typename... ComponentTypes>
         std::vector<Entity>& GetEntities();
@@ -182,6 +183,8 @@ namespace Gep
 
         template<typename ComponentType>
         ComponentType& GetComponent(Entity entity);
+        template <typename ComponentType>
+        const ComponentType& GetComponent(Entity entity) const;
 
         // if the entity has all of the listed components
         template <typename... ComponentTypes>
@@ -227,9 +230,12 @@ namespace Gep
 
     private:
         std::shared_ptr<IComponentArray> GetComponentArray(uint64_t componentID);
+        const std::shared_ptr<IComponentArray> GetComponentArray(uint64_t componentID) const;
 
         template <typename ComponentType>
         std::shared_ptr<ComponentArray<ComponentType>> GetComponentArray();
+        template <typename ComponentType>
+        const std::shared_ptr<ComponentArray<ComponentType>> GetComponentArray() const;
 
         // keeps a lists of subscribers for each type of event
         template<typename EventType>

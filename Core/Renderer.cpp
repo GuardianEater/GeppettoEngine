@@ -33,7 +33,8 @@ namespace Gep
         UseTexture,
 
         LightCount,
-				IsOutlinePass,
+				IsSolidColor,
+				SolidColor,
 		};
 
 		IRenderer::IRenderer()
@@ -195,6 +196,14 @@ namespace Gep
 				mIsOutlinePass = true;
 		}
 
+		void IRenderer::SetSolidColor(const glm::vec3& color)
+		{
+        glUseProgram(mProgram.GetProgramID());
+        glUniform1i(GLUniformLocation::IsSolidColor, 1);
+        glUniform3fv(GLUniformLocation::SolidColor, 1, &color[0]);
+        glUseProgram(0);
+		}
+
 		void IRenderer::SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec4& eye)
 		{
 				glUseProgram(mProgram.GetProgramID());
@@ -257,6 +266,8 @@ namespace Gep
 				if (mWireframeMode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
 				if (mWireframeMode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        glUniform1i(GLUniformLocation::IsSolidColor, 0); // reset solid color
 
         //glBindTexture(GL_TEXTURE_2D, 0);
 				glBindVertexArray(0);
