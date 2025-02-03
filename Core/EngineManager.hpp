@@ -70,10 +70,10 @@ namespace Gep
     // per entity data
     struct EntityData
     {
-        //Entity parent{ INVALID_ENTITY }; // the parent of the entity, if it doesnt have a parent it is INVALID_ENTITY
+        Entity parent{ INVALID_ENTITY }; // the parent of the entity, if it doesnt have a parent it is INVALID_ENTITY
         Signature signature{}; // the signature of the entity
 
-        //std::vector<Entity> children{}; // any children of the entity
+        std::vector<Entity> children{}; // any children of the entity
     };
 
     // static data for components
@@ -143,8 +143,8 @@ namespace Gep
         bool HasParent(Entity entity) const;
         Entity GetParent(Entity child);
 
-        const std::vector<Entity>& GetSiblings(Entity entity);
-        const std::vector<Entity>& GetChildren(Entity parent);
+        std::vector<Entity> GetSiblings(Entity entity);
+        std::vector<Entity> GetChildren(Entity parent);
         bool HasChild(Entity parent) const;
 
         template <typename... ComponentTypes>

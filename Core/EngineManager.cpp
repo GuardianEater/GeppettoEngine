@@ -13,8 +13,6 @@
 #include "KeyedVector.hpp"
 
 #include "Logger.hpp"
-#include "ChildComponent.hpp"
-#include "ParentComponent.hpp"
 
 namespace Gep
 {
@@ -162,17 +160,11 @@ namespace Gep
             componentData.copy(newEntity, entity);
         });
 
-        if (HasComponent<Client::Parent>(newEntity))
-            GetComponent<Client::Parent>(newEntity).children.clear();
-
-        if (HasChild(entity))
+        std::vector<Entity> children = GetChildren(entity);
+        for (Entity child : children)
         {
-            std::vector<Entity> children = GetChildren(entity);
-            for (Entity child : children)
-            {
-                Entity newChild = DuplicateEntity(child);
-                AttachEntity(newEntity, newChild);
-            }
+            Entity newChild = DuplicateEntity(child);
+            AttachEntity(newEntity, newChild);
         }
 
         return newEntity;
@@ -192,7 +184,7 @@ namespace Gep
             return;
         }
 
-        if (HasComponent<Client::Child>(child) && GetComponent<Client::Child>(child).parent == parent)
+        if (mEntityDatas[child].parent == parent)
         {
             Log::Error("AttachEntity() failed, Child Entity: [", child, "] is already attached to Parent Entity: [", parent, "]");
             return;
@@ -200,17 +192,12 @@ namespace Gep
 
         // if the new child has a parent currently, remove the child from its parent
         if (HasParent(child))
+        {
             DetachEntity(child);
+        }
 
-        if (!HasComponent<Client::Parent>(parent))
-            AddComponent<Client::Parent>(parent, Client::Parent{});
-
-        if (!HasComponent<Client::Child>(child))
-            AddComponent<Client::Child>(child, Client::Child{});
-
-        // add the child to the parent
-        GetComponent<Client::Parent>(parent).children.push_back(child);
-        GetComponent<Client::Child>(child).parent = parent;
+        mEntityDatas.at(parent).children.push_back(child);
+        mEntityDatas.at(child).parent = parent;
     }
 
     void EngineManager::DetachEntity(Entity child)
@@ -227,15 +214,11 @@ namespace Gep
             return;
         }
 
-        Client::Child& childComponent = GetComponent<Client::Child>(child);
-        Client::Parent& parentComponent = GetComponent<Client::Parent>(childComponent.parent);
+        Entity parent = mEntityDatas[child].parent;
 
-        // remove the child from the parent
-        std::vector<Entity>& children = parentComponent.children;
+        std::vector<Entity>& children = mEntityDatas[parent].children;
         children.erase(std::remove(children.begin(), children.end(), child), children.end());
-
-        // remove the parent from the child
-        DestroyComponent<Client::Child>(child);
+        mEntityDatas.at(child).parent = INVALID_ENTITY;
     }
 
     bool EngineManager::HasParent(Entity entity) const
@@ -246,7 +229,7 @@ namespace Gep
             return false;
         }
 
-        if (!HasComponent<Client::Child>(entity))
+        if (mEntityDatas.at(entity).parent == INVALID_ENTITY)
         {
             return false;
         }
@@ -262,37 +245,35 @@ namespace Gep
             return INVALID_ENTITY;
         }
 
-        return GetComponent<Client::Child>(child).parent;
+        return mEntityDatas.at(child).parent;
     }
 
-    const std::vector<Entity>& EngineManager::GetSiblings(Entity entity)
+    std::vector<Entity> EngineManager::GetSiblings(Entity entity)
     {
         if (!EntityExists(entity))
         {
-            Log::Critical("GetSiblings() failed, Entity: [", entity, "] does not exist");
+            Log::Error("GetSiblings() failed, Entity: [", entity, "] does not exist");
+            return std::vector<Entity>();
         }
         Entity parent = GetParent(entity);
         if (parent == INVALID_ENTITY)
         {
-            Log::Critical("GetSiblings() failed, Entity: [", entity, "] does not have a parent");
+            Log::Error("GetSiblings() failed, Entity: [", entity, "] does not have a parent");
+            return std::vector<Entity>();
         }
 
         return GetChildren(parent);
     }
 
-    const std::vector<Entity>& EngineManager::GetChildren(Entity parent)
+    std::vector<Entity> EngineManager::GetChildren(Entity parent)
     {
         if (!EntityExists(parent))
         {
-            Log::Critical("GetChildren() failed, Entity: [", parent, "] does not exist");
+            Log::Error("GetChildren() failed, Entity: [", parent, "] does not exist");
+            return std::vector<Entity>();
         }
 
-        if (!HasComponent<Client::Parent>(parent))
-        {
-            Log::Critical("GetChildren() failed, Entity: [", parent, "] does not have a parent component");
-        }
-        
-        return GetComponent<Client::Parent>(parent).children;
+        return mEntityDatas.at(parent).children;
     }
 
     bool EngineManager::HasChild(Entity parent) const
@@ -303,7 +284,7 @@ namespace Gep
             return false;
         }
 
-        if (!HasComponent<Client::Parent>(parent))
+        if (mEntityDatas.at(parent).children.size() == 0)
         {
             return false;
         }

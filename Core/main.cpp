@@ -55,9 +55,7 @@ int main() try
         Client::ActiveCamera,
         Client::Camera,
         Client::Texture,
-        Client::Light,
-        Client::Parent,
-        Client::Child
+        Client::Light
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////
@@ -80,9 +78,6 @@ int main() try
     em.RegisterGroup<Client::Camera, Client::Transform>();
     em.RegisterGroup<Client::Light, Client::Transform>();
     em.RegisterGroup<Client::Transform>();
-    em.RegisterGroup<Client::Transform, Client::Child>();
-    em.RegisterGroup<Client::Transform, Client::Parent>();
-
     em.RegisterGroup<Client::Script>();
     em.RegisterGroup(); // empty group with all entities
 

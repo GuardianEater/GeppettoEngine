@@ -29,17 +29,23 @@ namespace Gep
     template<typename ...ComponentTypes>
     inline std::vector<Entity>& EngineManager::GetEntities()
     {
+        ([&]()
+        {
+            if (!ComponentIsRegistered<ComponentTypes>())
+                Log::Critical("GetEntities() Failed, Component: [", GetTypeInfo<ComponentTypes>().PrettyName(), "] is not registered!");
+        }
+        (), ...);
+
         Signature groupSignature;
 
         // uses folding to create a signature from the arg list
         ((groupSignature.set(GetComponentBitPos<ComponentTypes>())), ...);
 
-#ifdef _DEBUG
         if (!mEntityGroups.contains(groupSignature))
         {
-            throw std::logic_error("The given group was not registered! You Must First Register The group!");
+            Log::Critical("GetEntities() Failed, EntityGroup: [", groupSignature, "] does not exist!");
         }
-#endif // _DEBUG
+
         return mEntityGroups.at(groupSignature);
     }
 

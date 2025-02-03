@@ -18,8 +18,6 @@ namespace Client
     void RelationSystem::Update(float dt)
     {
         // Retrieve all entities with Transform and Parent components.
-        const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform, Parent>();
-
 
     }
 
