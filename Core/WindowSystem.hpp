@@ -56,6 +56,7 @@ namespace Client
         static void GLFW_MousePositionCallback(GLFWwindow* window, double x, double y);
         static void GLFW_WindowResizeCallback(GLFWwindow* window, int width, int height);
         static void GLFW_WindowPositionCallback(GLFWwindow* window, int x, int y);
+        static void GLFW_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
     private:
         GLFWwindow* mPrimaryWindow;

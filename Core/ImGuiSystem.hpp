@@ -53,6 +53,20 @@ namespace Client
     private:
         std::string GetEntityDisplayName(Gep::Entity entity);
         void DrawInspectorPanel();
+        void DrawInfoPanel();
+        void DrawExtras();
+        bool DrawEntityNode(Gep::Entity entity);
+
+        // calls the given function for each entity dropped
+        template <typename FunctionType>
+        requires std::invocable<FunctionType, Gep::Entity>
+        void EntitiesDragDropTarget(FunctionType func);
+
+        
+        void StartCameraFocus(Gep::Entity entity); // sets the target that the camera will look at
+        void UpdateCameraFocus(float dt); // lerps the camera to the target entity set with StartCameraFocus
+        bool mCameraLerping = false;
+        glm::vec3 mCameraTargetRotation{};
 
     private:
 
@@ -76,32 +90,18 @@ namespace Client
         void DrawType(const std::string_view name, T& t);
 
         template <typename T>
-            requires TypeIsContainer<T>
+        requires TypeIsContainer<T>
         void DrawType(const std::string_view name, T& t);
 
-        template <>
-        void DrawType<float>(const std::string_view name, float& t);
-
-        template <>
-        void DrawType<int>(const std::string_view name, int& t);
-
-        template <>
-        void DrawType<std::string>(const std::string_view name, std::string& t);
-
-        template <>
-        void DrawType<glm::vec3>(const std::string_view name, glm::vec3& t);
-
-        template <>
-        void DrawType<glm::vec4>(const std::string_view name, glm::vec4& t);
-
-        template <>
-        void DrawType<size_t>(const std::string_view name, size_t& t);
-
-        template <>
-        void DrawType<bool>(const std::string_view name, bool& t);
-
-        template <>
-        void DrawType<char>(const std::string_view name, char& t);
+        // bunch of base type specializations
+        template <> void DrawType<float>(const std::string_view name, float& t);
+        template <> void DrawType<int>(const std::string_view name, int& t);
+        template <> void DrawType<std::string>(const std::string_view name, std::string& t);
+        template <> void DrawType<glm::vec3>(const std::string_view name, glm::vec3& t);
+        template <> void DrawType<glm::vec4>(const std::string_view name, glm::vec4& t);
+        template <> void DrawType<size_t>(const std::string_view name, size_t& t);
+        template <> void DrawType<bool>(const std::string_view name, bool& t);
+        template <> void DrawType<char>(const std::string_view name, char& t);
     };
 }
 

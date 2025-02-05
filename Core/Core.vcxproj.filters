@@ -298,12 +298,6 @@
     <ClInclude Include="Tags.hpp">
       <Filter>Client</Filter>
     </ClInclude>
-    <ClInclude Include="ChildComponent.hpp">
-      <Filter>Client\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="ParentComponent.hpp">
-      <Filter>Client\Components</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">

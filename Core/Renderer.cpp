@@ -154,7 +154,7 @@ namespace Gep
 				}
 		}
 
-		void IRenderer::Clear(const glm::vec3& color)
+		void IRenderer::Start(const glm::vec3& color)
 		{
 				glClearColor(color.r, color.g, color.b, 1);
 				glClearDepth(1);
@@ -274,7 +274,11 @@ namespace Gep
 				glUseProgram(0);
 
         mUseTextures = false;
-        mLightData.clear();
+		}
+
+		void IRenderer::End()
+		{
+				mLightData.clear();
 		}
 
     void IRenderer::AddLight(const glm::vec3& color, const glm::vec3& position, float intensity)

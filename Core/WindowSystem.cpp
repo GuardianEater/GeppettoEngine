@@ -68,18 +68,38 @@ namespace Client
         ImGuiStyle& style = ImGui::GetStyle();
         if (mIO->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
+            ImVec4 color = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+            ImVec4 colorHovered = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
+            ImVec4 colorActive = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+            ImVec4 colorBright = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
+
             style.WindowRounding = 0.0f;
             style.FramePadding.y = 8;
             style.ItemSpacing.y = 4;
             style.FrameBorderSize = 3;
             style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-            style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
-            style.Colors[ImGuiCol_Header] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
-            style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
-            style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
-            style.Colors[ImGuiCol_FrameBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
-            style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
-            style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
+            style.Colors[ImGuiCol_TitleBgActive] = color;
+
+            style.Colors[ImGuiCol_Header]        = color;
+            style.Colors[ImGuiCol_HeaderHovered] = colorHovered;
+            style.Colors[ImGuiCol_HeaderActive]  = colorActive;
+
+            style.Colors[ImGuiCol_FrameBg]        = color;
+            style.Colors[ImGuiCol_FrameBgHovered] = colorHovered;
+            style.Colors[ImGuiCol_FrameBgActive]  = colorActive;
+            
+            style.Colors[ImGuiCol_Tab]                = color;
+            style.Colors[ImGuiCol_TabHovered]         = colorHovered;
+            style.Colors[ImGuiCol_TabActive]          = colorActive;
+            style.Colors[ImGuiCol_TabUnfocused]       = color;
+            style.Colors[ImGuiCol_TabUnfocusedActive] = color;
+
+            // sets the color of the docking panel
+            style.Colors[ImGuiCol_DockingPreview] = colorBright;
+
+            // set the color of the bar above each tab
+            style.Colors[ImGuiCol_TabSelectedOverline] = colorBright;
+
         }
 
         // Setup Platform/Renderer backends
@@ -254,6 +274,7 @@ namespace Client
         glfwSetKeyCallback(mPrimaryWindow, GLFW_KeyCallback);
         glfwSetMouseButtonCallback(mPrimaryWindow, GLFW_MouseButtonCallback);
         glfwSetCursorPosCallback(mPrimaryWindow, GLFW_MousePositionCallback);
+        glfwSetScrollCallback(mPrimaryWindow, GLFW_ScrollCallback);
         glfwSetWindowSizeCallback(mPrimaryWindow, GLFW_WindowResizeCallback);
         glfwSetWindowPosCallback(mPrimaryWindow, GLFW_WindowPositionCallback);
 
@@ -336,6 +357,12 @@ namespace Client
     {
         WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
         if (ws) ws->mManager.SignalEvent<Gep::Event::WindowMoved>({ x, y });
+    }
+
+    void WindowSystem::GLFW_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+    {
+        WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+        if (ws) ws->mManager.SignalEvent<Gep::Event::MouseScrolled>({ xoffset, yoffset });
     }
 }
 

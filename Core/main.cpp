@@ -27,8 +27,6 @@
 #include "Transform.hpp"
 #include "TextureComponent.hpp"
 #include "LightComponent.hpp"
-#include "ParentComponent.hpp"
-#include "ChildComponent.hpp"
 
 // engine
 #include "Core.hpp"

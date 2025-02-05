@@ -17,7 +17,7 @@ namespace Gep
     {}
 
     template <typename ComponentType>
-    void ComponentArray<ComponentType>::Insert(Entity entity, const ComponentType& component)
+    void ComponentArray<ComponentType>::insert(Entity entity, const ComponentType& component)
     {
         size_t newIndex = mComponentArray.size();
         mEntityToIndex[entity] = newIndex;
@@ -26,7 +26,7 @@ namespace Gep
     }
 
     template <typename ComponentType>
-    void ComponentArray<ComponentType>::Erase(Entity entity)
+    void ComponentArray<ComponentType>::erase(Entity entity)
     {
         size_t indexOfRemovedEntity = mEntityToIndex[entity];
         size_t indexOfLastComponent = mComponentArray.size() - 1;
@@ -45,18 +45,15 @@ namespace Gep
     }
 
     template <typename ComponentType>
-    ComponentType& ComponentArray<ComponentType>::GetComponent(Entity entity)
+    ComponentType& ComponentArray<ComponentType>::at(Entity entity)
     {
         // Return a reference to the entity's component
         return mComponentArray[mEntityToIndex[entity]];
     }
 
-    template <typename ComponentType>
-    void ComponentArray<ComponentType>::Event_EntityDestroyed(Entity entity)
+    template<typename ComponentType>
+    inline size_t ComponentArray<ComponentType>::size() const
     {
-        if (mEntityToIndex.contains(entity))
-        {
-            Erase(entity);
-        }
+        return mComponentArray.size();
     }
 }

@@ -68,6 +68,12 @@ namespace Gep
             int modifier;
         };
 
+        struct MouseScrolled
+        {
+            double xoffset;
+            double yoffset;
+        };
+
         template <typename ComponentType>
         struct ComponentAdded
         {

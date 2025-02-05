@@ -26,31 +26,43 @@ namespace Gep
 				IRenderer();
 				~IRenderer();
 
+        // sets up the main shader program
 				virtual void LoadFragmentShader(const std::filesystem::path& shaderPath) final;
 				virtual void LoadVertexShader(const std::filesystem::path& shaderPath) final;
+				virtual void Compile() final;
+
+        // loads resources into the renderer
 				virtual void LoadMesh(const std::string& name, const Mesh& mesh);
         virtual void LoadImage(const std::string& name, const std::filesystem::path& imagePath);
+
+        // changes how the renderer will draw the next object
         virtual void SetTexture(const std::string& textureName) final;
 				virtual void SetHighlight();
         virtual void SetSolidColor(const glm::vec3& color) final;
-        virtual void ToggleWireframes() final;
-        virtual void ToggleTextures() final;
-				virtual void Compile() final;
-				virtual void UnloadMesh(const std::string& name);
-				virtual void BackfaceCull(bool enabled = true) final;
-				virtual void Clear(const glm::vec3& color = { 0, 0, 0 }) final;
 				virtual void SetCamera(const Camera& camera) final;
 				virtual void SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec4& eye);
-				virtual void SetModel(const glm::mat4& modelingMatrix) final;
 				virtual void SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent) final;
+				virtual void SetModel(const glm::mat4& modelingMatrix) final;
 				virtual void SetAmbientLight(const glm::vec3& color);
+
+        // completes the rendering of the object
 				virtual void DrawMesh(const std::string& meshID);
+
+        virtual void ToggleWireframes() final;
+        virtual void ToggleTextures() final;
+				virtual void UnloadMesh(const std::string& name);
+				virtual void BackfaceCull(bool enabled = true) final;
+
+        // Start must be called before rendering and End must be called after rendering
+				virtual void Start(const glm::vec3& color = { 0, 0, 0 }) final;
+				virtual void End();
+
 				void AddLight(const glm::vec3& color,  const glm::vec3& position, float intensity);
-				void DrawLights();
 
 		private:
 				GLuint LoadShader(GLenum shaderType, const std::filesystem::path& shaderPath);
 				void SetUpLightSSBO();
+				void DrawLights();
 
 				GLuint mSSBO;
 

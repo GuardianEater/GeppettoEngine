@@ -99,40 +99,141 @@ namespace Client
             }
         }
 
-        if (ImGui::Button("Duplicate", { ImGui::GetContentRegionAvail().x, 30.0f }))
-        {
-            mManager.DuplicateEntity(entity);
-        }
-
         ImGui::PopStyleColor(); // button color
         ImGui::End(); // Inspector
     }
 
-    void ImGuiSystem::Update(float dt)
+    void ImGuiSystem::DrawInfoPanel()
     {
-        std::vector<Gep::Entity>& entities = mManager.GetEntities();
+        ImGui::SetNextWindowSize({ 230.0f, 300.0f });
+        ImGui::Begin("Info", nullptr, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoResize);
 
-        // get only the entities that are parents
-        std::vector<Gep::Entity> parents;
-        for (Gep::Entity entity : entities)
+        ImGui::Text("FPS: %.2f", ImGui::GetIO().Framerate);
+        ImGui::Text("Latency: %.2f ms", ImGui::GetIO().DeltaTime * 1000.0f);
+        ImGui::Separator();
+
+        ImGui::Text("Entities: %d", mManager.GetEntities().size());
+        const auto& components = mManager.GetComponentDatas();
+        ImGui::Text("Components Registered: %d", components.size());
+        ImGui::Separator();
+        
+
+        if (ImGui::BeginTable("ComponentTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
         {
-            if (!mManager.HasParent(entity))
+            ImGui::TableSetupColumn("Component", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Active", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableHeadersRow();
+
+            for (const auto& component : components)
             {
-                parents.push_back(entity);
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", component.name.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", component.array->size());
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", component.index);
+            }
+
+            ImGui::EndTable();
+        }
+        
+        ImGui::End(); // Info
+    }
+
+    void ImGuiSystem::DrawExtras()
+    {
+        ImGui::Begin("Extra");
+        static bool showDemoWindow = false;
+        static bool showStyleWindow = false;
+        static bool showMetricsWindow = false;
+
+        ImGui::Checkbox("Demo Window", &showDemoWindow);
+        ImGui::Checkbox("Style Window", &showStyleWindow);
+        ImGui::Checkbox("Metrics Window", &showMetricsWindow);
+
+        if (showDemoWindow) ImGui::ShowDemoWindow(&showDemoWindow);
+        if (showStyleWindow) { ImGui::Begin("Style");  ImGui::ShowStyleEditor(); ImGui::End(); }
+        if (showMetricsWindow) ImGui::ShowMetricsWindow();
+        ImGui::End(); // Extra
+    }
+
+    bool ImGuiSystem::DrawEntityNode(Gep::Entity entity)
+    {
+        // the identification component aquired here returns the wrong name
+        std::string displayName = GetEntityDisplayName(entity);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f)); // Increase padding
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10.0f, 7.0f)); // Increase vertical padding
+
+        // change the color of tree node selected
+        ImVec4 selectedColor = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
+        ImVec4 defaultColor = ImGui::GetStyleColorVec4(ImGuiCol_Header);
+        ImVec4 color = mSelectedEntities.contains(entity) ? selectedColor : defaultColor;
+        ImVec4 hoverColor = ImVec4(color.x + 0.1f, color.y + 0.1f, color.z + 0.1f, 1.0f);
+
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, hoverColor);
+        ImGui::PushStyleColor(ImGuiCol_Header, mSelectedEntities.contains(entity) ? selectedColor : defaultColor);
+
+        bool isOpen = ImGui::TreeNodeEx(displayName.c_str()
+            , ImGuiTreeNodeFlags_OpenOnArrow
+            | ImGuiTreeNodeFlags_SpanAvailWidth
+            | (mSelectedEntities.contains(entity) ? ImGuiTreeNodeFlags_Selected : ImGuiTreeNodeFlags_None));
+
+        ImGui::PopStyleColor(2);
+        ImGui::PopStyleVar(2);
+
+        return isOpen;
+    }
+
+    void ImGuiSystem::StartCameraFocus(Gep::Entity entity)
+    {
+        // should probably change this so it only does it on editor camera
+        const std::vector<Gep::Entity>& activeCameras = mManager.GetEntities<Client::Camera, Client::Transform>();
+        for (Gep::Entity camera : activeCameras)
+        {
+            if (mManager.HasComponent<Client::Transform>(entity) && !mManager.HasComponent<Client::Camera>(entity))
+            {
+                const glm::vec3 camPosition = mManager.GetComponent<Client::Transform>(camera).position;
+                const glm::vec3 targetPosition = mManager.GetComponent<Client::Transform>(entity).position;
+                const glm::vec3 targetDirection = glm::normalize(targetPosition - camPosition);
+                const float distance = glm::distance(targetPosition, camPosition);
+
+                // atan2 handles full 360-degree rotations
+                float pitch = glm::degrees(asin(glm::clamp(-targetDirection.y, -1.0f, 1.0f)));
+                float yaw = glm::degrees(atan2(targetDirection.x, -targetDirection.z));
+                float roll = 0.0f;
+
+                mCameraTargetRotation = { pitch, yaw, roll };
+                mCameraLerping = true;
             }
         }
+    }
 
-        ImGui::Begin("Entities");
-
-        if (ImGui::Button("Create", { ImGui::GetContentRegionAvail().x , 30.0f}))
+    void ImGuiSystem::UpdateCameraFocus(float dt)
+    {
+        if (mCameraLerping)
         {
-            mManager.CreateEntity();
+            const std::vector<Gep::Entity>& activeCameras = mManager.GetEntities<Client::Camera, Client::Transform>();
+            for (Gep::Entity camera : activeCameras)
+            {
+                glm::vec3& currentRotation = mManager.GetComponent<Client::Transform>(camera).rotation;
+
+                currentRotation = glm::mix(currentRotation, mCameraTargetRotation, 0.1f);
+
+                if (glm::length(mCameraTargetRotation - currentRotation) < 0.001)
+                {
+                    mCameraLerping = false;
+                }
+            }
         }
+    }
 
-        DrawEntities(parents, dt);
-
-        // detach entities if they are dropped on the hierarchy panel
-        ImGui::Dummy(ImGui::GetContentRegionAvail());
+    template <typename FunctionType>
+    requires std::invocable<FunctionType, Gep::Entity>
+    void ImGuiSystem::EntitiesDragDropTarget(FunctionType func)
+    {
         if (ImGui::BeginDragDropTarget())
         {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY"))
@@ -143,13 +244,60 @@ namespace Client
 
                 for (Gep::Entity droppedEntity : droppedEntitiesSet)
                 {
-                    mManager.DetachEntity(droppedEntity);
+                    func(droppedEntity);
                 }
                 mSelectedEntities.clear();
-                
+
             }
             ImGui::EndDragDropTarget();
         }
+    }
+
+    void ImGuiSystem::Update(float dt)
+    {
+        DrawInfoPanel();
+        DrawExtras();
+        
+        ImGui::Begin("Entities");
+        if (ImGui::Button("Create", { ImGui::GetContentRegionAvail().x , 30.0f}))
+        {
+            mManager.CreateEntity();
+        }
+
+        // search bar
+        static std::string search = "";
+        
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::InputTextWithHint("###Search", "Search", &search);
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        std::vector<Gep::Entity>& entities = mManager.GetEntities();
+
+        // get only the entities that are parents
+        std::vector<Gep::Entity> parents;
+        if (search.empty())
+        {
+            for (Gep::Entity entity : entities)
+            {
+                if (!mManager.HasParent(entity))
+                {
+                    parents.push_back(entity);
+                }
+            }
+        }
+
+        DrawEntities(parents, dt);
+
+        // detach entities if they are dropped into any open space
+        ImGui::Dummy(ImGui::GetContentRegionAvail());
+
+        EntitiesDragDropTarget([&](Gep::Entity entity)
+        {
+            mManager.DetachEntity(entity);
+        });
 
         // clears selected entities if the background is clicked
         if (ImGui::IsItemClicked())
@@ -176,7 +324,25 @@ namespace Client
             }
         }
 
+        if (ImGui::IsKeyPressed(ImGuiKey_F, false))
+        {
+            if (mSelectedEntities.size() == 1)
+            {
+                StartCameraFocus(*mSelectedEntities.begin());
+            }
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_A, false) && ImGui::GetIO().KeyCtrl)
+        {
+            mSelectedEntities.clear();
+            for (Gep::Entity entity : entities)
+            {
+                mSelectedEntities.insert(entity);
+            }
+        }
+
         DrawInspectorPanel();
+        UpdateCameraFocus(dt);
 
         ImGui::End(); // Entities
     }
@@ -188,128 +354,59 @@ namespace Client
         {
             ImGui::PushID(entity);
 
-            // the identification component aquired here returns the wrong name
-            std::string displayName = GetEntityDisplayName(entity);
+            const std::string displayName = GetEntityDisplayName(entity);
+            bool isOpen = DrawEntityNode(entity);
 
-            ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f)); // Increase padding
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10.0f, 7.0f)); // Increase vertical padding
-            
-            // change the color of tree node selected
-            ImVec4 selectedColor = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
-            ImVec4 defaultColor  = ImGui::GetStyleColorVec4(ImGuiCol_Header);
-            ImVec4 color         = mSelectedEntities.contains(entity) ? selectedColor : defaultColor;
-            ImVec4 hoverColor    = ImVec4(color.x + 0.1f, color.y + 0.1f, color.z + 0.1f, 1.0f);
-
-            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, hoverColor);
-            ImGui::PushStyleColor(ImGuiCol_Header, mSelectedEntities.contains(entity) ? selectedColor : defaultColor);
-
-            bool isOpen = ImGui::TreeNodeEx(displayName.c_str()
-                , ImGuiTreeNodeFlags_OpenOnArrow 
-                | ImGuiTreeNodeFlags_SpanAvailWidth 
-                | (mSelectedEntities.contains(entity) ? ImGuiTreeNodeFlags_Selected : ImGuiTreeNodeFlags_None));
-
-            ImGui::PopStyleColor(2);
-            ImGui::PopStyleVar(2);
-
-            static bool lerpingCamera = false;
-            static bool movingCamera = false;
-            static glm::vec3 targetRotation{};
-            if (ImGui::IsMouseDoubleClicked(0) && ImGui::IsItemHovered())
-            {
-                // should probably change this so it only does it on editor camera
-                const std::vector<Gep::Entity>& activeCameras = mManager.GetEntities<Client::Camera, Client::Transform>();
-                for (Gep::Entity camera : activeCameras)
-                {
-                    if (mManager.HasComponent<Client::Transform>(entity) && !mManager.HasComponent<Client::Camera>(entity))
-                    {
-                        const glm::vec3 camPosition = mManager.GetComponent<Client::Transform>(camera).position;
-                        const glm::vec3 targetPosition = mManager.GetComponent<Client::Transform>(entity).position;
-                        const glm::vec3 targetDirection = glm::normalize(targetPosition - camPosition);
-                        const float distance = glm::distance(targetPosition, camPosition);
-
-                        // atan2 handles full 360-degree rotations
-                        float pitch = glm::degrees(asin(glm::clamp(-targetDirection.y, -1.0f, 1.0f)));
-                        float yaw = glm::degrees(atan2(targetDirection.x, -targetDirection.z));
-                        float roll = 0.0f;
-
-                        targetRotation = { pitch, yaw, roll };
-                        lerpingCamera = true;
-                    }
-                }
-            }
-
-            if (lerpingCamera)
-            {
-                const std::vector<Gep::Entity>& activeCameras = mManager.GetEntities<Client::Camera, Client::Transform>();
-                for (Gep::Entity camera : activeCameras)
-                {
-                    glm::vec3& currentRotation = mManager.GetComponent<Client::Transform>(camera).rotation;
-
-                    currentRotation = glm::mix(currentRotation, targetRotation, 0.005f);
-
-                    if (glm::length(targetRotation - currentRotation) < 0.001)
-                    {
-                        lerpingCamera = false;
-                    }
-                }
-            }
             // Multi-selection logic (Ctrl or Shift key)
             const bool isCtrlPressed = ImGui::GetIO().KeyCtrl;
             const bool isShiftPressed = ImGui::GetIO().KeyShift;
-
-            if (ImGui::IsItemDeactivated() && !isCtrlPressed && !isShiftPressed && mSelectedEntities.size() > 1)
+            static size_t lastSelectedIndex = std::numeric_limits<size_t>::max(); // Invalid index initially
+            
+            // default selection
+            if (ImGui::IsItemClicked() && !isCtrlPressed && !isShiftPressed && mSelectedEntities.size() <= 1)
             {
                 mSelectedEntities.clear();
+                mSelectedEntities.insert(entity);
+                lastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
             }
 
-            // bool open = ImGui::TreeNodeEx(displayName.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding);
-            if (ImGui::IsItemClicked()) 
+            // same as default but if there are multiple entities selected, doesn't deselect until released
+            else if (ImGui::IsItemDeactivated() && !isCtrlPressed && !isShiftPressed && mSelectedEntities.size() > 1)
             {
-                // If the control key is pressed, add the entity to the selection, or remove it if it is already selected
-                if (isCtrlPressed)
-                {
-                    if (mSelectedEntities.contains(entity))
-                        mSelectedEntities.erase(entity);
-                    else
-                        mSelectedEntities.insert(entity);
-                }
+                mSelectedEntities.clear();
+                mSelectedEntities.insert(entity);
+                lastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
+            }
+
+            // will select the entity if it is clicked, and unselect if it is clicked again
+            else if (ImGui::IsItemClicked() && isCtrlPressed && !isShiftPressed)
+            {
+                if (mSelectedEntities.contains(entity))
+                    mSelectedEntities.erase(entity);
                 else
                 {
-                    if (mSelectedEntities.size() <= 1)
-                    {
-                        mSelectedEntities.clear();
-                        mSelectedEntities.insert(entity);
-                    }
-                }
-
-                static size_t lastSelectedIndex = std::numeric_limits<size_t>::max(); // Invalid index initially
-
-                // If the shift key is pressed, select all entities between the last selected entity and the current entity
-                if (isShiftPressed)
-                {
-                    if (lastSelectedIndex < entities.size())
-                    {
-                        size_t currentIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
-                        if (lastSelectedIndex < currentIndex)
-                        {
-                            for (size_t i = lastSelectedIndex; i <= currentIndex; ++i)
-                            {
-                                mSelectedEntities.insert(entities[i]);
-                            }
-                        }
-                        else
-                        {
-                            for (size_t i = currentIndex; i <= lastSelectedIndex; ++i)
-                            {
-                                mSelectedEntities.insert(entities[i]);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    // Update the last selected index
+                    mSelectedEntities.insert(entity);
                     lastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
+                }
+            }
+
+            // multiselect with shift key
+            else if (ImGui::IsItemClicked() && !isCtrlPressed && isShiftPressed)
+            {
+                mSelectedEntities.clear();
+                if (lastSelectedIndex < entities.size())
+                {
+                    size_t currentIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
+                    if (lastSelectedIndex < currentIndex)
+                    {
+                        for (size_t i = lastSelectedIndex; i <= currentIndex; ++i)
+                            mSelectedEntities.insert(entities[i]);
+                    }
+                    else
+                    {
+                        for (size_t i = currentIndex; i <= lastSelectedIndex; ++i)
+                            mSelectedEntities.insert(entities[i]);
+                    }
                 }
             }
 
@@ -345,32 +442,16 @@ namespace Client
             }
 
             // Add drag and drop target
-            if (ImGui::BeginDragDropTarget())
+            EntitiesDragDropTarget([&](Gep::Entity droppedEntity)
             {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY"))
-                {
-                    Gep::Entity* droppedEntities = (Gep::Entity*)payload->Data;
-                    size_t droppedEntityCount = payload->DataSize / sizeof(Gep::Entity);
-                    std::set<Gep::Entity> droppedEntitiesSet(droppedEntities, droppedEntities + droppedEntityCount);
+                if (droppedEntity == entity) return;
 
-                    // only allow dropping entities onto entities that are not selected
-                    if (!droppedEntitiesSet.contains(entity))
-                    {
-                        for (Gep::Entity droppedEntity : droppedEntitiesSet)
-                        {
-                            mManager.AttachEntity(entity, droppedEntity);
-                        }
-                        mSelectedEntities.clear();
-                    }
-                    //mManager.AttachEntity(entity, droppedEntity);
-                }
-                ImGui::EndDragDropTarget();
-            }
+                mManager.AttachEntity(entity, droppedEntity);
+            });
 
             if (isOpen)
             {
-                if (mManager.HasChild(entity))
-                    DrawEntities(mManager.GetChildren(entity), dt);
+                DrawEntities(mManager.GetChildren(entity), dt);
 
                 ImGui::TreePop();
             }

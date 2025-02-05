@@ -17,8 +17,8 @@ namespace Gep
     public:
         virtual ~IComponentArray() = default;
 
-        virtual void Event_EntityDestroyed(Entity entity) = 0;
-        virtual void Erase(Entity entity) = 0;
+        virtual void erase(Entity entity) = 0;
+        virtual size_t size() const = 0;
     };
 
     template <typename ComponentType>
@@ -29,16 +29,15 @@ namespace Gep
         ~ComponentArray() override = default;
 
         // adds a component to the array attached to the entity
-        void Insert(Entity entity, const ComponentType& component);
+        void insert(Entity entity, const ComponentType& component);
 
         // removes the given component from an entity
-        void Erase(Entity entity) override;
+        void erase(Entity entity) override;
 
         // gets a component off of an entity
-        ComponentType& GetComponent(Entity entity);
+        ComponentType& at(Entity entity);
 
-        // when an entity is destroyed it needs to be removed from the component array
-        void Event_EntityDestroyed(Entity entity) override;
+        size_t size() const override;
 
     private:
         std::vector <ComponentType> mComponentArray{}; // the array of components

@@ -180,7 +180,6 @@
     <ClInclude Include="AxisMesh.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="CameraComponent.hpp" />
-    <ClInclude Include="ChildComponent.hpp" />
     <ClInclude Include="CubeMesh.hpp" />
     <ClInclude Include="dependencies\imgui\imgui_stdlib.h" />
     <ClInclude Include="Events.hpp" />
@@ -190,7 +189,6 @@
     <ClInclude Include="Logger.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="MeshComponent.hpp" />
-    <ClInclude Include="ParentComponent.hpp" />
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="QuadMesh.hpp" />
     <ClInclude Include="reflect-cpp-extra.hpp" />

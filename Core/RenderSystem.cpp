@@ -49,12 +49,25 @@ namespace Client
         mManager.SubscribeToEvent<Gep::Event::WindowResize>(this, &Client::RenderSystem::WindowResizeEvent);
         mManager.SubscribeToEvent<Gep::Event::MouseMoved>(this, &Client::RenderSystem::MouseMovedEvent);
         mManager.SubscribeToEvent<Gep::Event::MouseClicked>(this, &Client::RenderSystem::MouseClickedEvent);
+        mManager.SubscribeToEvent<Gep::Event::KeyPressed>(this, &Client::RenderSystem::KeyPressedEvent);
+        mManager.SubscribeToEvent<Gep::Event::MouseScrolled>(this, &Client::RenderSystem::MouseScrolledEvent);
     }
 
     void RenderSystem::Update(float dt)
     {
-        mRenderer.Clear();
+        mRenderer.Start();
 
+        // adds the lights to the scene
+        const std::vector<Gep::Entity>& lights = mManager.GetEntities<Light, Transform>();
+        for (Gep::Entity lightEntity : lights)
+        {
+            const Light& light = mManager.GetComponent<Light>(lightEntity);
+            const Transform& lightTransform = mManager.GetComponent<Transform>(lightEntity);
+
+            mRenderer.AddLight(light.color, lightTransform.position, light.intensity);
+        }
+
+        // begins rendering each everything
         const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
         for (Gep::Entity cameraEntity : cameras)
         {
@@ -94,15 +107,6 @@ namespace Client
                     mRenderer.SetTexture(texture.textureName);
                 }
 
-                const std::vector<Gep::Entity>& lights = mManager.GetEntities<Light, Transform>();
-                for (Gep::Entity lightEntity : lights)
-                {
-                    const Light& light = mManager.GetComponent<Light>(lightEntity);
-                    const Transform& lightTransform = mManager.GetComponent<Transform>(lightEntity);
-
-                    mRenderer.AddLight(light.color, lightTransform.position, light.intensity);
-                }
-
                 if (material.selected) mRenderer.SetHighlight();
 
                 if (mManager.HasComponent<Client::Light>(entity))
@@ -115,6 +119,7 @@ namespace Client
             }
         }
 
+        mRenderer.End();
         HandleInputs(dt);
     }
 
@@ -241,6 +246,22 @@ namespace Client
         else if (eventData.action == GLFW_RELEASE && eventData.button == GLFW_MOUSE_BUTTON_RIGHT)
         {
             glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
+
+    void RenderSystem::KeyPressedEvent(const Gep::Event::KeyPressed& eventData)
+    {
+
+    }
+
+    void RenderSystem::MouseScrolledEvent(const Gep::Event::MouseScrolled& eventData)
+    {
+        const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
+        for (Gep::Entity cameraEntity : cameras)
+        {
+            Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
+            Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
+            camTransform.position += cam.back * -(float)eventData.yoffset;
         }
     }
 }

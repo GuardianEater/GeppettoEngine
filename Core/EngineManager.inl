@@ -108,7 +108,7 @@ namespace Gep
             Log::Trace("Adding Component: [", GetTypeInfo<ComponentType>().PrettyName(), "] to entity: [", entity, "]...");
             // formats the component types into a string
 
-            GetComponentArray<ComponentType>()->Insert(entity, component);
+            GetComponentArray<ComponentType>()->insert(entity, component);
 
             Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
             entitySignature.set(GetComponentBitPos<ComponentType>()); // updates the entities signature with the id of the componet
@@ -180,7 +180,7 @@ namespace Gep
             Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not have Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
         }
 
-        return GetComponentArray<ComponentType>()->GetComponent(entity);
+        return GetComponentArray<ComponentType>()->at(entity);
     }
 
     template<typename ComponentType>
@@ -201,7 +201,7 @@ namespace Gep
             Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not have Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
         }
 
-        return GetComponentArray<ComponentType>()->GetComponent(entity);
+        return GetComponentArray<ComponentType>()->at(entity);
     }
 
     template <typename... ComponentTypes>

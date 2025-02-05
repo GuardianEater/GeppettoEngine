@@ -172,6 +172,12 @@ namespace Gep
 
     void EngineManager::AttachEntity(Entity parent, Entity child)
     {
+        if (parent == child)
+        {
+            Log::Error("AttachEntity() failed, Entity: [", parent, "] cannot be attached to itself");
+            return;
+        }
+
         if (!EntityExists(parent))
         {
             Log::Error("AttachEntity() failed, Parent Entity: [", parent, "] does not exist");
@@ -354,8 +360,8 @@ namespace Gep
             return;
         }
 
-        //GetComponentArray(componentID)->Erase(entity);
-        GetComponentArray(componentID)->Event_EntityDestroyed(entity);
+        //GetComponentArray(componentID)->erase(entity);
+        GetComponentArray(componentID)->erase(entity);
 
         Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
         Signature componentSignature = mComponentDatas.at(componentID).signature; // gets the signature of the component

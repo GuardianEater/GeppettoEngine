@@ -44,6 +44,8 @@
 #include <random>
 #include <fstream>
 #include <iomanip>
+#include <cmath>
+#include <execution>
 
 // imgui
 #include <imgui.h>
