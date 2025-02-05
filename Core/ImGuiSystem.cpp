@@ -274,13 +274,15 @@ namespace Client
         ImGui::Separator();
         ImGui::Spacing();
 
-        std::vector<Gep::Entity>& entities = mManager.GetEntities();
+        mEntities = mManager.GetEntities();
+        // set sorting here
+        // can organize by search filter aswell
 
         // get only the entities that are parents
         std::vector<Gep::Entity> parents;
         if (search.empty())
         {
-            for (Gep::Entity entity : entities)
+            for (Gep::Entity entity : mEntities)
             {
                 if (!mManager.HasParent(entity))
                 {
@@ -335,7 +337,7 @@ namespace Client
         if (ImGui::IsKeyPressed(ImGuiKey_A, false) && ImGui::GetIO().KeyCtrl)
         {
             mSelectedEntities.clear();
-            for (Gep::Entity entity : entities)
+            for (Gep::Entity entity : mEntities)
             {
                 mSelectedEntities.insert(entity);
             }
