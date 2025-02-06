@@ -20,7 +20,7 @@ namespace Client
         {}
 
         void Update(float dt) override;
-        void UpdateEntity(Gep::Entity entity, const glm::vec3& parentDelta);
+        void UpdateRecursive(const Gep::Entity& parent);
     };
 }
 
