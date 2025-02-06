@@ -230,6 +230,26 @@ namespace Client
         }
     }
 
+    std::vector<Gep::Entity> ImGuiSystem::SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm)
+    {
+        std::vector<Gep::Entity> result;
+
+        for (Gep::Entity entity : entities) 
+        {
+            std::string displayName = GetEntityDisplayName(entity);
+            if (displayName.find(searchTerm) != std::string::npos)
+            {
+                result.push_back(mManager.GetRoot(entity));
+            }
+        }
+
+        // remove duplicates
+        std::sort(result.begin(), result.end());
+        result.erase(std::unique(result.begin(), result.end()), result.end());
+
+        return result;
+    }
+
     template <typename FunctionType>
     requires std::invocable<FunctionType, Gep::Entity>
     void ImGuiSystem::EntitiesDragDropTarget(FunctionType func)
@@ -267,6 +287,10 @@ namespace Client
         // search bar
         static std::string search = "";
         
+        if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F, false))
+        {
+            ImGui::SetKeyboardFocusHere();
+        }
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
         ImGui::InputTextWithHint("###Search", "Search", &search);
 
@@ -290,6 +314,11 @@ namespace Client
                 }
             }
         }
+        else
+        {
+            parents = SearchEntities(mEntities, search);
+        }
+
 
         DrawEntities(parents, dt);
 
@@ -351,7 +380,6 @@ namespace Client
 
     void ImGuiSystem::DrawEntities(const std::vector<Gep::Entity>& entities, float dt)
     {
-        size_t index = 0;
         for (Gep::Entity entity : entities)
         {
             ImGui::PushID(entity);
@@ -459,7 +487,6 @@ namespace Client
             }
 
             ImGui::PopID();
-            ++index;
         }
     }
 

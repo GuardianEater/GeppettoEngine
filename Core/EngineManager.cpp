@@ -243,7 +243,7 @@ namespace Gep
         return true;
     }
 
-    Entity EngineManager::GetParent(Entity child)
+    Entity EngineManager::GetParent(Entity child) const
     {
         if (!EntityExists(child))
         {
@@ -252,6 +252,45 @@ namespace Gep
         }
 
         return mEntityDatas.at(child).parent;
+    }
+
+    std::vector<Entity> EngineManager::GetAncestors(Entity entity) const
+    {
+        std::vector<Entity> ancestors{};
+
+        if (!EntityExists(entity))
+        {
+            Log::Error("GetAncestors() failed, Entity: [", entity, "] does not exist");
+            return ancestors;
+        }
+
+        Entity parent = GetParent(entity);
+
+        while (parent != INVALID_ENTITY)
+        {
+            ancestors.push_back(parent);
+            parent = GetParent(parent);
+        }
+
+        return ancestors;
+    }
+
+    Entity EngineManager::GetRoot(Entity child) const
+    {
+        if (!EntityExists(child))
+        {
+            Log::Error("GetRoot() failed, Entity: [", child, "] does not exist");
+            return INVALID_ENTITY;
+        }
+
+        Entity parent = GetParent(child);
+        while (parent != INVALID_ENTITY)
+        {
+            child = parent;
+            parent = GetParent(child);
+        }
+
+        return child;
     }
 
     std::vector<Entity> EngineManager::GetSiblings(Entity entity)

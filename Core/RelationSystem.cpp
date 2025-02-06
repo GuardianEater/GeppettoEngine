@@ -10,8 +10,6 @@
 #include "RelationSystem.hpp"
 #include "EngineManager.hpp"
 #include "Transform.hpp"
-#include "ChildComponent.hpp"
-#include "ParentComponent.hpp"
 
 namespace Client
 {

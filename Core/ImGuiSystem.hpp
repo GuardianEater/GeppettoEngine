@@ -68,6 +68,8 @@ namespace Client
         bool mCameraLerping = false;
         glm::vec3 mCameraTargetRotation{};
 
+        std::vector<Gep::Entity> SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm);
+
     private:
         std::vector<Gep::Entity> mEntities;
         std::unordered_set<Gep::Entity> mSelectedEntities; // entities that are selected in the hierarchy

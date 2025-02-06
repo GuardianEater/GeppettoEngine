@@ -140,8 +140,10 @@ namespace Gep
         void AttachEntity(Entity parent, Entity child);
         void DetachEntity(Entity child);
 
-        bool HasParent(Entity entity) const;
-        Entity GetParent(Entity child);
+        bool HasParent(Entity child) const;
+        Entity GetParent(Entity child) const;
+        std::vector<Entity> GetAncestors(Entity child) const; // first element is the parent, last element is the root
+        Entity GetRoot(Entity child) const;
 
         std::vector<Entity> GetSiblings(Entity entity);
         std::vector<Entity> GetChildren(Entity parent);
