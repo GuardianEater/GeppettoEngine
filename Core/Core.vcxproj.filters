@@ -49,6 +49,9 @@
     <Filter Include="Backend\Rendering\Meshes">
       <UniqueIdentifier>{85bbbf72-2dcc-4674-99be-b43125954e74}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ImGui\TestEngine">
+      <UniqueIdentifier>{3fd306a5-c90b-45bb-8fbd-0bb9758f9c7f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -147,6 +150,30 @@
     </ClCompile>
     <ClCompile Include="RelationSystem.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_capture_tool.cpp">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_context.cpp">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_coroutine.cpp">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_engine.cpp">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_exporters.cpp">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_perftool.cpp">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_ui.cpp">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_utils.cpp">
+      <Filter>ImGui\TestEngine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -297,6 +324,42 @@
     </ClInclude>
     <ClInclude Include="Tags.hpp">
       <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_capture_tool.h">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_context.h">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_coroutine.h">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_engine.h">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_exporters.h">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_imconfig.h">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_internal.h">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_perftool.h">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_ui.h">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_utils.h">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\thirdparty\Str\Str.h">
+      <Filter>ImGui\TestEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\thirdparty\stb\imstb_image_write.h">
+      <Filter>ImGui\TestEngine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

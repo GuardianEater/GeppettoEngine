@@ -14,11 +14,14 @@
 #include "Transform.hpp"
 #include "Material.hpp"
 
+#include "imgui_te_engine.h"
+
 namespace Client
 {
     ImGuiSystem::ImGuiSystem(Gep::EngineManager& em)
         : ISystem(em)
     {
+
     }
 
     std::string ImGuiSystem::GetEntityDisplayName(Gep::Entity entity)
