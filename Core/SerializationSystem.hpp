@@ -42,9 +42,9 @@ namespace Client
 
                     std::string componentName = Gep::GetTypeInfo<ComponentType>().PrettyName();
                     
-                    std::string json = rfl::json::write(component);
+                    //std::string json = rfl::json::write(component);
 
-                    Gep::Log::Info(componentName, ": ", json);
+                    //Gep::Log::Info(componentName, ": ", json);
                 });
             });
         }

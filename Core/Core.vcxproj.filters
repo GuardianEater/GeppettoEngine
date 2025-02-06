@@ -175,6 +175,15 @@
     <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_utils.cpp">
       <Filter>ImGui\TestEngine</Filter>
     </ClCompile>
+    <ClCompile Include="IRenderTarget.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTargetImgui.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTargetTexture.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PhysicsSystem.hpp">
@@ -360,6 +369,15 @@
     </ClInclude>
     <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\thirdparty\stb\imstb_image_write.h">
       <Filter>ImGui\TestEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="IRenderTarget.hpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTargetImgui.hpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTargetTexture.hpp">
+      <Filter>Backend\Rendering</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

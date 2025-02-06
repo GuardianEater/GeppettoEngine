@@ -12,6 +12,9 @@
 
 #include <glm.hpp>
 
+#include "IRenderTarget.hpp"
+#include "RenderTargetImgui.hpp"
+
 namespace Client
 {
     struct Camera
@@ -31,9 +34,6 @@ namespace Client
             nearPlane                                                       // the depth of the viewport
         };
 
-        //void update()
-        //{
-
-        //}
+        std::shared_ptr<Gep::IRenderTarget> renderTarget = std::make_shared<Gep::RenderTargetImgui>(500, 500);
     };
 }

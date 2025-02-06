@@ -74,6 +74,9 @@ namespace Client
             const Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
             Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
 
+            cam.renderTarget->Bind();
+            cam.renderTarget->Clear();
+
             // convert the camera's rotation to radians
             glm::vec3 camRotation = glm::radians(camTransform.rotation);
 
@@ -117,6 +120,9 @@ namespace Client
 
                 mRenderer.DrawMesh(material.meshName);
             }
+
+            cam.renderTarget->Draw();
+            cam.renderTarget->Unbind();
         }
 
         mRenderer.End();
