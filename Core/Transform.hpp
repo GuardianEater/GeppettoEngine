@@ -14,8 +14,6 @@ namespace Client
 {
     struct Transform
     {
-        using Hidden = std::true_type;
-
         glm::vec3 position{};
         glm::vec3 scale{1.0f, 1.0f, 1.0f};
         glm::vec3 rotation{};
