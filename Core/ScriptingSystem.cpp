@@ -105,7 +105,7 @@ namespace Client
 
     void ScriptingSystem::Update(float dt)
     {
-        std::vector<Gep::Entity>& entities = mManager.GetEntities<Script>();
+        const std::vector<Gep::Entity>& entities = mManager.GetEntities<Script>();
         for (Gep::Entity entity : entities)
         {
             sol::table entityTable = mLua.create_table();

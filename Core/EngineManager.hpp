@@ -81,7 +81,7 @@ namespace Gep
     {
         Signature signature{}; // the signature of the component
         uint8_t index{}; // the position of the component in the signature
-        std::string name{};
+        std::string name{}; // the name of the component
 
         std::function<bool(Entity)> has{}; // a function that checks if the entity has this component
         std::function<void(Entity)> add{}; // a function that adds this component to the given entity
@@ -145,12 +145,12 @@ namespace Gep
         std::vector<Entity> GetAncestors(Entity child) const; // first element is the parent, last element is the root
         Entity GetRoot(Entity child) const;
 
-        std::vector<Entity> GetSiblings(Entity entity);
-        std::vector<Entity> GetChildren(Entity parent);
+        std::vector<Entity> GetSiblings(Entity entity)const;
+        std::vector<Entity> GetChildren(Entity parent) const;
         bool HasChild(Entity parent) const;
 
         template <typename... ComponentTypes>
-        std::vector<Entity>& GetEntities();
+        const std::vector<Entity>& GetEntities() const;
 
         
 
@@ -160,7 +160,7 @@ namespace Gep
         std::vector<Signature> GetComponentSignatures(Entity entity);
 
         template <typename ComponentType>
-        Signature GetComponentSignature();
+        Signature GetComponentSignature() const;
 
         template <typename ComponentType>
         void RegisterComponent();

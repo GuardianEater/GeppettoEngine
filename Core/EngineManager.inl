@@ -27,7 +27,7 @@ namespace Gep
     }
 
     template<typename ...ComponentTypes>
-    inline std::vector<Entity>& EngineManager::GetEntities()
+    inline const std::vector<Entity>& EngineManager::GetEntities() const
     {
         ([&]()
         {
@@ -50,7 +50,7 @@ namespace Gep
     }
 
     template<typename ComponentType>
-    inline Signature EngineManager::GetComponentSignature()
+    inline Signature EngineManager::GetComponentSignature() const
     {
         // TODO: remove
         uint64_t componentID = mComponentTypeToID.at(typeid(ComponentType));

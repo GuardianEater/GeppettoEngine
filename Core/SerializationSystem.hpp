@@ -51,7 +51,7 @@ namespace Client
 
         void Exit() override
         {
-            std::vector<Gep::Entity>& entities = mManager.GetEntities();
+            const std::vector<Gep::Entity>& entities = mManager.GetEntities();
 
             for (Gep::Entity entity : entities)
             {
