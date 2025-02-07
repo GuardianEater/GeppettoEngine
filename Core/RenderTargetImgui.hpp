@@ -21,6 +21,6 @@ namespace Gep
             : RenderTargetTexture(width, height)
         {}
 
-        void Draw() override;
+        void Draw(EngineManager& em, Entity camera) override;
     };
 }

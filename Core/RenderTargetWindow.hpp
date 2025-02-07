@@ -22,6 +22,6 @@ namespace Gep
         void Bind() override;
         void Unbind() override;
         void Clear(const glm::vec3& color) override;
-        void Draw() override;
+        void Draw(EngineManager& em, Entity camera) override;
     };
 }

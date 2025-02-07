@@ -35,7 +35,7 @@ namespace Client
             nearPlane                                                       // the depth of the viewport
         };
 
-        std::shared_ptr<Gep::IRenderTarget> renderTarget = std::make_shared<Gep::RenderTargetWindow>(500, 500);
+        std::shared_ptr<Gep::IRenderTarget> renderTarget = std::make_shared<Gep::RenderTargetImgui>(500, 500);
 
         void Resize(glm::vec2 size)
         {

@@ -9,9 +9,12 @@
 #pragma once
 
 #include "glew.h"
+#include "Core.hpp"
 
 namespace Gep
 {
+    class EngineManager;
+
     class IRenderTarget
     {
     public:
@@ -24,7 +27,7 @@ namespace Gep
         virtual void Unbind() = 0;
         virtual void Clear(const glm::vec3& color) = 0;
         virtual void Resize(glm::vec2 newSize) {};
-        virtual void Draw() = 0;
+        virtual void Draw(EngineManager& em, Entity camera) = 0;
         virtual glm::vec2 GetSize() const final { return mSize; }
 
     protected:
