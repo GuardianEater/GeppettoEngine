@@ -14,6 +14,7 @@
 
 #include "IRenderTarget.hpp"
 #include "RenderTargetImgui.hpp"
+#include "RenderTargetWindow.hpp"
 
 namespace Client
 {
@@ -34,6 +35,13 @@ namespace Client
             nearPlane                                                       // the depth of the viewport
         };
 
-        std::shared_ptr<Gep::IRenderTarget> renderTarget = std::make_shared<Gep::RenderTargetImgui>(500, 500);
+        std::shared_ptr<Gep::IRenderTarget> renderTarget = std::make_shared<Gep::RenderTargetWindow>(500, 500);
+
+        void Resize(glm::vec2 size)
+        {
+            viewport.y = viewport.x / size.x * size.y;
+            viewport.z = nearPlane;
+            viewport.x = 2.0f * nearPlane * glm::tan(glm::radians(80.0f / 2.0f));
+        }
     };
 }

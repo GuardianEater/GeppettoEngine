@@ -20,8 +20,8 @@ namespace Gep
 
         void Bind() final override;
         void Unbind() final override;
-        void Clear() final override;
-        void Resize(int width, int height) final override;
+        void Clear(const glm::vec3& color) final override;
+        void Resize(glm::vec2 newSize) final override;
         GLuint GetTexture() const;
 
         virtual void Draw() override;

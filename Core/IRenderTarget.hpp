@@ -12,25 +12,23 @@
 
 namespace Gep
 {
-    #pragma once
     class IRenderTarget
     {
     public:
         IRenderTarget(int width, int height)
-            : mWidth(width)
-            , mHeight(height)
+            : mSize(width, height)
         {}
         virtual ~IRenderTarget() = default;
 
         virtual void Bind() = 0;
         virtual void Unbind() = 0;
-        virtual void Clear() = 0;
-        virtual void Resize(int width, int height) = 0;
+        virtual void Clear(const glm::vec3& color) = 0;
+        virtual void Resize(glm::vec2 newSize) {};
         virtual void Draw() = 0;
+        virtual glm::vec2 GetSize() const final { return mSize; }
 
     protected:
-        int mWidth;
-        int mHeight;
+        glm::vec2 mSize;
     };
 }
 

@@ -184,6 +184,9 @@
     <ClCompile Include="RenderTargetTexture.cpp">
       <Filter>Backend\Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="RenderTargetWindow.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PhysicsSystem.hpp">
@@ -297,9 +300,6 @@
     <ClInclude Include="Logger.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="TypeID.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
     <ClInclude Include="SerializationSystem.hpp">
       <Filter>Client</Filter>
     </ClInclude>
@@ -329,9 +329,6 @@
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
     <ClInclude Include="RelationSystem.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
-    <ClInclude Include="Tags.hpp">
       <Filter>Client</Filter>
     </ClInclude>
     <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_capture_tool.h">
@@ -377,6 +374,15 @@
       <Filter>Backend\Rendering</Filter>
     </ClInclude>
     <ClInclude Include="RenderTargetTexture.hpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Tags.hpp">
+      <Filter>Backend\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="TypeID.hpp">
+      <Filter>Backend\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTargetWindow.hpp">
       <Filter>Backend\Rendering</Filter>
     </ClInclude>
   </ItemGroup>

@@ -75,7 +75,7 @@ namespace Client
             Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
 
             cam.renderTarget->Bind();
-            cam.renderTarget->Clear();
+            cam.renderTarget->Clear({0.1f, 0.1f, 0.1f});
 
             // convert the camera's rotation to radians
             glm::vec3 camRotation = glm::radians(camTransform.rotation);
@@ -122,6 +122,7 @@ namespace Client
             }
 
             cam.renderTarget->Draw();
+            cam.Resize(cam.renderTarget->GetSize());
             cam.renderTarget->Unbind();
         }
 
@@ -206,17 +207,17 @@ namespace Client
 
     void RenderSystem::WindowResizeEvent(const Gep::Event::WindowResize& eventData)
     {
-        glViewport(0, 0, eventData.width, eventData.height);
+        //glViewport(0, 0, eventData.width, eventData.height);
 
-        const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
-        for (Gep::Entity cameraEntity : cameras)
-        {
-            // update the aspect ratio of the camera
-            Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
-            cam.viewport.y = cam.viewport.x / eventData.width * eventData.height;
-            cam.viewport.z = cam.nearPlane;
-            cam.viewport.x = 2.0f * cam.nearPlane * glm::tan(glm::radians(80.0f / 2.0f));
-        }
+        //const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
+        //for (Gep::Entity cameraEntity : cameras)
+        //{
+        //    // update the aspect ratio of the camera
+        //    Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
+        //    cam.viewport.y = cam.viewport.x / eventData.width * eventData.height;
+        //    cam.viewport.z = cam.nearPlane;
+        //    cam.viewport.x = 2.0f * cam.nearPlane * glm::tan(glm::radians(80.0f / 2.0f));
+        //}
     }
 
     void RenderSystem::MouseMovedEvent(const Gep::Event::MouseMoved& eventData)
