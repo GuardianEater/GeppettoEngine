@@ -259,7 +259,7 @@ namespace Client
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
         // Create window with graphics context
-        mPrimaryWindow = glfwCreateWindow(720, 720, "Engine", nullptr, nullptr);
+        mPrimaryWindow = glfwCreateWindow(1200, 720, "Engine", nullptr, nullptr);
         if (!mPrimaryWindow)
         {
             glfwTerminate();

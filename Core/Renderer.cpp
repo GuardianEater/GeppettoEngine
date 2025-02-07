@@ -156,9 +156,9 @@ namespace Gep
 
 		void IRenderer::Start(const glm::vec3& color)
 		{
-				glClearColor(color.r, color.g, color.b, 1);
-				glClearDepth(1);
-				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				//glClearColor(color.r, color.g, color.b, 1);
+				//glClearDepth(1);
+				//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 
 		void IRenderer::SetCamera(const Camera& camera)

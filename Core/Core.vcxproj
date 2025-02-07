@@ -200,6 +200,10 @@
     <ClCompile Include="RelationSystem.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
+    <ClCompile Include="IRenderTarget.cpp" />
+    <ClCompile Include="RenderTargetImgui.cpp" />
+    <ClCompile Include="RenderTargetTexture.cpp" />
+    <ClCompile Include="RenderTargetWindow.cpp" />
     <ClCompile Include="ScriptingSystem.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
     <ClCompile Include="SphereMesh.cpp" />
@@ -238,6 +242,10 @@
     <ClInclude Include="reflect-cpp-extra.hpp" />
     <ClInclude Include="RelationSystem.hpp" />
     <ClInclude Include="RenderSystem.hpp" />
+    <ClInclude Include="IRenderTarget.hpp" />
+    <ClInclude Include="RenderTargetImgui.hpp" />
+    <ClInclude Include="RenderTargetTexture.hpp" />
+    <ClInclude Include="RenderTargetWindow.hpp" />
     <ClInclude Include="RigidBody.hpp" />
     <ClInclude Include="Script.hpp" />
     <ClInclude Include="ScriptingSystem.hpp" />

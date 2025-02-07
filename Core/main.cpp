@@ -90,7 +90,16 @@ int main() try
     em.AddComponent(camera,
         Client::Transform{ {0, 0, 7} },
         Client::Camera{},
-        Client::Identification{ "Camera" }
+        Client::Identification{ "Camera" },
+        Client::Material{ "Cube" }
+    );
+
+    Gep::Entity camera2 = em.CreateEntity();
+    em.AddComponent(camera2,
+        Client::Transform{ {0, 0, -7}, {1.0f,1.0f,1.0f}, { 0.0f, 180.0f, 0.0f } },
+        Client::Camera{ .renderTarget = std::make_shared<Gep::RenderTargetImgui>(800, 600) },
+        Client::Identification{ "Camera2" },
+        Client::Material{ "Cube" }
     );
 
     Gep::Entity floor = em.CreateEntity();

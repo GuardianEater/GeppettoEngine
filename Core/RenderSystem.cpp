@@ -74,6 +74,9 @@ namespace Client
             const Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
             Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
 
+            cam.renderTarget->Bind();
+            cam.renderTarget->Clear({0.1f, 0.1f, 0.1f});
+
             // convert the camera's rotation to radians
             glm::vec3 camRotation = glm::radians(camTransform.rotation);
 
@@ -117,6 +120,10 @@ namespace Client
 
                 mRenderer.DrawMesh(material.meshName);
             }
+
+            cam.renderTarget->Draw(mManager, cameraEntity);
+            cam.Resize(cam.renderTarget->GetSize());
+            cam.renderTarget->Unbind();
         }
 
         mRenderer.End();
@@ -128,67 +135,31 @@ namespace Client
         const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
         const float movementSpeed = 10 * dt;
 
+        GLFWwindow* window = glfwGetCurrentContext();
 
-        for (Gep::Entity cam : cameras)
-        {
-            Transform& transform = mManager.GetComponent<Transform>(cam);
-            Camera& camera = mManager.GetComponent<Camera>(cam);
+        static bool isTKeyPressed = false;
+        static bool isYKeyPressed = false;
 
-            glm::vec3 forward = glm::normalize(glm::vec3(-camera.back.x, 0.0f, -camera.back.z));
-            glm::vec3 rightward = glm::normalize(glm::vec3(camera.right.x, 0.0f, camera.right.z));
+        // Handle T key for textures
+        if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
+            if (!isTKeyPressed) { // Key was just pressed
+                mRenderer.ToggleTextures();
+                isTKeyPressed = true;
+            }
+        }
+        else {
+            isTKeyPressed = false; // Reset when key is released
+        }
 
-            if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_W))
-            {
-                transform.position += forward * movementSpeed;
+        // Handle Y key for wireframes
+        if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
+            if (!isYKeyPressed) { // Key was just pressed
+                mRenderer.ToggleWireframes();
+                isYKeyPressed = true;
             }
-            if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_S))
-            {
-                transform.position -= forward * movementSpeed;
-            }
-            if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_A))
-            {
-                transform.position -= rightward * movementSpeed;
-            }
-            if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_D))
-            {
-                transform.position += rightward * movementSpeed;
-            }
-            if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_SPACE))
-            {
-                transform.position += glm::vec3(0.0f, movementSpeed, 0.0f);
-            }
-            if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_LEFT_SHIFT))
-            {
-                transform.position -= glm::vec3(0.0f, movementSpeed, 0.0f);
-            }
-
-
-            GLFWwindow* window = glfwGetCurrentContext();
-
-            static bool isTKeyPressed = false;
-            static bool isYKeyPressed = false;
-
-            // Handle T key for textures
-            if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
-                if (!isTKeyPressed) { // Key was just pressed
-                    mRenderer.ToggleTextures();
-                    isTKeyPressed = true;
-                }
-            }
-            else {
-                isTKeyPressed = false; // Reset when key is released
-            }
-
-            // Handle Y key for wireframes
-            if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
-                if (!isYKeyPressed) { // Key was just pressed
-                    mRenderer.ToggleWireframes();
-                    isYKeyPressed = true;
-                }
-            }
-            else {
-                isYKeyPressed = false; // Reset when key is released
-            }
+        }
+        else {
+            isYKeyPressed = false; // Reset when key is released
         }
     }
 
@@ -200,53 +171,53 @@ namespace Client
 
     void RenderSystem::WindowResizeEvent(const Gep::Event::WindowResize& eventData)
     {
-        glViewport(0, 0, eventData.width, eventData.height);
+        //glViewport(0, 0, eventData.width, eventData.height);
 
-        const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
-        for (Gep::Entity cameraEntity : cameras)
-        {
-            // update the aspect ratio of the camera
-            Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
-            cam.viewport.y = cam.viewport.x / eventData.width * eventData.height;
-            cam.viewport.z = cam.nearPlane;
-            cam.viewport.x = 2.0f * cam.nearPlane * glm::tan(glm::radians(80.0f / 2.0f));
-        }
+        //const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
+        //for (Gep::Entity cameraEntity : cameras)
+        //{
+        //    // update the aspect ratio of the camera
+        //    Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
+        //    cam.viewport.y = cam.viewport.x / eventData.width * eventData.height;
+        //    cam.viewport.z = cam.nearPlane;
+        //    cam.viewport.x = 2.0f * cam.nearPlane * glm::tan(glm::radians(80.0f / 2.0f));
+        //}
     }
 
     void RenderSystem::MouseMovedEvent(const Gep::Event::MouseMoved& eventData)
     {
-        // only while right mouse button is pressed
-        if (glfwGetMouseButton(glfwGetCurrentContext(), GLFW_MOUSE_BUTTON_RIGHT) != GLFW_PRESS) return;
+        //// only while right mouse button is pressed
+        //if (glfwGetMouseButton(glfwGetCurrentContext(), GLFW_MOUSE_BUTTON_RIGHT) != GLFW_PRESS) return;
 
 
-        float sensitivity = 0.3f;
+        //float sensitivity = 0.3f;
 
-        const double dx = (eventData.x - eventData.prevX) * sensitivity;
-        const double dy = (eventData.y - eventData.prevY) * sensitivity;
+        //const double dx = (eventData.x - eventData.prevX) * sensitivity;
+        //const double dy = (eventData.y - eventData.prevY) * sensitivity;
 
-        const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
+        //const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
 
-        for (Gep::Entity cameraEntity : cameras)
-        {
-            Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
-            Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
-            camTransform.rotation.y += dx;
-            camTransform.rotation.x += dy;
-            if (camTransform.rotation.x > 89.0f) camTransform.rotation.x = 89.0f;
-            if (camTransform.rotation.x < -89.0f) camTransform.rotation.x = -89.0f;
-        }
+        //for (Gep::Entity cameraEntity : cameras)
+        //{
+        //    Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
+        //    Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
+        //    camTransform.rotation.y += dx;
+        //    camTransform.rotation.x += dy;
+        //    if (camTransform.rotation.x > 89.0f) camTransform.rotation.x = 89.0f;
+        //    if (camTransform.rotation.x < -89.0f) camTransform.rotation.x = -89.0f;
+        //}
     }
 
     void RenderSystem::MouseClickedEvent(const Gep::Event::MouseClicked& eventData)
     {
-        if (eventData.action == GLFW_PRESS && eventData.button == GLFW_MOUSE_BUTTON_RIGHT)
-        {
-            glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        }
-        else if (eventData.action == GLFW_RELEASE && eventData.button == GLFW_MOUSE_BUTTON_RIGHT)
-        {
-            glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
+        //if (eventData.action == GLFW_PRESS && eventData.button == GLFW_MOUSE_BUTTON_RIGHT)
+        //{
+        //    glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        //}
+        //else if (eventData.action == GLFW_RELEASE && eventData.button == GLFW_MOUSE_BUTTON_RIGHT)
+        //{
+        //    glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        //}
     }
 
     void RenderSystem::KeyPressedEvent(const Gep::Event::KeyPressed& eventData)
@@ -256,13 +227,13 @@ namespace Client
 
     void RenderSystem::MouseScrolledEvent(const Gep::Event::MouseScrolled& eventData)
     {
-        const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
-        for (Gep::Entity cameraEntity : cameras)
-        {
-            Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
-            Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
-            camTransform.position += cam.back * -(float)eventData.yoffset;
-        }
+        //const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
+        //for (Gep::Entity cameraEntity : cameras)
+        //{
+        //    Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
+        //    Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
+        //    camTransform.position += cam.back * -(float)eventData.yoffset;
+        //}
     }
 }
 

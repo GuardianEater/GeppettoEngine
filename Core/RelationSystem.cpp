@@ -15,7 +15,7 @@ namespace Client
 {
     void RelationSystem::Update(float dt)
     {
-        const std::vector<Gep::Entity>& entities = mManager.GetEntities();
+        const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform>();
 
         for (Gep::Entity entity : entities)
         {

@@ -175,6 +175,18 @@
     <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_utils.cpp">
       <Filter>ImGui\TestEngine</Filter>
     </ClCompile>
+    <ClCompile Include="IRenderTarget.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTargetImgui.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTargetTexture.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTargetWindow.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PhysicsSystem.hpp">
@@ -288,9 +300,6 @@
     <ClInclude Include="Logger.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="TypeID.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
     <ClInclude Include="SerializationSystem.hpp">
       <Filter>Client</Filter>
     </ClInclude>
@@ -320,9 +329,6 @@
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
     <ClInclude Include="RelationSystem.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
-    <ClInclude Include="Tags.hpp">
       <Filter>Client</Filter>
     </ClInclude>
     <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_capture_tool.h">
@@ -360,6 +366,24 @@
     </ClInclude>
     <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\thirdparty\stb\imstb_image_write.h">
       <Filter>ImGui\TestEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="IRenderTarget.hpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTargetImgui.hpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTargetTexture.hpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Tags.hpp">
+      <Filter>Backend\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="TypeID.hpp">
+      <Filter>Backend\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTargetWindow.hpp">
+      <Filter>Backend\Rendering</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

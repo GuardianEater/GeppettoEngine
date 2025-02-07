@@ -32,7 +32,7 @@ namespace Client
 
     void PhysicsSystem::Update(float dt)
     {
-        std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform, RigidBody>();
+        const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform, RigidBody>();
         for (Gep::Entity entity : entities)
         {
             Transform& transform = mManager.GetComponent<Transform>(entity);

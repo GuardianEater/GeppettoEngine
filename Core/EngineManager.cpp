@@ -293,7 +293,7 @@ namespace Gep
         return child;
     }
 
-    std::vector<Entity> EngineManager::GetSiblings(Entity entity)
+    std::vector<Entity> EngineManager::GetSiblings(Entity entity) const
     {
         if (!EntityExists(entity))
         {
@@ -310,7 +310,7 @@ namespace Gep
         return GetChildren(parent);
     }
 
-    std::vector<Entity> EngineManager::GetChildren(Entity parent)
+    std::vector<Entity> EngineManager::GetChildren(Entity parent) const
     {
         if (!EntityExists(parent))
         {
