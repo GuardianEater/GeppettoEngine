@@ -95,7 +95,7 @@ namespace Client
             {
                 if (componentData.has(entity)) continue;
 
-                if (ImGui::Button(componentData.name.c_str(), { ImGui::GetContentRegionAvail().x, 30.0f }))
+                if (ImGui::Button(componentData.name.c_str(), { ImGui::GetContentRegionAvail().x, 0.0f }))
                 {
                     componentData.add(entity);
                 }
@@ -276,13 +276,31 @@ namespace Client
         }
     }
 
+    void ImGuiSystem::OnMouseScrolled(const Gep::Event::MouseScrolled& event)
+    {
+        static float scale = 1.0f;
+
+        // glfw check if lcrtl is pressed
+        if (ImGui::GetIO().KeyCtrl)
+        {
+            scale += event.yoffset * 0.1f;
+            scale = glm::clamp(scale, 0.1f, 10.0f);
+            ImGui::GetIO().FontGlobalScale = scale;
+        }
+    }
+
+    void ImGuiSystem::Initialize()
+    {
+        mManager.SubscribeToEvent<Gep::Event::MouseScrolled>(this, &ImGuiSystem::OnMouseScrolled);
+    }
+
     void ImGuiSystem::Update(float dt)
     {
         DrawInfoPanel();
         DrawExtras();
         
         ImGui::Begin("Entities");
-        if (ImGui::Button("Create", { ImGui::GetContentRegionAvail().x , 30.0f}))
+        if (ImGui::Button("Create", { ImGui::GetContentRegionAvail().x , 0}))
         {
             mManager.CreateEntity();
         }

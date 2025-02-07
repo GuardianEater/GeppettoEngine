@@ -83,6 +83,9 @@ namespace Client
         template <typename... ComponentTypes>
         void OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes);
 
+        void OnMouseScrolled(const Gep::Event::MouseScrolled& event);
+
+        void Initialize() override;
         void Update(float dt) override;
 
         void DrawEntities(const std::vector<Gep::Entity>& entities, float dt);
