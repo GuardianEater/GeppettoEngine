@@ -16,6 +16,7 @@ layout(location=10) uniform bool use_texture;
 layout(location=11) uniform int light_count;
 layout(location=12) uniform bool isSolidColor;
 layout(location=13) uniform vec3 solidColor;
+layout(location=14) uniform bool isHighlighted;
 
 struct Light
 {
@@ -39,6 +40,11 @@ void main(void)
         // still acount for texture and diffuse color
         vec3 textureColor = use_texture ? texture(texture_sampler, uv).rgb : vec3(1.0);
         frag_color = vec4(solidColor, 1.0);
+        return;
+    }
+    else if (isHighlighted)
+    {
+        frag_color = vec4(1.0, 1.0, 0.0, 1.0);
         return;
     }
 

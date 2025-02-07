@@ -37,7 +37,7 @@ namespace Gep
 
         // changes how the renderer will draw the next object
         virtual void SetTexture(const std::string& textureName) final;
-				virtual void SetHighlight();
+				virtual void SetHighlight(bool highlight);
         virtual void SetSolidColor(const glm::vec3& color) final;
 				virtual void SetCamera(const Camera& camera) final;
 				virtual void SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec4& eye);
@@ -57,12 +57,12 @@ namespace Gep
 				virtual void Start(const glm::vec3& color = { 0, 0, 0 }) final;
 				virtual void End();
 
-				void AddLight(const glm::vec3& color,  const glm::vec3& position, float intensity);
+        void AddLight(const glm::vec3& color, const glm::vec3& position, float intensity); // adds a light to the renderered, will be sent to the shader when DrawLights is called
 
+        void DrawLights(); // will send all added lights to the shader
 		private:
 				GLuint LoadShader(GLenum shaderType, const std::filesystem::path& shaderPath);
 				void SetUpLightSSBO();
-				void DrawLights();
 
 				GLuint mSSBO;
 
@@ -91,7 +91,7 @@ namespace Gep
 				//keyed_vector<MeshData> mMeshDatas;
         bool mWireframeMode = false;
         bool mUseTextures = false;
-        bool mIsOutlinePass = false;
+        bool mIsHighlighted = false;
         bool mUseSolidColor = false;
         glm::vec3 mSolidColor;
 

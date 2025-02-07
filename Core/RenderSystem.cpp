@@ -67,6 +67,8 @@ namespace Client
             mRenderer.AddLight(light.color, lightTransform.position, light.intensity);
         }
 
+        mRenderer.DrawLights();
+
         // begins rendering each everything
         const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
         for (Gep::Entity cameraEntity : cameras)
@@ -95,7 +97,7 @@ namespace Client
             for (Gep::Entity entity : entities)
             {
                 const Transform& transform = mManager.GetComponent<Transform>(entity);
-                const Material& material = mManager.GetComponent<Material>(entity);
+                Material& material = mManager.GetComponent<Material>(entity);
 
                 const glm::mat4 model = Gep::translation_matrix(transform.position)
                                       * Gep::rotation(transform.rotation)
@@ -110,7 +112,7 @@ namespace Client
                     mRenderer.SetTexture(texture.textureName);
                 }
 
-                if (material.selected) mRenderer.SetHighlight();
+                mRenderer.SetHighlight(material.selected);
 
                 if (mManager.HasComponent<Client::Light>(entity))
                 {
@@ -119,6 +121,7 @@ namespace Client
                 }
 
                 mRenderer.DrawMesh(material.meshName);
+                material.selected = false;
             }
 
             cam.renderTarget->Draw(mManager, cameraEntity);

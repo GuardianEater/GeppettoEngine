@@ -35,6 +35,8 @@ namespace Gep
         LightCount,
 				IsSolidColor,
 				SolidColor,
+
+        IsHighlighted,
 		};
 
 		IRenderer::IRenderer()
@@ -191,9 +193,9 @@ namespace Gep
         glUseProgram(0);
 		}
 
-		void IRenderer::SetHighlight()
+		void IRenderer::SetHighlight(bool highlight)
 		{
-				mIsOutlinePass = true;
+        mIsHighlighted = highlight;
 		}
 
 		void IRenderer::SetSolidColor(const glm::vec3& color)
@@ -257,11 +259,19 @@ namespace Gep
 				const MeshData& md = mMeshDatas.at(meshName);
 				constexpr std::uint64_t faceSize = sizeof(Mesh::Face) / sizeof(GLuint);
 
-        DrawLights();
-
 				glUseProgram(mProgram.GetProgramID());
 				glBindVertexArray(md.mVertexArrayObject);
         glUniform1i(GLUniformLocation::UseTexture, mUseTextures);
+
+				// If outlining is enabled, render the outline first
+				if (mIsHighlighted)
+				{
+            glUniform1i(GLUniformLocation::IsHighlighted, 1);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            glUniform1i(GLUniformLocation::IsHighlighted, 0);
+				}
 
 				if (mWireframeMode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);

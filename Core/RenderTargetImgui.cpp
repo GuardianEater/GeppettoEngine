@@ -31,7 +31,7 @@ namespace Gep
         Client::Camera& camera = em.GetComponent<Client::Camera>(cameraEntity);
         Client::Transform& transform = em.GetComponent<Client::Transform>(cameraEntity);
 
-        const float movementSpeed = 0.1f;
+        const float movementSpeed = 0.04f;
         const float sensitivity = 0.1f;
 
         const glm::vec3 forward = glm::normalize(glm::vec3(-camera.back.x, 0.0f, -camera.back.z));
@@ -56,13 +56,13 @@ namespace Gep
                 return;
             }
 
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && focused)
             {
                 ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
                 ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             }
-            else if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+            else if (ImGui::IsMouseReleased(ImGuiMouseButton_Right) && focused)
             {
                 ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
                 ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
