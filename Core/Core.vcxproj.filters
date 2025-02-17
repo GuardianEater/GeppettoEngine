@@ -37,9 +37,6 @@
     <Filter Include="Backend\ECS\Events">
       <UniqueIdentifier>{4f894227-9150-4917-9ac7-310fdf499a7f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Backend\Application">
-      <UniqueIdentifier>{6b68d449-29e5-406a-a848-8e80ed0b2593}</UniqueIdentifier>
-    </Filter>
     <Filter Include="reflect-cpp">
       <UniqueIdentifier>{b9d00df6-cfc9-4e46-ad68-1f5fa4f75a40}</UniqueIdentifier>
     </Filter>
@@ -123,27 +120,14 @@
     <ClCompile Include="Logger.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="TypeID.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Mesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
-    </ClCompile>
-    <ClCompile Include="Core.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CubeMesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClCompile>
     <ClCompile Include="IcosphereMesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
-    </ClCompile>
-    <ClCompile Include="pch.cpp" />
-    <ClCompile Include="QuadMesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RelationSystem.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_capture_tool.cpp">
       <Filter>ImGui\TestEngine</Filter>
@@ -201,6 +185,21 @@
     </ClCompile>
     <ClCompile Include="WindowSystem.cpp">
       <Filter>Client\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="QuadMesh.cpp">
+      <Filter>Backend\Rendering\Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="RelationSystem.cpp">
+      <Filter>Client\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="TypeID.cpp">
+      <Filter>Backend\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Core.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -312,7 +311,6 @@
     <ClInclude Include="IcosphereMesh.hpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
-    <ClInclude Include="pch.hpp" />
     <ClInclude Include="QuadMesh.hpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
@@ -353,9 +351,6 @@
       <Filter>ImGui\TestEngine</Filter>
     </ClInclude>
     <ClInclude Include="Tags.hpp">
-      <Filter>Backend\ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="TypeID.hpp">
       <Filter>Backend\ECS</Filter>
     </ClInclude>
     <ClInclude Include="BinarySerializer.hpp">
@@ -402,6 +397,12 @@
     </ClInclude>
     <ClInclude Include="TextureComponent.hpp">
       <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="TypeID.hpp">
+      <Filter>Backend\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.hpp">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
