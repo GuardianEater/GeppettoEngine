@@ -34,9 +34,6 @@
     <Filter Include="Backend\Rendering\Shaders">
       <UniqueIdentifier>{1ec3419c-0041-465d-a146-7470b53043c1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Client\Components">
-      <UniqueIdentifier>{9de6b631-c17a-439f-9f48-bdf03a9d30fe}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Backend\ECS\Events">
       <UniqueIdentifier>{4f894227-9150-4917-9ac7-310fdf499a7f}</UniqueIdentifier>
     </Filter>
@@ -54,6 +51,15 @@
     </Filter>
     <Filter Include="Backend\Serializing">
       <UniqueIdentifier>{798df3ba-65a4-4d5a-9042-c0e28a0f819c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Backend\Rendering\RenderTargets">
+      <UniqueIdentifier>{e5ece65f-689f-41d3-9ce7-2472f692ae90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Client\Systems">
+      <UniqueIdentifier>{f1857e6f-d9ae-4ea1-a662-7c3465d1c90c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Client\Components">
+      <UniqueIdentifier>{9de6b631-c17a-439f-9f48-bdf03a9d30fe}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -105,18 +111,6 @@
     <ClCompile Include="ShaderProgram.cpp">
       <Filter>Backend\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="PhysicsSystem.cpp">
-      <Filter>Client</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderSystem.cpp">
-      <Filter>Client</Filter>
-    </ClCompile>
-    <ClCompile Include="ScriptingSystem.cpp">
-      <Filter>Client</Filter>
-    </ClCompile>
-    <ClCompile Include="WindowSystem.cpp">
-      <Filter>Client</Filter>
-    </ClCompile>
     <ClCompile Include="dependencies\reflect-cpp\src\reflectcpp.cpp">
       <Filter>reflect-cpp</Filter>
     </ClCompile>
@@ -131,9 +125,6 @@
     </ClCompile>
     <ClCompile Include="TypeID.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ImGuiSystem.cpp">
-      <Filter>Client</Filter>
     </ClCompile>
     <ClCompile Include="Mesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
@@ -178,37 +169,43 @@
     <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_utils.cpp">
       <Filter>ImGui\TestEngine</Filter>
     </ClCompile>
-    <ClCompile Include="IRenderTarget.cpp">
-      <Filter>Backend\Rendering</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderTargetImgui.cpp">
-      <Filter>Backend\Rendering</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderTargetTexture.cpp">
-      <Filter>Backend\Rendering</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderTargetWindow.cpp">
-      <Filter>Backend\Rendering</Filter>
-    </ClCompile>
     <ClCompile Include="BinarySerialzer.cpp">
       <Filter>Backend\Serializing</Filter>
     </ClCompile>
+    <ClCompile Include="IRenderTarget.cpp">
+      <Filter>Backend\Rendering\RenderTargets</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTargetImgui.cpp">
+      <Filter>Backend\Rendering\RenderTargets</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTargetTexture.cpp">
+      <Filter>Backend\Rendering\RenderTargets</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTargetWindow.cpp">
+      <Filter>Backend\Rendering\RenderTargets</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiSystem.cpp">
+      <Filter>Client\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysicsSystem.cpp">
+      <Filter>Client\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderSystem.cpp">
+      <Filter>Client\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptingSystem.cpp">
+      <Filter>Client\Systems</Filter>
+    </ClCompile>
     <ClCompile Include="SerializationSystem.cpp">
-      <Filter>Client</Filter>
+      <Filter>Client\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowSystem.cpp">
+      <Filter>Client\Systems</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="PhysicsSystem.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
     <ClInclude Include="Core.hpp">
       <Filter>Backend</Filter>
-    </ClInclude>
-    <ClInclude Include="ImGuiSystem.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
-    <ClInclude Include="WindowSystem.hpp">
-      <Filter>Client</Filter>
     </ClInclude>
     <ClInclude Include="dependencies\imgui\imconfig.h">
       <Filter>ImGui</Filter>
@@ -267,9 +264,6 @@
     <ClInclude Include="Affine.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="RenderSystem.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
     <ClInclude Include="Transform.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
@@ -284,9 +278,6 @@
     </ClInclude>
     <ClInclude Include="Events.hpp">
       <Filter>Backend\ECS\Events</Filter>
-    </ClInclude>
-    <ClInclude Include="ScriptingSystem.hpp">
-      <Filter>Client</Filter>
     </ClInclude>
     <ClInclude Include="Script.hpp">
       <Filter>Client\Components</Filter>
@@ -309,9 +300,6 @@
     <ClInclude Include="Logger.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="SerializationSystem.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
     <ClInclude Include="reflect-cpp-extra.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
@@ -321,24 +309,12 @@
     <ClInclude Include="CubeMesh.hpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
-    <ClInclude Include="TextureComponent.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
     <ClInclude Include="IcosphereMesh.hpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
     <ClInclude Include="pch.hpp" />
-    <ClInclude Include="ActiveCameraComponent.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
-    <ClInclude Include="LightComponent.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
     <ClInclude Include="QuadMesh.hpp">
       <Filter>Backend\Rendering\Meshes</Filter>
-    </ClInclude>
-    <ClInclude Include="RelationSystem.hpp">
-      <Filter>Client</Filter>
     </ClInclude>
     <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_capture_tool.h">
       <Filter>ImGui\TestEngine</Filter>
@@ -376,26 +352,56 @@
     <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\thirdparty\stb\imstb_image_write.h">
       <Filter>ImGui\TestEngine</Filter>
     </ClInclude>
-    <ClInclude Include="IRenderTarget.hpp">
-      <Filter>Backend\Rendering</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderTargetImgui.hpp">
-      <Filter>Backend\Rendering</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderTargetTexture.hpp">
-      <Filter>Backend\Rendering</Filter>
-    </ClInclude>
     <ClInclude Include="Tags.hpp">
       <Filter>Backend\ECS</Filter>
     </ClInclude>
     <ClInclude Include="TypeID.hpp">
       <Filter>Backend\ECS</Filter>
     </ClInclude>
-    <ClInclude Include="RenderTargetWindow.hpp">
-      <Filter>Backend\Rendering</Filter>
-    </ClInclude>
     <ClInclude Include="BinarySerializer.hpp">
       <Filter>Backend\Serializing</Filter>
+    </ClInclude>
+    <ClInclude Include="IRenderTarget.hpp">
+      <Filter>Backend\Rendering\RenderTargets</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTargetImgui.hpp">
+      <Filter>Backend\Rendering\RenderTargets</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTargetTexture.hpp">
+      <Filter>Backend\Rendering\RenderTargets</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTargetWindow.hpp">
+      <Filter>Backend\Rendering\RenderTargets</Filter>
+    </ClInclude>
+    <ClInclude Include="ActiveCameraComponent.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiSystem.hpp">
+      <Filter>Client\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="LightComponent.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicsSystem.hpp">
+      <Filter>Client\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="RelationSystem.hpp">
+      <Filter>Client\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderSystem.hpp">
+      <Filter>Client\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptingSystem.hpp">
+      <Filter>Client\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="SerializationSystem.hpp">
+      <Filter>Client\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowSystem.hpp">
+      <Filter>Client\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureComponent.hpp">
+      <Filter>Client\Components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -426,9 +432,6 @@
     <None Include="Logger.inl">
       <Filter>Backend\Tools</Filter>
     </None>
-    <None Include="ImGuiSystem.inl">
-      <Filter>Client</Filter>
-    </None>
     <None Include="assets\shaders\forward.frag">
       <Filter>Backend\Rendering\Shaders</Filter>
     </None>
@@ -447,8 +450,11 @@
     <None Include="assets\shaders\FlatShading.vert">
       <Filter>Backend\Rendering\Shaders</Filter>
     </None>
+    <None Include="ImGuiSystem.inl">
+      <Filter>Client\Systems</Filter>
+    </None>
     <None Include="SerializationSystem.inl">
-      <Filter>Client</Filter>
+      <Filter>Client\Systems</Filter>
     </None>
   </ItemGroup>
 </Project>
