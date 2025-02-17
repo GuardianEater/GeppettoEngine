@@ -151,6 +151,7 @@ namespace Gep
 
         template <typename... ComponentTypes>
         const std::vector<Entity>& GetEntities() const;
+        std::vector<Entity> GetRootEntities() const;
 
         
 
@@ -172,7 +173,6 @@ namespace Gep
         void CopyComponent(Entity to, Entity from);
 
         const Gep::keyed_vector<ComponentData>& GetComponentDatas() const;
-
 
         template<typename... ComponentTypes>
         void MarkComponentForDestruction(Entity entity);

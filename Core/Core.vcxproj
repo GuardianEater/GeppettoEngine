@@ -45,13 +45,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine</IncludePath>
+    <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine;$(ProjectDir)dependencies\nlohmann</IncludePath>
     <SourcePath>$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\src\**\*.cpp;$(SourcePath)</SourcePath>
     <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(SolutionDir)x64\Debug;$(LibraryPath)</LibraryPath>
     <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine</IncludePath>
+    <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine;$(ProjectDir)dependencies\nlohmann</IncludePath>
     <SourcePath>$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\lua;$(SourcePath)</SourcePath>
     <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(SolutionDir)x64\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
@@ -102,6 +102,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Affine.cpp" />
+    <ClCompile Include="BinarySerialzer.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="CubeMesh.cpp" />
@@ -205,6 +206,7 @@
     <ClCompile Include="RenderTargetTexture.cpp" />
     <ClCompile Include="RenderTargetWindow.cpp" />
     <ClCompile Include="ScriptingSystem.cpp" />
+    <ClCompile Include="SerializationSystem.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
     <ClCompile Include="SphereMesh.cpp" />
     <ClCompile Include="TypeID.cpp" />
@@ -214,6 +216,7 @@
     <ClInclude Include="ActiveCameraComponent.hpp" />
     <ClInclude Include="Affine.hpp" />
     <ClInclude Include="AxisMesh.hpp" />
+    <ClInclude Include="BinarySerializer.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="CameraComponent.hpp" />
     <ClInclude Include="CubeMesh.hpp" />
@@ -294,6 +297,7 @@
     <None Include="EngineManager.inl" />
     <None Include="ImGuiSystem.inl" />
     <None Include="Logger.inl" />
+    <None Include="SerializationSystem.inl" />
     <None Include="TypeList.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

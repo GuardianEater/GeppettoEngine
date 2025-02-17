@@ -43,5 +43,10 @@ namespace Client
             viewport.z = nearPlane;
             viewport.x = 2.0f * nearPlane * glm::tan(glm::radians(80.0f / 2.0f));
         }
+
+        void Serialize() const
+        {
+
+        }
     };
 }

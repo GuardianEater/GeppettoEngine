@@ -14,6 +14,6 @@ namespace Client
 {
     struct Texture
     {
-        std::string textureName;
+        std::string textureName = "Checker";
     };
 }

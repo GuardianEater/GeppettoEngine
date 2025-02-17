@@ -196,11 +196,16 @@ namespace Gep
             return;
         }
 
+        auto ancestors = GetAncestors(parent);
+        if (std::find(ancestors.begin(), ancestors.end(), child) != ancestors.end())
+        {
+            Log::Error("AttachEntity() failed, Parent Entity: [", parent, "] is a child of Child Entity: [", child, "]");
+            return;
+        }
+
         // if the new child has a parent currently, remove the child from its parent
         if (HasParent(child))
-        {
             DetachEntity(child);
-        }
 
         mEntityDatas.at(parent).children.push_back(child);
         mEntityDatas.at(child).parent = parent;
@@ -335,6 +340,23 @@ namespace Gep
         }
 
         return true;
+    }
+
+    std::vector<Entity> EngineManager::GetRootEntities() const
+    {
+        std::vector<Entity> rootEntities;
+
+        const auto& entities = GetEntities();
+
+        for (Entity entity : entities)
+        {
+            if (!HasParent(entity))
+            {
+                rootEntities.push_back(entity);
+            }
+        }
+
+        return rootEntities;
     }
 
     bool EngineManager::EntityExists(Entity entity) const

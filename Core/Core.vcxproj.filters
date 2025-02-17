@@ -52,6 +52,9 @@
     <Filter Include="ImGui\TestEngine">
       <UniqueIdentifier>{3fd306a5-c90b-45bb-8fbd-0bb9758f9c7f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Backend\Serializing">
+      <UniqueIdentifier>{798df3ba-65a4-4d5a-9042-c0e28a0f819c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -186,6 +189,12 @@
     </ClCompile>
     <ClCompile Include="RenderTargetWindow.cpp">
       <Filter>Backend\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="BinarySerialzer.cpp">
+      <Filter>Backend\Serializing</Filter>
+    </ClCompile>
+    <ClCompile Include="SerializationSystem.cpp">
+      <Filter>Client</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -385,6 +394,9 @@
     <ClInclude Include="RenderTargetWindow.hpp">
       <Filter>Backend\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="BinarySerializer.hpp">
+      <Filter>Backend\Serializing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">
@@ -434,6 +446,9 @@
     </None>
     <None Include="assets\shaders\FlatShading.vert">
       <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
+    <None Include="SerializationSystem.inl">
+      <Filter>Client</Filter>
     </None>
   </ItemGroup>
 </Project>

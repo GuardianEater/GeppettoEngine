@@ -16,12 +16,24 @@
 #include "Logger.hpp"
 
 #include <fstream>
-#include <rfl.hpp>
-#include <rfl/json.hpp>
-#include "reflect-cpp-extra.hpp"
+
+#include "nlohmann/json.hpp"
 
 namespace Client
 {
+
+    template <typename T>
+    concept JsonWritable = requires(const T t, nlohmann::json& json)
+    {
+        json = t;
+    };
+
+    template <typename T>
+    concept JsonReadable = requires(T t, const nlohmann::json& json)
+    {
+        t = json.get<T>();
+    };
+
     class SerializationSystem : public Gep::ISystem
     {
     private:
@@ -32,43 +44,50 @@ namespace Client
         {}
 
         template <typename... ComponentTypes>
-        void OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes)
-        {
-            componentTypes.for_each([&]<typename ComponentType>()
-            {
-                mSaveComponentFunctions.push_back([&](Gep::Entity entity)
-                {
-                    ComponentType& component = mManager.GetComponent<ComponentType>(entity);
+        void OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes);
 
-                    std::string componentName = Gep::GetTypeInfo<ComponentType>().PrettyName();
-                    
-                    //std::string json = rfl::json::write(component);
+        void Initialize() override;
+        void Exit() override;
 
-                    //Gep::Log::Info(componentName, ": ", json);
-                });
-            });
-        }
+        nlohmann::json SaveEntity(Gep::Entity entity) const;
+        Gep::Entity LoadEntity(const nlohmann::json& entityJson) const;
 
-        void Exit() override
-        {
-            const std::vector<Gep::Entity>& entities = mManager.GetEntities();
-
-            for (Gep::Entity entity : entities)
-            {
-                Gep::Log::Info("Saving Entity: [", entity, "]");
-
-                mManager.ForEachComponent(entity, [&](const Gep::ComponentData& componentData)
-                {
-                    mSaveComponentFunctions[componentData.index](entity);
-                });
-            }
-
-            //std::ofstream file("save.json");
-        }
+        nlohmann::json SaveScene() const;
+        void LoadScene(const nlohmann::json& sceneJson) const;
 
     private:
+        // base case, do nothing
+        template <typename T>
+        void WriteType(nlohmann::json& json, const std::string_view name, T& t);
 
-        // component index -> function that saves the component
-        std::vector<std::function<void(Gep::Entity)>> mSaveComponentFunctions;
+        // default case, just write the value
+        template <typename T>
+        requires JsonWritable<T>
+        void WriteType(nlohmann::json& json, const std::string_view name, T& t);
+
+        // bunch of base type specializations
+        template <> void WriteType<glm::vec3>(nlohmann::json& json, const std::string_view name, glm::vec3& t);
+        template <> void WriteType<glm::vec4>(nlohmann::json& json, const std::string_view name, glm::vec4& t);
+
+        void ReadType(const nlohmann::json& json, const std::string_view name, glm::vec3& t);
+        void ReadType(const nlohmann::json& json, const std::string_view name, glm::vec4& t);
+
+        // base case, do nothing
+        template <typename T>
+        void ReadType(const nlohmann::json& json, const std::string_view name, T& t);
+
+        // default case, just read the value
+        template <typename T>
+        requires JsonReadable<T>
+        void ReadType(const nlohmann::json& json, const std::string_view name, T& t);
+
+        // bunch of base type specializations
+    private:
+
+        // component index -> function that converts component to json
+        std::vector<std::function<nlohmann::json(Gep::Entity)>> mSaveComponentFunctions;
+        std::map<std::string, std::function<void(Gep::Entity, const nlohmann::json&)>> mLoadComponentFunctions;
     };
 }
+
+#include "SerializationSystem.inl"
