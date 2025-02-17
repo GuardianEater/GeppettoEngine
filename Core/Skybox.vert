@@ -19,17 +19,9 @@ layout(location=2) out vec2 uv_out;
 
 void main(void)
 {
-    vec4 newPosition = position;
-    if (isHighlighted)
-    {
-        //newPosition += normal * 0.1;
-    }
-
-    world_position = model_matrix * newPosition;
-
-    world_normal = normalize(normal_matrix * normal);
-
+    mat4 viewNoTransform = mat4(mat3(view_matrix));
+    vec4 pos = persp_matrix * viewNoTransform * position;
+    world_position = model_matrix * position;
+    gl_Position = position.xyww; // force depth to 1.0
     uv_out = uv;
-
-    gl_Position = persp_matrix * view_matrix * world_position;
 }

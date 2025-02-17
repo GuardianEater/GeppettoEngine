@@ -16,12 +16,12 @@ namespace Client
         : ISystem(em)
         , mRenderer()
     {
-        mRenderer.LoadVertexShader("assets\\shaders\\FlatShading.vert");
-        mRenderer.LoadFragmentShader("assets\\shaders\\FlatShading.frag");
+        mRenderer.LoadVertexShader("assets\\shaders\\Lighting.vert");
+        mRenderer.LoadFragmentShader("assets\\shaders\\Lighting.frag");
         mRenderer.Compile();
 
         mRenderer.BackfaceCull();
-        mRenderer.SetAmbientLight({ 0.2, 0.2, 0.2 });
+        mRenderer.SetAmbientLight({ 0.1, 0.1, 0.1 });
 
         mRenderer.LoadImage("Fox", "assets\\textures\\Fox.jpg");
         mRenderer.LoadImage("Raccoon", "assets\\textures\\Raccoon.jpg");

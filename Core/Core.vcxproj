@@ -312,8 +312,8 @@
   <ItemGroup>
     <None Include="assets\shaders\basic.frag" />
     <None Include="assets\shaders\basic.vert" />
-    <None Include="assets\shaders\FlatShading.frag" />
-    <None Include="assets\shaders\FlatShading.vert" />
+    <None Include="assets\shaders\Lighting.frag" />
+    <None Include="assets\shaders\Lighting.vert" />
     <None Include="assets\shaders\forward.frag" />
     <None Include="assets\shaders\forward.vert" />
     <None Include="assets\shaders\main.frag" />
@@ -326,6 +326,8 @@
     <None Include="ImGuiSystem.inl" />
     <None Include="Logger.inl" />
     <None Include="SerializationSystem.inl" />
+    <None Include="Skybox.frag" />
+    <None Include="Skybox.vert" />
     <None Include="TypeList.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

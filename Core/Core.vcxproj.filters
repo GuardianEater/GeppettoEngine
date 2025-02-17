@@ -487,10 +487,10 @@
     <None Include="assets\shaders\main.vert">
       <Filter>Backend\Rendering\Shaders</Filter>
     </None>
-    <None Include="assets\shaders\FlatShading.frag">
+    <None Include="assets\shaders\Lighting.frag">
       <Filter>Backend\Rendering\Shaders</Filter>
     </None>
-    <None Include="assets\shaders\FlatShading.vert">
+    <None Include="assets\shaders\Lighting.vert">
       <Filter>Backend\Rendering\Shaders</Filter>
     </None>
     <None Include="ImGuiSystem.inl">
@@ -498,6 +498,12 @@
     </None>
     <None Include="SerializationSystem.inl">
       <Filter>Client\Systems</Filter>
+    </None>
+    <None Include="Skybox.vert">
+      <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
+    <None Include="Skybox.frag">
+      <Filter>Backend\Rendering\Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

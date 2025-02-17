@@ -35,42 +35,5 @@ out vec4 frag_color; // the resulting pixel color
 
 void main(void)
 {
-    if (isSolidColor)
-    {
-        // still acount for texture and diffuse color
-        vec3 textureColor = use_texture ? texture(texture_sampler, uv).rgb : vec3(1.0);
-        frag_color = vec4(solidColor, 1.0);
-        return;
-    }
-    else if (isHighlighted)
-    {
-        frag_color = vec4(1.0, 1.0, 0.0, 1.0);
-        return;
-    }
-
-    vec3 position = world_position.xyz;
-    vec3 normal = world_normal.xyz;
-    vec3 lighting = vec3(0.0f);
-    for (int i = 0; i < light_count; ++i)
-    {
-        vec3 lightDir = normalize(lights[i].position - position);
-
-        // diffuse color
-        float diff = max(dot(normal, lightDir), 0.0);
-        vec3 diffuse = diff * lights[i].color * diffuse_coefficient;
-
-        // specular color
-        vec3 viewDir = normalize(eye_position.xyz - position);
-        vec3 halfwayDir = normalize(lightDir + viewDir);
-        float spec = pow(max(dot(normal, halfwayDir), 0.0), specular_exponent);
-        vec3 specular = spec * lights[i].color * specular_coefficient;
-
-        // texture color
-        vec3 textureColor = use_texture ? texture(texture_sampler, uv).rgb : vec3(1.0);
-
-        // final color
-        lighting += (diffuse + specular) * textureColor * lights[i].intensity;
-    }
-
-    frag_color = vec4(lighting, 1.0);
+    
 }
