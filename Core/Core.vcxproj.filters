@@ -58,6 +58,9 @@
     <Filter Include="Client\Components">
       <UniqueIdentifier>{9de6b631-c17a-439f-9f48-bdf03a9d30fe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ImGuizmo">
+      <UniqueIdentifier>{8b755f4f-c34a-43de-8763-15941d5f5916}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -200,6 +203,24 @@
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuizmoSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\ImGuizmo\GraphEditor.cpp">
+      <Filter>ImGuizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\ImGuizmo\ImCurveEdit.cpp">
+      <Filter>ImGuizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\ImGuizmo\ImGradient.cpp">
+      <Filter>ImGuizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\ImGuizmo\ImGuizmo.cpp">
+      <Filter>ImGuizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="dependencies\ImGuizmo\ImSequencer.cpp">
+      <Filter>ImGuizmo</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -403,6 +424,27 @@
     </ClInclude>
     <ClInclude Include="pch.hpp">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuizmoSystem.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\ImGuizmo\GraphEditor.h">
+      <Filter>ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\ImGuizmo\ImCurveEdit.h">
+      <Filter>ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\ImGuizmo\ImGradient.h">
+      <Filter>ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\ImGuizmo\ImGuizmo.h">
+      <Filter>ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\ImGuizmo\ImSequencer.h">
+      <Filter>ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\ImGuizmo\ImZoomSlider.h">
+      <Filter>ImGuizmo</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

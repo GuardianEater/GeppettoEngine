@@ -59,9 +59,9 @@ int main() try
     // list of all systems //////////////////////////////////////////////////////////////////////////
     Gep::type_list<
         Client::WindowSystem,
+        Client::ImGuiSystem,
         Client::RenderSystem,
         Client::ScriptingSystem,
-        Client::ImGuiSystem,
         Client::PhysicsSystem,
         Client::SerializationSystem,
         Client::RelationSystem

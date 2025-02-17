@@ -40,7 +40,7 @@ namespace Gep
 				virtual void SetHighlight(bool highlight);
         virtual void SetSolidColor(const glm::vec3& color) final;
 				virtual void SetCamera(const Camera& camera) final;
-				virtual void SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec4& eye);
+				virtual void SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec3& eye);
 				virtual void SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent) final;
 				virtual void SetModel(const glm::mat4& modelingMatrix) final;
 				virtual void SetAmbientLight(const glm::vec3& color);

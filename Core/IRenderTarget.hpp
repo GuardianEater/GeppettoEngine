@@ -20,6 +20,7 @@ namespace Gep
     public:
         IRenderTarget(int width, int height)
             : mSize(width, height)
+            , mPosition(0, 0)
         {}
         virtual ~IRenderTarget() = default;
 
@@ -29,9 +30,11 @@ namespace Gep
         virtual void Resize(glm::vec2 newSize) {};
         virtual void Draw(EngineManager& em, Entity camera) = 0;
         virtual glm::vec2 GetSize() const final { return mSize; }
+        virtual glm::vec2 GetPosition() const final { return mPosition; }
 
     protected:
-        glm::vec2 mSize;
+        glm::vec2 mSize{};
+        glm::vec2 mPosition{};
     };
 }
 

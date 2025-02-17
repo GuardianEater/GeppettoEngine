@@ -14,6 +14,8 @@
 #include "EngineManager.hpp"
 #include "Identification.hpp"
 
+#include <ImGuizmo.h>
+
 namespace Gep
 {
     static std::string GetDisplayName(EngineManager& em, Entity entity)
@@ -112,6 +114,8 @@ namespace Gep
                 glViewport(0, 0, size.x, size.y);
             }
 
+            ImVec2 impos = ImGui::GetWindowPos();
+            mPosition = *reinterpret_cast<glm::vec2*>(&impos);
             ImGui::Image((void*)(intptr_t)GetTexture(), size, ImVec2(0, 1), ImVec2(1, 0));
         }
 

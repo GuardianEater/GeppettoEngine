@@ -79,7 +79,10 @@ namespace Client
                 const auto view = rfl::to_view(component);
                 view.apply([&](const auto& f)
                 {
-                    ReadType(componentDataJson, f.name(), *f.value());
+                    if (componentDataJson.contains(f.name()))
+                    {
+                        ReadType(componentDataJson, f.name(), *f.value());
+                    }
                 });
 
                 mManager.AddComponent<ComponentType>(entity, component);

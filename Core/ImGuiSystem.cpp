@@ -15,6 +15,7 @@
 #include "Material.hpp"
 
 #include "imgui_te_engine.h"
+#include "ImGuizmo.h"
 
 namespace Client
 {
@@ -67,7 +68,52 @@ namespace Client
         }
 
         Gep::Entity entity = *mSelectedEntities.begin();
-        if (mManager.HasComponent<Client::Material>(entity))
+
+        //if (mManager.HasComponent<Transform>(entity))
+        //{
+        //    const auto& cameras = mManager.GetEntities<Camera, Transform>();
+        //
+        //    //ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+        //
+        //    for (Gep::Entity cameraEntity : cameras)
+        //    {
+        //        Camera& camera = mManager.GetComponent<Camera>(cameraEntity);
+        //        Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
+        //
+        //
+        //        glm::vec2 size = camera.renderTarget->GetSize();
+        //        glm::vec2 pos = camera.renderTarget->GetPosition();
+        //
+        //        ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
+        //
+        //        glm::mat4 view = camera.GetViewMatrix(camTransform.position);
+        //        glm::mat4 proj = camera.GetProjectionMatrix();
+        //
+        //        Transform& transform = mManager.GetComponent<Transform>(entity);
+        //        glm::mat4 model = transform.GetModelMatrix();
+        //
+        //        ImGuizmo::OPERATION operation = ImGuizmo::OPERATION::TRANSLATE;
+        //        ImGuizmo::MODE mode = ImGuizmo::MODE::WORLD;
+        //
+        //        ImGuizmo::Manipulate(
+        //            glm::value_ptr(view), 
+        //            glm::value_ptr(proj), 
+        //            operation, 
+        //            mode, 
+        //            glm::value_ptr(model)
+        //        );
+        //
+        //        if (ImGuizmo::IsUsing())
+        //        {
+        //            transform.SetModelMatrix(model);
+        //        }
+        //
+        //        break;
+        //    }
+        //
+        //}
+
+        if (mManager.HasComponent<Material>(entity))
         {
             Client::Material& material = mManager.GetComponent<Client::Material>(entity);
             material.selected = true;

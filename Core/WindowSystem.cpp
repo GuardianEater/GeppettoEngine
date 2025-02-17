@@ -13,6 +13,8 @@
 #include <numeric>
 #include <algorithm>
 
+#include <ImGuizmo.h>
+
 namespace Client
 {
     WindowSystem::WindowSystem(Gep::EngineManager& em)
@@ -112,6 +114,7 @@ namespace Client
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        ImGuizmo::BeginFrame();
         ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
     }
 

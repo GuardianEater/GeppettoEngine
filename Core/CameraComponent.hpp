@@ -26,27 +26,25 @@ namespace Client
 
         float nearPlane = 1.0f;    // how far away to start rendering
         float farPlane  = 1000.0f; // how far away to stop rendering
-
-        // the 80.f is the field of view
-        // the 1.0f is the aspect ratio
-        glm::vec3 viewport{
-            2.0f * nearPlane * glm::tan(glm::radians(80.0f / 2.0f)),        // the width of the viewport
-            2.0f * nearPlane * glm::tan(glm::radians(80.0f / 2.0f)) / 1.0f, // the height of the viewport
-            nearPlane                                                       // the depth of the viewport
-        };
+        float fov       = 80.0f;   // field of view
+        float aspect    = 1.0f;    // aspect ratio
 
         std::shared_ptr<Gep::IRenderTarget> renderTarget = std::make_shared<Gep::RenderTargetImgui>(500, 500);
 
         void Resize(glm::vec2 size)
         {
-            viewport.y = viewport.x / size.x * size.y;
-            viewport.z = nearPlane;
-            viewport.x = 2.0f * nearPlane * glm::tan(glm::radians(80.0f / 2.0f));
+            aspect = size.x / size.y;
         }
 
-        void Serialize() const
+        glm::mat4 GetViewMatrix(const glm::vec3& position)
         {
+            return glm::lookAt(position, position - back, up);
+        }
 
+        glm::mat4 GetProjectionMatrix()
+        {
+            //return Gep::perspective(viewport, nearPlane, farPlane);
+            return glm::perspective(glm::radians(fov), aspect, nearPlane, farPlane);
         }
     };
 }

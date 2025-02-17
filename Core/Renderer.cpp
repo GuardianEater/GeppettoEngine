@@ -206,13 +206,14 @@ namespace Gep
         glUseProgram(0);
 		}
 
-		void IRenderer::SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec4& eye)
+		void IRenderer::SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec3& eye)
 		{
 				glUseProgram(mProgram.GetProgramID());
 				glUniformMatrix4fv(GLUniformLocation::Perspective, 1, false, &pers[0][0]);
 				glUniformMatrix4fv(GLUniformLocation::ViewMatrix,  1, false, &view[0][0]);
 
-				glUniform4fv(GLUniformLocation::Eye, 1, &eye[0]);
+        const glm::vec4 eye4 = glm::vec4(eye, 1);
+				glUniform4fv(GLUniformLocation::Eye, 1, &eye4[0]);
 				glUseProgram(0);
 		}
 

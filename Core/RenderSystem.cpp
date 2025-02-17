@@ -87,11 +87,10 @@ namespace Client
             cam.up = { sin(camRotation.x) * sin(camRotation.y), cos(camRotation.x), -sin(camRotation.x) * cos(camRotation.y) };
             cam.back = glm::normalize(glm::cross(cam.right, cam.up));
 
-            const glm::mat4 pers = Gep::perspective(cam.viewport, cam.nearPlane, cam.farPlane);
-            const glm::mat4 model = glm::mat4({ cam.right, 0 }, { cam.up, 0 }, { cam.back, 0 }, { camTransform.position, 1 });
-            const glm::mat4 view = Gep::affine_inverse(model);
+            const glm::mat4 pers = cam.GetProjectionMatrix();
+            const glm::mat4 view = cam.GetViewMatrix(camTransform.position);
 
-            mRenderer.SetCamera(pers, view, { camTransform.position, 1 });
+            mRenderer.SetCamera(pers, view, camTransform.position);
 
             const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform, Material>();
             for (Gep::Entity entity : entities)
