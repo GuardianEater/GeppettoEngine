@@ -62,7 +62,7 @@ namespace Gep
                 ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             }
-            else if (ImGui::IsMouseReleased(ImGuiMouseButton_Right) && focused)
+            else if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
             {
                 ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
                 ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
@@ -73,6 +73,7 @@ namespace Gep
             {
                 transform.rotation.y += mouseDelta.x * sensitivity;
                 transform.rotation.x += mouseDelta.y * sensitivity;
+
                 if (transform.rotation.x > 89.0f) transform.rotation.x = 89.0f;
                 if (transform.rotation.x < -89.0f) transform.rotation.x = -89.0f;
 
@@ -113,6 +114,7 @@ namespace Gep
 
             ImGui::Image((void*)(intptr_t)GetTexture(), size, ImVec2(0, 1), ImVec2(1, 0));
         }
+
         ImGui::End();
     }
 }

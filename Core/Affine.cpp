@@ -91,11 +91,14 @@ namespace Gep
         return result;
     }
 
-    glm::mat4 rotation(const glm::vec3& eulerRotation)
+    glm::mat4 rotation(const glm::vec3& degrees)
     {
-        glm::mat4 rotX = glm::rotate(glm::mat4(1.0f), glm::radians(eulerRotation.x), glm::vec3(1, 0, 0));
-        glm::mat4 rotY = glm::rotate(glm::mat4(1.0f), glm::radians(eulerRotation.y), glm::vec3(0, 1, 0));
-        glm::mat4 rotZ = glm::rotate(glm::mat4(1.0f), glm::radians(eulerRotation.z), glm::vec3(0, 0, 1));
+        glm::vec3 radians = glm::radians(degrees);
+
+        glm::mat4 rotX = glm::rotate(glm::mat4(1.0f), radians.x, glm::vec3(1, 0, 0));
+        glm::mat4 rotY = glm::rotate(glm::mat4(1.0f), radians.y, glm::vec3(0, 1, 0));
+        glm::mat4 rotZ = glm::rotate(glm::mat4(1.0f), radians.z, glm::vec3(0, 0, 1));
+
         return rotZ * rotY * rotX; // Note the order of multiplication
     }
 

@@ -100,7 +100,7 @@ namespace Client
                 Material& material = mManager.GetComponent<Material>(entity);
 
                 const glm::mat4 model = Gep::translation_matrix(transform.position)
-                                      * Gep::rotation(transform.rotation)
+                                      * Gep::rotation(-transform.rotation)
                                       * Gep::scale_matrix(transform.scale);
 
                 mRenderer.SetModel(model);
