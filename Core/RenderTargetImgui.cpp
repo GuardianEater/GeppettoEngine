@@ -33,7 +33,8 @@ namespace Gep
         Client::Camera& camera = em.GetComponent<Client::Camera>(cameraEntity);
         Client::Transform& transform = em.GetComponent<Client::Transform>(cameraEntity);
 
-        const float movementSpeed = 0.04f;
+        const float dt = em.GetDeltaTime();
+        const float movementSpeed = 20.0f * dt;
         const float sensitivity = 0.1f;
 
         const glm::vec3 forward = glm::normalize(glm::vec3(-camera.back.x, 0.0f, -camera.back.z));

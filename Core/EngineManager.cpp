@@ -32,6 +32,8 @@ namespace Gep
 
     void EngineManager::FrameStart()
     {
+        mFrameStartTime = std::chrono::high_resolution_clock::now();
+
         // loop though all of the systems in order and call their start functions
         for (auto& system : mSystemsToUpdate)
         {
@@ -46,11 +48,19 @@ namespace Gep
         {
             (*systemIt)->FrameEnd();
         }
+
+        auto endTime = std::chrono::high_resolution_clock::now();
+        mDeltaTime = std::chrono::duration<float>(endTime - mFrameStartTime).count();
     }
 
     bool EngineManager::Running() const
     {
         return mIsRunning;
+    }
+
+    float EngineManager::GetDeltaTime() const
+    {
+        return mDeltaTime;
     }
 
     void EngineManager::SetSignature(Entity entity, Signature signature)
@@ -453,11 +463,11 @@ namespace Gep
     }
 
 
-    void EngineManager::Update(float dt)
+    void EngineManager::Update()
     {
         for (const auto& system : mSystemsToUpdate)
         {
-            system->Update(dt);
+            system->Update(mDeltaTime);
         }
     }
 

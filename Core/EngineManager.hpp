@@ -114,13 +114,14 @@ namespace Gep
         void Initialize();
 
         void FrameStart();
-        void Update(float dt);
+        void Update();
         void FrameEnd();
 
         void Exit();
 
         bool Running() const;
 
+        float GetDeltaTime() const;
 
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -275,6 +276,10 @@ namespace Gep
         std::unordered_map<uint64_t, Signature> mSystemSignatures; // the signatures of all of the systems maps the typeid of a system to its signature
         std::unordered_map<uint64_t, std::shared_ptr<ISystem>> mSystems;// maps the typeid of a system to the actual system class
         std::vector <std::shared_ptr<ISystem>> mSystemsToUpdate; // the list of systems that need to be updated
+
+        // dt
+        float mDeltaTime = 0.016f;
+        std::chrono::high_resolution_clock::time_point mFrameStartTime;
 
         bool mIsRunning;
     };
