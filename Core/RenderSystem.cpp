@@ -14,37 +14,38 @@ namespace Client
 {
     RenderSystem::RenderSystem(Gep::EngineManager& em)
         : ISystem(em)
-        , mRenderer()
     {
-        mRenderer.LoadVertexShader("assets\\shaders\\Lighting.vert");
-        mRenderer.LoadFragmentShader("assets\\shaders\\Lighting.frag");
-        mRenderer.Compile();
 
-        mRenderer.BackfaceCull();
-        mRenderer.SetAmbientLight({ 0.1, 0.1, 0.1 });
-
-        mRenderer.LoadImage("Fox", "assets\\textures\\Fox.jpg");
-        mRenderer.LoadImage("Raccoon", "assets\\textures\\Raccoon.jpg");
-        mRenderer.LoadImage("Kurisu", "assets\\textures\\Kurisu.png");
-        mRenderer.LoadImage("Checker", "assets\\textures\\Checker.jpg");
-        mRenderer.LoadImage("Okayu1", "assets\\textures\\Okayu1.jpg");
-        mRenderer.LoadImage("Okayu2", "assets\\textures\\Okayu2.PNG");
-        mRenderer.LoadImage("Peko", "assets\\textures\\Peko.jpg");
-
-        mRenderer.LoadMesh("Quad", Gep::QuadMesh());
-        mRenderer.LoadMesh("Sphere", Gep::SphereMesh(10, 10));
-        mRenderer.LoadMesh("Cube", Gep::CubeMesh());
-        mRenderer.LoadMesh("Icosphere", Gep::IcosphereMesh(3));
     }
 
     RenderSystem::~RenderSystem()
     {
-        mRenderer.UnloadMesh("Sphere");
-        mRenderer.UnloadMesh("Cube");
     }
 
     void RenderSystem::Initialize()
     {
+        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+
+        renderer.LoadVertexShader("assets\\shaders\\Lighting.vert");
+        renderer.LoadFragmentShader("assets\\shaders\\Lighting.frag");
+        renderer.Compile();
+
+        renderer.BackfaceCull();
+        renderer.SetAmbientLight({ 0.1, 0.1, 0.1 });
+
+        renderer.LoadImage("Fox", "assets\\textures\\Fox.jpg");
+        renderer.LoadImage("Raccoon", "assets\\textures\\Raccoon.jpg");
+        renderer.LoadImage("Kurisu", "assets\\textures\\Kurisu.png");
+        renderer.LoadImage("Checker", "assets\\textures\\Checker.jpg");
+        renderer.LoadImage("Okayu1", "assets\\textures\\Okayu1.jpg");
+        renderer.LoadImage("Okayu2", "assets\\textures\\Okayu2.PNG");
+        renderer.LoadImage("Peko", "assets\\textures\\Peko.jpg");
+
+        renderer.LoadMesh("Quad", Gep::QuadMesh());
+        renderer.LoadMesh("Sphere", Gep::SphereMesh(10, 10));
+        renderer.LoadMesh("Cube", Gep::CubeMesh());
+        renderer.LoadMesh("Icosphere", Gep::IcosphereMesh(3));
+
         //mRenderer.CreateLight(0, { 0, 10, 0 }, { 1, 0, 0 });
         mManager.SubscribeToEvent<Gep::Event::WindowResize>(this, &Client::RenderSystem::WindowResizeEvent);
         mManager.SubscribeToEvent<Gep::Event::MouseMoved>(this, &Client::RenderSystem::MouseMovedEvent);
@@ -55,7 +56,9 @@ namespace Client
 
     void RenderSystem::Update(float dt)
     {
-        mRenderer.Start();
+        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+
+        renderer.Start();
 
         // adds the lights to the scene
         const std::vector<Gep::Entity>& lights = mManager.GetEntities<Light, Transform>();
@@ -64,10 +67,10 @@ namespace Client
             const Light& light = mManager.GetComponent<Light>(lightEntity);
             const Transform& lightTransform = mManager.GetComponent<Transform>(lightEntity);
 
-            mRenderer.AddLight(light.color, lightTransform.position, light.intensity);
+            renderer.AddLight(light.color, lightTransform.position, light.intensity);
         }
 
-        mRenderer.DrawLights();
+        renderer.DrawLights();
 
         // begins rendering each everything
         const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
@@ -90,7 +93,7 @@ namespace Client
             const glm::mat4 pers = cam.GetProjectionMatrix();
             const glm::mat4 view = cam.GetViewMatrix(camTransform.position);
 
-            mRenderer.SetCamera(pers, view, camTransform.position);
+            renderer.SetCamera(pers, view, camTransform.position);
 
             const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform, Material>();
             for (Gep::Entity entity : entities)
@@ -102,24 +105,24 @@ namespace Client
                                       * Gep::rotation(-transform.rotation)
                                       * Gep::scale_matrix(transform.scale);
 
-                mRenderer.SetModel(model);
-                mRenderer.SetMaterial(material.diff_coeff, material.spec_coeff, material.spec_exponent);
+                renderer.SetModel(model);
+                renderer.SetMaterial(material.diff_coeff, material.spec_coeff, material.spec_exponent);
                 
                 if (mManager.HasComponent<Texture>(entity))
                 {
                     const Texture& texture = mManager.GetComponent<Texture>(entity);
-                    mRenderer.SetTexture(texture.textureName);
+                    renderer.SetTexture(texture.textureName);
                 }
 
-                mRenderer.SetHighlight(material.selected);
+                renderer.SetHighlight(material.selected);
 
                 if (mManager.HasComponent<Client::Light>(entity))
                 {
                     Light& light = mManager.GetComponent<Client::Light>(entity);
-                    mRenderer.SetSolidColor(light.color * light.intensity);
+                    renderer.SetSolidColor(light.color * light.intensity);
                 }
 
-                mRenderer.DrawMesh(material.meshName);
+                renderer.DrawMesh(material.meshName);
                 material.selected = false;
             }
 
@@ -128,12 +131,14 @@ namespace Client
             cam.renderTarget->Unbind();
         }
 
-        mRenderer.End();
+        renderer.End();
         HandleInputs(dt);
     }
 
     void RenderSystem::HandleInputs(float dt)
     {
+        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+
         const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
         const float movementSpeed = 10 * dt;
 
@@ -145,7 +150,7 @@ namespace Client
         // Handle T key for textures
         if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
             if (!isTKeyPressed) { // Key was just pressed
-                mRenderer.ToggleTextures();
+                renderer.ToggleTextures();
                 isTKeyPressed = true;
             }
         }
@@ -156,7 +161,7 @@ namespace Client
         // Handle Y key for wireframes
         if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
             if (!isYKeyPressed) { // Key was just pressed
-                mRenderer.ToggleWireframes();
+                renderer.ToggleWireframes();
                 isYKeyPressed = true;
             }
         }

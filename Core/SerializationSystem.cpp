@@ -169,6 +169,17 @@ namespace Client
         };
     }
 
+    template<>
+    void SerializationSystem::WriteType(nlohmann::json& json, const std::string_view name, glm::quat& t)
+    {
+        json[name] = {
+          {"x", t.x},
+          {"y", t.y},
+          {"z", t.z},
+          {"w", t.w}
+        };
+    }
+
     void SerializationSystem::ReadType(const nlohmann::json& json, const std::string_view name, glm::vec3& t)
     {
         t.x = json.at(name).at("x").get<float>();
@@ -177,6 +188,14 @@ namespace Client
     }
 
     void SerializationSystem::ReadType(const nlohmann::json& json, const std::string_view name, glm::vec4& t)
+    {
+        t.x = json.at(name).at("x").get<float>();
+        t.y = json.at(name).at("y").get<float>();
+        t.z = json.at(name).at("z").get<float>();
+        t.w = json.at(name).at("w").get<float>();
+    }
+
+    void SerializationSystem::ReadType(const nlohmann::json& json, const std::string_view name, glm::quat& t)
     {
         t.x = json.at(name).at("x").get<float>();
         t.y = json.at(name).at("y").get<float>();

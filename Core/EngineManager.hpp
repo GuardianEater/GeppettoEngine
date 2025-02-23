@@ -154,7 +154,24 @@ namespace Gep
         const std::vector<Entity>& GetEntities() const;
         std::vector<Entity> GetRootEntities() const;
 
-        
+
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////
+        // resource functions ///////////////////////////////////////////////////////////////////////////
+
+        template <typename ResourceType>
+        void RegisterResource();
+
+        template <typename ResourceType>
+        ResourceType& GetResource();
+
+        template <typename ResourceType>
+        const ResourceType& GetResource() const;
+
+        template <typename ResourceType>
+        bool ResourceIsRegistered() const;
+
+
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // component functions //////////////////////////////////////////////////////////////////////////
@@ -182,7 +199,7 @@ namespace Gep
 
         template<typename ComponentType>
         void DestroyComponent(Entity entity);
-        void DestroyComponent(uint64_t componentID, Entity entity);
+        void DestroyComponent(uint64_t componentIndex, Entity entity);
 
         template<typename ComponentType>
         ComponentType& GetComponent(Entity entity);
@@ -192,7 +209,7 @@ namespace Gep
         // if the entity has all of the listed components
         template <typename... ComponentTypes>
         bool HasComponent(Entity entity) const;
-        bool HasComponent(uint64_t componentID, Entity entity) const;
+        bool HasComponent(uint64_t componentIndex, Entity entity) const;
 
         template <typename ComponentType>
         bool ComponentIsRegistered() const;
@@ -276,6 +293,10 @@ namespace Gep
         std::unordered_map<uint64_t, Signature> mSystemSignatures; // the signatures of all of the systems maps the typeid of a system to its signature
         std::unordered_map<uint64_t, std::shared_ptr<ISystem>> mSystems;// maps the typeid of a system to the actual system class
         std::vector <std::shared_ptr<ISystem>> mSystemsToUpdate; // the list of systems that need to be updated
+
+        // resources
+        std::unordered_map<std::type_index, Gep::void_unique_ptr> mResources; // maps the type of a resource to the resource itself
+
 
         // dt
         float mDeltaTime = 0.016f;

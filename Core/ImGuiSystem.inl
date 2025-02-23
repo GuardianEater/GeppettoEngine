@@ -12,6 +12,19 @@
 
 namespace Client
 {
+    template <typename ComponentType>
+    concept HasOnImGuiRender = requires(ComponentType component)
+    {
+        { component.OnImGuiRender() } -> std::same_as<void>;
+    };
+
+    template <typename ComponentType>
+    concept HasOnImGuiRenderWithManager = requires(ComponentType component, Gep::EngineManager& manager)
+    {
+        { component.OnImGuiRender(manager) } -> std::same_as<void>;
+    };
+
+
     template <typename... ComponentTypes>
     void ImGuiSystem::OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes)
     {
@@ -36,13 +49,24 @@ namespace Client
                 {
                     ComponentType& component = mManager.GetComponent<ComponentType>(entity);
 
-                    const auto view = rfl::to_view(component);
-
-                    // this draws each type inside of the component
-                    view.apply([&](const auto& f)
+                    if constexpr (HasOnImGuiRender<ComponentType>)
                     {
-                        DrawType(f.name(), *f.value());
-                    });
+                        component.OnImGuiRender();
+                    }
+                    else if constexpr (HasOnImGuiRenderWithManager<ComponentType>)
+                    {
+                        component.OnImGuiRender(mManager);
+                    }
+                    else
+                    {
+                        // generate a default inspector panel for the component
+                        const auto view = rfl::to_view(component);
+
+                        view.apply([&](const auto& f)
+                        {
+                            DrawType(f.name(), *f.value());
+                        });
+                    }
 
                     ImGui::Spacing();
                     ImGui::Separator();

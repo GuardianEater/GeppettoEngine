@@ -17,9 +17,9 @@
 
 namespace Gep
 {
-		/**
-		 * Typical Mesh.
-		 */
+    /**
+     * Typical Mesh.
+     */
     struct Vertex
     {
         glm::vec3 position;
@@ -27,14 +27,14 @@ namespace Gep
         glm::vec2 texCoord;
     };
 
-		struct Mesh
-		{
-				using Face   = glm::vec<3, GLuint>;
-				using Edge   = glm::vec<2, GLuint>;
+    struct Mesh
+    {
+        using Face = glm::vec<3, GLuint>;
+        using Edge = glm::vec<2, GLuint>;
 
-				std::vector<Vertex> mVertices;
-				std::vector<Face> mFaces;
-				std::vector<Edge> mEdges;
-		};
+        std::vector<Vertex> mVertices;
+        std::vector<Face> mFaces;
+        std::vector<Edge> mEdges;
+    };
 }
 

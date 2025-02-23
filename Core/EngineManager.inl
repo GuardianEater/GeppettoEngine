@@ -49,6 +49,51 @@ namespace Gep
         return mEntityGroups.at(groupSignature);
     }
 
+    template<typename ResourceType>
+    inline void EngineManager::RegisterResource()
+    {
+        if (ResourceIsRegistered<ResourceType>())
+        {
+            Log::Error("RegisterResource() Failed, Resource: [", GetTypeInfo<ResourceType>().PrettyName(), "] is already registered!");
+            return;
+        }
+
+        Log::Info("Registering Resource: [", GetTypeInfo<ResourceType>().PrettyName(), "]...");
+
+        std::type_index typeIndex = typeid(ResourceType);
+        mResources.emplace(typeIndex, Gep::make_unique_void_ptr<ResourceType>());
+
+        Log::Info("Registered Resource: [", GetTypeInfo<ResourceType>().PrettyName(), "]");
+    }
+
+    template<typename ResourceType>
+    inline ResourceType& EngineManager::GetResource()
+    {
+        if (!ResourceIsRegistered<ResourceType>())
+        {
+            Log::Critical("GetResource() Failed, Resource: [", GetTypeInfo<ResourceType>().PrettyName(), "] is not registered!");
+        }
+
+        return *static_cast<ResourceType*>(mResources.at(typeid(ResourceType)).get());
+    }
+
+    template<typename ResourceType>
+    inline const ResourceType& EngineManager::GetResource() const
+    {
+        if (!ResourceIsRegistered<ResourceType>())
+        {
+            Log::Critical("GetResource() Failed, Resource: [", GetTypeInfo<ResourceType>().PrettyName(), "] is not registered!");
+        }
+
+        return *static_cast<ResourceType*>(mResources.at(typeid(ResourceType)).get());
+    }
+
+    template<typename ResourceType>
+    inline bool EngineManager::ResourceIsRegistered() const
+    {
+        return mResources.contains(typeid(ResourceType));
+    }
+
     template<typename ComponentType>
     inline Signature EngineManager::GetComponentSignature() const
     {

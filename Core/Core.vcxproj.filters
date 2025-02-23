@@ -61,6 +61,9 @@
     <Filter Include="ImGuizmo">
       <UniqueIdentifier>{8b755f4f-c34a-43de-8763-15941d5f5916}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Client\Resources">
+      <UniqueIdentifier>{2d7ccdf6-9278-4bbe-b566-7b5461e43da8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -425,9 +428,6 @@
     <ClInclude Include="pch.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="ImGuizmoSystem.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
     <ClInclude Include="dependencies\ImGuizmo\GraphEditor.h">
       <Filter>ImGuizmo</Filter>
     </ClInclude>
@@ -445,6 +445,9 @@
     </ClInclude>
     <ClInclude Include="dependencies\ImGuizmo\ImZoomSlider.h">
       <Filter>ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuizmoSystem.hpp">
+      <Filter>Client\Systems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

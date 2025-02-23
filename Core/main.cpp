@@ -70,6 +70,9 @@ int main() try
     // register all types ////////////////////////////////////////////////////////////////////////////
     em.RegisterTypes(componentTypes, systemTypes);
 
+    // register all resources ////////////////////////////////////////////////////////////////////////
+    em.RegisterResource<Gep::OpenGLRenderer>();
+
     // setup entity groups //////////////////////////////////////////////////////////////////////////
     em.RegisterGroup<Client::RigidBody, Client::Transform>();
     em.RegisterGroup<Client::Material, Client::Transform>();

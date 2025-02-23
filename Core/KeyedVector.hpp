@@ -122,7 +122,7 @@ namespace Gep
         constexpr iterator end();
 
     private:
-        std::vector<std::optional<T>> mData; // data never gets removed from the vector, simly leaves a hole
+        std::vector<std::optional<T>> mData; // data never gets removed from the vector, simply leaves a hole
         std::vector<size_t> mAvailableSlots; // indexs to slots that are available
     };
 }

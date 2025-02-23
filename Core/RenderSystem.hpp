@@ -48,9 +48,6 @@ namespace Client
         void MouseClickedEvent(const Gep::Event::MouseClicked& eventData);
         void KeyPressedEvent(const Gep::Event::KeyPressed& eventData);
         void MouseScrolledEvent(const Gep::Event::MouseScrolled& eventData);
-
-    private:
-        Gep::IRenderer mRenderer;
     };
 }
 

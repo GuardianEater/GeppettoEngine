@@ -68,9 +68,11 @@ namespace Client
         // bunch of base type specializations
         template <> void WriteType<glm::vec3>(nlohmann::json& json, const std::string_view name, glm::vec3& t);
         template <> void WriteType<glm::vec4>(nlohmann::json& json, const std::string_view name, glm::vec4& t);
+        template <> void WriteType<glm::quat>(nlohmann::json& json, const std::string_view name, glm::quat& t);
 
         void ReadType(const nlohmann::json& json, const std::string_view name, glm::vec3& t);
         void ReadType(const nlohmann::json& json, const std::string_view name, glm::vec4& t);
+        void ReadType(const nlohmann::json& json, const std::string_view name, glm::quat& t);
 
         // base case, do nothing
         template <typename T>
