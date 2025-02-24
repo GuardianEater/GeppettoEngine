@@ -18,14 +18,18 @@ namespace Client
     ScriptingSystem::ScriptingSystem(Gep::EngineManager& em)
         : ISystem(em)
     {
-        ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
-
-        sr.mLua.open_libraries();
+        mLua.open_libraries();
+        mLua.new_usertype<glm::vec3>("vec3",
+            sol::constructors<glm::vec3(), glm::vec3(float, float, float)>(),
+            "x", &glm::vec3::x,
+            "y", &glm::vec3::y,
+            "z", &glm::vec3::z
+        );
 
         // TODO: need to make this readonly on the lua side
-        const sol::table log = sr.mLua.create_table("Log");
+        const sol::table log = mLua.create_table("Log");
 
-        sr.mLua["Log"]["Trace"] = [](const sol::variadic_args& args)
+        mLua["Log"]["Trace"] = [](const sol::variadic_args& args)
         {
             std::string message;
             for (auto arg : args)
@@ -34,7 +38,7 @@ namespace Client
             Gep::Log::Trace(message);
         };
 
-        sr.mLua["Log"]["Info"] = [](const sol::variadic_args& args)
+        mLua["Log"]["Info"] = [](const sol::variadic_args& args)
         {
             std::string message;
             for (auto arg : args)
@@ -42,7 +46,7 @@ namespace Client
             Gep::Log::Info(message);
         };
 
-        sr.mLua["Log"]["Warning"] = [](const sol::variadic_args& args)
+        mLua["Log"]["Warning"] = [](const sol::variadic_args& args)
         {
             std::string message;
             for (auto arg : args)
@@ -50,7 +54,7 @@ namespace Client
             Gep::Log::Warning(message);
         };
 
-        sr.mLua["Log"]["Error"] = [](const sol::variadic_args& args)
+        mLua["Log"]["Error"] = [](const sol::variadic_args& args)
         {
             std::stringstream ss;
             for (auto&& arg : args) {
@@ -71,71 +75,68 @@ namespace Client
             Gep::Log::Error(ss.str());
         };
 
-        sr.mLua.new_usertype<glm::vec3>("vec3",
-            sol::constructors<glm::vec3(), glm::vec3(float, float, float)>(),
-
-            // Fields
-            "x", &glm::vec3::x,
-            "y", &glm::vec3::y,
-            "z", &glm::vec3::z,
-
-            // Operators
-            sol::meta_function::addition, [](const glm::vec3& a, const glm::vec3& b) { return a + b; },
-            sol::meta_function::subtraction, [](const glm::vec3& a, const glm::vec3& b) { return a - b; },
-            sol::meta_function::multiplication, [](const glm::vec3& a, float scalar) { return a * scalar; },
-            sol::meta_function::division, [](const glm::vec3& a, float scalar) { return a / scalar; }
-        );
     }
 
     void ScriptingSystem::Initialize()
     {
-        //lua.new_usertype<Client::Transform>("Transform",
-        //    "position", &Transform::position,
-        //    "scale", &Transform::scale,
-        //    "rotation", &Transform::rotation
-        //);
-
-        //lua.new_usertype<Client::RigidBody>("RigidBody",
-        //    "velocity", &RigidBody::velocity,
-        //    "acceleration", &RigidBody::acceleration,
-        //    "rotational", &RigidBody::rotationalVelocity
-        //);
+        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<Script>>(this, &ScriptingSystem::OnScriptAdded);
     }
 
     void ScriptingSystem::Update(float dt)
     {
-        ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
-
         const std::vector<Gep::Entity>& entities = mManager.GetEntities<Script>();
         for (Gep::Entity entity : entities)
         {
-            sol::table entityTable = sr.mLua.create_table();
-            sol::environment entityEnvironment(sr.mLua, sol::create, sr.mLua.globals());
-
             Script& script = mManager.GetComponent<Client::Script>(entity);
 
+            sol::table self = mLua.create_table();
+
             mManager.ForEachComponent(entity, [&](const Gep::ComponentData& data)
-                {
-                    mSetComponentMemberReferences[data.index](entity, entityTable);
-                });
-
-            entityEnvironment["self"] = entityTable;
-
-            static std::string lastError;
-            sol::protected_function_result result = sr.mLua.script(script.data, entityEnvironment, sol::script_pass_on_error);
-
-            // prints only the lastest error
-            if (!result.valid())
             {
-                sol::error err = result;
+                mSetComponentMemberReferences[data.index](entity, self);
+            });
 
-                if (err.what() != lastError)
+            script.env["self"] = self;
+
+            if (script.update.valid())
+            {
+                sol::protected_function_result updateResult = script.update(dt);
+                if (!updateResult.valid())
                 {
-                    lastError = err.what();
-                    Gep::Log::Error("Error in script on entity [", entity, "]: ", err.what());
+                    sol::error err = updateResult;
+                    Gep::Log::Error("Error running script: ", err.what());
+                    script.update = sol::nil;
                 }
             }
         }
+    }
+
+    void ScriptingSystem::OnScriptAdded(const Gep::Event::ComponentAdded<Script>& event)
+    {
+        Script& script = mManager.GetComponent<Client::Script>(event.entity);
+        script.env = sol::environment(mLua, sol::create, mLua.globals());
+        sol::load_result loadResult = mLua.load_file(script.path.string());
+        
+        if (!loadResult.valid())
+        {
+            sol::error err = loadResult;
+            Gep::Log::Error("Error loading script: ", err.what());
+            return;
+        }
+
+        sol::protected_function_result functionResult = loadResult(script.env);
+        if (!functionResult.valid())
+        {
+            sol::error err = functionResult;
+            Gep::Log::Error("Error starting script: ", err.what());
+            return;
+        }
+
+        script.init = script.env["Initialize"];
+        script.update = script.env["Update"];
+        script.exit = script.env["Exit"];
+
+        // run component bindings
     }
 }
 

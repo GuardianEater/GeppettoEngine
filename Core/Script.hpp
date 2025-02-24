@@ -14,7 +14,16 @@ namespace Client
 {
     struct Script
     {
-        //std::string data;
-        std::string data;
+        std::filesystem::path path = "assets\\scripts\\example.lua";
+        sol::environment env;
+
+        sol::function init;
+        sol::function update;
+        sol::function exit;
+
+        void OnImGuiRender(Gep::EngineManager& em)
+        {
+            ImGui::Text("Script Path: %s", path.string().c_str());
+        }
     };
 }

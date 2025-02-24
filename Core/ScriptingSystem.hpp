@@ -17,6 +17,12 @@
 
 namespace Client
 {
+    template <typename CompoenentType>
+    concept HasOnScriptAccess = requires(CompoenentType component, sol::table& table)
+    {
+        { component.OnScriptAccess(table) } -> std::same_as<void>;
+    };
+
     class ScriptingSystem : public Gep::ISystem
     {
     public:
@@ -29,52 +35,61 @@ namespace Client
         void Update(float dt);
 
     private:
+        void OnScriptAdded(const Gep::Event::ComponentAdded<Script>& event);
+
         // given a componentIndex, sets up the lua fields for that compoennt
         std::vector<std::function<void(Gep::Entity, sol::table&)>> mSetComponentMemberReferences;
+
+        sol::state mLua;
     };
 
     template<typename ...ComponentTypes>
     inline void ScriptingSystem::OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes)
     {
-        ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
-
         componentTypes.for_each([&]<typename ComponentType>()
         {
-            std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
-            ComponentType component{};
-            ComponentType* componentPtr = &component;
-            auto tempView = rfl::to_view(component);
+        //    std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
+        //    ComponentType component{};
+        //    ComponentType* componentPtr = &component;
+            //auto tempView = rfl::to_view(component);
 
-            auto luaComponentType = sr.mLua.new_usertype<ComponentType>(typeName.c_str(), sol::no_constructor);
+            //auto luaComponentType = mLua.new_usertype<ComponentType>(typeName.c_str(), sol::no_constructor);
 
-            tempView.apply([&](const auto& field)
+            //tempView.apply([&](const auto& field)
+            //{
+            //    using FieldType = std::remove_reference_t<decltype(*field.value())>;
+
+            //    static const size_t pointerDiff = reinterpret_cast<size_t>(field.value()) - reinterpret_cast<size_t>(componentPtr);
+            //    const std::string_view fieldName = field.name();
+
+            //    luaComponentType[fieldName] = sol::property(
+            //    [&](const ComponentType& c) -> FieldType
+            //    {
+            //        FieldType* fieldPtr = reinterpret_cast<FieldType*>(reinterpret_cast<size_t>(&c) + pointerDiff);
+
+            //        return *fieldPtr;
+            //    },
+            //    [&](ComponentType& c, FieldType value)
+            //    { 
+            //        FieldType* fieldPtr = reinterpret_cast<FieldType*>(reinterpret_cast<size_t>(&c) + pointerDiff);
+
+            //        *fieldPtr = value; 
+            //    });
+            //});
+
+            mSetComponentMemberReferences.push_back([&](Gep::Entity entity, sol::table& self)
             {
-                using FieldType = std::remove_reference_t<decltype(*field.value())>;
-
-                static const size_t pointerDiff = reinterpret_cast<size_t>(field.value()) - reinterpret_cast<size_t>(componentPtr);
-                const std::string_view fieldName = field.name();
-
-                luaComponentType[fieldName] = sol::property(
-                [&](const ComponentType& c) -> FieldType
+                if constexpr (HasOnScriptAccess<ComponentType>)
                 {
-                    FieldType* fieldPtr = reinterpret_cast<FieldType*>(reinterpret_cast<size_t>(&c) + pointerDiff);
+                    //ComponentType& component = mManager.GetComponent<ComponentType>(entity);
+                    //std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
 
-                    return *fieldPtr;
-                },
-                [&](ComponentType& c, FieldType value)
-                { 
-                    FieldType* fieldPtr = reinterpret_cast<FieldType*>(reinterpret_cast<size_t>(&c) + pointerDiff);
+                    //sol::table componentTable = mLua.create_table();
 
-                    *fieldPtr = value; 
-                });
-            });
+                    //component.OnScriptAccess(componentTable);
 
-            mSetComponentMemberReferences.push_back([&](Gep::Entity entity, sol::table& entityTable)
-            {
-                ComponentType& component = mManager.GetComponent<ComponentType>(entity);
-                std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
-
-                entityTable[typeName] = &component;
+                    //self[typeName] = componentTable;
+                }
             });
         });
     }

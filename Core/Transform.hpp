@@ -50,5 +50,12 @@ namespace Client
             glm::decompose(modelMatrix, scale, rotationQ, position, skew, perspective);
             rotation = glm::eulerAngles(rotationQ);
         }
+
+        void OnScriptAccess(sol::table& table)
+        {
+            table["position"] = &position;
+            table["scale"] = &scale;
+            table["rotation"] = &rotation;
+        }
     };
 }

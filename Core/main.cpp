@@ -44,8 +44,6 @@ int main() try
     Gep::EngineManager em;
 
     // register all resources ////////////////////////////////////////////////////////////////////////
-    em.RegisterResource<Gep::OpenGLRenderer>();
-    em.RegisterResource<Client::ScriptingResource>();
 
 
     // list of all components ///////////////////////////////////////////////////////////////////////
@@ -71,9 +69,11 @@ int main() try
         Client::SerializationSystem,
         Client::RelationSystem
     > systemTypes;
-
     // register all types ////////////////////////////////////////////////////////////////////////////
     em.RegisterTypes(componentTypes, systemTypes);
+
+    // register all resources ////////////////////////////////////////////////////////////////////////
+    em.RegisterResource<Gep::OpenGLRenderer>();
 
     // setup entity groups //////////////////////////////////////////////////////////////////////////
     em.RegisterGroup<Client::RigidBody, Client::Transform>();
@@ -98,6 +98,7 @@ int main() try
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     float dt = 0.016f;
+    em.ResolveEvents();
     while (em.Running())
     {
         em.FrameStart();
