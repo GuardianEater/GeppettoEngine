@@ -225,6 +225,9 @@
     <ClCompile Include="dependencies\ImGuizmo\ImSequencer.cpp">
       <Filter>ImGuizmo</Filter>
     </ClCompile>
+    <ClCompile Include="ScriptingResource.cpp">
+      <Filter>Client\Resources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -448,6 +451,9 @@
     </ClInclude>
     <ClInclude Include="ImGuizmoSystem.hpp">
       <Filter>Client\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptingResource.hpp">
+      <Filter>Client\Resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

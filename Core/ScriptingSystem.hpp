@@ -11,6 +11,7 @@
 #include <ISystem.hpp>
 #include <Script.hpp>
 #include "EngineManager.hpp"
+#include "ScriptingResource.hpp"
 
 #include <sol/sol.hpp>
 
@@ -30,13 +31,13 @@ namespace Client
     private:
         // given a componentIndex, sets up the lua fields for that compoennt
         std::vector<std::function<void(Gep::Entity, sol::table&)>> mSetComponentMemberReferences;
-        sol::state mLua;
-        sol::environment mEnvironment;
     };
 
     template<typename ...ComponentTypes>
     inline void ScriptingSystem::OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes)
     {
+        ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
+
         componentTypes.for_each([&]<typename ComponentType>()
         {
             std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
@@ -44,7 +45,7 @@ namespace Client
             ComponentType* componentPtr = &component;
             auto tempView = rfl::to_view(component);
 
-            auto luaComponentType = mLua.new_usertype<ComponentType>(typeName.c_str(), sol::no_constructor);
+            auto luaComponentType = sr.mLua.new_usertype<ComponentType>(typeName.c_str(), sol::no_constructor);
 
             tempView.apply([&](const auto& field)
             {

@@ -45,13 +45,6 @@ namespace Client
         renderer.LoadMesh("Sphere", Gep::SphereMesh(10, 10));
         renderer.LoadMesh("Cube", Gep::CubeMesh());
         renderer.LoadMesh("Icosphere", Gep::IcosphereMesh(3));
-
-        //mRenderer.CreateLight(0, { 0, 10, 0 }, { 1, 0, 0 });
-        mManager.SubscribeToEvent<Gep::Event::WindowResize>(this, &Client::RenderSystem::WindowResizeEvent);
-        mManager.SubscribeToEvent<Gep::Event::MouseMoved>(this, &Client::RenderSystem::MouseMovedEvent);
-        mManager.SubscribeToEvent<Gep::Event::MouseClicked>(this, &Client::RenderSystem::MouseClickedEvent);
-        mManager.SubscribeToEvent<Gep::Event::KeyPressed>(this, &Client::RenderSystem::KeyPressedEvent);
-        mManager.SubscribeToEvent<Gep::Event::MouseScrolled>(this, &Client::RenderSystem::MouseScrolledEvent);
     }
 
     void RenderSystem::Update(float dt)
@@ -174,73 +167,6 @@ namespace Client
     {
         ImGui::Begin("Render System");
         ImGui::End();
-    }
-
-    void RenderSystem::WindowResizeEvent(const Gep::Event::WindowResize& eventData)
-    {
-        //glViewport(0, 0, eventData.width, eventData.height);
-
-        //const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
-        //for (Gep::Entity cameraEntity : cameras)
-        //{
-        //    // update the aspect ratio of the camera
-        //    Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
-        //    cam.viewport.y = cam.viewport.x / eventData.width * eventData.height;
-        //    cam.viewport.z = cam.nearPlane;
-        //    cam.viewport.x = 2.0f * cam.nearPlane * glm::tan(glm::radians(80.0f / 2.0f));
-        //}
-    }
-
-    void RenderSystem::MouseMovedEvent(const Gep::Event::MouseMoved& eventData)
-    {
-        //// only while right mouse button is pressed
-        //if (glfwGetMouseButton(glfwGetCurrentContext(), GLFW_MOUSE_BUTTON_RIGHT) != GLFW_PRESS) return;
-
-
-        //float sensitivity = 0.3f;
-
-        //const double dx = (eventData.x - eventData.prevX) * sensitivity;
-        //const double dy = (eventData.y - eventData.prevY) * sensitivity;
-
-        //const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
-
-        //for (Gep::Entity cameraEntity : cameras)
-        //{
-        //    Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
-        //    Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
-        //    camTransform.rotation.y += dx;
-        //    camTransform.rotation.x += dy;
-        //    if (camTransform.rotation.x > 89.0f) camTransform.rotation.x = 89.0f;
-        //    if (camTransform.rotation.x < -89.0f) camTransform.rotation.x = -89.0f;
-        //}
-    }
-
-    void RenderSystem::MouseClickedEvent(const Gep::Event::MouseClicked& eventData)
-    {
-        //if (eventData.action == GLFW_PRESS && eventData.button == GLFW_MOUSE_BUTTON_RIGHT)
-        //{
-        //    glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        //}
-        //else if (eventData.action == GLFW_RELEASE && eventData.button == GLFW_MOUSE_BUTTON_RIGHT)
-        //{
-        //    glfwSetInputMode(glfwGetCurrentContext(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        //}
-    }
-
-    void RenderSystem::KeyPressedEvent(const Gep::Event::KeyPressed& eventData)
-    {
-
-    }
-
-    void RenderSystem::MouseScrolledEvent(const Gep::Event::MouseScrolled& eventData)
-    {
-        //const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
-        //for (Gep::Entity cameraEntity : cameras)
-        //{
-        //    Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
-        //    Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
-        //    camTransform.position += cam.back * -(float)eventData.yoffset;
-        //}
     }
 }
 

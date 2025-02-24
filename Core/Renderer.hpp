@@ -45,6 +45,7 @@ namespace Gep
         void SetModel(const glm::mat4& modelingMatrix);
         void SetAmbientLight(const glm::vec3& color);
         std::vector<std::string> GetLoadedMeshes() const;
+        std::vector<std::string> GetLoadedTextures() const;
         
 
         // completes the rendering of the object

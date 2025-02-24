@@ -43,6 +43,7 @@ namespace Client
                         mManager.DestroyComponent<ComponentType>(entity);
                     }
                     ImGui::EndPopup();
+                    return;
                 }
 
                 if (open)

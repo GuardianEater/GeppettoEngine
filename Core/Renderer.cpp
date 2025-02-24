@@ -261,6 +261,18 @@ namespace Gep
         return meshes;
     }
 
+    std::vector<std::string> OpenGLRenderer::GetLoadedTextures() const
+    {
+        std::vector<std::string> textures;
+
+        for (const auto& [name, _] : mTextures)
+        {
+            textures.push_back(name);
+        }
+
+        return textures;
+    }
+
     void OpenGLRenderer::DrawMesh(const std::string& meshName)
     {
         if (mMeshDatas.find(meshName) == mMeshDatas.end())

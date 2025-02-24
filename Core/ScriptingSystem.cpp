@@ -17,14 +17,15 @@ namespace Client
 {
     ScriptingSystem::ScriptingSystem(Gep::EngineManager& em)
         : ISystem(em)
-        , mLua()
     {
-        mLua.open_libraries();
+        ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
+
+        sr.mLua.open_libraries();
 
         // TODO: need to make this readonly on the lua side
-        const sol::table log = mLua.create_table("Log");
+        const sol::table log = sr.mLua.create_table("Log");
 
-        mLua["Log"]["Trace"] = [](const sol::variadic_args& args) 
+        sr.mLua["Log"]["Trace"] = [](const sol::variadic_args& args)
         {
             std::string message;
             for (auto arg : args)
@@ -33,7 +34,7 @@ namespace Client
             Gep::Log::Trace(message);
         };
 
-        mLua["Log"]["Info"] = [](const sol::variadic_args& args)
+        sr.mLua["Log"]["Info"] = [](const sol::variadic_args& args)
         {
             std::string message;
             for (auto arg : args)
@@ -41,7 +42,7 @@ namespace Client
             Gep::Log::Info(message);
         };
 
-        mLua["Log"]["Warning"] = [](const sol::variadic_args& args)
+        sr.mLua["Log"]["Warning"] = [](const sol::variadic_args& args)
         {
             std::string message;
             for (auto arg : args)
@@ -49,7 +50,7 @@ namespace Client
             Gep::Log::Warning(message);
         };
 
-        mLua["Log"]["Error"] = [](const sol::variadic_args& args)
+        sr.mLua["Log"]["Error"] = [](const sol::variadic_args& args)
         {
             std::stringstream ss;
             for (auto&& arg : args) {
@@ -70,7 +71,7 @@ namespace Client
             Gep::Log::Error(ss.str());
         };
 
-        mLua.new_usertype<glm::vec3>("vec3",
+        sr.mLua.new_usertype<glm::vec3>("vec3",
             sol::constructors<glm::vec3(), glm::vec3(float, float, float)>(),
 
             // Fields
@@ -79,10 +80,10 @@ namespace Client
             "z", &glm::vec3::z,
 
             // Operators
-            sol::meta_function::addition,       [](const glm::vec3& a, const glm::vec3& b) { return a + b; },
-            sol::meta_function::subtraction,    [](const glm::vec3& a, const glm::vec3& b) { return a - b; },
-            sol::meta_function::multiplication, [](const glm::vec3& a, float scalar)       { return a * scalar; },
-            sol::meta_function::division,       [](const glm::vec3& a, float scalar)       { return a / scalar; }
+            sol::meta_function::addition, [](const glm::vec3& a, const glm::vec3& b) { return a + b; },
+            sol::meta_function::subtraction, [](const glm::vec3& a, const glm::vec3& b) { return a - b; },
+            sol::meta_function::multiplication, [](const glm::vec3& a, float scalar) { return a * scalar; },
+            sol::meta_function::division, [](const glm::vec3& a, float scalar) { return a / scalar; }
         );
     }
 
@@ -103,23 +104,25 @@ namespace Client
 
     void ScriptingSystem::Update(float dt)
     {
+        ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
+
         const std::vector<Gep::Entity>& entities = mManager.GetEntities<Script>();
         for (Gep::Entity entity : entities)
         {
-            sol::table entityTable = mLua.create_table();
-            sol::environment entityEnvironment(mLua, sol::create, mLua.globals());
+            sol::table entityTable = sr.mLua.create_table();
+            sol::environment entityEnvironment(sr.mLua, sol::create, sr.mLua.globals());
 
             Script& script = mManager.GetComponent<Client::Script>(entity);
 
-            mManager.ForEachComponent(entity, [&](const Gep::ComponentData& data) 
-            {
-                mSetComponentMemberReferences[data.index](entity, entityTable);
-            });
+            mManager.ForEachComponent(entity, [&](const Gep::ComponentData& data)
+                {
+                    mSetComponentMemberReferences[data.index](entity, entityTable);
+                });
 
             entityEnvironment["self"] = entityTable;
 
             static std::string lastError;
-            sol::protected_function_result result = mLua.script(script.data, entityEnvironment, sol::script_pass_on_error);
+            sol::protected_function_result result = sr.mLua.script(script.data, entityEnvironment, sol::script_pass_on_error);
 
             // prints only the lastest error
             if (!result.valid())
