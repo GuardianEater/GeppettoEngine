@@ -88,6 +88,11 @@ namespace Client
         for (Gep::Entity entity : entities)
         {
             Script& script = mManager.GetComponent<Client::Script>(entity);
+            //if (!script.env.valid())
+            //{
+            //    Gep::Log::Error("Script environment is invalid");
+            //    continue;
+            //}
 
             sol::table self = mLua.create_table();
 
@@ -96,10 +101,11 @@ namespace Client
                 mSetComponentMemberReferences[data.index](entity, self);
             });
 
-            script.env["self"] = self;
+            mLua["self"] = self;
 
             if (script.update.valid())
             {
+
                 sol::protected_function_result updateResult = script.update(dt);
                 if (!updateResult.valid())
                 {
@@ -114,7 +120,7 @@ namespace Client
     void ScriptingSystem::OnScriptAdded(const Gep::Event::ComponentAdded<Script>& event)
     {
         Script& script = mManager.GetComponent<Client::Script>(event.entity);
-        script.env = sol::environment(mLua, sol::create, mLua.globals());
+        //script.env = sol::environment(mLua, sol::create, mLua.globals());
         sol::load_result loadResult = mLua.load_file(script.path.string());
         
         if (!loadResult.valid())
@@ -124,7 +130,7 @@ namespace Client
             return;
         }
 
-        sol::protected_function_result functionResult = loadResult(script.env);
+        sol::protected_function_result functionResult = loadResult();
         if (!functionResult.valid())
         {
             sol::error err = functionResult;
@@ -132,9 +138,9 @@ namespace Client
             return;
         }
 
-        script.init = script.env["Initialize"];
-        script.update = script.env["Update"];
-        script.exit = script.env["Exit"];
+        script.init = mLua["Initialize"];
+        script.update = mLua["Update"];
+        script.exit = mLua["Exit"];
 
         // run component bindings
     }

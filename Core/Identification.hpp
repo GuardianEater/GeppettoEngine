@@ -8,10 +8,17 @@
 
 #pragma once
 
+#include <sol/sol.hpp>
+
 namespace Client
 {
     struct Identification
     {
         std::string name = "";
+
+        void OnScriptAccess(sol::table& table)
+        {
+            table["name"] = name;
+        }
     };
 }

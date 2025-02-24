@@ -81,14 +81,14 @@ namespace Client
             {
                 if constexpr (HasOnScriptAccess<ComponentType>)
                 {
-                    //ComponentType& component = mManager.GetComponent<ComponentType>(entity);
-                    //std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
+                    ComponentType& component = mManager.GetComponent<ComponentType>(entity);
+                    std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
 
-                    //sol::table componentTable = mLua.create_table();
+                    sol::table componentTable = mLua.create_table();
 
-                    //component.OnScriptAccess(componentTable);
+                    component.OnScriptAccess(componentTable);
 
-                    //self[typeName] = componentTable;
+                    self[typeName] = componentTable;
                 }
             });
         });
