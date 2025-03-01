@@ -38,8 +38,15 @@ namespace Client
         void OnImGuiRender()
         {
             ImGui::DragFloat3("position", &position.x, 0.1f);
-            ImGui::DragFloat3("scale", &scale.x, 0.1f, 0.0f, Gep::num_max<float>());
+            ImGui::DragFloat3("scale",    &scale.x, 0.1f, 0.0f, Gep::num_max<float>());
             ImGui::DragFloat3("rotation", &rotation.x, 0.1f, 0.0f, 360.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_WrapAround);
+        }
+
+        void OnScriptAccess(sol::usertype<Transform>& luaType)
+        {
+            luaType["position"] = &Transform::position;
+            luaType["scale"]    = &Transform::scale;
+            luaType["rotation"] = &Transform::rotation;
         }
 
         void SetModelMatrix(const glm::mat4& modelMatrix)

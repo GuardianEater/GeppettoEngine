@@ -17,10 +17,10 @@
 
 namespace Client
 {
-    template <typename CompoenentType>
-    concept HasOnScriptAccess = requires(CompoenentType component, sol::table& table)
+    template <typename ComponentType>
+    concept HasOnScriptAccess = requires(ComponentType component, sol::usertype<ComponentType>& type)
     {
-        { component.OnScriptAccess(table) } -> std::same_as<void>;
+        { component.OnScriptAccess(type) } -> std::same_as<void>;
     };
 
     class ScriptingSystem : public Gep::ISystem
@@ -48,12 +48,13 @@ namespace Client
     {
         componentTypes.for_each([&]<typename ComponentType>()
         {
-        //    std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
-        //    ComponentType component{};
-        //    ComponentType* componentPtr = &component;
-            //auto tempView = rfl::to_view(component);
+            std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
+            ComponentType component{};
 
-            //auto luaComponentType = mLua.new_usertype<ComponentType>(typeName.c_str(), sol::no_constructor);
+            sol::usertype<ComponentType> luaComponentType = mLua.new_usertype<ComponentType>(typeName);
+
+            if constexpr (HasOnScriptAccess<ComponentType>)
+                component.OnScriptAccess(luaComponentType);
 
             //tempView.apply([&](const auto& field)
             //{
@@ -84,11 +85,7 @@ namespace Client
                     ComponentType& component = mManager.GetComponent<ComponentType>(entity);
                     std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
 
-                    sol::table componentTable = mLua.create_table();
-
-                    component.OnScriptAccess(componentTable);
-
-                    self[typeName] = componentTable;
+                    self[typeName] = &component;
                 }
             });
         });

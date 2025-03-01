@@ -57,17 +57,20 @@ namespace Client
         mLua["Log"]["Error"] = [](const sol::variadic_args& args)
         {
             std::stringstream ss;
-            for (auto&& arg : args) {
+            for (auto&& arg : args) 
+            {
                 if (arg.is<std::string>()) ss << arg.as<std::string>();
                 else if (arg.is<int>())    ss << arg.as<int>();
                 else if (arg.is<float>())  ss << arg.as<float>();
                 else if (arg.is<double>()) ss << arg.as<double>();
                 else if (arg.is<bool>())   ss << arg.as<bool>();
-                else if (arg.is<glm::vec3>()) {
+                else if (arg.is<glm::vec3>()) 
+                {
                     glm::vec3 vec = arg.as<glm::vec3>();
                     ss << "(" << vec.x << ", " << vec.y << ", " << vec.z << ")";
                 }
-                else {
+                else 
+                {
                     ss << "???";
                 }
             }
@@ -88,12 +91,6 @@ namespace Client
         for (Gep::Entity entity : entities)
         {
             Script& script = mManager.GetComponent<Client::Script>(entity);
-            //if (!script.env.valid())
-            //{
-            //    Gep::Log::Error("Script environment is invalid");
-            //    continue;
-            //}
-
             sol::table self = mLua.create_table();
 
             mManager.ForEachComponent(entity, [&](const Gep::ComponentData& data)
@@ -105,13 +102,14 @@ namespace Client
 
             if (script.update.valid())
             {
-
                 sol::protected_function_result updateResult = script.update(dt);
+
                 if (!updateResult.valid())
                 {
                     sol::error err = updateResult;
                     Gep::Log::Error("Error running script: ", err.what());
-                    script.update = sol::nil;
+                    script.update = sol::nil; // prevents the crashed script from running further
+                    script.exit = sol::nil;
                 }
             }
         }
@@ -142,7 +140,19 @@ namespace Client
         script.update = mLua["Update"];
         script.exit = mLua["Exit"];
 
-        // run component bindings
+        if (script.init.valid())
+        {
+            sol::protected_function_result initResult = script.init();
+
+            if (!initResult.valid())
+            {
+                sol::error err = initResult;
+                Gep::Log::Error("Error initializing script: ", err.what());
+                script.init = sol::nil;
+                script.update = sol::nil; // prevents the crashed script from running further
+                script.exit = sol::nil;
+            }
+        }
     }
 }
 

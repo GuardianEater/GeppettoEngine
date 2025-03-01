@@ -16,9 +16,9 @@ namespace Client
     {
         std::string name = "";
 
-        void OnScriptAccess(sol::table& table)
+        void OnScriptAccess(sol::usertype<Identification>& luaType)
         {
-            table["name"] = name;
+            luaType["name"] = &Identification::name;
         }
     };
 }
