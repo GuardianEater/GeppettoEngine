@@ -137,7 +137,7 @@ namespace Client
         // Calculate the text size and available space
         if (ImGui::CollapsingHeader("Add Component"))
         {
-            for (auto& componentData : mManager.GetComponentDatas())
+            for (const auto& [index, componentData] : mManager.GetComponentDatas())
             {
                 if (componentData.has(entity)) continue;
 
@@ -174,7 +174,7 @@ namespace Client
             ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableHeadersRow();
 
-            for (const auto& component : components)
+            for (const auto& [index, component] : components)
             {
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();

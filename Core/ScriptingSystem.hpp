@@ -27,6 +27,7 @@ namespace Client
     {
     public:
         ScriptingSystem(Gep::EngineManager& em);
+        ~ScriptingSystem() {};
 
         template <typename... ComponentTypes>
         void OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes);

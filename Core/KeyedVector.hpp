@@ -59,8 +59,10 @@ namespace Gep
 
             using parent_iterator       = typename std::vector<std::optional<T>>::iterator;
 
-            iterator(parent_iterator iterator, parent_iterator end)
-                : mIterator(iterator), mEnd(end)
+            iterator(parent_iterator iterator, parent_iterator end, size_t index = 0)
+                : mIterator(iterator)
+                , mEnd(end)
+                , mIndex(index)
             {
                 skip_empty_slots();
             }
@@ -70,7 +72,7 @@ namespace Gep
             iterator& operator=(const iterator&) = default;
             constexpr iterator& operator++();
             constexpr iterator operator++(int);
-            constexpr reference operator*() const;
+            constexpr std::pair<const uint64_t, reference> operator*() const;
             constexpr pointer operator->() const;
             constexpr bool operator==(const iterator& other) const;
             constexpr bool operator!=(const iterator& other) const;
@@ -78,6 +80,7 @@ namespace Gep
         private:
             parent_iterator mIterator;
             parent_iterator mEnd;
+            size_t mIndex;
             void skip_empty_slots();
         };
 
@@ -92,8 +95,10 @@ namespace Gep
 
             using parent_const_iterator = typename std::vector<std::optional<T>>::const_iterator;
 
-            const_iterator(parent_const_iterator iterator, parent_const_iterator end)
-                : mIterator(iterator), mEnd(end)
+            const_iterator(parent_const_iterator iterator, parent_const_iterator end, size_t index = 0)
+                : mIterator(iterator)
+                , mEnd(end)
+                , mIndex(index)
             {
                 skip_empty_slots();
             }
@@ -103,14 +108,15 @@ namespace Gep
             const_iterator& operator=(const const_iterator&) = default;
             constexpr const_iterator& operator++();
             constexpr const_iterator operator++(int);
-            constexpr const T& operator*() const;
-            constexpr const T* operator->() const;
+            constexpr std::pair<const uint64_t, typename keyed_vector<T>::const_iterator::reference> operator*() const;
+            constexpr pointer operator->() const;
             constexpr bool operator==(const const_iterator& other) const;
             constexpr bool operator!=(const const_iterator& other) const;
 
         private:
             parent_const_iterator mIterator;
             parent_const_iterator mEnd;
+            size_t mIndex;
             void skip_empty_slots();
         };
 
