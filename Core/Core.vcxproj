@@ -45,13 +45,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine;$(ProjectDir)dependencies\nlohmann;$(ProjectDir)dependencies\ImGuizmo</IncludePath>
+    <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine;$(ProjectDir)dependencies\nlohmann;$(ProjectDir)dependencies\ImGuizmo;$(ProjectDir)dependencies\sol2\include</IncludePath>
     <SourcePath>$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\src\**\*.cpp;$(SourcePath)</SourcePath>
     <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(SolutionDir)x64\Debug;$(LibraryPath)</LibraryPath>
     <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine;$(ProjectDir)dependencies\nlohmann;$(ProjectDir)dependencies\ImGuizmo</IncludePath>
+    <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine;$(ProjectDir)dependencies\nlohmann;$(ProjectDir)dependencies\ImGuizmo;$(ProjectDir)dependencies\sol2\include</IncludePath>
     <SourcePath>$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\lua;$(SourcePath)</SourcePath>
     <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(SolutionDir)x64\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
@@ -226,6 +226,8 @@
     <ClCompile Include="RenderTargetImgui.cpp" />
     <ClCompile Include="RenderTargetTexture.cpp" />
     <ClCompile Include="RenderTargetWindow.cpp" />
+    <ClInclude Include="ScriptingResource.hpp" />
+    <ClCompile Include="ScriptingResource.cpp" />
     <ClCompile Include="ScriptingSystem.cpp" />
     <ClCompile Include="SerializationSystem.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />

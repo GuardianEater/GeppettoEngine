@@ -101,6 +101,7 @@ namespace Gep
     {
     public:
         EngineManager();
+        ~EngineManager();
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         // foundational functions /////////////////////////////////////////////////////////////////
@@ -137,6 +138,7 @@ namespace Gep
 
         void MarkEntityForDestruction(Entity entity);
         void DestroyMarkedEntities();
+        void DestroyAllEntities();
 
         void AttachEntity(Entity parent, Entity child);
         void DetachEntity(Entity child);

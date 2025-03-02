@@ -16,9 +16,10 @@
 
 namespace Client
 {
+    std::filesystem::path scenePath = "assets\\scenes\\scene.json";
     void SerializationSystem::Initialize()
     {
-        std::ifstream file("scene.json");
+        std::ifstream file(scenePath);
 
         if (!file.is_open())
         {
@@ -35,7 +36,7 @@ namespace Client
     {
         const std::vector<Gep::Entity>& entities = mManager.GetEntities();
 
-        std::ofstream file("scene.json");
+        std::ofstream file(scenePath);
         nlohmann::json sceneJson = SaveScene();
         file << sceneJson.dump();
     }
@@ -137,14 +138,13 @@ namespace Client
         if (!sceneJson.contains("entities"))
         {
             Gep::Log::Error("Scene json does not contain entities");
+            return;
         }
-        else
+
+        const nlohmann::json& entitiesJson = sceneJson["entities"];
+        for (const nlohmann::json& entityJson : entitiesJson)
         {
-            const nlohmann::json& entitiesJson = sceneJson["entities"];
-            for (const nlohmann::json& entityJson : entitiesJson)
-            {
-                Gep::Entity entity = LoadEntity(entityJson);
-            }
+            Gep::Entity entity = LoadEntity(entityJson);
         }
     }
 

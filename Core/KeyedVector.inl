@@ -168,6 +168,7 @@ namespace Gep
     inline constexpr keyed_vector<T>::iterator& keyed_vector<T>::iterator::operator++()
     {
         ++mIterator;
+        ++mIndex;
         skip_empty_slots();
         return *this;
     }
@@ -181,13 +182,13 @@ namespace Gep
     }
 
     template<typename T>
-    inline constexpr T& keyed_vector<T>::iterator::operator*() const
+    inline constexpr std::pair<const uint64_t, typename keyed_vector<T>::iterator::reference> keyed_vector<T>::iterator::operator*() const
     {
-        return mIterator->value();
+        return { mIndex, mIterator->value() };
     }
 
     template<typename T>
-    inline constexpr T* keyed_vector<T>::iterator::operator->() const
+    inline constexpr keyed_vector<T>::iterator::pointer keyed_vector<T>::iterator::operator->() const
     {
         return &mIterator->value();
     }
@@ -210,6 +211,7 @@ namespace Gep
         while (mIterator != mEnd && !mIterator->has_value())
         {
             ++mIterator;
+            ++mIndex;
         }
     }
 
@@ -217,6 +219,7 @@ namespace Gep
     inline constexpr keyed_vector<T>::const_iterator& keyed_vector<T>::const_iterator::operator++()
     {
         ++mIterator;
+        ++mIndex;
         skip_empty_slots();
         return *this;
     }
@@ -230,13 +233,13 @@ namespace Gep
     }
 
     template<typename T>
-    inline constexpr const T& keyed_vector<T>::const_iterator::operator*() const
+    inline constexpr std::pair<const uint64_t, typename keyed_vector<T>::const_iterator::reference> keyed_vector<T>::const_iterator::operator*() const
     {
-        return mIterator->value();
+        return { mIndex, mIterator->value() };
     }
 
     template<typename T>
-    inline constexpr const T* keyed_vector<T>::const_iterator::operator->() const
+    inline constexpr keyed_vector<T>::const_iterator::pointer keyed_vector<T>::const_iterator::operator->() const
     {
         return &mIterator->value();
     }
@@ -259,6 +262,7 @@ namespace Gep
         while (mIterator != mEnd && !mIterator->has_value())
         {
             ++mIterator;
+            ++mIndex;
         }
     }
 }

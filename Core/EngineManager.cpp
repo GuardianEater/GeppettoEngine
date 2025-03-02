@@ -30,6 +30,15 @@ namespace Gep
         mComponentDatas.reserve(MAX_COMPONETS);
     }
 
+    EngineManager::~EngineManager()
+    {
+        DestroyAllEntities();
+
+        mSystems.clear();
+        mSystemsToUpdate.clear();
+        mResources.clear();
+    }
+
     void EngineManager::FrameStart()
     {
         mFrameStartTime = std::chrono::high_resolution_clock::now();
@@ -123,6 +132,16 @@ namespace Gep
         }
 
         mMarkedEntities.clear();
+    }
+
+    void EngineManager::DestroyAllEntities()
+    {
+        for (const auto& [entity, entityData] : mEntityDatas)
+        {
+            MarkEntityForDestruction(entity);
+        }
+
+        DestroyMarkedEntities();
     }
 
     // adds the id back to the id pool

@@ -41,13 +41,6 @@ namespace Client
         void Update(float dt);
         void HandleInputs(float dt);
         void RenderImGui(float dt);
-
-    private:
-        void WindowResizeEvent(const Gep::Event::WindowResize& eventData);
-        void MouseMovedEvent(const Gep::Event::MouseMoved& eventData);
-        void MouseClickedEvent(const Gep::Event::MouseClicked& eventData);
-        void KeyPressedEvent(const Gep::Event::KeyPressed& eventData);
-        void MouseScrolledEvent(const Gep::Event::MouseScrolled& eventData);
     };
 }
 
