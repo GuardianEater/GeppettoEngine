@@ -98,7 +98,7 @@ namespace Client
                 mSetComponentMemberReferences[data.index](entity, self);
             });
 
-            mLua["self"] = self;
+            script.env["self"] = self;
 
             if (script.update.valid())
             {
@@ -112,33 +112,85 @@ namespace Client
                     script.exit = sol::nil;
                 }
             }
+
+            ImGui::Begin("Scripts");
+
+            ImGui::Text("Script: %s", script.path.string().c_str());
+            ImGui::Text("Entity: %d", entity);
+
+            // Begin a table with 2 columns and some basic flags for borders and row backgrounds
+            if (ImGui::BeginTable("##scriptEnv", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+            {
+                // Setup the table columns
+                ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableHeadersRow();
+
+                // Iterate over the script environment
+                for (auto& [key, value] : script.env)
+                {
+                    // Only show entries with string keys
+                    if (key.get_type() == sol::type::string)
+                    {
+                        ImGui::TableNextRow();
+
+                        // First column: key text
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Text("%s", key.as<std::string>().c_str());
+
+                        // Second column: value text based on type
+                        ImGui::TableSetColumnIndex(1);
+                        switch (value.get_type())
+                        {
+                        case sol::type::string:
+                            ImGui::Text("%s", value.as<std::string>().c_str());
+                            break;
+                        case sol::type::number:
+                            ImGui::Text("%f", value.as<float>());
+                            break;
+                        case sol::type::boolean:
+                            ImGui::Text("%s", value.as<bool>() ? "true" : "false");
+                            break;
+                        case sol::type::table:
+                            ImGui::Text("table");
+                            break;
+                        case sol::type::function:
+                            ImGui::Text("function");
+                            break;
+                        case sol::type::userdata:
+                            ImGui::Text("userdata");
+                            break;
+                        default:
+                            ImGui::Text("???");
+                            break;
+                        }
+                    }
+                }
+                ImGui::EndTable();
+            }
+
+            ImGui::End();
+
         }
+
     }
 
     void ScriptingSystem::OnScriptAdded(const Gep::Event::ComponentAdded<Script>& event)
     {
         Script& script = mManager.GetComponent<Client::Script>(event.entity);
-        //script.env = sol::environment(mLua, sol::create, mLua.globals());
-        sol::load_result loadResult = mLua.load_file(script.path.string());
+        script.env = sol::environment(mLua, sol::create, mLua.globals());
+        sol::protected_function_result result = mLua.safe_script_file(script.path.string(), script.env);
         
-        if (!loadResult.valid())
+        if (!result.valid())
         {
-            sol::error err = loadResult;
+            sol::error err = result;
             Gep::Log::Error("Error loading script: ", err.what());
             return;
         }
 
-        sol::protected_function_result functionResult = loadResult();
-        if (!functionResult.valid())
-        {
-            sol::error err = functionResult;
-            Gep::Log::Error("Error starting script: ", err.what());
-            return;
-        }
-
-        script.init = mLua["Initialize"];
-        script.update = mLua["Update"];
-        script.exit = mLua["Exit"];
+        script.init = script.env["Initialize"];
+        script.update = script.env["Update"];
+        script.exit = script.env["Exit"];
 
         if (script.init.valid())
         {

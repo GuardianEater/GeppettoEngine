@@ -1,11 +1,11 @@
 -- This is an example script that moves an object in a circle
 -- with a vertical oscillation.
 
-local time = 0
-local radius = math.random(10, 15)
-local angularSpeed = math.random(1, 15) * 0.1
-local verticalAmplitude = math.random(1, 15)
-local verticalFrequency = math.random(1, 15) * 0.1
+time = 0
+radius = math.random(10, 15)
+angularSpeed = math.random(1, 15) * 0.1
+verticalAmplitude = math.random(1, 15)
+verticalFrequency = math.random(1, 15) * 0.1
 local first = true
 
 function Initialize()
