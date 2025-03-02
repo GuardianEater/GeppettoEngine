@@ -1,11 +1,13 @@
 -- This is an example script that moves an object in a circle
 -- with a vertical oscillation.
 
-time = 0
-radius = math.random(10, 15)
-angularSpeed = math.random(1, 15) * 0.1
-verticalAmplitude = math.random(1, 15)
-verticalFrequency = math.random(1, 15) * 0.1
+Time = 0 -- global variables are exposed to the editor
+Radius = math.random(10, 15)
+AngularSpeed = math.random(1, 15) * 0.1
+VerticalAmplitude = math.random(1, 15)
+VerticalFrequency = math.random(1, 15) * 0.1
+local somesuperextralongname = "hellothisisaverylongname" -- local variables are not exposed to the editor
+
 local first = true
 
 function Initialize()
@@ -18,17 +20,19 @@ function Update(dt)
     first = false
   end
 
-  
-  time = time + dt
-  local angle = angularSpeed * time
+  Time = Time + dt
+  local angle = AngularSpeed * Time
 
-  self.RigidBody.velocity.x = -radius * angularSpeed * math.sin(angle)
-  self.RigidBody.velocity.z = radius * angularSpeed * math.cos(angle)
-  self.RigidBody.velocity.y = verticalAmplitude * verticalFrequency * math.cos(verticalFrequency * time)
+  local rotation = self.Transform.rotation -- note table values are references
+  local velocity = self.RigidBody.velocity
 
-  self.Transform.rotation.x = -radius * angularSpeed * math.sin(angle)
-  self.Transform.rotation.z = radius * angularSpeed * math.cos(angle)
-  self.Transform.rotation.y = verticalAmplitude * verticalFrequency * math.cos(verticalFrequency * time)
+  velocity.x = -Radius * AngularSpeed * math.sin(angle)
+  velocity.z = Radius * AngularSpeed * math.cos(angle)
+  velocity.y = VerticalAmplitude * VerticalFrequency * math.cos(VerticalFrequency * Time)
+
+  rotation.x = -Radius * AngularSpeed * math.sin(angle)
+  rotation.z = Radius * AngularSpeed * math.cos(angle)
+  rotation.y = VerticalAmplitude * VerticalFrequency * math.cos(VerticalFrequency * Time)
 
 end
 

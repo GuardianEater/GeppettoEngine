@@ -226,8 +226,8 @@
     <ClCompile Include="RenderTargetImgui.cpp" />
     <ClCompile Include="RenderTargetTexture.cpp" />
     <ClCompile Include="RenderTargetWindow.cpp" />
-    <ClCompile Include="ScriptingResource.cpp" />
     <ClInclude Include="ScriptingResource.hpp" />
+    <ClCompile Include="ScriptingResource.cpp" />
     <ClCompile Include="ScriptingSystem.cpp" />
     <ClCompile Include="SerializationSystem.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />

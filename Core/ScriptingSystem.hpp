@@ -39,19 +39,20 @@ namespace Client
 
         // given a componentIndex, sets up the lua fields for that compoennt
         std::vector<std::function<void(Gep::Entity, sol::table&)>> mSetComponentMemberReferences;
-
-        sol::state mLua;
     };
 
     template<typename ...ComponentTypes>
     inline void ScriptingSystem::OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes)
     {
+        ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
+        sol::state& lua = sr.GetLua();
+
         componentTypes.for_each([&]<typename ComponentType>()
         {
             std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
             ComponentType component{};
 
-            sol::usertype<ComponentType> luaComponentType = mLua.new_usertype<ComponentType>(typeName);
+            sol::usertype<ComponentType> luaComponentType = lua.new_usertype<ComponentType>(typeName);
 
             if constexpr (HasOnScriptAccess<ComponentType>)
                 component.OnScriptAccess(luaComponentType);
