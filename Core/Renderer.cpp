@@ -10,6 +10,13 @@
 
 #include "Renderer.hpp"
 
+#define WIN32_LEAN_AND_MEAN
+#include "Windows.h"
+#include "shellapi.h"
+#undef LoadImage
+#undef min
+#undef max
+
 namespace Gep
 {
     enum GLVertexAttributeLocation : GLint
@@ -38,6 +45,9 @@ namespace Gep
 
         IsHighlighted,
     };
+
+    static HICON GetIcon(const std::filesystem::path& iconPath);
+    static GLuint IconToTexture(HICON icon);
 
     OpenGLRenderer::OpenGLRenderer()
         : mProgram()
@@ -81,50 +91,6 @@ namespace Gep
         meshData.BindBuffers();
         meshData.mEdgeCount = mesh.mEdges.size();
     }
-
-    void OpenGLRenderer::LoadImage(const std::string& name, const std::filesystem::path& imagePath)
-    {
-        if (mTextures.contains(name)) {
-            Gep::Log::Error("Cannot load image: [", name, "] that name has already been loaded");
-            return;
-        }
-
-        if (!std::filesystem::exists(imagePath)) {
-            Gep::Log::Error("Cannot load image: [", imagePath.string(), "] the file does not exist");
-            return;
-        }
-
-        int width, height, channels;
-        if (!stbi_info(imagePath.string().c_str(), &width, &height, &channels)) {
-            Gep::Log::Error("Failed to get image info: [", imagePath.string(), "]");
-            return;
-        }
-
-        int required_channels = 4; // Force RGBA
-        unsigned char* image = stbi_load(imagePath.string().c_str(), &width, &height, &channels, required_channels);
-        if (!image) {
-            Gep::Log::Error("Failed to load image: [", imagePath.string(), "]");
-            return;
-        }
-
-        GLuint& texture = mTextures[name];
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
-
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Ensure proper alignment
-        GLenum format = (required_channels == 4) ? GL_RGBA : GL_RGB;
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, image);
-
-        glGenerateMipmap(GL_TEXTURE_2D);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
-        stbi_image_free(image);
-    }
-
 
     void OpenGLRenderer::ToggleWireframes()
     {
@@ -176,18 +142,11 @@ namespace Gep
         glUseProgram(0);
     }
 
-    void OpenGLRenderer::SetTexture(const std::string& textureName)
+    void OpenGLRenderer::SetTexture(GLuint texture)
     {
         glUseProgram(mProgram.GetProgramID());
 
-        if (!mTextures.contains(textureName))
-        {
-            Gep::Log::Error("Cannot set texture: [", textureName, "] a texture with that name has not been loaded");
-            glBindTexture(GL_TEXTURE_2D, 0);
-            return;
-        }
-
-        glBindTexture(GL_TEXTURE_2D, mTextures.at(textureName));
+        glBindTexture(GL_TEXTURE_2D, texture);
         mUseTextures = true;
 
         glUseProgram(0);
@@ -261,9 +220,9 @@ namespace Gep
         return meshes;
     }
 
-    std::vector<std::string> OpenGLRenderer::GetLoadedTextures() const
+    std::vector<std::filesystem::path> OpenGLRenderer::GetLoadedTextures() const
     {
-        std::vector<std::string> textures;
+        std::vector<std::filesystem::path> textures;
 
         for (const auto& [name, _] : mTextures)
         {
@@ -271,6 +230,118 @@ namespace Gep
         }
 
         return textures;
+    }
+
+    void OpenGLRenderer::LoadIconTexture(const std::filesystem::path& iconPath)
+    {
+        if (mIconTextures.contains(iconPath.extension().string()))
+        {
+            Gep::Log::Error("Cannot load icon: [", iconPath.string(), "] an icon with that extension has already been loaded");
+            return;
+        }
+
+        HICON icon = GetIcon(iconPath);
+        if (!icon)
+        {
+            Gep::Log::Error("Failed to load icon: [", iconPath.string(), "]");
+            return;
+        }
+
+        GLuint texture = IconToTexture(icon);
+        if (!texture)
+        {
+            Gep::Log::Error("Failed to convert icon to texture: [", iconPath.string(), "]");
+            return;
+        }
+
+        mIconTextures[iconPath.extension().string()] = texture;
+    }
+
+    GLuint OpenGLRenderer::GetIconTexture(const std::string& extension)
+    {
+        if (!mIconTextures.contains(extension))
+        {
+            Gep::Log::Error("Cannot get icon texture: [", extension, "] an icon with that extension has not been loaded");
+            return 0;
+        }
+
+        return mIconTextures.at(extension);
+    }
+
+    GLuint OpenGLRenderer::GetOrLoadIconTexture(const std::filesystem::path& iconPath)
+    {
+        if (!mIconTextures.contains(iconPath.extension().string()))
+            LoadIconTexture(iconPath);
+
+        // if the icon is an image, use the image itself
+        if ((iconPath.extension().string() == ".jpg") || (iconPath.extension().string() == ".jpeg") || (iconPath.extension().string() == ".png"))
+        {
+            return GetOrLoadTexture(iconPath);
+        }
+
+        return mIconTextures.at(iconPath.extension().string());
+    }
+
+    void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)
+    {
+        if (mTextures.contains(texturePath)) {
+            Gep::Log::Error("Cannot load texture: [", texturePath, "] has already been loaded");
+            return;
+        }
+
+        if (!std::filesystem::exists(texturePath)) {
+            Gep::Log::Error("Cannot load texture: [", texturePath.string(), "] does not exist");
+            return;
+        }
+
+        int width, height, channels;
+        if (!stbi_info(texturePath.string().c_str(), &width, &height, &channels)) {
+            Gep::Log::Error("Failed to get texture info: [", texturePath.string(), "]");
+            return;
+        }
+
+        int required_channels = 4; // Force RGBA
+        unsigned char* image = stbi_load(texturePath.string().c_str(), &width, &height, &channels, required_channels);
+        if (!image) {
+            Gep::Log::Error("Failed to load texture: [", texturePath.string(), "]");
+            return;
+        }
+
+        GLuint& texture = mTextures[texturePath];
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Ensure proper alignment
+        GLenum format = (required_channels == 4) ? GL_RGBA : GL_RGB;
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, image);
+
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
+        stbi_image_free(image);
+    }
+
+    GLuint OpenGLRenderer::GetTexture(const std::filesystem::path& texturePath)
+    {
+        if (!mTextures.contains(texturePath))
+        {
+            Gep::Log::Error("Cannot get texture: [", texturePath, "] a texture with that name has not been loaded");
+            return 0;
+        }
+
+        return mTextures.at(texturePath);
+    }
+
+    GLuint OpenGLRenderer::GetOrLoadTexture(const std::filesystem::path& texturePath)
+    {
+        if (!mTextures.contains(texturePath))
+            LoadTexture(texturePath);
+
+        return mTextures.at(texturePath);
     }
 
     void OpenGLRenderer::DrawMesh(const std::string& meshName)
@@ -343,6 +414,55 @@ namespace Gep
         glUseProgram(mProgram.GetProgramID());
         glUniform1i(GLUniformLocation::LightCount, static_cast<int>(mLightData.size()));
         glUseProgram(0);
+    }
+
+    HICON GetIcon(const std::filesystem::path& iconPath)
+    {
+        SHFILEINFO sfi{};
+        if (SHGetFileInfo(iconPath.wstring().c_str(), 0, &sfi, sizeof(sfi), SHGFI_ICON | SHGFI_LARGEICON))
+        {
+            return sfi.hIcon;
+        }
+
+        return nullptr;
+    }
+
+    GLuint IconToTexture(HICON icon)
+    {
+        if (!icon) return 0;
+
+        ICONINFO iconInfo;
+        if (!GetIconInfo(icon, &iconInfo)) return 0;
+
+        BITMAP bm{};
+        GetObject(iconInfo.hbmColor, sizeof(BITMAP), &bm);
+
+        BITMAPINFO bmi{};
+        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bmi.bmiHeader.biWidth = bm.bmWidth;
+        bmi.bmiHeader.biHeight = -bm.bmHeight;
+        bmi.bmiHeader.biPlanes = 1;
+        bmi.bmiHeader.biBitCount = 32;
+        bmi.bmiHeader.biCompression = BI_RGB;
+
+        std::vector<BYTE> pixels(bm.bmWidth * bm.bmHeight * 4);
+        HDC dc = GetDC(nullptr);
+        GetDIBits(dc, iconInfo.hbmColor, 0, bm.bmHeight, pixels.data(), &bmi, DIB_RGB_COLORS);
+        ReleaseDC(nullptr, dc);
+
+        GLuint texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bm.bmWidth, bm.bmHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixels.data());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        DeleteObject(iconInfo.hbmColor);
+        DeleteObject(iconInfo.hbmMask);
+        DestroyIcon(icon);
+
+        return texture;
     }
 
     GLuint OpenGLRenderer::LoadShader(GLenum shaderType, const std::filesystem::path& shaderPath)

@@ -89,6 +89,7 @@ namespace Client
         void Update(float dt) override;
 
         void DrawEntities(const std::vector<Gep::Entity>& entities, float dt);
+        void DrawAssetBrowser();
 
         template <typename T>
         void DrawType(const std::string_view name, T& t);

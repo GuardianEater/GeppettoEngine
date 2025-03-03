@@ -441,6 +441,7 @@ namespace Client
 
         DrawInspectorPanel();
         UpdateCameraFocus(dt);
+        DrawAssetBrowser();
 
         ImGui::End(); // Entities
     }
@@ -555,6 +556,87 @@ namespace Client
 
             ImGui::PopID();
         }
+    }
+
+    void ImGuiSystem::DrawAssetBrowser()
+    {
+        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+
+        ImGui::Begin("Asset Browser");
+
+        static std::filesystem::path currentDirectory = std::filesystem::current_path() / "assets";
+        const float imageSize = 64.0f * ImGui::GetIO().FontGlobalScale;
+        const ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+        float spacing = ImGui::GetStyle().ItemSpacing.x;
+        const int imagesPerRow = static_cast<int>(contentRegion.x / (imageSize + spacing));
+        if (imagesPerRow < 1)
+        {
+            ImGui::End();
+            return;
+        }
+
+        ImGui::Text("Current Directory: %s", currentDirectory.filename().string().c_str());
+
+        if (currentDirectory != std::filesystem::current_path() / "assets")
+        {
+            if (ImGui::Button("Back"))
+            {
+                currentDirectory = currentDirectory.parent_path();
+            }
+        }
+
+
+        // Begin a table with 2 columns and some basic flags for borders and row backgrounds
+        if (ImGui::BeginTable("##AssetBrowser", imagesPerRow, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+        {
+            // Setup each column with a fixed width.
+            for (int i = 0; i < imagesPerRow; i++)
+            {
+                ImGui::TableSetupColumn("Column", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, imageSize);
+            }
+
+            int columnIndex = 0;
+
+            for (const auto& entry : std::filesystem::directory_iterator(currentDirectory))
+            {
+                std::filesystem::path relativePath = std::filesystem::relative(entry.path(), std::filesystem::current_path());
+                GLuint texture = renderer.GetOrLoadIconTexture(relativePath);
+
+                if (columnIndex == 0) ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(columnIndex);
+                ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+                if (ImGui::Selectable(std::string("##" + entry.path().string()).c_str(), false, ImGuiSelectableFlags_AllowItemOverlap, ImVec2(imageSize, imageSize)))
+                {
+                    if (entry.is_directory())
+                    {
+                        currentDirectory = entry.path();
+                    }
+                }
+                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+                {
+                    // Set the payload to carry the relative path
+                    std::string pathStr = relativePath.string();
+                    ImGui::SetDragDropPayload("ASSET_PATH", pathStr.c_str(), pathStr.size() + 1);
+
+                    // Display the dragged item
+                    ImGui::Image((void*)(intptr_t)texture, { imageSize * 2.0f, imageSize * 2.0f });
+                    ImGui::TextWrapped("%s", entry.path().filename().string().c_str());
+                    ImGui::EndDragDropSource();
+                }
+                
+                ImGui::SetCursorScreenPos(cursorPos);
+
+                ImGui::Image((void*)(intptr_t)texture, { imageSize, imageSize });
+
+
+                ImGui::TextWrapped(entry.path().filename().string().c_str());
+
+                columnIndex = (columnIndex + 1) % imagesPerRow;
+            }
+            ImGui::EndTable();
+        }
+
+        ImGui::End();
     }
 
     template <>

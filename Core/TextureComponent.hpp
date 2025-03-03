@@ -14,21 +14,36 @@ namespace Client
 {
     struct Texture
     {
-        std::string textureName = "Checker";
+        std::filesystem::path texturePath = "assets\\textures\\Checker.jpg";
 
         void OnImGuiRender(Gep::EngineManager& em)
         {
             const Gep::OpenGLRenderer& renderer = em.GetResource<Gep::OpenGLRenderer>();
-            std::vector<std::string> loadedTextures = renderer.GetLoadedTextures();
+            std::vector<std::filesystem::path> loadedTextures = renderer.GetLoadedTextures();
 
-            if (ImGui::BeginCombo("Textures", textureName.c_str()))
+            bool texturesOpen = ImGui::BeginCombo("Textures", texturePath.string().c_str());
+
+            if (ImGui::BeginDragDropTarget())
             {
-                for (const std::string& texture : loadedTextures)
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_PATH"))
                 {
-                    bool isSelected = texture == textureName;
-                    if (ImGui::Selectable(texture.c_str(), isSelected))
+                    IM_ASSERT(payload->DataSize == sizeof(char) * (strlen((const char*)payload->Data) + 1));
+                    const char* path = (const char*)payload->Data;
+                    std::filesystem::path droppedPath(path);
+
+                    texturePath = droppedPath;
+                }
+                ImGui::EndDragDropTarget();
+            }
+
+            if (texturesOpen)
+            {
+                for (const auto& loadedTexturePath : loadedTextures)
+                {
+                    bool isSelected = loadedTexturePath == texturePath;
+                    if (ImGui::Selectable(loadedTexturePath.string().c_str(), isSelected))
                     {
-                        textureName = texture;
+                        texturePath = loadedTexturePath;
                     }
                     if (isSelected)
                     {

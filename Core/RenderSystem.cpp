@@ -33,13 +33,13 @@ namespace Client
         renderer.BackfaceCull();
         renderer.SetAmbientLight({ 0.1, 0.1, 0.1 });
 
-        renderer.LoadImage("Fox", "assets\\textures\\Fox.jpg");
-        renderer.LoadImage("Raccoon", "assets\\textures\\Raccoon.jpg");
-        renderer.LoadImage("Kurisu", "assets\\textures\\Kurisu.png");
-        renderer.LoadImage("Checker", "assets\\textures\\Checker.jpg");
-        renderer.LoadImage("Okayu1", "assets\\textures\\Okayu1.jpg");
-        renderer.LoadImage("Okayu2", "assets\\textures\\Okayu2.PNG");
-        renderer.LoadImage("Peko", "assets\\textures\\Peko.jpg");
+        renderer.LoadTexture("assets\\textures\\Checker.jpg");
+        renderer.LoadTexture("assets\\textures\\Fox.jpg");
+        renderer.LoadTexture("assets\\textures\\Kurisu.png");
+        renderer.LoadTexture("assets\\textures\\Okayu1.jpg");
+        renderer.LoadTexture("assets\\textures\\Okayu2.png");
+        renderer.LoadTexture("assets\\textures\\Peko.jpg");
+        renderer.LoadTexture("assets\\textures\\Raccoon.jpg");
 
         renderer.LoadMesh("Quad", Gep::QuadMesh());
         renderer.LoadMesh("Sphere", Gep::SphereMesh(10, 10));
@@ -104,7 +104,8 @@ namespace Client
                 if (mManager.HasComponent<Texture>(entity))
                 {
                     const Texture& texture = mManager.GetComponent<Texture>(entity);
-                    renderer.SetTexture(texture.textureName);
+                    GLuint textureid = renderer.GetOrLoadTexture(texture.texturePath);
+                    renderer.SetTexture(textureid);
                 }
 
                 renderer.SetHighlight(material.selected);

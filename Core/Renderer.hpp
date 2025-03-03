@@ -33,10 +33,9 @@ namespace Gep
 
         // loads resources into the renderer
         void LoadMesh(const std::string& name, const Mesh& mesh);
-        void LoadImage(const std::string& name, const std::filesystem::path& imagePath);
 
         // changes how the renderer will draw the next object
-        void SetTexture(const std::string& textureName);
+        void SetTexture(GLuint texture);
         void SetHighlight(bool highlight);
         void SetSolidColor(const glm::vec3& color);
         void SetCamera(const Camera& camera);
@@ -45,8 +44,16 @@ namespace Gep
         void SetModel(const glm::mat4& modelingMatrix);
         void SetAmbientLight(const glm::vec3& color);
         std::vector<std::string> GetLoadedMeshes() const;
-        std::vector<std::string> GetLoadedTextures() const;
+        std::vector<std::filesystem::path> GetLoadedTextures() const;
         
+        void LoadIconTexture(const std::filesystem::path& iconPath);
+        GLuint GetIconTexture(const std::string& extension);
+        GLuint GetOrLoadIconTexture(const std::filesystem::path& iconPath);
+
+        void LoadTexture(const std::filesystem::path& texturePath);
+        GLuint GetTexture(const std::filesystem::path& texturePath);
+        GLuint GetOrLoadTexture(const std::filesystem::path& texturePath);
+
 
         // completes the rendering of the object
         void DrawMesh(const std::string& meshID);
@@ -64,6 +71,8 @@ namespace Gep
 
         void DrawLights(); // will send all added lights to the shader
     private:
+
+
         GLuint LoadShader(GLenum shaderType, const std::filesystem::path& shaderPath);
         void SetUpLightSSBO();
 
@@ -98,8 +107,9 @@ namespace Gep
         bool mUseSolidColor = false;
         glm::vec3 mSolidColor;
 
-        std::unordered_map<std::string, GLuint> mTextures;
         std::unordered_map<std::string, MeshData> mMeshDatas;
+        std::unordered_map<std::string, GLuint> mIconTextures;// icon extension -> texture id
+        std::unordered_map<std::filesystem::path, GLuint> mTextures;
 
         struct LightData
         {
@@ -110,5 +120,6 @@ namespace Gep
 
         GLuint mLightSSBO;
         std::vector<LightData> mLightData;
+
     };
 }
