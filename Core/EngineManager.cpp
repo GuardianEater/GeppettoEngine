@@ -27,7 +27,7 @@ namespace Gep
     {
         SubscribeToEvent<Event::WindowClosing>(this, &EngineManager::OnWindowClosing);
         // needed so the unerlying vector does not reallocate.
-        mComponentDatas.reserve(MAX_COMPONETS);
+        mComponentDatas.reserve(MAX_COMPONENTS);
     }
 
     EngineManager::~EngineManager()
