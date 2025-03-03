@@ -60,15 +60,4 @@ namespace Gep
     using Signature = std::bitset<MAX_COMPONENTS>; // each bit represents a component that an entity may or may not have
     using Entity = uint64_t;              // id representing an enity
     using ComponentBitPos = uint8_t;               // id representing a component
-
-    enum class FileType
-    {
-        folder,
-        image,
-        shader,
-        model,
-        sound,
-        script,
-        unknown
-    };
 }

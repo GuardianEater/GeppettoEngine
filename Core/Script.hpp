@@ -41,7 +41,23 @@ namespace Client
             }
 
             // drop down for selecting a script
-            if (ImGui::BeginCombo("Scripts", path.filename().string().c_str()))
+
+            bool scriptsOpen = ImGui::BeginCombo("Scripts", path.filename().string().c_str());
+
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_PATH"))
+                {
+                    IM_ASSERT(payload->DataSize == sizeof(char) * (strlen((const char*)payload->Data) + 1));
+                    const char* path = (const char*)payload->Data;
+                    std::filesystem::path droppedPath(path);
+
+                    LoadScript(lua, droppedPath);
+                }
+                ImGui::EndDragDropTarget();
+            }
+
+            if (scriptsOpen)
             {
                 for (const auto& script : knownScripts)
                 {
