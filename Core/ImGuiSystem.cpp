@@ -344,12 +344,10 @@ namespace Client
     {
         DrawInfoPanel();
         DrawExtras();
+        DrawAssetBrowser();
+        DrawToolbar();
         
         ImGui::Begin("Entities");
-        if (ImGui::Button("Create", { ImGui::GetContentRegionAvail().x , 0}))
-        {
-            mManager.CreateEntity();
-        }
 
         // search bar
         static std::string search = "";
@@ -441,7 +439,6 @@ namespace Client
 
         DrawInspectorPanel();
         UpdateCameraFocus(dt);
-        DrawAssetBrowser();
 
         ImGui::End(); // Entities
     }
@@ -637,6 +634,73 @@ namespace Client
         }
 
         ImGui::End();
+    }
+
+    void ImGuiSystem::DrawToolbar()
+    {
+        if (ImGui::BeginMainMenuBar()) // Creates a top menu bar
+        {
+            if (ImGui::BeginMenu("File"))
+            {
+                if (ImGui::MenuItem("New")) { /* Handle new file */ }
+                if (ImGui::MenuItem("Open")) { /* Handle open file */ }
+                if (ImGui::MenuItem("Save")) { /* Handle save file */ }
+                if (ImGui::MenuItem("Save As")) { /* Handle save as file */ }
+                ImGui::Separator();
+                if (ImGui::MenuItem("Exit")) { /* Handle exit */ }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Create"))
+            {
+                if (ImGui::MenuItem("Empty")) { mManager.CreateEntity(); }
+                if (ImGui::MenuItem("Cube"))
+                { 
+                    Gep::Entity entity = mManager.CreateEntity();
+                    mManager.AddComponent(entity, Material{.meshName = "Cube"});
+                    mManager.AddComponent(entity, Transform{});
+                    mManager.AddComponent(entity, Identification{"Cube"});
+                }
+                if (ImGui::MenuItem("Sphere"))
+                {
+                    Gep::Entity entity = mManager.CreateEntity();
+                    mManager.AddComponent(entity, Material{ .meshName = "Icosphere" });
+                    mManager.AddComponent(entity, Transform{});
+                    mManager.AddComponent(entity, Identification{ "Sphere" });
+                }
+                if (ImGui::MenuItem("Camera"))
+                {
+                    Gep::Entity entity = mManager.CreateEntity();
+                    mManager.AddComponent(entity, Camera{});
+                    mManager.AddComponent(entity, Transform{});
+                    mManager.AddComponent(entity, Identification{ "Camera" });
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Edit"))
+            {
+                //if (ImGui::MenuItem("Undo")) { /* Handle undo */ }
+                //if (ImGui::MenuItem("Redo")) { /* Handle redo */ }
+                //ImGui::Separator();
+                //if (ImGui::MenuItem("Cut")) { /* Handle cut */ }
+                //if (ImGui::MenuItem("Copy")) { /* Handle copy */ }
+                //if (ImGui::MenuItem("Paste")) { /* Handle paste */ }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Windows"))
+            {
+                static bool showConsole = true;
+                static bool showInspector = true;
+
+                if (ImGui::MenuItem("Console", nullptr, &showConsole)) { /* Toggle Console */ }
+                if (ImGui::MenuItem("Inspector", nullptr, &showInspector)) { /* Toggle Inspector */ }
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
     }
 
     template <>
