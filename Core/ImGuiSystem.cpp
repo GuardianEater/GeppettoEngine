@@ -566,22 +566,38 @@ namespace Client
         const ImVec2 contentRegion = ImGui::GetContentRegionAvail();
         float spacing = ImGui::GetStyle().ItemSpacing.x;
         const int imagesPerRow = static_cast<int>(contentRegion.x / (imageSize + spacing));
+        static const std::filesystem::path workingDir = std::filesystem::current_path();
+        
         if (imagesPerRow < 1)
         {
             ImGui::End();
             return;
         }
 
+        static std::vector<std::filesystem::directory_entry> directories = []()
+        {
+            std::vector<std::filesystem::directory_entry> entries;
+            for (const auto& entry : std::filesystem::directory_iterator(currentDirectory))
+            {
+                entries.push_back(entry);
+            }
+            return entries;
+        }();
+
         ImGui::Text("Current Directory: %s", currentDirectory.filename().string().c_str());
 
-        if (currentDirectory != std::filesystem::current_path() / "assets")
+        if (currentDirectory != workingDir / "assets")
         {
             if (ImGui::Button("Back"))
             {
                 currentDirectory = currentDirectory.parent_path();
+                directories.clear();
+                for (const auto& entry : std::filesystem::directory_iterator(currentDirectory))
+                {
+                    directories.push_back(entry);
+                }
             }
         }
-
 
         // Begin a table with 2 columns and some basic flags for borders and row backgrounds
         if (ImGui::BeginTable("##AssetBrowser", imagesPerRow, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
@@ -594,9 +610,9 @@ namespace Client
 
             int columnIndex = 0;
 
-            for (const auto& entry : std::filesystem::directory_iterator(currentDirectory))
+            for (const auto& entry : directories)
             {
-                std::filesystem::path relativePath = std::filesystem::relative(entry.path(), std::filesystem::current_path());
+                std::filesystem::path relativePath = entry.path().lexically_relative(workingDir);
                 GLuint texture = renderer.GetOrLoadIconTexture(relativePath);
 
                 if (columnIndex == 0) ImGui::TableNextRow();
@@ -607,6 +623,13 @@ namespace Client
                     if (entry.is_directory())
                     {
                         currentDirectory = entry.path();
+
+                        directories.clear();
+                        for (const auto& newEntry : std::filesystem::directory_iterator(currentDirectory))
+                        {
+                            directories.push_back(newEntry);
+                        }
+                        break;
                     }
                 }
                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))

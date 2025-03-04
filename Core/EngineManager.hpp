@@ -23,6 +23,7 @@
 #include <span>
 #include <rfl.hpp>
 #include <rfl/json.hpp>
+#include <nlohmann/json.hpp>
 
 namespace Gep
 {
@@ -88,6 +89,9 @@ namespace Gep
         std::function<void(Entity)> remove{}; // a function that removes this component from the given entity
         std::function<void(Entity to, Entity from)> copy{}; // a function that copies this component from one entity to another
 
+        std::function<nlohmann::json(Gep::Entity)> save{}; // writes this component to json
+        std::function<void(Gep::Entity, const nlohmann::json&)> load{}; // adds the given component to the entity from json
+
         std::shared_ptr<IComponentArray> array{}; // where all of the components of this type are stored
     };
 
@@ -133,6 +137,9 @@ namespace Gep
         void DestroyEntity(Entity entity);
         bool EntityExists(Entity entity) const;
 
+        nlohmann::json SaveEntity(Entity entity) const;
+        Entity LoadEntity(const nlohmann::json& entityJson);
+
         void SetSignature(Entity entity, Signature signature);
         Signature GetSignature(Entity entity) const;
 
@@ -148,9 +155,17 @@ namespace Gep
         std::vector<Entity> GetAncestors(Entity child) const; // first element is the parent, last element is the root
         Entity GetRoot(Entity child) const;
 
-        std::vector<Entity> GetSiblings(Entity entity)const;
+        template <typename Func>
+        requires std::invocable<Func, Entity>
+        void ForEachChild(Entity parent, const Func& lamda) const; // iterates over all of the children of the entity
+
+        size_t GetChildCount(Entity parent) const;
         std::vector<Entity> GetChildren(Entity parent) const;
         bool HasChild(Entity parent) const;
+
+        template <typename Func>
+        requires std::invocable<Func, Entity>
+        void ForEachSibling(Entity entity, const Func& lamda) const; // iterates over all of the siblings of the entity
 
         template <typename... ComponentTypes>
         const std::vector<Entity>& GetEntities() const;
@@ -219,7 +234,13 @@ namespace Gep
         // the lamda is required to take a const ComponentData& as a parameter and return void
         template <typename Func>
         requires std::invocable<Func, const ComponentData&>
-        void ForEachComponent(Entity entity, Func lamda);
+        void ForEachComponent(Entity entity, Func lamda) const;
+
+        template <typename ComponentType>
+        nlohmann::json SaveComponent(Entity entity) const;
+
+        template <typename ComponentType>
+        void LoadComponent(Entity entity, const nlohmann::json& componentJson);
 
 
 
@@ -259,21 +280,14 @@ namespace Gep
         template <typename ComponentType>
         const std::shared_ptr<ComponentArray<ComponentType>> GetComponentArray() const;
 
-        // keeps a lists of subscribers for each type of event
-        template<typename EventType>
-        std::vector<EventFunction<EventType>>& GetEventFunctions();
-
         template<typename SystemType>
         SystemType& GetSystem();
-
-        // stores the event data for each event
-        template<typename EventType>
-        std::vector<EventType>& GetEventData();
 
         template<typename ComponentType>
         ComponentBitPos GetComponentBitPos() const;
 
         void OnWindowClosing(const Event::WindowClosing& event);
+        void OnEntityDestroyed(const Event::EntityDestroyed& event);
 
     private:
         // events
@@ -287,7 +301,8 @@ namespace Gep
 
         // components
         Gep::keyed_vector<ComponentData> mComponentDatas; // maps from a component type -> all of the data
-        std::unordered_map<std::type_index, uint64_t> mComponentTypeToID; // maps a component type to its id
+        std::unordered_map<std::type_index, uint64_t> mComponentTypeToIndex; // maps a component type to its index
+        std::unordered_map<std::string, uint64_t> mComponentNameToIndex; // maps a component name to its index
         ComponentBitPos mNextComponentBitPos; // used for assigning bits in an entities signature
         std::vector<std::pair<uint64_t, Entity>> mMarkedComponents;   // The entity and the Entities component type ids.
 

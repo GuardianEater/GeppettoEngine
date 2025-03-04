@@ -8,7 +8,7 @@
 
 #include "pch.hpp"
 
-// systems
+ // systems
 #include "PhysicsSystem.hpp"
 #include "ImGuiSystem.hpp"
 #include "WindowSystem.hpp"
@@ -33,7 +33,7 @@
 #include "EngineManager.hpp"
 #include "Logger.hpp"
 
-int main() try
+int main() //try
 {
     Gep::Log::SetPrintLevel(Gep::Log::LogLevel::info);
     Gep::Log::SetOutputFile("log.txt");
@@ -87,34 +87,28 @@ int main() try
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.Initialize();
-
-    float dt = 0.016f;
     em.ResolveEvents();
+
     while (em.Running())
     {
         em.FrameStart();
-
-        // update systems /////////////////////////////////////////////////////////////////////////
         em.Update();
+        em.FrameEnd();
 
-        // start events ///////////////////////////////////////////////////////////////////////////
-        em.ResolveEvents();
-
-        // TODO: make this a ResolveEvents call, or perhaps add that to FrameEnd
         em.DestroyMarkedComponents();
         em.DestroyMarkedEntities();
-
-        em.FrameEnd();
+        em.ResolveEvents();
     }
 
     em.Exit();
+    em.ResolveEvents();
 }
-catch (const std::exception& e)
-{
-    Gep::Log::Error("Caught exception: ", e.what());
-    return 1;
-}
-catch (...)
-{
-    return 1;
-}
+//catch (const std::exception& e)
+//{
+//    Gep::Log::Error("Caught exception: ", e.what());
+//    return 1;
+//}
+//catch (...)
+//{
+//    return 1;
+//}

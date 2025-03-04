@@ -228,6 +228,12 @@
     <ClCompile Include="ScriptingResource.cpp">
       <Filter>Client\Resources</Filter>
     </ClCompile>
+    <ClCompile Include="SerializationResource.cpp">
+      <Filter>Client\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="JsonHelp.cpp">
+      <Filter>Backend\Serializing</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -454,6 +460,12 @@
     </ClInclude>
     <ClInclude Include="ScriptingResource.hpp">
       <Filter>Client\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="SerializationResource.hpp">
+      <Filter>Client\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="JsonHelp.hpp">
+      <Filter>Backend\Serializing</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

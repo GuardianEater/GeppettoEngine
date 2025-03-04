@@ -79,5 +79,11 @@ namespace Gep
         {
             Entity entity; // the entity the component was added to
         };
+
+        template <typename ComponentType>
+        struct ComponentRemoved
+        {
+            Entity entity;
+        };
     }
 }

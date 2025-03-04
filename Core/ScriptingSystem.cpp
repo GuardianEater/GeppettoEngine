@@ -23,6 +23,7 @@ namespace Client
     void ScriptingSystem::Initialize()
     {
         mManager.SubscribeToEvent<Gep::Event::ComponentAdded<Script>>(this, &ScriptingSystem::OnScriptAdded);
+        mManager.SubscribeToEvent<Gep::Event::EntityCreated>(this, &ScriptingSystem::OnEntityCreated);
 
         mManager.GetResource<ScriptingResource>().LocateScripts();
     }
@@ -74,6 +75,11 @@ namespace Client
         ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
         
         script.LoadScript(sr.GetLua(), script.path);
+    }
+
+    void ScriptingSystem::OnEntityCreated(const Gep::Event::EntityCreated& event)
+    {
+        Gep::Log::Important("Entity Created: [", event.entity, "] in scripti");
     }
 }
 

@@ -21,19 +21,6 @@
 
 namespace Client
 {
-
-    template <typename T>
-    concept JsonWritable = requires(const T t, nlohmann::json& json)
-    {
-        json = t;
-    };
-
-    template <typename T>
-    concept JsonReadable = requires(T t, const nlohmann::json& json)
-    {
-        t = json.get<T>();
-    };
-
     class SerializationSystem : public Gep::ISystem
     {
     private:
@@ -49,41 +36,9 @@ namespace Client
         void Initialize() override;
         void Exit() override;
 
-        nlohmann::json SaveEntity(Gep::Entity entity) const;
-        Gep::Entity LoadEntity(const nlohmann::json& entityJson) const;
-
         nlohmann::json SaveScene() const;
         void LoadScene(const nlohmann::json& sceneJson) const;
 
-    private:
-        // base case, do nothing
-        template <typename T>
-        void WriteType(nlohmann::json& json, const std::string_view name, T& t);
-
-        // default case, just write the value
-        template <typename T>
-        requires JsonWritable<T>
-        void WriteType(nlohmann::json& json, const std::string_view name, T& t);
-
-        // bunch of base type specializations
-        template <> void WriteType<glm::vec3>(nlohmann::json& json, const std::string_view name, glm::vec3& t);
-        template <> void WriteType<glm::vec4>(nlohmann::json& json, const std::string_view name, glm::vec4& t);
-        template <> void WriteType<glm::quat>(nlohmann::json& json, const std::string_view name, glm::quat& t);
-
-        void ReadType(const nlohmann::json& json, const std::string_view name, glm::vec3& t);
-        void ReadType(const nlohmann::json& json, const std::string_view name, glm::vec4& t);
-        void ReadType(const nlohmann::json& json, const std::string_view name, glm::quat& t);
-
-        // base case, do nothing
-        template <typename T>
-        void ReadType(const nlohmann::json& json, const std::string_view name, T& t);
-
-        // default case, just read the value
-        template <typename T>
-        requires JsonReadable<T>
-        void ReadType(const nlohmann::json& json, const std::string_view name, T& t);
-
-        // bunch of base type specializations
     private:
 
         // component index -> function that converts component to json

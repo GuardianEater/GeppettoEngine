@@ -171,7 +171,7 @@ namespace Gep
 
     Entity EngineManager::CreateEntity()
     {
-        Entity id = mEntityDatas.insert({});
+        Entity id = mEntityDatas.emplace();
         SetSignature(id, 0);
 
         Log::Trace("Created Entity: [", id, "]");
@@ -327,21 +327,15 @@ namespace Gep
         return child;
     }
 
-    std::vector<Entity> EngineManager::GetSiblings(Entity entity) const
+    size_t EngineManager::GetChildCount(Entity parent) const
     {
-        if (!EntityExists(entity))
+        if (!EntityExists(parent))
         {
-            Log::Error("GetSiblings() failed, Entity: [", entity, "] does not exist");
-            return std::vector<Entity>();
-        }
-        Entity parent = GetParent(entity);
-        if (parent == INVALID_ENTITY)
-        {
-            Log::Error("GetSiblings() failed, Entity: [", entity, "] does not have a parent");
-            return std::vector<Entity>();
+            Log::Error("GetChildCount() failed, Entity: [", parent, "] does not exist");
+            return 0;
         }
 
-        return GetChildren(parent);
+        return mEntityDatas.at(parent).children.size();
     }
 
     std::vector<Entity> EngineManager::GetChildren(Entity parent) const
@@ -363,12 +357,7 @@ namespace Gep
             return false;
         }
 
-        if (mEntityDatas.at(parent).children.size() == 0)
-        {
-            return false;
-        }
-
-        return true;
+        return mEntityDatas.at(parent).children.size();
     }
 
     std::vector<Entity> EngineManager::GetRootEntities() const
@@ -401,6 +390,77 @@ namespace Gep
         }
 
         return true;
+    }
+
+    nlohmann::json EngineManager::SaveEntity(Entity entity) const
+    {
+        nlohmann::json entityJson = nlohmann::json::object();
+        nlohmann::json componentsJson = nlohmann::json::array();
+        nlohmann::json childrenJson = nlohmann::json::array();
+
+        ForEachComponent(entity, [&](const Gep::ComponentData& componentData)
+        {
+            nlohmann::json componentJson = componentData.save(entity);
+            componentsJson.push_back(componentJson);
+        });
+
+        ForEachChild(entity, [&](Gep::Entity child)
+        {
+            nlohmann::json childJson = SaveEntity(child);
+            childrenJson.push_back(childJson);
+        });
+
+        entityJson["children"] = childrenJson;
+        entityJson["components"] = componentsJson;
+        entityJson["id"] = entity;
+
+        return entityJson;
+    }
+
+    Entity EngineManager::LoadEntity(const nlohmann::json& entityJson)
+    {
+        Gep::Entity entity = CreateEntity();
+
+        if (!entityJson.contains("components"))
+        {
+            Gep::Log::Error("Entity json does not contain components");
+        }
+        else
+        {
+            const nlohmann::json& componentsJson = entityJson["components"];
+            for (const nlohmann::json& componentJson : componentsJson)
+            {
+                const std::string componentName = componentJson["type"].get<std::string>();
+                const nlohmann::json& componentDataJson = componentJson["data"];
+
+                size_t componentIndex = mComponentNameToIndex.at(componentName);
+                ComponentData& componentData = mComponentDatas.at(componentIndex);
+
+                componentData.load(entity, componentDataJson);
+            }
+        }
+
+        if (!entityJson.contains("children"))
+        {
+            Gep::Log::Error("Entity json does not contain children");
+        }
+        else
+        {
+            const nlohmann::json& childrenJson = entityJson["children"];
+            for (const nlohmann::json& childJson : childrenJson)
+            {
+                Gep::Entity child = LoadEntity(childJson);
+                AttachEntity(entity, child);
+            }
+        }
+
+        // will be used later to map old ids to new ids, in the case where a component references another entity
+        if (!entityJson.contains("id"))
+        {
+            Gep::Log::Error("Entity json does not contain an id");
+        }
+
+        return entity;
     }
 
     std::vector<Signature> EngineManager::GetComponentSignatures(Entity entity)
@@ -479,6 +539,8 @@ namespace Gep
         {
             system->Initialize();
         }
+
+        SubscribeToEvent<Event::EntityDestroyed>(this, &EngineManager::OnEntityDestroyed);
     }
 
 
@@ -530,5 +592,10 @@ namespace Gep
     void EngineManager::OnWindowClosing(const Event::WindowClosing& event)
     {
         mIsRunning = false;
+    }
+
+    void EngineManager::OnEntityDestroyed(const Event::EntityDestroyed& event)
+    {
+        Log::Important("Entity: [", event.entity, "] has been destroyed");
     }
 }

@@ -210,6 +210,7 @@
     <ClCompile Include="IcosphereMesh.cpp" />
     <ClCompile Include="ImGuiSystem.cpp" />
     <ClCompile Include="ImGuizmoSystem.cpp" />
+    <ClCompile Include="JsonHelp.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
@@ -226,9 +227,11 @@
     <ClCompile Include="RenderTargetImgui.cpp" />
     <ClCompile Include="RenderTargetTexture.cpp" />
     <ClCompile Include="RenderTargetWindow.cpp" />
+    <ClInclude Include="JsonHelp.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
     <ClCompile Include="ScriptingResource.cpp" />
     <ClCompile Include="ScriptingSystem.cpp" />
+    <ClCompile Include="SerializationResource.cpp" />
     <ClCompile Include="SerializationSystem.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
     <ClCompile Include="SphereMesh.cpp" />
@@ -282,6 +285,7 @@
     <ClInclude Include="RigidBody.hpp" />
     <ClInclude Include="Script.hpp" />
     <ClInclude Include="ScriptingSystem.hpp" />
+    <ClInclude Include="SerializationResource.hpp" />
     <ClInclude Include="SerializationSystem.hpp" />
     <ClInclude Include="SphereMesh.hpp" />
     <ClInclude Include="KeyedVector.hpp" />

@@ -9,6 +9,7 @@
 #pragma once
 
 #include "EngineManager.hpp"
+#include "JsonHelp.hpp"
 
 namespace Gep
 {
@@ -24,6 +25,48 @@ namespace Gep
         {
             this->GetSystem<SystemType>().template OnComponentsRegistered<ComponentTypes...>(componentTypes);
         });
+    }
+
+    template<typename Func>
+    requires std::invocable<Func, Entity>
+    inline void EngineManager::ForEachChild(Entity parent, const Func& lamda) const
+    {
+        if (!EntityExists(parent))
+        {
+            Log::Error("ForEachChild() failed, Entity: [", parent, "] does not exist");
+            return;
+        }
+        
+        const auto& children = mEntityDatas.at(parent).children;
+        for (Entity child : children)
+        {
+            lamda(child);
+        }
+    }
+
+    template<typename Func>
+    requires std::invocable<Func, Entity>
+    inline void EngineManager::ForEachSibling(Entity entity, const Func& lamda) const
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Error("ForEachSibling() failed, Entity: [", entity, "] does not exist");
+            return;
+        }
+        Entity parent = GetParent(entity);
+        if (parent == INVALID_ENTITY)
+        {
+            Log::Error("ForEachSibling() failed, Entity: [", entity, "] does not have a parent");
+            return;
+        }
+        const auto& siblings = mEntityDatas.at(parent).children;
+        for (Entity sibling : siblings)
+        {
+            if (sibling != entity)
+            {
+                lamda(mComponentDatas.at(sibling));
+            }
+        }
     }
 
     template<typename ...ComponentTypes>
@@ -98,7 +141,7 @@ namespace Gep
     inline Signature EngineManager::GetComponentSignature() const
     {
         // TODO: remove
-        uint64_t componentID = mComponentTypeToID.at(typeid(ComponentType));
+        uint64_t componentID = mComponentTypeToIndex.at(typeid(ComponentType));
 
         return mComponentDatas.at(componentID).signature;
     }
@@ -125,8 +168,11 @@ namespace Gep
         newComponentData.remove = [&](Entity entity) { DestroyComponent(newComponentData.index, entity); };
         newComponentData.copy   = [&](Entity to, Entity from) { CopyComponent<ComponentType>(to, from); };
         newComponentData.has    = [&](Entity entity) { return HasComponent(newComponentData.index, entity); };
+        newComponentData.save   = [&](Entity entity) { return SaveComponent<ComponentType>(entity); };
+        newComponentData.load   = [&](Entity entity, const nlohmann::json& componentJson) { LoadComponent<ComponentType>(entity, componentJson); };
 
-        mComponentTypeToID[typeid(ComponentType)] = componentID;
+        mComponentTypeToIndex[typeid(ComponentType)] = componentID;
+        mComponentNameToIndex[newComponentData.name] = componentID;
 
         Log::Info("Registered Component: [", GetTypeInfo<ComponentType>().PrettyName(), "] with id: [", componentID, "]");
     }
@@ -194,15 +240,15 @@ namespace Gep
     template<typename... ComponentTypes>
     void EngineManager::MarkComponentForDestruction(Entity entity)
     {
-        // TODO: remove mComponentTypeToID
-        (mMarkedComponents.push_back({ entity, mComponentTypeToID.at(typeid(ComponentTypes)) }), ...);
+        // TODO: remove mComponentTypeToIndex
+        (mMarkedComponents.push_back({ entity, mComponentTypeToIndex.at(typeid(ComponentTypes)) }), ...);
     }
 
     template<typename ComponentType>
     inline void EngineManager::DestroyComponent(Entity entity)
     {
         // TODO: remove
-        const uint64_t componentID = mComponentTypeToID.at(typeid(ComponentType));
+        const uint64_t componentID = mComponentTypeToIndex.at(typeid(ComponentType));
 
         DestroyComponent(componentID, entity);
     }
@@ -268,14 +314,14 @@ namespace Gep
     inline bool EngineManager::ComponentIsRegistered() const
     {
         // TODO: remove
-        return mComponentTypeToID.contains(typeid(ComponentType));
+        return mComponentTypeToIndex.contains(typeid(ComponentType));
 
         //return mComponentDatas.contains(componentID);
     }
 
     template<typename Func>
     requires std::invocable<Func, const ComponentData&>
-    inline void EngineManager::ForEachComponent(Entity entity, Func lamda)
+    inline void EngineManager::ForEachComponent(Entity entity, Func lamda) const
     {
         Signature entitySignature = GetSignature(entity);
         while (entitySignature.any())
@@ -285,6 +331,57 @@ namespace Gep
 
             lamda(mComponentDatas.at(componentID));
         }
+    }
+
+    template<typename ComponentType>
+    inline nlohmann::json EngineManager::SaveComponent(Entity entity) const
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Error("SaveComponent() Failed, Entity: [", entity, "] does not exist!");
+            return nlohmann::json();
+        }
+
+        const ComponentType& component = GetComponent<ComponentType>(entity);
+        std::string componentName = Gep::GetTypeInfo<ComponentType>().PrettyName();
+
+        nlohmann::json componentDataJson = nlohmann::json::object();
+        const auto view = rfl::to_view(component);
+
+        // this writes each type inside of the component
+        view.apply([&](const auto& f)
+        {
+            Json::WriteType(componentDataJson, f.name(), *f.value());
+        });
+
+        nlohmann::json componentJson = nlohmann::json::object();
+        componentJson["data"] = componentDataJson;
+        componentJson["type"] = componentName;
+
+        return componentJson;
+    }
+
+    template<typename ComponentType>
+    inline void EngineManager::LoadComponent(Entity entity, const nlohmann::json& componentDataJson)
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Error("LoadComponent() Failed, Entity: [", entity, "] does not exist!");
+            return;
+        }
+
+        ComponentType component{};
+        const auto view = rfl::to_view(component);
+
+        view.apply([&](const auto& f)
+        {
+            if (componentDataJson.contains(f.name()))
+            {
+                Json::ReadType(componentDataJson, f.name(), *f.value());
+            }
+        });
+
+        AddComponent<ComponentType>(entity, component);
     }
 
     template <typename SystemType>
@@ -351,7 +448,7 @@ namespace Gep
     std::shared_ptr<ComponentArray<ComponentType>> EngineManager::GetComponentArray()
     {
         // TODO: remove
-        const uint64_t componentID = mComponentTypeToID.at(typeid(ComponentType));
+        const uint64_t componentID = mComponentTypeToIndex.at(typeid(ComponentType));
 
         return std::static_pointer_cast<ComponentArray<ComponentType>>(GetComponentArray(componentID));
     }
@@ -359,17 +456,9 @@ namespace Gep
     template<typename ComponentType>
     inline const std::shared_ptr<ComponentArray<ComponentType>> EngineManager::GetComponentArray() const
     {
-        const uint64_t componentID = mComponentTypeToID.at(typeid(ComponentType));
+        const uint64_t componentID = mComponentTypeToIndex.at(typeid(ComponentType));
 
         return std::static_pointer_cast<ComponentArray<ComponentType>>(GetComponentArray(componentID));
-    }
-
-    // keeps a lists of subscribers for each type of event
-    template<typename EventType>
-    std::vector<EventFunction<EventType>>& EngineManager::GetEventFunctions()
-    {
-        static std::vector<EventFunction<EventType>> subscribers;
-        return subscribers;
     }
 
     template<typename SystemType>
@@ -379,19 +468,11 @@ namespace Gep
         return *std::static_pointer_cast<SystemType>(mSystems.at(typeID));
     }
 
-    // stores the event data for each event
-    template<typename EventType>
-    std::vector<EventType>& EngineManager::GetEventData()
-    {
-        static std::vector<EventType> eventData;
-        return eventData;
-    }
-
     template<typename ComponentType>
     ComponentBitPos EngineManager::GetComponentBitPos() const
     {
         // TODO: remove
-        const uint64_t componentID = mComponentTypeToID.at(typeid(ComponentType));
+        const uint64_t componentID = mComponentTypeToIndex.at(typeid(ComponentType));
 
         return mComponentDatas.at(componentID).index;
     }
