@@ -9,6 +9,7 @@
 #include "pch.hpp"
 
 #include "RenderSystem.hpp"
+#include <ImGuizmo.h>
 
 namespace Client
 {
@@ -87,6 +88,7 @@ namespace Client
             const glm::mat4 view = cam.GetViewMatrix(camTransform.position);
 
             renderer.SetCamera(pers, view, camTransform.position);
+            const glm::vec2 renderSize = cam.renderTarget->GetSize();
 
             const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform, Material>();
             for (Gep::Entity entity : entities)
@@ -94,7 +96,7 @@ namespace Client
                 const Transform& transform = mManager.GetComponent<Transform>(entity);
                 Material& material = mManager.GetComponent<Material>(entity);
 
-                const glm::mat4 model = Gep::translation_matrix(transform.position)
+                glm::mat4 model = Gep::translation_matrix(transform.position)
                                       * Gep::rotation(-transform.rotation)
                                       * Gep::scale_matrix(transform.scale);
 
@@ -118,10 +120,14 @@ namespace Client
 
                 renderer.DrawMesh(material.meshName);
                 material.selected = false;
+
+                //ImGuizmo::SetDrawlist();
+                //ImGuizmo::SetRect(cam.renderTarget->GetPosition().x, cam.renderTarget->GetPosition().y, renderSize.x, renderSize.y);
+                //ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(pers), ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, glm::value_ptr(model));
             }
 
             cam.renderTarget->Draw(mManager, cameraEntity);
-            cam.Resize(cam.renderTarget->GetSize());
+            cam.Resize(renderSize);
             cam.renderTarget->Unbind();
         }
 

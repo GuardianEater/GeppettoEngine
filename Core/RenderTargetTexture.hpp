@@ -18,8 +18,8 @@ namespace Gep
         RenderTargetTexture(int width, int height);
         virtual ~RenderTargetTexture() override;
 
-        void Bind() final override;
-        void Unbind() final override;
+        void Bind() override;
+        void Unbind() override;
         void Clear(const glm::vec3& color) final override;
         void Resize(glm::vec2 newSize) final override;
         GLuint GetTexture() const;

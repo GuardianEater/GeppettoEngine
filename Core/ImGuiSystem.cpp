@@ -659,6 +659,39 @@ namespace Client
         ImGui::End();
     }
 
+    // Global state for pause/play
+    bool paused = false;
+
+    void ImGuiSystem::ShowControlBar() 
+    {
+        // Create a window without a title bar, resize, or scrollbar.
+        ImGui::Begin("ControlBar", nullptr,
+            ImGuiWindowFlags_NoTitleBar  | 
+            ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove | 
+            ImGuiWindowFlags_NoScrollbar |
+            ImGuiWindowFlags_NoScrollWithMouse);
+
+        // Toggle pause/play button.
+        if (paused) 
+        {
+            if (ImGui::Button("Play")) 
+            {
+                paused = false;
+            }
+        }
+        else 
+        {
+            if (ImGui::Button("Pause")) 
+            {
+                paused = true;
+            }
+        }
+
+        ImGui::End();
+    }
+
+
     void ImGuiSystem::DrawToolbar()
     {
         if (ImGui::BeginMainMenuBar()) // Creates a top menu bar

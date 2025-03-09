@@ -61,6 +61,7 @@ namespace Client
     private:
         GLFWwindow* mPrimaryWindow;
         ImGuiIO* mIO;
+        ImFont* mFont;
 
         void DrawUtilitiesWindow(float dt);
 

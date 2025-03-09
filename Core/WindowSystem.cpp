@@ -21,6 +21,7 @@ namespace Client
         : ISystem(em)
         , mPrimaryWindow(nullptr)
         , mIO(nullptr)
+        , mFont(nullptr)
     {
         Initialize_GLFW();
         Initialize_ImGui();
@@ -61,6 +62,16 @@ namespace Client
         mIO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
         mIO->ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
         mIO->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+
+        //mFont = mIO->Fonts->AddFontFromFileTTF("assets/fonts/arial.ttf", 16.0f);
+
+        ImFontConfig fontConfig;
+        fontConfig.OversampleH = 2;
+        fontConfig.OversampleV = 2;
+        fontConfig.RasterizerDensity = 10;
+
+
+        ImFont* defaultFont = mIO->Fonts->AddFontDefault(&fontConfig);
 
         // Setup Dear ImGui style
         ImGui::StyleColorsDark();
@@ -114,6 +125,7 @@ namespace Client
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        //ImGui::PushFont(mFont);
         ImGuizmo::BeginFrame();
         ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
     }
@@ -121,6 +133,7 @@ namespace Client
     void WindowSystem::FrameEnd_ImGui()
     {
         // Rendering
+        //ImGui::PopFont();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

@@ -91,6 +91,7 @@ namespace Client
         void DrawEntities(const std::vector<Gep::Entity>& entities, float dt);
         void DrawAssetBrowser();
         void DrawToolbar();
+        void ShowControlBar();
 
         template <typename T>
         void DrawType(const std::string_view name, T& t);
