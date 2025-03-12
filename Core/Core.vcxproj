@@ -104,6 +104,7 @@
     <ClCompile Include="Affine.cpp" />
     <ClCompile Include="BinarySerialzer.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CollisionSystem.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="CubeMesh.cpp" />
     <ClCompile Include="dependencies\ImGuizmo\GraphEditor.cpp">
@@ -227,6 +228,8 @@
     <ClCompile Include="RenderTargetImgui.cpp" />
     <ClCompile Include="RenderTargetTexture.cpp" />
     <ClCompile Include="RenderTargetWindow.cpp" />
+    <ClInclude Include="CollisionChecking.hpp" />
+    <ClInclude Include="CollisionSystem.hpp" />
     <ClInclude Include="JsonHelp.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
     <ClCompile Include="ScriptingResource.cpp" />
@@ -287,6 +290,7 @@
     <ClInclude Include="ScriptingSystem.hpp" />
     <ClInclude Include="SerializationResource.hpp" />
     <ClInclude Include="SerializationSystem.hpp" />
+    <ClInclude Include="SphereCollider.hpp" />
     <ClInclude Include="SphereMesh.hpp" />
     <ClInclude Include="KeyedVector.hpp" />
     <ClInclude Include="ComponentArray.hpp" />

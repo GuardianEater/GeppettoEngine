@@ -234,6 +234,9 @@
     <ClCompile Include="JsonHelp.cpp">
       <Filter>Backend\Serializing</Filter>
     </ClCompile>
+    <ClCompile Include="CollisionSystem.cpp">
+      <Filter>Client\Systems</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -466,6 +469,15 @@
     </ClInclude>
     <ClInclude Include="JsonHelp.hpp">
       <Filter>Backend\Serializing</Filter>
+    </ClInclude>
+    <ClInclude Include="CollisionSystem.hpp">
+      <Filter>Client\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="SphereCollider.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="CollisionChecking.hpp">
+      <Filter>Client</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
