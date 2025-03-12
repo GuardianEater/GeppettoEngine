@@ -33,7 +33,7 @@
 #include "EngineManager.hpp"
 #include "Logger.hpp"
 
-int main() //try
+int main() try
 {
     Gep::Log::SetPrintLevel(Gep::Log::LogLevel::info);
     Gep::Log::SetOutputFile("log.txt");
@@ -98,17 +98,19 @@ int main() //try
         em.DestroyMarkedComponents();
         em.DestroyMarkedEntities();
         em.ResolveEvents();
+
+        Gep::Log::Critical("Frame End");
     }
 
     em.Exit();
     em.ResolveEvents();
 }
-//catch (const std::exception& e)
-//{
-//    Gep::Log::Error("Caught exception: ", e.what());
-//    return 1;
-//}
-//catch (...)
-//{
-//    return 1;
-//}
+catch (const std::exception& e)
+{
+    Gep::Log::Error("Caught exception: ", e.what());
+    return 1;
+}
+catch (...)
+{
+    return 1;
+}

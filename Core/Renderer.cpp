@@ -282,13 +282,30 @@ namespace Gep
         return mIconTextures.at(iconPath.extension().string());
     }
 
-    void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)
+    void OpenGLRenderer::LoadTextureAsync(const std::filesystem::path& texturePath)
     {
+        std::lock_guard<std::mutex> lock(mTextureLoadingMutex);
+
         if (mTextures.contains(texturePath)) {
             Gep::Log::Error("Cannot load texture: [", texturePath, "] has already been loaded");
             return;
         }
 
+        if (!std::filesystem::exists(texturePath)) {
+            Gep::Log::Error("Cannot load texture: [", texturePath.string(), "] does not exist");
+            return;
+        }
+
+        mTextures[texturePath] = GetErrorTexture();
+
+        std::thread([&]()
+        {
+            LoadTexture(texturePath); 
+        }).detach();
+    }
+
+    void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)
+    {
         if (!std::filesystem::exists(texturePath)) {
             Gep::Log::Error("Cannot load texture: [", texturePath.string(), "] does not exist");
             return;
@@ -342,6 +359,23 @@ namespace Gep
             LoadTexture(texturePath);
 
         return mTextures.at(texturePath);
+    }
+
+    void OpenGLRenderer::LoadErrorTexture(const std::filesystem::path& texturePath)
+    {
+        LoadTexture(texturePath);
+        mErrorTexture = GetTexture(texturePath);
+    }
+
+    GLuint OpenGLRenderer::GetErrorTexture() const
+    {
+        if (!mErrorTexture)
+        {
+            Gep::Log::Error("Cannot get error texture: an error texture has not been loaded");
+            return 0;
+        }
+
+        return mErrorTexture;
     }
 
     void OpenGLRenderer::DrawMesh(const std::string& meshName)

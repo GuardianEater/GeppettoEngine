@@ -34,13 +34,7 @@ namespace Client
         renderer.BackfaceCull();
         renderer.SetAmbientLight({ 0.1, 0.1, 0.1 });
 
-        renderer.LoadTexture("assets\\textures\\Checker.jpg");
-        renderer.LoadTexture("assets\\textures\\Fox.jpg");
-        renderer.LoadTexture("assets\\textures\\Kurisu.png");
-        renderer.LoadTexture("assets\\textures\\Okayu1.jpg");
-        renderer.LoadTexture("assets\\textures\\Okayu2.png");
-        renderer.LoadTexture("assets\\textures\\Peko.jpg");
-        renderer.LoadTexture("assets\\textures\\Raccoon.jpg");
+        renderer.LoadErrorTexture("assets\\textures\\Error.png");
 
         renderer.LoadMesh("Quad", Gep::QuadMesh());
         renderer.LoadMesh("Sphere", Gep::SphereMesh(10, 10));

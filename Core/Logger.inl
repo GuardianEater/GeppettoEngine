@@ -10,42 +10,56 @@
 
 #include "Logger.hpp"
 
+#include "GetCallerInfo.hpp"
+
 namespace Gep
 {
     template <typename... Args>
     void Log::Trace(Args&&... args)
     {
-        FormatLog(LogLevel::trace, std::forward<Args>(args)...);
+        Gep::CallerInfo ci{}; // unused
+
+        FormatLog(LogLevel::trace, ci, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void Log::Info(Args&&... args)
     {
-        FormatLog(LogLevel::info, std::forward<Args>(args)...);
+        Gep::CallerInfo ci{}; // unused
+
+        FormatLog(LogLevel::info, ci, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void Log::Warning(Args&&... args)
     {
-        FormatLog(LogLevel::warning, std::forward<Args>(args)...);
+        Gep::CallerInfo ci{}; // unused
+
+        FormatLog(LogLevel::warning, ci, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void Log::Important(Args&&... args)
     {
-        FormatLog(LogLevel::important, std::forward<Args>(args)...);
+        Gep::CallerInfo ci{}; // unused
+
+        FormatLog(LogLevel::important, ci, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void Log::Error(Args&&... args)
     {
-        FormatLog(LogLevel::error, std::forward<Args>(args)...);
+        Gep::CallerInfo callerInfo = Gep::GetCallerInfo(_ReturnAddress());
+
+        FormatLog(LogLevel::error, callerInfo, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void Log::Critical(Args&&... args)
     {
-        FormatLog(LogLevel::critical, std::forward<Args>(args)...);
+        Gep::CallerInfo callerInfo = Gep::GetCallerInfo(_ReturnAddress());
+
+        FormatLog(LogLevel::critical, callerInfo, std::forward<Args>(args)...);
 #ifdef _DEBUG
         __debugbreak();
 #else // _DEBUG
@@ -54,12 +68,31 @@ namespace Gep
     }
 
     template <typename... Args>
-    void Log::FormatLog(LogLevel level, Args&&... args)
+    void Log::FormatLog(LogLevel level, const Gep::CallerInfo& caller, Args&&... args)
     {
         std::ostringstream oss;
         oss << "[" << GetCurrentTime() << "] ";
-        (oss << ... << args);
 
+        // prefix errors with caller information
+        if (level >= mPrintLevel)
+        {
+            switch (level)
+            {
+            case LogLevel::error:
+                oss << "[" << caller.functionName << "] ";
+                break;
+            case LogLevel::critical:
+                oss << "[" << caller.fileName << ":" << caller.functionName << ":" << caller.lineNumber << "] ";
+                break;
+            default:
+                break;
+            }
+        }
+
+        // writes all of the users data
+        (oss << ... << args); 
+
+        // print to console
         if (level >= mPrintLevel)
         {
             switch (level)

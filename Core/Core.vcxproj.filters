@@ -64,6 +64,9 @@
     <Filter Include="Client\Resources">
       <UniqueIdentifier>{2d7ccdf6-9278-4bbe-b566-7b5461e43da8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Backend\OS">
+      <UniqueIdentifier>{87bd60f4-f850-407e-af4c-80d621eb5879}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -236,6 +239,9 @@
     </ClCompile>
     <ClCompile Include="CollisionSystem.cpp">
       <Filter>Client\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="GetCallerInfo_Windows.cpp">
+      <Filter>Backend\OS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -478,6 +484,9 @@
     </ClInclude>
     <ClInclude Include="CollisionChecking.hpp">
       <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="GetCallerInfo.hpp">
+      <Filter>Backend\OS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

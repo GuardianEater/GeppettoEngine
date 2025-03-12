@@ -15,6 +15,8 @@
 #include <Camera.hpp>
 #include <ShaderProgram.hpp>
 
+#include <mutex>
+
 #include "stb_image.h"
 #include "Logger.hpp"
 
@@ -50,9 +52,13 @@ namespace Gep
         GLuint GetIconTexture(const std::string& extension);
         GLuint GetOrLoadIconTexture(const std::filesystem::path& iconPath);
 
+        void LoadTextureAsync(const std::filesystem::path& texturePath);
         void LoadTexture(const std::filesystem::path& texturePath);
         GLuint GetTexture(const std::filesystem::path& texturePath);
         GLuint GetOrLoadTexture(const std::filesystem::path& texturePath);
+
+        void LoadErrorTexture(const std::filesystem::path& texturePath);
+        GLuint GetErrorTexture() const;
 
 
         // completes the rendering of the object
@@ -109,7 +115,10 @@ namespace Gep
 
         std::unordered_map<std::string, MeshData> mMeshDatas;
         std::unordered_map<std::string, GLuint> mIconTextures;// icon extension -> texture id
-        std::unordered_map<std::filesystem::path, GLuint> mTextures;
+        std::unordered_map<std::filesystem::path, GLuint> mTextures; // texture path -> texture id
+        GLuint mErrorTexture; // always loaded, used when a texuture fails to load
+
+        std::mutex mTextureLoadingMutex;
 
         struct LightData
         {

@@ -208,6 +208,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="EngineManager.cpp" />
+    <ClCompile Include="GetCallerInfo_Windows.cpp" />
     <ClCompile Include="IcosphereMesh.cpp" />
     <ClCompile Include="ImGuiSystem.cpp" />
     <ClCompile Include="ImGuizmoSystem.cpp" />
@@ -230,6 +231,7 @@
     <ClCompile Include="RenderTargetWindow.cpp" />
     <ClInclude Include="CollisionChecking.hpp" />
     <ClInclude Include="CollisionSystem.hpp" />
+    <ClInclude Include="GetCallerInfo.hpp" />
     <ClInclude Include="JsonHelp.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
     <ClCompile Include="ScriptingResource.cpp" />

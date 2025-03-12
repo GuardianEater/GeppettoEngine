@@ -14,6 +14,8 @@
 #include <sstream>
 #include <mutex>
 
+#include "GetCallerInfo.hpp"
+
 namespace Gep
 {
     namespace Color
@@ -60,7 +62,7 @@ namespace Gep
         static LogLevel mPrintLevel;
 
         template <typename... Args>
-        static void FormatLog(LogLevel level, Args&&... args);
+        static void FormatLog(LogLevel level, const Gep::CallerInfo& caller, Args&&... args);
 
         static void WriteLog(const std::string& message);
         static std::string GetCurrentTime();
