@@ -357,7 +357,7 @@ namespace Gep
             return false;
         }
 
-        return mEntityDatas.at(parent).children.size();
+        return mEntityDatas.at(parent).children.size() > 0;
     }
 
     std::vector<Entity> EngineManager::GetRootEntities() const

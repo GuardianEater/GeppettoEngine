@@ -1,12 +1,16 @@
 /*****************************************************************//**
- * \file   pch.cpp
- * \brief  precompiled header
+ * \file   ObjMesh.hpp
+ * \brief  loads an obj file into a mesh
  * 
  * \author Travis Gronvold (travis.gronvold@digipen.edu)
- * \date   January 2025
+ * \date   March 2025
  *********************************************************************/
 
-#include "pch.hpp"
+#pragma once
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
+#include "Mesh.hpp"
+
+namespace Gep
+{
+    Mesh LoadObjMesh(const std::filesystem::path& objPath);
+}

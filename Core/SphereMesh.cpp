@@ -75,42 +75,44 @@ namespace Gep
             face2[2] = size_m * (size_n - 2) + jp1;
         }
 
-        for (size_t i = 2; i < size_n; ++i)
-        {
-            for (size_t j = 0; j < size_m; ++j)
-            {
-                const size_t jp1 = (j + 1) % size_m;
+        //for (size_t i = 2; i < size_n; ++i)
+        //{
+        //    for (size_t j = 0; j < size_m; ++j)
+        //    {
+        //        const size_t jp1 = (j + 1) % size_m;
 
-                Edge& edge1 = mEdges.emplace_back();
-                edge1[0] = size_m * (i - 2) + j;
-                edge1[1] = size_m * (i - 2) + jp1;
+        //        Edge& edge1 = mEdges.emplace_back();
+        //        edge1[0] = size_m * (i - 2) + j;
+        //        edge1[1] = size_m * (i - 2) + jp1;
 
-                Edge& edge2 = mEdges.emplace_back();
-                edge2[0] = size_m * (i - 2) + j;
-                edge2[1] = size_m * (i - 1) + jp1;
+        //        Edge& edge2 = mEdges.emplace_back();
+        //        edge2[0] = size_m * (i - 2) + j;
+        //        edge2[1] = size_m * (i - 1) + jp1;
 
-                Edge& edge3 = mEdges.emplace_back();
-                edge3[0] = size_m * (i - 2) + jp1;
-                edge3[1] = size_m * (i - 1) + jp1;
-            }
-        }
+        //        Edge& edge3 = mEdges.emplace_back();
+        //        edge3[0] = size_m * (i - 2) + jp1;
+        //        edge3[1] = size_m * (i - 1) + jp1;
+        //    }
+        //}
 
-        for (size_t j = 0; j < size_m; ++j)
-        {
-            const size_t jp1 = (j + 1) % size_m;
+        //for (size_t j = 0; j < size_m; ++j)
+        //{
+        //    const size_t jp1 = (j + 1) % size_m;
 
-            Edge& edge1 = mEdges.emplace_back();
-            edge1[0] = size_m * (size_n - 2) + j;
-            edge1[1] = size_m * (size_n - 2) + jp1;
+        //    Edge& edge1 = mEdges.emplace_back();
+        //    edge1[0] = size_m * (size_n - 2) + j;
+        //    edge1[1] = size_m * (size_n - 2) + jp1;
 
-            Edge& edge2 = mEdges.emplace_back();
-            edge2[0] = size_m * (size_n - 2) + j;
-            edge2[1] = south;
+        //    Edge& edge2 = mEdges.emplace_back();
+        //    edge2[0] = size_m * (size_n - 2) + j;
+        //    edge2[1] = south;
 
-            Edge& edge3 = mEdges.emplace_back();
-            edge3[0] = j;
-            edge3[1] = north;
-        }
+        //    Edge& edge3 = mEdges.emplace_back();
+        //    edge3[0] = j;
+        //    edge3[1] = north;
+        //}
+
+        Normalize();
     }
 }
 

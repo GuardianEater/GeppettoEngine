@@ -1,7 +1,7 @@
 #version 430
 
 // in variables ////////////////////////////////////////////////////////////////
-layout(location=0) flat in vec4 world_normal;   // the normal vector of the surface hit
+layout(location=0) /*flat*/ in vec4 world_normal;   // the normal vector of the surface hit
 layout(location=1) in vec4 world_position; // the point that the light hits
 layout(location=2) in vec2 uv;             // the uv coordinates of the surface hit
 
@@ -51,6 +51,21 @@ void main(void)
     // Start with ambient contribution.
     vec3 color = ambient_color * baseColor;
     
+    // === Hardcoded Sky Light ===
+    vec3 skyLightDir = normalize(vec3(0.0, 1.0, 0.0)); // Light from above
+    vec3 skyLightColor = vec3(0.6, 0.7, 1.0); // Slightly bluish tint
+    float skyLightIntensity = 1.0; // Adjust as needed
+    // Diffuse from sky light
+    float NdotL_sky = max(dot(N, skyLightDir), 0.0);
+    vec3 skyDiffuse = skyLightColor * NdotL_sky * skyLightIntensity;
+    // Specular from sky light
+    vec3 H_sky = normalize(V + skyLightDir); // Blinn-Phong half-vector
+    float NdotH_sky = max(dot(N, H_sky), 0.0);
+    vec3 skySpecular = specular_coefficient * skyLightColor * pow(NdotH_sky, specular_exponent);
+    // Add sky light contribution
+    color += (baseColor * skyDiffuse + skySpecular);
+    // ============================
+
     // Loop over each light.
     for (int i = 0; i < light_count; i++) {
         // Compute the light vector.
@@ -64,7 +79,7 @@ void main(void)
         float NdotL = max(dot(N, L), 0.0);
         vec3 diffuse = diffuse_coefficient * lights[i].color * NdotL;
         
-        // Specular term (Blinn–Phong)
+        // Specular term (Blinn Phong)
         vec3 H = normalize(V + L); // half-vector between view and light
         float NdotH = max(dot(N, H), 0.0);
         vec3 specular = specular_coefficient * lights[i].color * pow(NdotH, specular_exponent);

@@ -40,6 +40,10 @@ namespace Client
         renderer.LoadMesh("Sphere", Gep::SphereMesh(10, 10));
         renderer.LoadMesh("Cube", Gep::CubeMesh());
         renderer.LoadMesh("Icosphere", Gep::IcosphereMesh(3));
+        renderer.LoadMesh("assets\\meshes\\dragon.obj");
+        renderer.LoadMesh("assets\\meshes\\neko.obj");
+        renderer.LoadMesh("assets\\meshes\\mesh6.obj");
+        renderer.LoadMesh("assets\\meshes\\cube.obj");
     }
 
     void RenderSystem::Update(float dt)
@@ -112,7 +116,8 @@ namespace Client
                     renderer.SetSolidColor(light.color * light.intensity);
                 }
 
-                renderer.DrawMesh(material.meshName);
+                uint64_t meshID = renderer.GetMesh(material.meshName);
+                renderer.DrawMesh(meshID);
                 material.selected = false;
 
                 //ImGuizmo::SetDrawlist();

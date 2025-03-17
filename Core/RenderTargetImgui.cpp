@@ -34,8 +34,10 @@ namespace Gep
         Client::Transform& transform = em.GetComponent<Client::Transform>(cameraEntity);
 
         const float dt = em.GetDeltaTime();
-        const float movementSpeed = 20.0f * dt;
+        float movementSpeed = 5.0f * dt;
         const float sensitivity = 0.1f;
+
+
 
         const glm::vec3 forward = glm::normalize(glm::vec3(-camera.back.x, 0.0f, -camera.back.z));
         const glm::vec3 rightward = glm::normalize(glm::vec3(camera.right.x, 0.0f, camera.right.z));
@@ -80,6 +82,11 @@ namespace Gep
                 if (transform.rotation.x > 89.0f) transform.rotation.x = 89.0f;
                 if (transform.rotation.x < -89.0f) transform.rotation.x = -89.0f;
 
+                if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
+                {
+                    movementSpeed *= 4.0f;
+                }
+
                 if (glfwGetKey(window, GLFW_KEY_W))
                 {
                     transform.position += forward * movementSpeed;
@@ -96,11 +103,11 @@ namespace Gep
                 {
                     transform.position += rightward * movementSpeed;
                 }
-                if (glfwGetKey(window, GLFW_KEY_SPACE))
+                if (glfwGetKey(window, GLFW_KEY_E))
                 {
                     transform.position += glm::vec3(0.0f, movementSpeed, 0.0f);
                 }
-                if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
+                if (glfwGetKey(window, GLFW_KEY_Q))
                 {
                     transform.position -= glm::vec3(0.0f, movementSpeed, 0.0f);
                 }

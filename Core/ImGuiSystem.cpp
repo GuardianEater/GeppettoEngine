@@ -228,6 +228,7 @@ namespace Client
         bool isOpen = ImGui::TreeNodeEx(displayName.c_str()
             , ImGuiTreeNodeFlags_OpenOnArrow
             | ImGuiTreeNodeFlags_SpanAvailWidth
+            | (mManager.HasChild(entity) ? ImGuiTreeNodeFlags_None : ImGuiTreeNodeFlags_Leaf)
             | (mSelectedEntities.contains(entity) ? ImGuiTreeNodeFlags_Selected : ImGuiTreeNodeFlags_None));
 
         ImGui::PopStyleColor(2);
@@ -642,6 +643,21 @@ namespace Client
                     ImGui::Image((void*)(intptr_t)texture, { imageSize * 2.0f, imageSize * 2.0f });
                     ImGui::TextWrapped("%s", entry.path().filename().string().c_str());
                     ImGui::EndDragDropSource();
+                }
+
+                if (ImGui::BeginPopupContextItem())
+                {
+                    if (ImGui::MenuItem("Open in Explorer"))
+                    {
+                        std::string command = "explorer \"" + entry.path().parent_path().string() + "\"";
+                        system(command.c_str());
+                    }
+                    if (ImGui::MenuItem("Open"))
+                    {
+                        std::string command = "start \"\" \"" + entry.path().string() + "\"";
+                        system(command.c_str());
+                    }
+                    ImGui::EndPopup();
                 }
                 
                 ImGui::SetCursorScreenPos(cursorPos);
