@@ -17,6 +17,7 @@
 #undef min
 #undef max
 
+#include "ObjMesh.hpp"
 namespace Gep
 {
     enum GLVertexAttributeLocation : GLint
@@ -78,18 +79,56 @@ namespace Gep
 
     void OpenGLRenderer::LoadMesh(const std::string& name, const Mesh& mesh)
     {
-        if (mMeshDatas.find(name) != mMeshDatas.end())
+        if (mMeshNameToID.contains(name))
         {
             Gep::Log::Error("Cannot load mesh: [", name, "] a mesh with that name has already been loaded");
             return;
         }
 
-        MeshData& meshData = mMeshDatas[name];
+        uint64_t id = mMeshDatas.emplace();
+        mMeshNameToID[name] = id;
+        MeshData& meshData = mMeshDatas.at(id);
 
         meshData.GenVertexBuffer(mesh);
         meshData.GenFaceBuffer(mesh);
         meshData.BindBuffers();
-        meshData.mEdgeCount = mesh.mEdges.size();
+    }
+
+    void OpenGLRenderer::LoadMesh(const std::filesystem::path& path)
+    {
+        std::string strPath = path.string();
+        if (mMeshNameToID.contains(strPath))
+        {
+            Gep::Log::Error("Cannot load mesh: [", path.string(), "] a mesh with that name has already been loaded");
+            return;
+        }
+
+        std::string ext = path.extension().string();
+
+        if (ext == ".obj")
+        {
+            Mesh mesh = Gep::LoadObjMesh(path);
+            LoadMesh(path.string(), mesh);
+        }
+        else
+        {
+            Gep::Log::Error("Cannot load mesh: [", path.string(), "] unsupported file type");
+        }
+    }
+
+    uint64_t OpenGLRenderer::GetMesh(const std::string& name) const
+    {
+        if (!mMeshNameToID.contains(name))
+        {
+            Gep::Log::Critical("Cannot get mesh: [", name, "] a mesh with that name has not been loaded");
+        }
+
+        return mMeshNameToID.at(name);
+    }
+
+    bool OpenGLRenderer::IsMeshLoaded(const std::string& name) const
+    {
+        return mMeshNameToID.contains(name);
     }
 
     void OpenGLRenderer::ToggleWireframes()
@@ -99,15 +138,17 @@ namespace Gep
 
     void OpenGLRenderer::UnloadMesh(const std::string& name)
     {
-        if (mMeshDatas.find(name) == mMeshDatas.end())
+        if (!mMeshNameToID.contains(name))
         {
             Gep::Log::Error("Cannot unload mesh: [", name, "] a mesh with that name has not been loaded");
             return;
         }
 
-        MeshData& meshData = mMeshDatas.at(name);
+        uint64_t id = mMeshNameToID.at(name);
+        MeshData& meshData = mMeshDatas.at(id);
         meshData.DeleteBuffers();
-        mMeshDatas.erase(name);
+        mMeshDatas.erase(id);
+        mMeshNameToID.erase(name);
     }
 
     void OpenGLRenderer::BackfaceCull(bool enabled)
@@ -212,7 +253,7 @@ namespace Gep
     {
         std::vector<std::string> meshes;
 
-        for (const auto& [name, _] : mMeshDatas)
+        for (const auto& [name, _] : mMeshNameToID)
         {
             meshes.push_back(name);
         }
@@ -378,15 +419,15 @@ namespace Gep
         return mErrorTexture;
     }
 
-    void OpenGLRenderer::DrawMesh(const std::string& meshName)
+    void OpenGLRenderer::DrawMesh(uint64_t meshID)
     {
-        if (mMeshDatas.find(meshName) == mMeshDatas.end())
+        if (!mMeshDatas.contains(meshID))
         {
-            Gep::Log::Error("Cannot draw mesh: [", meshName, "] a mesh with that name has not been loaded");
+            Gep::Log::Error("Cannot draw mesh: [", meshID, "] a mesh with that id has not been loaded");
             return;
         }
 
-        const MeshData& md = mMeshDatas.at(meshName);
+        const MeshData& md = mMeshDatas.at(meshID);
         constexpr std::uint64_t faceSize = sizeof(Mesh::Face) / sizeof(GLuint);
 
         glUseProgram(mProgram.GetProgramID());
@@ -527,19 +568,6 @@ namespace Gep
         }
 #endif // _DEBUG
         return shaderID;
-    }
-
-    OpenGLRenderer::MeshData::MeshData()
-        : mVertexArrayObject(num_max<GLuint>())
-        , mVertexBuffer(num_max<GLuint>())
-        , mFaceBuffer(num_max<GLuint>())
-        , mFaceCount(num_max<size_t>())
-        , mEdgeCount(num_max<size_t>())
-    {
-    }
-
-    OpenGLRenderer::MeshData::~MeshData()
-    {
     }
 
     void OpenGLRenderer::MeshData::GenVertexBuffer(const Mesh& mesh)

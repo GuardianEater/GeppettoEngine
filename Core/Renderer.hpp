@@ -19,6 +19,7 @@
 
 #include "stb_image.h"
 #include "Logger.hpp"
+#include "KeyedVector.hpp"
 
 namespace Gep
 {
@@ -35,6 +36,10 @@ namespace Gep
 
         // loads resources into the renderer
         void LoadMesh(const std::string& name, const Mesh& mesh);
+        void LoadMesh(const std::filesystem::path& path); // path.stem().string() will be used as the name
+        uint64_t GetMesh(const std::string& name) const;
+
+        bool IsMeshLoaded(const std::string& name) const;
 
         // changes how the renderer will draw the next object
         void SetTexture(GLuint texture);
@@ -60,9 +65,10 @@ namespace Gep
         void LoadErrorTexture(const std::filesystem::path& texturePath);
         GLuint GetErrorTexture() const;
 
+        
 
         // completes the rendering of the object
-        void DrawMesh(const std::string& meshID);
+        void DrawMesh(uint64_t meshID);
 
         void ToggleWireframes();
         void ToggleTextures();
@@ -87,21 +93,15 @@ namespace Gep
     private:
         struct MeshData
         {
-        public:
-            MeshData();
-            ~MeshData();
-
             void GenVertexBuffer(const Mesh& mesh);
             void GenFaceBuffer(const Mesh& mesh);
             void BindBuffers();
             void DeleteBuffers();
 
-        public:
-            GLuint mVertexArrayObject;
-            GLuint mVertexBuffer;
-            GLuint mFaceBuffer;
-            size_t mFaceCount;
-            size_t mEdgeCount;
+            GLuint mVertexArrayObject = num_max<GLuint>();
+            GLuint mVertexBuffer = num_max<GLuint>();
+            GLuint mFaceBuffer = num_max<GLuint>();
+            size_t mFaceCount{};
         };
 
     private:
@@ -113,7 +113,10 @@ namespace Gep
         bool mUseSolidColor = false;
         glm::vec3 mSolidColor;
 
-        std::unordered_map<std::string, MeshData> mMeshDatas;
+        Gep::keyed_vector<MeshData> mMeshDatas;
+        std::unordered_map<std::string, uint64_t> mMeshNameToID;
+
+        //std::unordered_map<std::string, MeshData> mMeshDatas;
         std::unordered_map<std::string, GLuint> mIconTextures;// icon extension -> texture id
         std::unordered_map<std::filesystem::path, GLuint> mTextures; // texture path -> texture id
         GLuint mErrorTexture; // always loaded, used when a texuture fails to load

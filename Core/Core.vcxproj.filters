@@ -243,6 +243,9 @@
     <ClCompile Include="GetCallerInfo_Windows.cpp">
       <Filter>Backend\OS</Filter>
     </ClCompile>
+    <ClCompile Include="ObjMesh.cpp">
+      <Filter>Backend\Rendering\Meshes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -487,6 +490,9 @@
     </ClInclude>
     <ClInclude Include="GetCallerInfo.hpp">
       <Filter>Backend\OS</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjMesh.hpp">
+      <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

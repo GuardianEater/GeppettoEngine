@@ -98,8 +98,6 @@ int main() try
         em.DestroyMarkedComponents();
         em.DestroyMarkedEntities();
         em.ResolveEvents();
-
-        Gep::Log::Critical("Frame End");
     }
 
     em.Exit();

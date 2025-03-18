@@ -125,5 +125,6 @@ namespace Gep
     {
         CreateIcosahedron();
         RefineTriangles(subdivisions);
+        Normalize();
     }
 }

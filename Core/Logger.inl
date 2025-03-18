@@ -82,7 +82,7 @@ namespace Gep
                 oss << "[" << caller.functionName << "] ";
                 break;
             case LogLevel::critical:
-                oss << "[" << caller.fileName << ":" << caller.functionName << ":" << caller.lineNumber << "] ";
+                oss << "[" << std::filesystem::path(caller.fileName).filename().string() << ":" << caller.functionName << ":" << caller.lineNumber << "] ";
                 break;
             default:
                 break;

@@ -9,6 +9,8 @@
 #pragma once
 
 #include <glm.hpp>
+#include <EngineManager.hpp>
+#include <imgui.h>
 #include "Renderer.hpp"
 
 namespace Client
@@ -24,11 +26,31 @@ namespace Client
 
         void OnImGuiRender(Gep::EngineManager& em)
         {
-            const Gep::OpenGLRenderer& renderer = em.GetResource<Gep::OpenGLRenderer>();
+            Gep::OpenGLRenderer& renderer = em.GetResource<Gep::OpenGLRenderer>();
             std::vector<std::string> loadedMeshes = renderer.GetLoadedMeshes();
 
             // drop down for selecting a mesh
-            if (ImGui::BeginCombo("Mesh", meshName.c_str()))
+            bool meshesOpen = ImGui::BeginCombo("Mesh", meshName.c_str());
+
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_PATH"))
+                {
+                    IM_ASSERT(payload->DataSize == sizeof(char) * (strlen((const char*)payload->Data) + 1));
+                    const char* path = (const char*)payload->Data;
+                    std::filesystem::path droppedPath(path);
+
+                    if (!renderer.IsMeshLoaded(droppedPath.string()))
+                    {
+                        renderer.LoadMesh(droppedPath);
+                    }
+
+                    meshName = droppedPath.string();
+                }
+                ImGui::EndDragDropTarget();
+            }
+
+            if (meshesOpen)
             {
                 for (const std::string& mesh : loadedMeshes)
                 {

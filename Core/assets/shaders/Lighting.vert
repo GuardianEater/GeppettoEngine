@@ -13,7 +13,7 @@ layout(location=3) uniform mat4 normal_matrix;
 layout(location=14) uniform bool isHighlighted;
 
 // out to fragment shader //////////////////////////////////////////////////////
-layout(location=0) flat out vec4 world_normal;
+layout(location=0) /*flat*/ out vec4 world_normal;
 layout(location=1) out vec4 world_position;
 layout(location=2) out vec2 uv_out;
 
