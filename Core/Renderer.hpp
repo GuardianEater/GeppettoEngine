@@ -39,10 +39,6 @@ namespace Gep
         void LoadMesh(const std::filesystem::path& path); // path.stem().string() will be used as the name
         uint64_t GetMesh(const std::string& name) const;
 
-        void LoadModel(const std::string& name, const Model& model);
-        void LoadModel(const std::filesystem::path& path);
-        uint64_t GetModel(const std::string& name) const;
-
         bool IsMeshLoaded(const std::string& name) const;
 
         // changes how the renderer will draw the next object

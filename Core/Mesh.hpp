@@ -85,19 +85,5 @@ namespace Gep
             mVertices = uniqueVertices;
         }
     };
-
-    struct MaterialData
-    {
-        glm::vec3 diffuse = { 2.0f, 2.0f, 2.0f }; // color
-        glm::vec3 specular = { 0.5f, 0.5f, 0.5f }; // shine color
-        float specularExponent = 5; // amount of shine;
-        GLuint texture{};
-    };
-
-    struct Model
-    {
-        std::vector<Mesh> mMeshes{};
-        std::vector<GLuint> mTextures{};
-    };
 }
 

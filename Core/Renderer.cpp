@@ -126,16 +126,6 @@ namespace Gep
         return mMeshNameToID.at(name);
     }
 
-    void OpenGLRenderer::LoadModel(const std::filesystem::path& path)
-    {
-
-    }
-
-    uint64_t OpenGLRenderer::GetModel(const std::string& name) const
-    {
-        return 0;
-    }
-
     bool OpenGLRenderer::IsMeshLoaded(const std::string& name) const
     {
         return mMeshNameToID.contains(name);
