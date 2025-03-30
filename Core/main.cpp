@@ -33,6 +33,10 @@
 #include "EngineManager.hpp"
 #include "Logger.hpp"
 
+#define SOLLOUD_DYNAMIC
+#include "soloud.h"
+#include "soloud_wav.h"
+
 int main() try
 {
     Gep::Log::SetPrintLevel(Gep::Log::LogLevel::info);
@@ -89,6 +93,14 @@ int main() try
     em.Initialize();
     em.ResolveEvents();
 
+    SoLoud::Soloud soundEngine;
+    soundEngine.init();
+
+    SoLoud::Wav wav;
+    wav.load("assets/sounds/test.wav");
+
+    soundEngine.play(wav);
+
     while (em.Running())
     {
         em.FrameStart();
@@ -99,6 +111,8 @@ int main() try
         em.DestroyMarkedEntities();
         em.ResolveEvents();
     }
+
+    soundEngine.deinit();
 
     em.Exit();
     em.ResolveEvents();
