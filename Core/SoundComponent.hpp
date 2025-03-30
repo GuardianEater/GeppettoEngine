@@ -123,7 +123,7 @@ namespace Client
             }
 
             ImGui::SameLine();
-            if (ImGui::Button("Stop"))
+            if (ImGui::Button("Restart"))
             {
                 if (soundEngine.isValidVoiceHandle(soundHandle))
                 {

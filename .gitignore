@@ -363,3 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /Core/log.txt
 /Core/imgui.ini
+!Core/assets/meshes/*.obj
