@@ -94,14 +94,32 @@ namespace Client
             {
                 if (soundEngine.isValidVoiceHandle(soundHandle))
                 {
-                    soundEngine.stop(soundHandle);
+                    if (soundEngine.getPause(soundHandle))
+                    {
+                        soundEngine.setPause(soundHandle, false);
+                    }
+                    else
+                    {
+                        soundEngine.stop(soundHandle);
+                    }
                 }
+                else
+                {
+                    soundHandle = soundEngine.play(soundSource);
+                    soundEngine.setLooping(soundHandle, looping);
+                    soundEngine.setVolume(soundHandle, volume);
 
-                soundHandle = soundEngine.play(soundSource);
-                soundEngine.setLooping(soundHandle, looping);
-                soundEngine.setVolume(soundHandle, volume);
+                    endTime = soundSource.getLength();
+                }
+            }
 
-                endTime = soundSource.getLength();
+            ImGui::SameLine();
+            if (ImGui::Button("Pause"))
+            {
+                if (soundEngine.isValidVoiceHandle(soundHandle))
+                {
+                    soundEngine.setPause(soundHandle, true);
+                }
             }
 
             ImGui::SameLine();
@@ -109,6 +127,7 @@ namespace Client
             {
                 if (soundEngine.isValidVoiceHandle(soundHandle))
                 {
+                    soundEngine.setPause(soundHandle, false);
                     soundEngine.stop(soundHandle);
                 }
             }
