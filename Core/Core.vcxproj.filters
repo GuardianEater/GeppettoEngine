@@ -246,6 +246,12 @@
     <ClCompile Include="ObjMesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClCompile>
+    <ClCompile Include="SoundResource.cpp">
+      <Filter>Client\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundSystem.cpp">
+      <Filter>Client\Systems</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -493,6 +499,15 @@
     </ClInclude>
     <ClInclude Include="ObjMesh.hpp">
       <Filter>Backend\Rendering\Meshes</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundComponent.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundResource.hpp">
+      <Filter>Client\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundSystem.hpp">
+      <Filter>Client\Systems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

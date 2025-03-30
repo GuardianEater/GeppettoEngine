@@ -387,9 +387,13 @@ namespace Client
 
 
         DrawEntities(parents, dt);
+         
 
-        // detach entities if they are dropped into any open space
-        ImGui::Dummy(ImGui::GetContentRegionAvail());
+        // detach entities if they are dropped into any open space, adds a little bit of extra dropping space aswell
+        ImVec2 size = ImGui::GetContentRegionAvail();
+        if (size.y < 0.0f) size.y = 0.0f;
+        size.y += 200.0f; 
+        ImGui::Dummy(size);
 
         EntitiesDragDropTarget([&](Gep::Entity entity)
         {

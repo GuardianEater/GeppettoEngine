@@ -246,6 +246,9 @@
     <ClCompile Include="SerializationResource.cpp" />
     <ClCompile Include="SerializationSystem.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
+    <ClInclude Include="SoundComponent.hpp" />
+    <ClCompile Include="SoundResource.cpp" />
+    <ClCompile Include="SoundSystem.cpp" />
     <ClCompile Include="SphereMesh.cpp" />
     <ClCompile Include="TypeID.cpp" />
     <ClCompile Include="WindowSystem.cpp" />
@@ -299,6 +302,8 @@
     <ClInclude Include="ScriptingSystem.hpp" />
     <ClInclude Include="SerializationResource.hpp" />
     <ClInclude Include="SerializationSystem.hpp" />
+    <ClInclude Include="SoundResource.hpp" />
+    <ClInclude Include="SoundSystem.hpp" />
     <ClInclude Include="SphereCollider.hpp" />
     <ClInclude Include="SphereMesh.hpp" />
     <ClInclude Include="KeyedVector.hpp" />

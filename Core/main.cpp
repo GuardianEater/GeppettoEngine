@@ -8,14 +8,15 @@
 
 #include "pch.hpp"
 
- // systems
-#include "PhysicsSystem.hpp"
-#include "ImGuiSystem.hpp"
-#include "WindowSystem.hpp"
-#include "RenderSystem.hpp"
-#include "ScriptingSystem.hpp"
-#include "SerializationSystem.hpp"
-#include "RelationSystem.hpp"
+// engine
+#include "Core.hpp"
+#include "EngineManager.hpp"
+#include "Logger.hpp"
+
+// resources
+#include "Renderer.hpp"
+#include "ScriptingResource.hpp"
+#include "SoundResource.hpp"
 
 // components
 #include "CameraComponent.hpp"
@@ -27,11 +28,17 @@
 #include "Transform.hpp"
 #include "TextureComponent.hpp"
 #include "LightComponent.hpp"
+#include "SoundComponent.hpp"
 
-// engine
-#include "Core.hpp"
-#include "EngineManager.hpp"
-#include "Logger.hpp"
+ // systems
+#include "PhysicsSystem.hpp"
+#include "ImGuiSystem.hpp"
+#include "WindowSystem.hpp"
+#include "RenderSystem.hpp"
+#include "ScriptingSystem.hpp"
+#include "SerializationSystem.hpp"
+#include "RelationSystem.hpp"
+#include "SoundSystem.hpp"
 
 #define SOLLOUD_DYNAMIC
 #include "soloud.h"
@@ -49,6 +56,7 @@ int main() try
 
     // register all resources ////////////////////////////////////////////////////////////////////////
     em.RegisterResource<Client::ScriptingResource>();
+    em.RegisterResource<Client::SoundResource>();
 
     // list of all components ///////////////////////////////////////////////////////////////////////
     Gep::type_list<
@@ -60,7 +68,8 @@ int main() try
         Client::ActiveCamera,
         Client::Camera,
         Client::Texture,
-        Client::Light
+        Client::Light,
+        Client::SoundComponent
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////
@@ -71,7 +80,8 @@ int main() try
         Client::ScriptingSystem,
         Client::PhysicsSystem,
         Client::SerializationSystem,
-        Client::RelationSystem
+        Client::RelationSystem,
+        Client::SoundSystem
     > systemTypes;
 
 
@@ -93,14 +103,6 @@ int main() try
     em.Initialize();
     em.ResolveEvents();
 
-    SoLoud::Soloud soundEngine;
-    soundEngine.init();
-
-    SoLoud::Wav wav;
-    wav.load("assets/sounds/test.wav");
-
-    soundEngine.play(wav);
-
     while (em.Running())
     {
         em.FrameStart();
@@ -111,8 +113,6 @@ int main() try
         em.DestroyMarkedEntities();
         em.ResolveEvents();
     }
-
-    soundEngine.deinit();
 
     em.Exit();
     em.ResolveEvents();
