@@ -95,6 +95,7 @@ int main() try
     em.RegisterGroup<Client::Material, Client::Transform>();
     em.RegisterGroup<Client::Camera, Client::Transform>();
     em.RegisterGroup<Client::Light, Client::Transform>();
+    em.RegisterGroup<Client::SoundComponent, Client::Transform>();
     em.RegisterGroup<Client::Transform>();
     em.RegisterGroup<Client::Script>();
     em.RegisterGroup(); // empty group with all entities

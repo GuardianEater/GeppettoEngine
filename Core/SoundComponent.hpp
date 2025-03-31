@@ -15,9 +15,10 @@ namespace Client
     struct SoundComponent
     {
         bool looping = false;
-        float volume = 1.0f;
+        float volume = 1.0f; // percent
         float currentTime = 0.0f;
         float endTime = 1.0f;
+        float distance = 1.0f;
         SoLoud::handle soundHandle;
 
         std::filesystem::path soundPath;
@@ -67,7 +68,6 @@ namespace Client
 
             if (!sr.IsSoundLoaded(soundPath))
             {
-                ImGui::End();
                 return;
             }
 
@@ -82,15 +82,32 @@ namespace Client
                 }
             }
             
-            if (ImGui::DragFloat("Volume", &volume, 0.01f, 0.0f, 1.0f))
+            float displayVolume = volume * 100.0f;
+            if (ImGui::DragFloat("Volume", &displayVolume, 1.0f, 0.0f, 100.0f, "%.0f%%"))
             {
+                volume = displayVolume / 100.0f;
                 if (soundEngine.isValidVoiceHandle(soundHandle))
                 {
                     soundEngine.setVolume(soundHandle, volume);
                 }
             }
 
-            if (ImGui::Button("Play"))
+            ImGui::DragFloat("Distance", &distance, 0.01f, 0.0f, 100.0f);
+
+            std::string display = "Play";
+            if (soundEngine.isValidVoiceHandle(soundHandle))
+            {
+                if (soundEngine.getPause(soundHandle))
+                {
+                    display = "Resume";
+                }
+                else
+                {
+                    display = "Pause";
+                }
+            }
+
+            if (ImGui::Button(display.c_str()))
             {
                 if (soundEngine.isValidVoiceHandle(soundHandle))
                 {
@@ -100,25 +117,15 @@ namespace Client
                     }
                     else
                     {
-                        soundEngine.stop(soundHandle);
+                        soundEngine.setPause(soundHandle, true);
                     }
                 }
                 else
                 {
-                    soundHandle = soundEngine.play(soundSource);
+                    soundHandle = soundEngine.play3d(soundSource, 0, 0, 0);
                     soundEngine.setLooping(soundHandle, looping);
                     soundEngine.setVolume(soundHandle, volume);
-
                     endTime = soundSource.getLength();
-                }
-            }
-
-            ImGui::SameLine();
-            if (ImGui::Button("Pause"))
-            {
-                if (soundEngine.isValidVoiceHandle(soundHandle))
-                {
-                    soundEngine.setPause(soundHandle, true);
                 }
             }
 
@@ -129,19 +136,29 @@ namespace Client
                 {
                     soundEngine.setPause(soundHandle, false);
                     soundEngine.stop(soundHandle);
+                    currentTime = 0.0f;
                 }
             }
 
-            float displayTime = 0.0f;
             if (soundEngine.isValidVoiceHandle(soundHandle))
             {
-                currentTime = soundEngine.getStreamTime(soundHandle);
+                currentTime = soundEngine.getStreamPosition(soundHandle);
                 size_t loopCount = soundEngine.getLoopCount(soundHandle);
-
-                displayTime = currentTime - (loopCount * endTime);
             }
 
-            ImGui::ProgressBar(displayTime / endTime);
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 1)); // Reduce vertical padding
+            ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 5.0f); // Set grab size to 5px
+            //ImGui::ProgressBar(currentTime / endTime, ImVec2(-FLT_MIN, 8), "");
+            if (ImGui::SliderFloat("##Time", &currentTime, 0.0f, endTime, ""))
+            {
+                if (soundEngine.isValidVoiceHandle(soundHandle))
+                {
+                    soundEngine.seek(soundHandle, currentTime);
+                }
+            }
+            ImGui::PopStyleVar(2);
+
+            ImGui::Text("%.2f / %.2f", currentTime, endTime);
         }
     };
 }
