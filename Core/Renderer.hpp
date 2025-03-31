@@ -26,9 +26,6 @@ namespace Gep
     class OpenGLRenderer
     {
     public:
-        OpenGLRenderer();
-        ~OpenGLRenderer();
-
         // sets up the main shader program
         void LoadFragmentShader(const std::filesystem::path& shaderPath);
         void LoadVertexShader(const std::filesystem::path& shaderPath);
@@ -105,13 +102,13 @@ namespace Gep
         };
 
     private:
-        ShaderProgram mProgram;
+        ShaderProgram mProgram{};
         //keyed_vector<MeshData> mMeshDatas;
         bool mWireframeMode = false;
         bool mUseTextures = false;
         bool mIsHighlighted = false;
         bool mUseSolidColor = false;
-        glm::vec3 mSolidColor;
+        glm::vec3 mSolidColor{};
 
         Gep::keyed_vector<MeshData> mMeshDatas;
         std::unordered_map<std::string, uint64_t> mMeshNameToID;
@@ -119,9 +116,9 @@ namespace Gep
         //std::unordered_map<std::string, MeshData> mMeshDatas;
         std::unordered_map<std::string, GLuint> mIconTextures;// icon extension -> texture id
         std::unordered_map<std::filesystem::path, GLuint> mTextures; // texture path -> texture id
-        GLuint mErrorTexture; // always loaded, used when a texuture fails to load
+        GLuint mErrorTexture{}; // always loaded, used when a texuture fails to load
 
-        std::mutex mTextureLoadingMutex;
+        std::mutex mTextureLoadingMutex{};
 
         struct LightData
         {
@@ -130,7 +127,7 @@ namespace Gep
             float intensity;
         };
 
-        GLuint mLightSSBO;
+        GLuint mLightSSBO{};
         std::vector<LightData> mLightData;
 
     };

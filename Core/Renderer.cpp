@@ -50,17 +50,6 @@ namespace Gep
     static HICON GetIcon(const std::filesystem::path& iconPath);
     static GLuint IconToTexture(HICON icon);
 
-    OpenGLRenderer::OpenGLRenderer()
-        : mProgram()
-        , mMeshDatas()
-    {
-    }
-
-    OpenGLRenderer::~OpenGLRenderer()
-    {
-        mMeshDatas.clear();
-    }
-
     void OpenGLRenderer::LoadFragmentShader(const std::filesystem::path& shaderPath)
     {
         mProgram.LoadFragmentShader(shaderPath);
