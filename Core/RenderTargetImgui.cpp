@@ -79,8 +79,8 @@ namespace Gep
                 transform.rotation.y += mouseDelta.x * sensitivity;
                 transform.rotation.x += mouseDelta.y * sensitivity;
 
-                if (transform.rotation.x > 89.0f) transform.rotation.x = 89.0f;
-                if (transform.rotation.x < -89.0f) transform.rotation.x = -89.0f;
+                if (transform.rotation.x > 89.99f) transform.rotation.x = 89.99f;
+                if (transform.rotation.x < -89.99f) transform.rotation.x = -89.99f;
 
                 if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
                 {
