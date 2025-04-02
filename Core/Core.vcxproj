@@ -111,6 +111,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CollisionSystem.cpp" />
     <ClCompile Include="Core.cpp" />
+    <ClInclude Include="CubeCollider.hpp" />
     <ClCompile Include="CubeMesh.cpp" />
     <ClCompile Include="dependencies\ImGuizmo\GraphEditor.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -246,6 +247,7 @@
     <ClCompile Include="SerializationResource.cpp" />
     <ClCompile Include="SerializationSystem.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
+    <ClInclude Include="Shapes.hpp" />
     <ClInclude Include="SoundComponent.hpp" />
     <ClCompile Include="SoundResource.cpp" />
     <ClCompile Include="SoundSystem.cpp" />

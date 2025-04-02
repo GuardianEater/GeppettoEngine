@@ -1,7 +1,7 @@
 /*****************************************************************//**
  * \file   CollisionChecking.hpp
  * \brief  bunch of collision checking functions
- * 
+ *
  * \author Travis Gronvold (travis.gronvold@digipen.edu)
  * \date   March 2025
  *********************************************************************/
@@ -9,31 +9,78 @@
 #pragma once
 
 #include "Core.hpp"
+#include "Shapes.hpp"
+
 #include "glm/glm.hpp"
 
 namespace Gep
 {
-    enum class PlaneIntersectionType
+    enum class PlaneIntersectionType : uint8_t
     {
-        InFront,
-        Behind,
-        Overlaps,
+        InFront,   // in the direction of the normal
+        Behind,    // in the opposite direction of the normal
+        Stradding, // on both sides of the plane
+        Coplanar,  // perfectly on the plane
     };
 
-    enum class FrustumIntersectionType
+    enum class FrustumIntersectionType : uint8_t
     {
-        Inside,
-        Outside,
-        Overlaps,
+        Inside,   // completely inside the frustum
+        Outside,  // completely outside the frustum
+        Overlaps, // partially inside the frustum, partially outside
     };
 
-    bool RaySphere(const glm::vec3& rayStart, const glm::vec3& rayDir, const glm::vec3& sphereCenter, float sphereRadius, float& t)
+    glm::vec2 Barycentric(const LineSegment& line, const glm::vec3& point)
     {
-        const glm::vec3 L = rayStart - sphereCenter;
+        glm::vec3 v = line.start - line.end;
 
-        const float a = glm::dot(rayDir, rayDir);
-        const float b = 2 * glm::dot(rayDir, L);
-        const float c = glm::dot(L, L) - sphereRadius * sphereRadius;
+        const float denom = glm::dot(v, v);
+        if (denom == 0.0f) return { 0.0f, 0.0f };
+
+        const float u = glm::dot(point - line.start, v) / denom;
+        const float v = 1.0f - u;
+
+        return { u, v };
+    }
+
+    glm::vec3 Barycentric(const Triangle& triangle, const glm::vec3& point)
+    {
+        const glm::vec3 v0 = point - triangle.points[0];
+        const glm::vec3 v1 = triangle.points[1] - triangle.points[0];
+        const glm::vec3 v2 = triangle.points[2] - triangle.points[0];
+
+        const float e = glm::dot(v0, v1);
+        const float a = glm::dot(v1, v1);
+        const float b = glm::dot(v2, v1);
+
+        const float f = glm::dot(v0, v2);
+        const float c = glm::dot(v1, v2);
+        const float d = glm::dot(v2, v2);
+
+        const float denom = a * d - b * c;
+
+        if (denom == 0.0f) return { 0.0f, 0.0f, 0.0f };
+
+        const float u = (d * e - b * f) / denom;
+        const float v = (a * f - c * e) / denom;
+        const float w = 1.0f - u - v;
+
+        return { u, v, w };
+    }
+
+    bool PointTriangle(const glm::vec3& point, const Triangle& triangle)
+    {
+        const glm::vec3 barycentric = Barycentric(triangle, point);
+        return barycentric.x >= 0.0f && barycentric.y >= 0.0f && barycentric.z >= 0.0f; // TODO: barycentric can fail if denom is 0, returning 0,0,0
+    }
+
+    bool RaySphere(const Ray& ray, const Sphere& sphere, float& t)
+    {
+        const glm::vec3 L = ray.position - sphere.position;
+
+        const float a = glm::dot(ray.direction, ray.direction);
+        const float b = 2 * glm::dot(ray.direction, L);
+        const float c = glm::dot(L, L) - sphere.radius * sphere.radius;
 
         const float discriminant = b * b - 4 * a * c;
         const float sqrtDiscriminant = sqrtf(discriminant);
@@ -66,57 +113,115 @@ namespace Gep
         return true;
     }
 
-    PlaneIntersectionType PlaneSphere(const glm::vec4& plane, const glm::vec3& sphereCenter, float sphereRadius)
+    bool PointSphere(const glm::vec3& point, const Sphere& sphere)
     {
-        const float distance = glm::dot(glm::vec3(plane), sphereCenter) - plane.w;
+        return glm::distance(point, sphere.position) <= sphere.radius;
+    }
 
-        if (distance > sphereRadius)
+    PlaneIntersectionType PlaneSphere(const Plane& plane, const Sphere& sphere)
+    {
+        const float distance = glm::dot(plane.normal, sphere.position) - plane.distance;
+
+        if (distance > sphere.radius)
         {
             return PlaneIntersectionType::InFront;
         }
-        else if (distance < -sphereRadius)
+        else if (distance < -sphere.radius)
         {
             return PlaneIntersectionType::Behind;
         }
         else
         {
-            return PlaneIntersectionType::Overlaps;
+            return PlaneIntersectionType::Stradding;
         }
     }
 
-    FrustumIntersectionType FrustumSphere(const glm::vec4 planes[6], const glm::vec3& sphereCenter, float sphereRadius, size_t& lastAxis)
+    FrustumIntersectionType FrustumSphere(const Frustum& frustum, const Sphere& sphere, size_t& lastAxis)
     {
         FrustumIntersectionType result = FrustumIntersectionType::Inside;
-        for (size_t i = 0; i < 6; ++i)
+        PlaneIntersectionType lastAxisResult = PlaneSphere(frustum.planes[lastAxis], sphere);
+
+        if (lastAxisResult == PlaneIntersectionType::Behind)
         {
+            return FrustumIntersectionType::Outside;
+        }
+        else if (lastAxisResult == PlaneIntersectionType::Stradding)
+        {
+            result = FrustumIntersectionType::Overlaps;
+        }
+
+        size_t index = 0;
+        for (const Plane& plane : frustum.planes)
+        {
+            if (index == lastAxis) continue;
             // if the sphere is outside on any plane, return Outside
             // if the sphere is inside on all planes, return Inside
             // if the sphere is overlapping on any plane, and none are outside, return Overlaps
 
-            PlaneIntersectionType planeResult = PlaneSphere(planes[i], sphereCenter, sphereRadius);
+            PlaneIntersectionType planeResult = PlaneSphere(plane, sphere);
 
             if (planeResult == PlaneIntersectionType::Behind)
             {
-                lastAxis = i;
+                lastAxis = index;
                 return FrustumIntersectionType::Outside;
             }
-            else if (planeResult == PlaneIntersectionType::Overlaps)
+            else if (planeResult == PlaneIntersectionType::Stradding)
             {
                 result = FrustumIntersectionType::Overlaps;
-                lastAxis = i;
+                lastAxis = index;
             }
+
+            ++index;
         }
 
         return result;
     }
 
-    // the t is where the ray intersects the plane, along the ray
-    bool RayPlane(const glm::vec3& rayStart, const glm::vec3& rayDir, const glm::vec4& plane, float& t)
+    FrustumIntersectionType FrustumAABB(const Frustum& frustum, const AABB& aabb, size_t& lastAxis)
     {
-        const glm::vec3 planeNormal(plane.x, plane.y, plane.z);
-        const float planeDistance = plane.w;
+        FrustumIntersectionType result = FrustumIntersectionType::Inside;
+        PlaneIntersectionType lastAxisResult = PlaneAABB(frustum.planes[lastAxis], aabb);
 
-        const float dotProduct = glm::dot(planeNormal, rayDir);
+        if (lastAxisResult == PlaneIntersectionType::Behind)
+        {
+            return FrustumIntersectionType::Outside;
+        }
+        else if (lastAxisResult == PlaneIntersectionType::Stradding)
+        {
+            result = FrustumIntersectionType::Overlaps;
+        }
+
+        size_t index = 0;
+        for (const Plane& plane : frustum.planes)
+        {
+            if (index == lastAxis) continue;
+            // if the sphere is outside on any plane, return Outside
+            // if the sphere is inside on all planes, return Inside
+            // if the sphere is overlapping on any plane, and none are outside, return Overlaps
+
+            PlaneIntersectionType planeResult = PlaneAABB(plane, aabb);
+
+            if (planeResult == PlaneIntersectionType::Behind)
+            {
+                lastAxis = index;
+                return FrustumIntersectionType::Outside;
+            }
+            else if (planeResult == PlaneIntersectionType::Stradding)
+            {
+                result = FrustumIntersectionType::Overlaps;
+                lastAxis = index;
+            }
+
+            ++index;
+        }
+
+        return result;
+    }
+
+    // t is the distance from the ray's position to the intersection point
+    bool RayPlane(const Ray& ray, const Plane& plane, float& t)
+    {
+        const float dotProduct = glm::dot(plane.normal, ray.direction);
 
         // if the ray is parallel to the plane
         if (std::abs(dotProduct) < 1e-6f)
@@ -124,11 +229,193 @@ namespace Gep
             return false;
         }
 
-        const float distanceToPlane = glm::dot(planeNormal, rayStart) - planeDistance;
+        const float distanceToPlane = glm::dot(plane.normal, ray.position) - plane.distance;
 
         t = -distanceToPlane / dotProduct;
 
         // if the intersection is in the positive direction of the ray
         return t >= 0;
+    }
+
+    PlaneIntersectionType PointPlane(const glm::vec3& point, const Plane& plane)
+    {
+        const float distance = glm::dot(glm::normalize(plane.normal), point) - plane.distance;
+
+        if (distance > 0.0f)
+        {
+            return PlaneIntersectionType::InFront;
+        }
+        else if (distance < 0.0f)
+        {
+            return PlaneIntersectionType::Behind;
+        }
+        else
+        {
+            return PlaneIntersectionType::Coplanar;
+        }
+    }
+
+    glm::vec3 ProjectPointOntoPlane(const glm::vec3& point, const Plane& plane)
+    {
+        if (plane.normal == glm::vec3(0.0f)) return point;
+
+        const float distance = glm::dot(glm::normalize(plane.normal), point) - plane.distance;
+        return point - plane.normal * distance;
+    }
+
+    bool PointAABB(const glm::vec3& point, const AABB& aabb)
+    {
+        return point.x >= aabb.min.x && point.x <= aabb.max.x &&
+            point.y >= aabb.min.y && point.y <= aabb.max.y &&
+            point.z >= aabb.min.z && point.z <= aabb.max.z;
+    }
+
+    bool RayTriangle(const Ray& ray, const Triangle& triangle, float& t)
+    {
+        const Plane plane = Plane::FromTriangle(triangle);
+
+        if (RayPlane(ray, plane, t))
+        {
+            const glm::vec3 point = ray.position + ray.direction * t;
+
+            if (PointTriangle(point, triangle))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool RayAABB(const Ray& ray, const AABB& aabb, float& t)
+    {
+        float tMin = 0.0f; // start of the ray
+        float tMax = std::numeric_limits<float>::max(); // end of the ray
+
+        // intersection with each axis-aligned slab
+        for (int i = 0; i < 3; ++i)
+        {
+            // inverse of ray direction for axis i
+            const float invDir = 1.0f / ray.direction[i];
+            float t1 = (aabb.min[i] - ray.position[i]) * invDir;
+            float t2 = (aabb.max[i] - ray.position[i]) * invDir;
+
+            // t1 must be the smaller value
+            if (t1 > t2) std::swap(t1, t2);
+
+            // update the ray's t range
+            tMin = std::max(tMin, t1);
+            tMax = std::min(tMax, t2);
+
+            if (tMin > tMax) return false;
+        }
+
+        t = tMin; // tMin is the entry point of the intersection
+        return true;
+    }
+
+    PlaneIntersectionType PlaneTriangle(const Plane& plane, const Triangle& triangle)
+    {
+        PlaneIntersectionType p0_intersection = PointPlane(triangle.p0, plane);
+        PlaneIntersectionType p1_intersection = PointPlane(triangle.p1, plane);
+        PlaneIntersectionType p2_intersection = PointPlane(triangle.p2, plane);
+
+        const bool behind = p0_intersection == PlaneIntersectionType::Behind
+            || p1_intersection == PlaneIntersectionType::Behind
+            || p2_intersection == PlaneIntersectionType::Behind;
+
+        const bool inFront = p0_intersection == PlaneIntersectionType::InFront
+            || p1_intersection == PlaneIntersectionType::InFront
+            || p2_intersection == PlaneIntersectionType::InFront;
+
+        if (behind && inFront)
+        {
+            return PlaneIntersectionType::Stradding;
+        }
+        else if (behind)
+        {
+            return PlaneIntersectionType::Behind;
+        }
+        else if (inFront)
+        {
+            return PlaneIntersectionType::InFront;
+        }
+        else
+        {
+            return PlaneIntersectionType::Coplanar;
+        }
+    }
+
+    PlaneIntersectionType PlaneAABB(const Plane& plane, const AABB& aabb)
+    {
+        glm::vec3 positiveVertex = aabb.min;
+        glm::vec3 negativeVertex = aabb.max;
+
+        if (plane.normal.x >= 0)
+        {
+            positiveVertex.x = aabb.max.x;
+            negativeVertex.x = aabb.min.x;
+        }
+        if (plane.normal.y >= 0)
+        {
+            positiveVertex.y = aabb.max.y;
+            negativeVertex.y = aabb.min.y;
+        }
+        if (plane.normal.z >= 0)
+        {
+            positiveVertex.z = aabb.max.z;
+            negativeVertex.z = aabb.min.z;
+        }
+
+        // distances from the plane to the positive and negative vertices
+        const float dPositive = glm::dot(plane.normal, positiveVertex) - plane.distance;
+        const float dNegative = glm::dot(plane.normal, negativeVertex) - plane.distance;
+
+        if (dPositive < 0)
+        {
+            return PlaneIntersectionType::Behind;
+        }
+        else if (dNegative > 0)
+        {
+            return PlaneIntersectionType::InFront;
+        }
+        else
+        {
+            return PlaneIntersectionType::Stradding;
+        }
+    }
+
+    FrustumIntersectionType FrustumTriangle(const Frustum& frustum, const Triangle& triangle)
+    {
+        FrustumIntersectionType result = FrustumIntersectionType::Inside;
+
+        for (const Plane& plane : frustum.planes)
+        {
+            PlaneIntersectionType planeResult = PlaneTriangle(plane, triangle);
+            if (planeResult == PlaneIntersectionType::Behind)
+            {
+                return FrustumIntersectionType::Outside;
+            }
+            else if (planeResult == PlaneIntersectionType::Stradding)
+            {
+                result = FrustumIntersectionType::Overlaps;
+            }
+        }
+
+        return result;
+    }
+
+    bool SphereSphere(const Sphere& sphere1, const Sphere& sphere2)
+    {
+        return glm::distance(sphere1.position, sphere2.position) <= sphere1.radius + sphere2.radius;
+    }
+
+    bool AABBAABB(const AABB& aabb0, const AABB& aabb1)
+    {
+        bool x = aabb0.max.x < aabb1.min.x || aabb0.min.x > aabb1.max.x;
+        bool y = aabb0.max.y < aabb1.min.y || aabb0.min.y > aabb1.max.y;
+        bool z = aabb0.max.z < aabb1.min.z || aabb0.min.z > aabb1.max.z;
+
+        return !(x || y || z);
     }
 }
