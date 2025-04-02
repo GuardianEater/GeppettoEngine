@@ -109,8 +109,10 @@
     <ClCompile Include="Affine.cpp" />
     <ClCompile Include="BinarySerialzer.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CollisionChecking.cpp" />
     <ClCompile Include="CollisionSystem.cpp" />
     <ClCompile Include="Core.cpp" />
+    <ClInclude Include="BVHTree.hpp" />
     <ClInclude Include="CubeCollider.hpp" />
     <ClCompile Include="CubeMesh.cpp" />
     <ClCompile Include="dependencies\ImGuizmo\GraphEditor.cpp">
@@ -346,6 +348,7 @@
     <None Include="assets\shaders\main.vert" />
     <None Include="assets\shaders\PhongRender.frag" />
     <None Include="assets\shaders\PhongRender.vert" />
+    <None Include="BVHTree.inl" />
     <None Include="KeyedVector.inl" />
     <None Include="ComponentArray.inl" />
     <None Include="EngineManager.inl" />

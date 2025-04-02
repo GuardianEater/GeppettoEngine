@@ -41,6 +41,9 @@ namespace Client
         void Update(float dt);
         void HandleInputs(float dt);
         void RenderImGui(float dt);
+
+    private:
+        void OnModelAdded(const Gep::Event::ComponentAdded<Material>& event);
     };
 }
 

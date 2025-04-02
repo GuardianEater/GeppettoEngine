@@ -20,6 +20,7 @@
 #include "stb_image.h"
 #include "Logger.hpp"
 #include "KeyedVector.hpp"
+#include "BVHTree.hpp"
 
 namespace Gep
 {
@@ -130,5 +131,7 @@ namespace Gep
         GLuint mLightSSBO{};
         std::vector<LightData> mLightData;
 
+        public:
+        Gep::bvh_tree<uint64_t, Gep::Entity> mBVHTree;
     };
 }

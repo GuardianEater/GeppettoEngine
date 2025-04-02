@@ -255,6 +255,9 @@
     <ClCompile Include="SoundSystem.cpp">
       <Filter>Client\Systems</Filter>
     </ClCompile>
+    <ClCompile Include="CollisionChecking.cpp">
+      <Filter>Backend\Collision</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -518,6 +521,9 @@
     <ClInclude Include="CollisionChecking.hpp">
       <Filter>Backend\Collision</Filter>
     </ClInclude>
+    <ClInclude Include="BVHTree.hpp">
+      <Filter>Backend\Collision</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">
@@ -576,6 +582,9 @@
     </None>
     <None Include="Skybox.frag">
       <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
+    <None Include="BVHTree.inl">
+      <Filter>Backend\Collision</Filter>
     </None>
   </ItemGroup>
 </Project>

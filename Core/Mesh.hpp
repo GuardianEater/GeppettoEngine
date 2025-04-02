@@ -15,6 +15,8 @@
 #include <filesystem>
 #include <vector>
 
+#include "Shapes.hpp"
+
 namespace Gep
 {
     /**
@@ -35,54 +37,32 @@ namespace Gep
         std::vector<Vertex> mVertices{};
         std::vector<Face> mFaces{};
 
-        void Normalize()
+        AABB mBoundingBox{};
+
+        void CalculateBoundingBox()
         {
-            glm::vec3 min = glm::vec3(FLT_MAX);
-            glm::vec3 max = glm::vec3(-FLT_MAX);
+            mBoundingBox.min = glm::vec3(FLT_MAX);
+            mBoundingBox.max = glm::vec3(-FLT_MAX);
             for (const Vertex& vertex : mVertices)
             {
-                min = glm::min(min, vertex.position);
-                max = glm::max(max, vertex.position);
+                mBoundingBox.min = glm::min(mBoundingBox.min, vertex.position);
+                mBoundingBox.max = glm::max(mBoundingBox.max, vertex.position);
             }
-            glm::vec3 center = (min + max) * 0.5f;
-            glm::vec3 size = max - min;
+        }
+
+        // normalizes the mesh to fit within a unit cube, also calculates the bounding box
+        void Normalize()
+        {
+            CalculateBoundingBox();
+
+            glm::vec3 center = (mBoundingBox.min + mBoundingBox.max) * 0.5f;
+            glm::vec3 size   = mBoundingBox.max - mBoundingBox.min;
+
             float maxDim = glm::max(size.x, glm::max(size.y, size.z));
             for (Vertex& vertex : mVertices)
             {
                 vertex.position = (vertex.position - center) / maxDim;
             }
-        }
-
-        void MergeVertices(float epsilon = 0.0001f)
-        {
-            std::vector<Vertex> uniqueVertices;
-            std::vector<GLuint> vertexMap(mVertices.size(), 0);
-            for (GLuint i = 0; i < mVertices.size(); ++i)
-            {
-                bool found = false;
-                for (GLuint j = 0; j < uniqueVertices.size(); ++j)
-                {
-                    if (glm::distance(mVertices[i].position, uniqueVertices[j].position) < epsilon)
-                    {
-                        vertexMap[i] = j;
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found)
-                {
-                    vertexMap[i] = static_cast<GLuint>(uniqueVertices.size());
-                    uniqueVertices.push_back(mVertices[i]);
-                }
-            }
-            for (Face& face : mFaces)
-            {
-                for (GLuint i = 0; i < 3; ++i)
-                {
-                    face[i] = vertexMap[i];
-                }
-            }
-            mVertices = uniqueVertices;
         }
     };
 }

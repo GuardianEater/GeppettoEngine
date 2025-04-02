@@ -25,6 +25,8 @@ namespace Client
 
     void RenderSystem::Initialize()
     {
+        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<Material>>(this, &RenderSystem::OnModelAdded);
+
         Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
 
         renderer.LoadVertexShader("assets\\shaders\\Lighting.vert");
@@ -173,6 +175,22 @@ namespace Client
     {
         ImGui::Begin("Render System");
         ImGui::End();
+    }
+    void RenderSystem::OnModelAdded(const Gep::Event::ComponentAdded<Material>& event)
+    {
+        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+
+        if (!mManager.HasComponent<Transform>(event.entity) 
+         || !mManager.HasComponent<Material>(event.entity))
+        {
+            return;
+        }
+
+        Material& material = mManager.GetComponent<Material>(event.entity);
+        Transform& transform = mManager.GetComponent<Transform>(event.entity);
+
+
+        //renderer.mBVHTree.insert(event.entity, material.meshName);
     }
 }
 
