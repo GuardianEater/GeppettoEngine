@@ -14,6 +14,6 @@ namespace Client
 {
     struct CubeCollider
     {
-
+        glm::vec3 size{ 1.0f, 1.0f, 1.0f }; // size of the cube
     };
 }

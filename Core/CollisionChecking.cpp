@@ -9,6 +9,7 @@
 #include "pch.hpp"
 
 #include "CollisionChecking.hpp"
+#include "Affine.hpp"
 #include "glm/glm.hpp"
 #include <algorithm>
 #include <cmath>
@@ -136,13 +137,23 @@ namespace Gep
         return glm::distance(sphere1.position, sphere2.position) <= sphere1.radius + sphere2.radius;
     }
 
-    bool AABBAABB(const AABB& aabb0, const AABB& aabb1)
+    AABBIntersectionType AABBAABB(const AABB& aabb0, const AABB& aabb1)
     {
         bool x = aabb0.max.x < aabb1.min.x || aabb0.min.x > aabb1.max.x;
         bool y = aabb0.max.y < aabb1.min.y || aabb0.min.y > aabb1.max.y;
         bool z = aabb0.max.z < aabb1.min.z || aabb0.min.z > aabb1.max.z;
 
-        return !(x || y || z);
+        if (x || y || z)
+            return AABBIntersectionType::Outside;
+
+        bool xFull = aabb0.min.x >= aabb1.min.x && aabb0.max.x <= aabb1.max.x;
+        bool yFull = aabb0.min.y >= aabb1.min.y && aabb0.max.y <= aabb1.max.y;
+        bool zFull = aabb0.min.z >= aabb1.min.z && aabb0.max.z <= aabb1.max.z;
+
+        if (xFull && yFull && zFull)
+            return AABBIntersectionType::Inside;
+
+        return AABBIntersectionType::Overlaps;
     }
 
     bool RaySphere(const Ray& ray, const Sphere& sphere, float& t)
@@ -388,5 +399,79 @@ namespace Gep
 
         return result;
     }
+
+    bool CubeSphere(const Cube& cube, const Sphere& sphere)
+    {
+        glm::mat3 rotationMatrix = glm::mat3(Gep::rotation(cube.rotation));
+
+        glm::vec3 localSpherePos = glm::transpose(rotationMatrix) * (sphere.position - cube.position);
+
+        glm::vec3 min = -cube.halfSize;
+        glm::vec3 max = cube.halfSize;
+
+        // closest point on AABB to sphere center
+        glm::vec3 closest = glm::clamp(localSpherePos, min, max);
+
+        // distance from closest point to sphere center
+        glm::vec3 delta = localSpherePos - closest;
+        float distSq = glm::dot(delta, delta);
+
+        return distSq <= (sphere.radius * sphere.radius);
+    }
+
+    // projects the OBB onto the given axis and returns the min and max values of the projection
+    static void ProjectOBB(const glm::vec3& center, const glm::vec3 halfSize, const glm::mat3& orientation, const glm::vec3& axis, float& outMin, float& outMax) 
+    {
+        float projection = glm::dot(center, axis);
+        float r = 0.0f;
+        r += std::abs(halfSize.x * glm::dot(orientation[0], axis));
+        r += std::abs(halfSize.y * glm::dot(orientation[1], axis));
+        r += std::abs(halfSize.z * glm::dot(orientation[2], axis));
+
+        outMin = projection - r;
+        outMax = projection + r;
+    }
+
+    static bool OverlapOnAxis(const Cube& cube1, const Cube& cube2, const glm::vec3& axis) 
+    {
+        if (glm::dot(axis, axis) < 1e-6f) return true;
+
+        glm::vec3 axisNormalized = glm::normalize(axis);
+
+        glm::mat3 orientA = Gep::rotation(cube1.rotation);
+        glm::mat3 orientB = Gep::rotation(cube2.rotation);
+
+        float minA, maxA;
+        float minB, maxB;
+
+        ProjectOBB(cube1.position, cube1.halfSize, orientA, axisNormalized, minA, maxA);
+        ProjectOBB(cube2.position, cube2.halfSize, orientB, axisNormalized, minB, maxB);
+
+        return !(maxA < minB || maxB < minA); // overlap exists
+    }
+
+    bool CubeCube(const Cube& cube1, const Cube& cube2)
+    {
+        glm::mat3 axisA = Gep::rotation(cube1.rotation);
+        glm::mat3 axisB = Gep::rotation(cube2.rotation);
+
+        glm::vec3 axesToTest[15] = {
+            axisA[0], axisA[1], axisA[2],
+            axisB[0], axisB[1], axisB[2],
+            glm::cross(axisA[0], axisB[0]), glm::cross(axisA[0], axisB[1]), glm::cross(axisA[0], axisB[2]),
+            glm::cross(axisA[1], axisB[0]), glm::cross(axisA[1], axisB[1]), glm::cross(axisA[1], axisB[2]),
+            glm::cross(axisA[2], axisB[0]), glm::cross(axisA[2], axisB[1]), glm::cross(axisA[2], axisB[2]),
+        };
+
+        for (int i = 0; i < 15; ++i)
+        {
+            if (!OverlapOnAxis(cube1, cube2, axesToTest[i])) {
+                return false; // separating axis found
+            }
+        }
+
+        return true; // no separating axis -> collision
+    }
+    
 }
 

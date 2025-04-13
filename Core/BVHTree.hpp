@@ -22,6 +22,7 @@ namespace Gep
     public:
         void insert(const KeyType& key, const ValueType& userData, const AABB& aabb);
         void erase(const KeyType& key);
+        void update(const KeyType& key, const AABB& aabb);
         void clear();
         std::vector<ValueType*> cast_ray(const Ray& ray);
         std::vector<ValueType*> cast_frustum(const Frustum& frustum);
@@ -29,8 +30,11 @@ namespace Gep
     private:
         struct bvh_node
         {
-            ValueType userData;
-            AABB aabb{};
+            std::optional<ValueType> userData; // only used in leaf nodes
+            Entity entity; // only used in leaf nodes, to get the collider of the entity
+            
+            AABB aabb; // the bounding box of the node
+
             bvh_node* parent = nullptr;
             bvh_node* left = nullptr;
             bvh_node* right = nullptr;
@@ -39,13 +43,13 @@ namespace Gep
 
             bvh_node* small_child();
             bool is_right();
+            bool is_leaf();
         };
 
         std::unordered_map<KeyType, bvh_node*> mNodeMap;
         bvh_node* mRoot = nullptr;
 
         bvh_node* find_partner(bvh_node* newNode);
-        bool is_leaf(bvh_node* node);
         void recalculate_nodes(bvh_node* node);
         void balance_node(bvh_node* node);
         void deallocate_node_recursive(bvh_node* node);

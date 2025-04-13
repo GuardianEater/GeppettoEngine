@@ -47,6 +47,8 @@ namespace Gep
         void SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec3& eye);
         void SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent);
         void SetModel(const glm::mat4& modelingMatrix);
+        void SetWireframe(bool wireframe);
+        void SetBackfaceCull(bool backfaceCull);
         void SetAmbientLight(const glm::vec3& color);
         std::vector<std::string> GetLoadedMeshes() const;
         std::vector<std::filesystem::path> GetLoadedTextures() const;
@@ -70,6 +72,7 @@ namespace Gep
 
         void ToggleWireframes();
         void ToggleTextures();
+
         void UnloadMesh(const std::string& name);
         void BackfaceCull(bool enabled = true);
 
@@ -106,9 +109,13 @@ namespace Gep
         ShaderProgram mProgram{};
         //keyed_vector<MeshData> mMeshDatas;
         bool mWireframeMode = false;
-        bool mUseTextures = false;
-        bool mIsHighlighted = false;
-        bool mUseSolidColor = false;
+        bool mTexturesEnabled = true;
+
+        bool mNextMeshIsBackfaceCulling = true; // if false, back faces will be drawn
+        bool mNextMeshIsWireframe = false;
+        bool mNextMeshIsTextured = false;
+        bool mNextMeshIsHighlighted = false;
+        bool mNextMeshIsSolidColor = false;
         glm::vec3 mSolidColor{};
 
         Gep::keyed_vector<MeshData> mMeshDatas;

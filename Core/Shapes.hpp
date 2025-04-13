@@ -75,6 +75,12 @@ namespace Gep
             return { glm::min(l.min, r.min) , glm::max(l.max, r.max) };
         }
 
+        void Fatten(float amount)
+        {
+            min -= amount;
+            max += amount;
+        }
+
         float GetVolume() const
         {
             const glm::vec3 size = max - min;
@@ -89,5 +95,12 @@ namespace Gep
 
         glm::vec3 min{};
         glm::vec3 max{};
+    };
+
+    struct Cube
+    {
+        glm::vec3 position{};
+        glm::vec3 halfSize{};
+        glm::vec3 rotation{};
     };
 }

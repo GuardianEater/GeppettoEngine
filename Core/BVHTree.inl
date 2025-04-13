@@ -15,7 +15,7 @@ namespace Gep
     template <typename KeyType, typename ValueType>
     void bvh_tree<KeyType, ValueType>::insert(const KeyType& key, const ValueType& userData, const AABB& aabb)
     {
-        bvh_node* newNode = new bvh_node();
+        bvh_node* newNode = new bvh_node;
         newNode->userData = userData;
         newNode->aabb = aabb;
         mNodeMap[key] = newNode;
@@ -27,7 +27,7 @@ namespace Gep
         }
 
         bvh_node* partner = find_partner(newNode);
-        bvh_node* newParent = new bvh_node();
+        bvh_node* newParent = new bvh_node;
 
         if (partner->parent)
         {
@@ -89,6 +89,27 @@ namespace Gep
         }
     }
 
+    template<typename KeyType, typename ValueType>
+    inline void bvh_tree<KeyType, ValueType>::update(const KeyType& key, const AABB& aabb)
+    {
+        bvh_node* node = mNodeMap.at(key);
+        AABB newAABB = aabb;
+
+        newAABB.Fatten(0.01f);
+
+        if (AABBAABB(node->aabb, newAABB) == AABBIntersectionType::Inside)
+        {
+            node->aabb = newAABB;
+
+            recalculate_nodes(node);
+
+            return;
+        }
+
+        erase(key);
+        insert(key, node->userData, aabb);
+    }
+
     template <typename KeyType, typename ValueType>
     void bvh_tree<KeyType, ValueType>::clear()
     {
@@ -126,12 +147,18 @@ namespace Gep
         return parent->right == this;
     }
 
+    template<typename KeyType, typename ValueType>
+    inline bool bvh_tree<KeyType, ValueType>::bvh_node::is_leaf()
+    {
+        return left == nullptr && right == nullptr;
+    }
+
     template <typename KeyType, typename ValueType>
     typename bvh_tree<KeyType, ValueType>::bvh_node* bvh_tree<KeyType, ValueType>::find_partner(bvh_node* newNode)
     {
         bvh_node* currentNode = mRoot;
 
-        while (!is_leaf(currentNode))
+        while (!currentNode->is_leaf())
         {
             bvh_node* left = currentNode->left;
             bvh_node* right = currentNode->right;
@@ -153,12 +180,6 @@ namespace Gep
         }
 
         return currentNode;
-    }
-
-    template <typename KeyType, typename ValueType>
-    bool bvh_tree<KeyType, ValueType>::is_leaf(bvh_node* node)
-    {
-        return node->left == nullptr && node->right == nullptr;
     }
 
     template <typename KeyType, typename ValueType>
@@ -309,7 +330,7 @@ namespace Gep
             return;
         }
 
-        if (is_leaf(node))
+        if (node->is_leaf())
         {
             results.push_back(&node->userData);
         }
@@ -325,7 +346,7 @@ namespace Gep
     {
         if (!node) return;
 
-        if (is_leaf(node))
+        if (node->is_leaf())
         {
             results.push_back(&node->userData);
         }

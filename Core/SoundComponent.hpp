@@ -1,5 +1,5 @@
 /*****************************************************************//**
- * \file   SoundComponent.cpp
+ * \file   SpatialSoundEmitter.cpp
  * \brief  component that holds sound data
  * 
  * \author Travis Gronvold (travis.gronvold@digipen.edu)
@@ -12,7 +12,7 @@
 
 namespace Client
 {
-    struct SoundComponent
+    struct SpatialSoundEmitter
     {
         bool looping = false;
         float volume = 1.0f; // percent

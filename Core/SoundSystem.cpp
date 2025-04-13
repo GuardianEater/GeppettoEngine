@@ -28,7 +28,7 @@ namespace Client
         mManager.GetResource<SoundResource>().mSoundEngine.update3dAudio();
         SoundResource& soundResource = mManager.GetResource<SoundResource>();
 
-        const std::vector<Gep::Entity>& entities = mManager.GetEntities<SoundComponent, Transform>();
+        const std::vector<Gep::Entity>& entities = mManager.GetEntities<SpatialSoundEmitter, Transform>();
         const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Camera, Transform>();
 
         for (const Gep::Entity camera : cameras)
@@ -51,7 +51,7 @@ namespace Client
 
             for (const Gep::Entity& entity : entities)
             {
-                SoundComponent& soundComponent = mManager.GetComponent<SoundComponent>(entity);
+                SpatialSoundEmitter& soundComponent = mManager.GetComponent<SpatialSoundEmitter>(entity);
                 Transform& transform = mManager.GetComponent<Transform>(entity);
 
                 if (!soundResource.mSoundEngine.isValidVoiceHandle(soundComponent.soundHandle))
