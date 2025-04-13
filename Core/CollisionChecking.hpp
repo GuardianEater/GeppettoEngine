@@ -64,5 +64,6 @@ namespace Gep
     FrustumIntersectionType FrustumTriangle(const Frustum& frustum, const Triangle& triangle);
     bool CubeSphere(const Cube& cube, const Sphere& sphere);
     bool CubeCube(const Cube& cube1, const Cube& cube2);
+    bool RayCube(const Ray& ray, const Cube& cube, float& t);
 }
 

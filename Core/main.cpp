@@ -42,6 +42,7 @@
 #include "RelationSystem.hpp"
 #include "SoundSystem.hpp"
 #include "CollisionSystem.hpp"
+#include "CollisionResource.hpp"
 
 #define SOLLOUD_DYNAMIC
 #include "soloud.h"
@@ -60,6 +61,7 @@ int main() try
     // register all resources ////////////////////////////////////////////////////////////////////////
     em.RegisterResource<Client::ScriptingResource>();
     em.RegisterResource<Client::SoundResource>();
+    em.RegisterResource<Client::CollisionResource>();
 
     // list of all components ///////////////////////////////////////////////////////////////////////
     Gep::type_list<

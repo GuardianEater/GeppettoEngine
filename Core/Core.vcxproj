@@ -111,9 +111,11 @@
     <ClCompile Include="BinarySerialzer.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CollisionChecking.cpp" />
+    <ClCompile Include="CollisionResource.cpp" />
     <ClCompile Include="CollisionSystem.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClInclude Include="BVHTree.hpp" />
+    <ClInclude Include="CollisionResource.hpp" />
     <ClInclude Include="CubeCollider.hpp" />
     <ClCompile Include="CubeMesh.cpp" />
     <ClCompile Include="dependencies\ImGuizmo\GraphEditor.cpp">

@@ -473,5 +473,46 @@ namespace Gep
         return true; // no separating axis -> collision
     }
     
+    bool RayCube(const Ray& ray, const Cube& cube, float& t)
+    {
+        // Vector from ray origin to OBB center
+        glm::vec3 p = cube.position - ray.position;
+
+        float tMin = -FLT_MAX;
+        float tMax = FLT_MAX;
+
+        glm::mat3 rotationMatrix = glm::mat3(Gep::rotation(cube.rotation));
+
+        // Loop through OBB's local axes (columns of rotation matrix)
+        for (int i = 0; i < 3; i++) 
+        {
+            glm::vec3 axis = rotationMatrix[i];
+            float e = glm::dot(axis, p);
+            float f = glm::dot(ray.direction, axis);
+
+            if (fabs(f) > 0.0001f) 
+            {
+                float t1 = (e + cube.halfSize[i]) / f;
+                float t2 = (e - cube.halfSize[i]) / f;
+
+                if (t1 > t2) std::swap(t1, t2);
+
+                tMin = glm::max(tMin, t1);
+                tMax = glm::min(tMax, t2);
+
+                if (tMin > tMax)
+                    return false;
+            }
+            else 
+            {
+                // Ray is parallel to the slab
+                if (-e - cube.halfSize[i] > 0 || -e + cube.halfSize[i] < 0)
+                    return false;
+            }
+        }
+
+        t = tMin;
+        return true;
+    }
 }
 

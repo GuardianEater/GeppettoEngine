@@ -18,6 +18,7 @@ namespace Client
     public:
         CollisionSystem(Gep::EngineManager& em);
 
+    private:
         void Update(float dt) override;
     };
 }

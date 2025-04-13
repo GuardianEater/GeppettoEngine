@@ -59,12 +59,43 @@ namespace Gep
         {
             return position + direction * t;
         }
+
+        static Ray FromCamera(
+            const glm::vec3& cameraPos, 
+            const glm::vec3& cameraDir, 
+            const glm::vec2& screenPos, 
+            const glm::vec2& screenSize)
+        {
+            const glm::vec3 rayDir = cameraDir + (screenPos.x / screenSize.x - 0.5f) * 2.0f * cameraDir;
+            return { cameraPos, glm::normalize(rayDir) };
+        }
+
+        static Ray FromMouse(
+            const glm::vec2 mousePos,
+            const glm::vec2 screenSize,
+            const glm::vec3& cameraPos,
+            const glm::mat4& view,
+            const glm::mat4& projection
+        )
+        {
+            float x = (2.0f * mousePos.x) / screenSize.x - 1.0f;
+            float y = 1.0f - (2.0f * mousePos.y) / screenSize.y;
+
+            glm::vec4 rayClip = glm::vec4(x, y, -1.0f, 1.0f);
+            glm::vec4 rayEye = glm::inverse(projection) * rayClip;
+
+            rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
+
+            glm::vec3 rayWorld = glm::normalize(glm::inverse(view) * rayEye);
+
+            return { cameraPos, rayWorld };
+        }
     };
 
     struct Sphere
     {
         glm::vec3 position{ 0.0f, 0.0f, 0.0f };
-        float radius = 1.0f;
+        float radius = 0.5f;
     };
 
 
@@ -99,8 +130,8 @@ namespace Gep
 
     struct Cube
     {
-        glm::vec3 position{};
-        glm::vec3 halfSize{};
-        glm::vec3 rotation{};
+        glm::vec3 position{ 0.0f, 0.0f, 0.0f };
+        glm::vec3 halfSize{ 0.5f, 0.5f, 0.5f };
+        glm::vec3 rotation{ 0.0f, 0.0f, 0.0f };
     };
 }
