@@ -53,20 +53,28 @@ namespace Client
 
             script.env["self"] = self;
 
-            if (script.update.valid())
+            try
             {
-                sol::protected_function_result updateResult = script.update(dt);
-
-                if (!updateResult.valid())
+                if (script.update.valid())
                 {
-                    sol::error err = updateResult;
-                    Gep::Log::Error("Error running script: ", err.what());
-                    script.update = sol::nil; // prevents the crashed script from running further
-                    script.exit = sol::nil;
+                    sol::protected_function_result updateResult = script.update(dt);
+
+                    if (!updateResult.valid())
+                    {
+                        sol::error err = updateResult;
+                        Gep::Log::Error("Error running script: ", err.what());
+                        script.update = sol::nil; // prevents the crashed script from running further
+                        script.exit = sol::nil;
+                    }
                 }
             }
+            catch (const sol::error& e)
+            {
+                Gep::Log::Error("Fatal Error in script: ", e.what());
+                script.update = sol::nil; // prevents the crashed script from running further
+                script.exit = sol::nil;
+            }
         }
-
     }
 
     void ScriptingSystem::OnScriptAdded(const Gep::Event::ComponentAdded<Script>& event)

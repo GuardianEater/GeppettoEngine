@@ -12,8 +12,5 @@
 
 namespace Client
 {
-    struct SphereCollider
-    {
-        float radius = 1.0f;
-    };
+    struct SphereCollider {};
 }

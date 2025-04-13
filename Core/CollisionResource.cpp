@@ -30,7 +30,7 @@ namespace Client
 
             float t;
 
-            if (Gep::RayCube(ray, Gep::Cube{ transform.position, collider.size, transform.rotation }, t))
+            if (Gep::RayCube(ray, Gep::Cube{ transform.position, transform.scale / 2.0f, transform.rotation }, t))
             {
                 hitEntities.push_back(entity);
             }
@@ -43,7 +43,7 @@ namespace Client
 
             float t;
 
-            if (Gep::RaySphere(ray, Gep::Sphere{ transform.position, collider.radius }, t))
+            if (Gep::RaySphere(ray, Gep::Sphere{ transform.position, std::max({transform.scale.x, transform.scale.y, transform.scale.z}) / 2.0f}, t))
             {
                 hitEntities.push_back(entity);
             }

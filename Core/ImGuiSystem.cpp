@@ -13,9 +13,12 @@
 #include "CameraComponent.hpp"
 #include "Transform.hpp"
 #include "Material.hpp"
+#include "CubeCollider.hpp"
+#include "SphereCollider.hpp"
 
 #include "imgui_te_engine.h"
 //#include "ImGuizmo.h"
+#include "SerializationResource.hpp"
 
 namespace Client
 {
@@ -345,7 +348,6 @@ namespace Client
     {
         DrawInfoPanel();
         DrawExtras();
-        DrawAssetBrowser();
         DrawToolbar();
         
         ImGui::Begin("Entities");
@@ -443,6 +445,7 @@ namespace Client
         }
 
         DrawInspectorPanel();
+        DrawAssetBrowser();
         UpdateCameraFocus(dt);
 
         ImGui::End(); // Entities
@@ -636,6 +639,12 @@ namespace Client
                         }
                         break;
                     }
+
+                    // if extension is .json
+                    if (entry.path().extension() == ".scenejson")
+                    {
+                        mManager.GetResource<Client::SerializationResource>().ChangeScene(mManager, entry.path());
+                    }
                 }
                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
                 {
@@ -736,6 +745,7 @@ namespace Client
                     mManager.AddComponent(entity, Material{.meshName = "Cube"});
                     mManager.AddComponent(entity, Transform{});
                     mManager.AddComponent(entity, Identification{"Cube"});
+                    mManager.AddComponent(entity, CubeCollider{});
                 }
                 if (ImGui::MenuItem("Sphere"))
                 {
@@ -743,6 +753,7 @@ namespace Client
                     mManager.AddComponent(entity, Material{ .meshName = "Icosphere" });
                     mManager.AddComponent(entity, Transform{});
                     mManager.AddComponent(entity, Identification{ "Sphere" });
+                    mManager.AddComponent(entity, SphereCollider{});
                 }
                 if (ImGui::MenuItem("Camera"))
                 {

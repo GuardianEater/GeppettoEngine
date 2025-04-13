@@ -136,12 +136,16 @@ namespace Gep
 
     void EngineManager::DestroyAllEntities()
     {
+        Gep::Log::Trace("Destroying all entities...");
+
         for (const auto& [entity, entityData] : mEntityDatas)
         {
             MarkEntityForDestruction(entity);
         }
 
         DestroyMarkedEntities();
+
+        Gep::Log::Info("All entities destroyed");
     }
 
     // adds the id back to the id pool
@@ -596,6 +600,5 @@ namespace Gep
 
     void EngineManager::OnEntityDestroyed(const Event::EntityDestroyed& event)
     {
-        Log::Important("Entity: [", event.entity, "] has been destroyed");
     }
 }

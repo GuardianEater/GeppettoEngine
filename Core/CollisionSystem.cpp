@@ -42,8 +42,8 @@ namespace Client
                 Transform& otherTransform = mManager.GetComponent<Transform>(otherEntity);
                 SphereCollider& otherCollider = mManager.GetComponent<SphereCollider>(otherEntity);
 
-                if (Gep::SphereSphere(Gep::Sphere{ transform.position, collider.radius },
-                    Gep::Sphere{ otherTransform.position, otherCollider.radius }))
+                if (Gep::SphereSphere(Gep::Sphere{ transform.position, std::max({transform.scale.x, transform.scale.y, transform.scale.z}) / 2.0f },
+                    Gep::Sphere{ otherTransform.position, std::max({otherTransform.scale.x, otherTransform.scale.y, otherTransform.scale.z}) / 2.0f }))
                 {
                     // collision detected
                     Gep::Log::Info("Collision detected between entity ", entity, " and entity ", otherEntity);
@@ -64,8 +64,8 @@ namespace Client
                 Transform& otherTransform = mManager.GetComponent<Transform>(otherEntity);
                 CubeCollider& otherCollider = mManager.GetComponent<CubeCollider>(otherEntity);
 
-                if (Gep::CubeCube(Gep::Cube{ transform.position, collider.size, transform.rotation },
-                    Gep::Cube{ otherTransform.position, otherCollider.size, otherTransform.rotation }))
+                if (Gep::CubeCube(Gep::Cube{ transform.position, transform.scale / 2.0f, transform.rotation },
+                    Gep::Cube{ otherTransform.position, otherTransform.scale / 2.0f, otherTransform.rotation }))
                 {
                     // collision detected
                     Gep::Log::Info("Collision detected between entity ", entity, " and entity ", otherEntity);
@@ -84,8 +84,8 @@ namespace Client
                 Transform& otherTransform = mManager.GetComponent<Transform>(otherEntity);
                 CubeCollider& otherCollider = mManager.GetComponent<CubeCollider>(otherEntity);
 
-                if (Gep::CubeSphere(Gep::Cube{ otherTransform.position, otherCollider.size, otherTransform.rotation },
-                    Gep::Sphere{ transform.position, collider.radius }))
+                if (Gep::CubeSphere(Gep::Cube{ otherTransform.position, otherTransform.scale / 2.0f, otherTransform.rotation },
+                    Gep::Sphere{ transform.position, std::max({transform.scale.x, transform.scale.y, transform.scale.z}) / 2.0f }))
                 {
                     // collision detected
                     Gep::Log::Info("Collision detected between entity ", entity, " and entity ", otherEntity);

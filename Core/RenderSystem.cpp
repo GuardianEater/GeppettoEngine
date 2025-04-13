@@ -138,7 +138,7 @@ namespace Client
                     const SphereCollider& collider = mManager.GetComponent<SphereCollider>(entity);
                     glm::mat4 model = Gep::translation_matrix(transform.position)
                         * Gep::rotation(-transform.rotation)
-                        * Gep::scale_matrix(collider.radius * 2.0f);
+                        * Gep::scale_matrix(std::max({ transform.scale.x, transform.scale.y, transform.scale.z }));
                     renderer.SetModel(model);
                     renderer.SetWireframe(true);
                     //renderer.SetBackfaceCull(false);
@@ -154,7 +154,7 @@ namespace Client
                     const CubeCollider& collider = mManager.GetComponent<CubeCollider>(entity);
                     glm::mat4 model = Gep::translation_matrix(transform.position)
                         * Gep::rotation(-transform.rotation)
-                        * Gep::scale_matrix(collider.size * 2.0f);
+                        * Gep::scale_matrix(transform.scale);
                     renderer.SetModel(model);
                     renderer.SetWireframe(true);
                     //renderer.SetBackfaceCull(false);

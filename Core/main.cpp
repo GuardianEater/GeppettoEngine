@@ -17,6 +17,8 @@
 #include "Renderer.hpp"
 #include "ScriptingResource.hpp"
 #include "SoundResource.hpp"
+#include "CollisionResource.hpp"
+#include "SerializationResource.hpp"
 
 // components
 #include "CameraComponent.hpp"
@@ -42,7 +44,6 @@
 #include "RelationSystem.hpp"
 #include "SoundSystem.hpp"
 #include "CollisionSystem.hpp"
-#include "CollisionResource.hpp"
 
 #define SOLLOUD_DYNAMIC
 #include "soloud.h"
@@ -62,6 +63,7 @@ int main() try
     em.RegisterResource<Client::ScriptingResource>();
     em.RegisterResource<Client::SoundResource>();
     em.RegisterResource<Client::CollisionResource>();
+    em.RegisterResource<Client::SerializationResource>();
 
     // list of all components ///////////////////////////////////////////////////////////////////////
     Gep::type_list<
