@@ -1,7 +1,7 @@
 /*****************************************************************//**
  * \file   ImGuiSystem.cpp
  * \brief  implementation of the ImGuiSystem
- * 
+ *
  * \author Travis Gronvold (travis.gronvold@digipen.edu)
  * \date   January 2025
  *********************************************************************/
@@ -17,7 +17,7 @@
 #include "SphereCollider.hpp"
 
 #include "imgui_te_engine.h"
-//#include "ImGuizmo.h"
+ //#include "ImGuizmo.h"
 #include "SerializationResource.hpp"
 
 namespace Client
@@ -128,9 +128,9 @@ namespace Client
         ImGui::Dummy({ 0.0f, 10.0f });
 
         mManager.ForEachComponent(entity, [&](const Gep::ComponentData& componentData)
-        {
-            mComponentInspectorPanels[componentData.index](entity);
-        });
+            {
+                mComponentInspectorPanels[componentData.index](entity);
+            });
 
         ImGui::Dummy({ 0.0f, 10.0f });
 
@@ -168,7 +168,7 @@ namespace Client
         const auto& components = mManager.GetComponentDatas();
         ImGui::Text("Components Registered: %d", components.size());
         ImGui::Separator();
-        
+
 
         if (ImGui::BeginTable("ComponentTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
         {
@@ -190,7 +190,7 @@ namespace Client
 
             ImGui::EndTable();
         }
-        
+
         ImGui::End(); // Info
     }
 
@@ -248,8 +248,10 @@ namespace Client
         {
             if (mManager.HasComponent<Client::Transform>(entity) && !mManager.HasComponent<Client::Camera>(entity))
             {
+                Transform& entityTransform = mManager.GetComponent<Client::Transform>(entity);
+
                 const glm::vec3 camPosition = mManager.GetComponent<Client::Transform>(camera).position;
-                const glm::vec3 targetPosition = mManager.GetComponent<Client::Transform>(entity).position;
+                const glm::vec3 targetPosition = entityTransform.position;
                 const glm::vec3 targetDirection = glm::normalize(targetPosition - camPosition);
                 const float distance = glm::distance(targetPosition, camPosition);
 
@@ -258,6 +260,8 @@ namespace Client
                 float yaw = glm::degrees(atan2(targetDirection.x, -targetDirection.z));
                 float roll = 0.0f;
 
+                mCameraTargetPosition = camPosition + (targetDirection * (distance - std::max({ entityTransform.scale.x, entityTransform.scale.y, entityTransform.scale.z })));
+                mCameraTargetPosition -= targetDirection * 1.0f;
                 mCameraTargetRotation = { pitch, yaw, roll };
                 mCameraLerping = true;
             }
@@ -272,10 +276,13 @@ namespace Client
             for (Gep::Entity camera : activeCameras)
             {
                 glm::vec3& currentRotation = mManager.GetComponent<Client::Transform>(camera).rotation;
+                glm::vec3& currentPosition = mManager.GetComponent<Client::Transform>(camera).position;
 
-                currentRotation = glm::mix(currentRotation, mCameraTargetRotation, 0.1f);
+                currentRotation = glm::mix(currentRotation, mCameraTargetRotation, 0.01f);
+                currentPosition = glm::mix(currentPosition, mCameraTargetPosition, 0.01f);
 
-                if (glm::length(mCameraTargetRotation - currentRotation) < 0.001)
+                if (glm::length(mCameraTargetRotation - currentRotation) < 0.01 &&
+                    glm::length(mCameraTargetPosition - currentPosition) < 0.01)
                 {
                     mCameraLerping = false;
                 }
@@ -287,7 +294,7 @@ namespace Client
     {
         std::vector<Gep::Entity> result;
 
-        for (Gep::Entity entity : entities) 
+        for (Gep::Entity entity : entities)
         {
             std::string displayName = GetEntityDisplayName(entity);
             if (displayName.find(searchTerm) != std::string::npos)
@@ -304,7 +311,7 @@ namespace Client
     }
 
     template <typename FunctionType>
-    requires std::invocable<FunctionType, Gep::Entity>
+        requires std::invocable<FunctionType, Gep::Entity>
     void ImGuiSystem::EntitiesDragDropTarget(FunctionType func)
     {
         if (ImGui::BeginDragDropTarget())
@@ -349,12 +356,12 @@ namespace Client
         DrawInfoPanel();
         DrawExtras();
         DrawToolbar();
-        
+
         ImGui::Begin("Entities");
 
         // search bar
         static std::string search = "";
-        
+
         if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F, false))
         {
             ImGui::SetKeyboardFocusHere();
@@ -389,18 +396,18 @@ namespace Client
 
 
         DrawEntities(parents, dt);
-         
+
 
         // detach entities if they are dropped into any open space, adds a little bit of extra dropping space aswell
         ImVec2 size = ImGui::GetContentRegionAvail();
         if (size.y < 0.0f) size.y = 0.0f;
-        size.y += 200.0f; 
+        size.y += 200.0f;
         ImGui::Dummy(size);
 
         EntitiesDragDropTarget([&](Gep::Entity entity)
-        {
-            mManager.DetachEntity(entity);
-        });
+            {
+                mManager.DetachEntity(entity);
+            });
 
         // clears selected entities if the background is clicked
         if (ImGui::IsItemClicked())
@@ -427,7 +434,7 @@ namespace Client
             }
         }
 
-        if (ImGui::IsKeyPressed(ImGuiKey_F, false))
+        if (ImGui::IsKeyDown(ImGuiKey_F, false))
         {
             if (mSelectedEntities.size() == 1)
             {
@@ -464,7 +471,7 @@ namespace Client
             const bool isCtrlPressed = ImGui::GetIO().KeyCtrl;
             const bool isShiftPressed = ImGui::GetIO().KeyShift;
             static size_t lastSelectedIndex = std::numeric_limits<size_t>::max(); // Invalid index initially
-            
+
             // default selection
             if (ImGui::IsItemClicked() && !isCtrlPressed && !isShiftPressed && mSelectedEntities.size() <= 1)
             {
@@ -546,11 +553,11 @@ namespace Client
 
             // Add drag and drop target
             EntitiesDragDropTarget([&](Gep::Entity droppedEntity)
-            {
-                if (droppedEntity == entity) return;
+                {
+                    if (droppedEntity == entity) return;
 
-                mManager.AttachEntity(entity, droppedEntity);
-            });
+                    mManager.AttachEntity(entity, droppedEntity);
+                });
 
             if (isOpen)
             {
@@ -575,7 +582,7 @@ namespace Client
         float spacing = ImGui::GetStyle().ItemSpacing.x;
         const int imagesPerRow = static_cast<int>(contentRegion.x / (imageSize + spacing));
         static const std::filesystem::path workingDir = std::filesystem::current_path();
-        
+
         if (imagesPerRow < 1)
         {
             ImGui::End();
@@ -583,14 +590,14 @@ namespace Client
         }
 
         static std::vector<std::filesystem::directory_entry> directories = []()
-        {
-            std::vector<std::filesystem::directory_entry> entries;
-            for (const auto& entry : std::filesystem::directory_iterator(currentDirectory))
             {
-                entries.push_back(entry);
-            }
-            return entries;
-        }();
+                std::vector<std::filesystem::directory_entry> entries;
+                for (const auto& entry : std::filesystem::directory_iterator(currentDirectory))
+                {
+                    entries.push_back(entry);
+                }
+                return entries;
+            }();
 
         ImGui::Text("Current Directory: %s", currentDirectory.filename().string().c_str());
 
@@ -672,7 +679,7 @@ namespace Client
                     }
                     ImGui::EndPopup();
                 }
-                
+
                 ImGui::SetCursorScreenPos(cursorPos);
 
                 ImGui::Image((void*)(intptr_t)texture, { imageSize, imageSize });
@@ -691,27 +698,27 @@ namespace Client
     // Global state for pause/play
     bool paused = false;
 
-    void ImGuiSystem::ShowControlBar() 
+    void ImGuiSystem::ShowControlBar()
     {
         // Create a window without a title bar, resize, or scrollbar.
         ImGui::Begin("ControlBar", nullptr,
-            ImGuiWindowFlags_NoTitleBar  | 
+            ImGuiWindowFlags_NoTitleBar |
             ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoMove | 
+            ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoScrollbar |
             ImGuiWindowFlags_NoScrollWithMouse);
 
         // Toggle pause/play button.
-        if (paused) 
+        if (paused)
         {
-            if (ImGui::Button("Play")) 
+            if (ImGui::Button("Play"))
             {
                 paused = false;
             }
         }
-        else 
+        else
         {
-            if (ImGui::Button("Pause")) 
+            if (ImGui::Button("Pause"))
             {
                 paused = true;
             }
@@ -740,11 +747,11 @@ namespace Client
             {
                 if (ImGui::MenuItem("Empty")) { mManager.CreateEntity(); }
                 if (ImGui::MenuItem("Cube"))
-                { 
+                {
                     Gep::Entity entity = mManager.CreateEntity();
-                    mManager.AddComponent(entity, Material{.meshName = "Cube"});
+                    mManager.AddComponent(entity, Material{ .meshName = "Cube" });
                     mManager.AddComponent(entity, Transform{});
-                    mManager.AddComponent(entity, Identification{"Cube"});
+                    mManager.AddComponent(entity, Identification{ "Cube" });
                     mManager.AddComponent(entity, CubeCollider{});
                 }
                 if (ImGui::MenuItem("Sphere"))
