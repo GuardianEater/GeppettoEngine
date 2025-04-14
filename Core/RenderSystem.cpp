@@ -9,6 +9,8 @@
 #include "pch.hpp"
 
 #include "RenderSystem.hpp"
+#include "SphereCollider.hpp"
+#include "CubeCollider.hpp"
 #include <ImGuizmo.h>
 
 namespace Client
@@ -25,12 +27,14 @@ namespace Client
 
     void RenderSystem::Initialize()
     {
+        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<Material>>(this, &RenderSystem::OnModelAdded);
+
         Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
 
         renderer.LoadVertexShader("assets\\shaders\\Lighting.vert");
         renderer.LoadFragmentShader("assets\\shaders\\Lighting.frag");
-        renderer.Compile();
 
+        renderer.Compile();
         renderer.BackfaceCull();
         renderer.SetAmbientLight({ 0.1, 0.1, 0.1 });
 
@@ -72,7 +76,7 @@ namespace Client
             Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
 
             cam.renderTarget->Bind();
-            cam.renderTarget->Clear({0.1f, 0.1f, 0.1f});
+            cam.renderTarget->Clear({ 0.1f, 0.1f, 0.1f });
 
             // convert the camera's rotation to radians
             glm::vec3 camRotation = glm::radians(camTransform.rotation);
@@ -95,12 +99,12 @@ namespace Client
                 Material& material = mManager.GetComponent<Material>(entity);
 
                 glm::mat4 model = Gep::translation_matrix(transform.position)
-                                      * Gep::rotation(-transform.rotation)
-                                      * Gep::scale_matrix(transform.scale);
+                    * Gep::rotation(-transform.rotation)
+                    * Gep::scale_matrix(transform.scale);
 
                 renderer.SetModel(model);
                 renderer.SetMaterial(material.diff_coeff, material.spec_coeff, material.spec_exponent);
-                
+
                 if (mManager.HasComponent<Texture>(entity))
                 {
                     const Texture& texture = mManager.GetComponent<Texture>(entity);
@@ -125,13 +129,56 @@ namespace Client
                 //ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(pers), ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, glm::value_ptr(model));
             }
 
+            if (mDrawColliders)
+            {
+                const std::vector<Gep::Entity>& sphereColliders = mManager.GetEntities<Transform, SphereCollider>();
+                for (Gep::Entity entity : sphereColliders)
+                {
+                    const Transform& transform = mManager.GetComponent<Transform>(entity);
+                    const SphereCollider& collider = mManager.GetComponent<SphereCollider>(entity);
+                    glm::mat4 model = Gep::translation_matrix(transform.position)
+                        * Gep::rotation(-transform.rotation)
+                        * Gep::scale_matrix(std::max({ transform.scale.x, transform.scale.y, transform.scale.z }));
+                    renderer.SetModel(model);
+                    renderer.SetWireframe(true);
+                    //renderer.SetBackfaceCull(false);
+                    renderer.SetSolidColor({ 1.0f, 0.0f, 0.0f });
+                    uint64_t meshID = renderer.GetMesh("Icosphere");
+                    renderer.DrawMesh(meshID);
+                }
+
+                const std::vector<Gep::Entity>& cubeColliders = mManager.GetEntities<Transform, CubeCollider>();
+                for (Gep::Entity entity : cubeColliders)
+                {
+                    const Transform& transform = mManager.GetComponent<Transform>(entity);
+                    const CubeCollider& collider = mManager.GetComponent<CubeCollider>(entity);
+                    glm::mat4 model = Gep::translation_matrix(transform.position)
+                        * Gep::rotation(-transform.rotation)
+                        * Gep::scale_matrix(transform.scale);
+                    renderer.SetModel(model);
+                    renderer.SetWireframe(true);
+                    //renderer.SetBackfaceCull(false);
+                    renderer.SetSolidColor({ 1.0f, 0.0f, 0.0f });
+                    uint64_t meshID = renderer.GetMesh("Cube");
+                    renderer.DrawMesh(meshID);
+                }
+            }
+
             cam.renderTarget->Draw(mManager, cameraEntity);
             cam.Resize(renderSize);
             cam.renderTarget->Unbind();
         }
 
+
+
         renderer.End();
         HandleInputs(dt);
+    }
+
+    void RenderSystem::FrameEnd()
+    {
+        // opengl clear
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
     void RenderSystem::HandleInputs(float dt)
@@ -145,34 +192,65 @@ namespace Client
 
         static bool isTKeyPressed = false;
         static bool isYKeyPressed = false;
+        static bool isUKeyPressed = false;
 
         // Handle T key for textures
-        if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
-            if (!isTKeyPressed) { // Key was just pressed
+        if (glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS)
+        {
+            if (!isTKeyPressed)
+            {
                 renderer.ToggleTextures();
                 isTKeyPressed = true;
             }
         }
-        else {
-            isTKeyPressed = false; // Reset when key is released
-        }
+        else
+            isTKeyPressed = false;
 
         // Handle Y key for wireframes
-        if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
-            if (!isYKeyPressed) { // Key was just pressed
+        if (glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS)
+        {
+            if (!isYKeyPressed)
+            {
                 renderer.ToggleWireframes();
                 isYKeyPressed = true;
             }
         }
-        else {
+        else
             isYKeyPressed = false; // Reset when key is released
+
+        // Handle U key for wireframes
+        if (glfwGetKey(window, GLFW_KEY_F3) == GLFW_PRESS)
+        {
+            if (!isUKeyPressed)
+            {
+                this->mDrawColliders = !this->mDrawColliders;
+                isUKeyPressed = true;
+            }
         }
+        else
+            isUKeyPressed = false; // Reset when key is released
     }
 
     void RenderSystem::RenderImGui(float dt)
     {
         ImGui::Begin("Render System");
         ImGui::End();
+    }
+    void RenderSystem::OnModelAdded(const Gep::Event::ComponentAdded<Material>& event)
+    {
+        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+
+        if (!mManager.HasComponent<Transform>(event.entity)
+            || !mManager.HasComponent<Material>(event.entity))
+        {
+            return;
+        }
+
+        Material& material = mManager.GetComponent<Material>(event.entity);
+        Transform& transform = mManager.GetComponent<Transform>(event.entity);
+
+
+        //renderer.mBVHTree.insert(event.entity, material.meshName);
     }
 }
 

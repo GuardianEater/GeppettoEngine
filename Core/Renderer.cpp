@@ -177,14 +177,14 @@ namespace Gep
         glUseProgram(mProgram.GetProgramID());
 
         glBindTexture(GL_TEXTURE_2D, texture);
-        mUseTextures = true;
+        mNextMeshIsTextured = true;
 
         glUseProgram(0);
     }
 
     void OpenGLRenderer::SetHighlight(bool highlight)
     {
-        mIsHighlighted = highlight;
+        mNextMeshIsHighlighted = highlight;
     }
 
     void OpenGLRenderer::SetSolidColor(const glm::vec3& color)
@@ -216,6 +216,16 @@ namespace Gep
         glUseProgram(0);
     }
 
+    void OpenGLRenderer::SetWireframe(bool wireframe)
+    {
+        mNextMeshIsWireframe = wireframe;
+    }
+
+    void OpenGLRenderer::SetBackfaceCull(bool backfaceCull)
+    {
+        mNextMeshIsBackfaceCulling = backfaceCull;
+    }
+
     void OpenGLRenderer::SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent)
     {
         glUseProgram(mProgram.GetProgramID());
@@ -228,7 +238,7 @@ namespace Gep
     // toggle textures
     void OpenGLRenderer::ToggleTextures()
     {
-        mUseTextures = !mUseTextures;
+        mTexturesEnabled = !mTexturesEnabled;
     }
 
     void OpenGLRenderer::SetAmbientLight(const glm::vec3& color)
@@ -419,12 +429,20 @@ namespace Gep
         const MeshData& md = mMeshDatas.at(meshID);
         constexpr std::uint64_t faceSize = sizeof(Mesh::Face) / sizeof(GLuint);
 
+        if (mNextMeshIsBackfaceCulling)
+        {
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+        }
+        else
+            glDisable(GL_CULL_FACE);
+
         glUseProgram(mProgram.GetProgramID());
         glBindVertexArray(md.mVertexArrayObject);
-        glUniform1i(GLUniformLocation::UseTexture, mUseTextures);
+        glUniform1i(GLUniformLocation::UseTexture, mNextMeshIsTextured && mTexturesEnabled);
 
         // If outlining is enabled, render the outline first
-        if (mIsHighlighted)
+        if (mNextMeshIsHighlighted)
         {
             glUniform1i(GLUniformLocation::IsHighlighted, 1);
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -433,9 +451,9 @@ namespace Gep
             glUniform1i(GLUniformLocation::IsHighlighted, 0);
         }
 
-        if (mWireframeMode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
-        if (mWireframeMode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         glUniform1i(GLUniformLocation::IsSolidColor, 0); // reset solid color
 
@@ -443,7 +461,9 @@ namespace Gep
         glBindVertexArray(0);
         glUseProgram(0);
 
-        mUseTextures = false;
+        mNextMeshIsTextured = false;
+        mNextMeshIsWireframe = false;
+        mNextMeshIsBackfaceCulling = true;
     }
 
     void OpenGLRenderer::End()

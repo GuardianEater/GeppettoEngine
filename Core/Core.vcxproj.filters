@@ -67,6 +67,9 @@
     <Filter Include="Backend\OS">
       <UniqueIdentifier>{87bd60f4-f850-407e-af4c-80d621eb5879}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Backend\Collision">
+      <UniqueIdentifier>{4c785863-95c4-4823-ad1a-87a36df2bf14}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -251,6 +254,12 @@
     </ClCompile>
     <ClCompile Include="SoundSystem.cpp">
       <Filter>Client\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="CollisionChecking.cpp">
+      <Filter>Backend\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="CollisionResource.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -491,9 +500,6 @@
     <ClInclude Include="SphereCollider.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
-    <ClInclude Include="CollisionChecking.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
     <ClInclude Include="GetCallerInfo.hpp">
       <Filter>Backend\OS</Filter>
     </ClInclude>
@@ -508,6 +514,21 @@
     </ClInclude>
     <ClInclude Include="SoundSystem.hpp">
       <Filter>Client\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="CubeCollider.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes.hpp">
+      <Filter>Backend\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="CollisionChecking.hpp">
+      <Filter>Backend\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="BVHTree.hpp">
+      <Filter>Backend\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="CollisionResource.hpp">
+      <Filter>Client\Resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -567,6 +588,9 @@
     </None>
     <None Include="Skybox.frag">
       <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
+    <None Include="BVHTree.inl">
+      <Filter>Backend\Collision</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -24,7 +24,7 @@ namespace Gep
         void Resize(glm::vec2 newSize) final override;
         GLuint GetTexture() const;
 
-        virtual void Draw(EngineManager& em, Entity camera) override;
+        virtual void Draw(EngineManager& em, Entity camera, const std::function<void()>& drawFunction = []() {}) override;
 
     private:
         GLuint mFBO;

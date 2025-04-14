@@ -1,7 +1,7 @@
 /*****************************************************************//**
  * \file   RenderTargetImgui.cpp
  * \brief  renders to an imgui window
- * 
+ *
  * \author Travis Gronvold (travis.gronvold@digipen.edu)
  * \date   February 2025
  *********************************************************************/
@@ -13,6 +13,8 @@
 #include "CameraComponent.hpp"
 #include "EngineManager.hpp"
 #include "Identification.hpp"
+
+#include "CollisionResource.hpp"
 
 #include <ImGuizmo.h>
 
@@ -28,8 +30,9 @@ namespace Gep
         return "Entity: " + std::to_string(entity);
     }
 
-    void RenderTargetImgui::Draw(EngineManager& em, Entity cameraEntity)
+    void RenderTargetImgui::Draw(EngineManager& em, Entity cameraEntity, const std::function<void()>& drawFunction)
     {
+        Client::CollisionResource& collisionResource = em.GetResource<Client::CollisionResource>();
         Client::Camera& camera = em.GetComponent<Client::Camera>(cameraEntity);
         Client::Transform& transform = em.GetComponent<Client::Transform>(cameraEntity);
 
@@ -113,6 +116,34 @@ namespace Gep
                 }
             }
 
+            if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && focused)
+            {
+                ImVec2 mousePos = ImGui::GetMousePos();
+                ImVec2 windowPos = ImGui::GetWindowPos();
+                ImVec2 windowSize = ImGui::GetWindowSize();
+
+                //Ray ray = Ray::FromCamera(
+                //    transform.position,
+                //    -camera.back,
+                //    glm::vec2(windowPos.x, windowPos.y),
+                //    glm::vec2(windowSize.x, windowSize.y));
+
+                Ray ray = Ray::FromMouse(
+                    glm::vec2(mousePos.x - windowPos.x, mousePos.y - windowPos.y),
+                    glm::vec2(windowSize.x, windowSize.y),
+                    transform.position,
+                    camera.GetViewMatrix(transform.position),
+                    camera.GetProjectionMatrix()
+                );
+
+                std::vector<Gep::Entity> hitEntities = collisionResource.RayCast(em, ray);
+
+                for (const Gep::Entity entity : hitEntities)
+                {
+                    Gep::Log::Info("Hit entity: ", entity);
+                }
+            }
+
             ImVec2 size = ImGui::GetContentRegionAvail();
 
             if (size.x != mSize.x || size.y != mSize.y)
@@ -125,6 +156,7 @@ namespace Gep
             ImVec2 impos = ImGui::GetWindowPos();
             mPosition = *reinterpret_cast<glm::vec2*>(&impos);
             ImGui::Image((void*)(intptr_t)GetTexture(), size, ImVec2(0, 1), ImVec2(1, 0));
+            drawFunction();
         }
 
         ImGui::End();

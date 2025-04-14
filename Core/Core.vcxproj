@@ -54,6 +54,7 @@
     <IncludePath>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\glm\ext;$(ProjectDir)dependencies;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine;$(ProjectDir)dependencies\nlohmann;$(ProjectDir)dependencies\ImGuizmo;$(ProjectDir)dependencies\sol2\include;$(ProjectDir)dependencies\OBJ-Loader\include;$(ProjectDir)dependencies\tinyobjloader\include;$(ProjectDir)dependencies\soloud\include</IncludePath>
     <SourcePath>$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\lua;$(SourcePath)</SourcePath>
     <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(ProjectDir)dependencies\soloud\lib;$(SolutionDir)x64\Debug;$(LibraryPath)</LibraryPath>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -109,8 +110,13 @@
     <ClCompile Include="Affine.cpp" />
     <ClCompile Include="BinarySerialzer.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CollisionChecking.cpp" />
+    <ClCompile Include="CollisionResource.cpp" />
     <ClCompile Include="CollisionSystem.cpp" />
     <ClCompile Include="Core.cpp" />
+    <ClInclude Include="BVHTree.hpp" />
+    <ClInclude Include="CollisionResource.hpp" />
+    <ClInclude Include="CubeCollider.hpp" />
     <ClCompile Include="CubeMesh.cpp" />
     <ClCompile Include="dependencies\ImGuizmo\GraphEditor.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -246,6 +252,7 @@
     <ClCompile Include="SerializationResource.cpp" />
     <ClCompile Include="SerializationSystem.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
+    <ClInclude Include="Shapes.hpp" />
     <ClInclude Include="SoundComponent.hpp" />
     <ClCompile Include="SoundResource.cpp" />
     <ClCompile Include="SoundSystem.cpp" />
@@ -344,6 +351,7 @@
     <None Include="assets\shaders\main.vert" />
     <None Include="assets\shaders\PhongRender.frag" />
     <None Include="assets\shaders\PhongRender.vert" />
+    <None Include="BVHTree.inl" />
     <None Include="KeyedVector.inl" />
     <None Include="ComponentArray.inl" />
     <None Include="EngineManager.inl" />

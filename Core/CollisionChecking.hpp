@@ -1,7 +1,7 @@
 /*****************************************************************//**
  * \file   CollisionChecking.hpp
  * \brief  bunch of collision checking functions
- * 
+ *
  * \author Travis Gronvold (travis.gronvold@digipen.edu)
  * \date   March 2025
  *********************************************************************/
@@ -9,126 +9,60 @@
 #pragma once
 
 #include "Core.hpp"
+#include "Shapes.hpp"
 #include "glm/glm.hpp"
 
 namespace Gep
 {
-    enum class PlaneIntersectionType
+    enum class PlaneIntersectionType : uint8_t
     {
-        InFront,
-        Behind,
-        Overlaps,
+        InFront,   // in the direction of the normal
+        Behind,    // in the opposite direction of the normal
+        Straddling, // on both sides of the plane
     };
 
-    enum class FrustumIntersectionType
+    enum class FrustumIntersectionType : uint8_t
     {
-        Inside,
-        Outside,
-        Overlaps,
+        Inside,   // completely inside the frustum
+        Outside,  // completely outside the frustum
+        Overlaps, // partially inside the frustum, partially outside
     };
 
-    bool RaySphere(const glm::vec3& rayStart, const glm::vec3& rayDir, const glm::vec3& sphereCenter, float sphereRadius, float& t)
+    enum class AABBIntersectionType : uint8_t
     {
-        const glm::vec3 L = rayStart - sphereCenter;
+        Inside,   // completely inside the AABB
+        Outside,  // completely outside the AABB
+        Overlaps, // partially inside the AABB, partially outside
+    };
 
-        const float a = glm::dot(rayDir, rayDir);
-        const float b = 2 * glm::dot(rayDir, L);
-        const float c = glm::dot(L, L) - sphereRadius * sphereRadius;
-
-        const float discriminant = b * b - 4 * a * c;
-        const float sqrtDiscriminant = sqrtf(discriminant);
-
-        if (discriminant < 0)
-        {
-            t = 0.0f;
-            return false;
-        }
-
-        // compute the closest intersection point (smallest positive t)
-        const float t1 = (-b - sqrtDiscriminant) / (2 * a);
-        const float t2 = (-b + sqrtDiscriminant) / (2 * a);
-
-        // choose the smallest positive t
-        if (t1 >= 0)
-        {
-            t = t1;
-        }
-        else if (t2 >= 0)
-        {
-            t = 0.0f;
-        }
-        else
-        {
-            t = 0.0f;
-            return false; // both t1 and t2 are negative, ray starts after the sphere
-        }
-
-        return true;
-    }
-
-    PlaneIntersectionType PlaneSphere(const glm::vec4& plane, const glm::vec3& sphereCenter, float sphereRadius)
+    enum class CubeIntersectionType : uint8_t
     {
-        const float distance = glm::dot(glm::vec3(plane), sphereCenter) - plane.w;
+        Inside,   // completely inside the cube
+        Outside,  // completely outside the cube
+        Overlaps, // partially inside the cube, partially outside
+    };
 
-        if (distance > sphereRadius)
-        {
-            return PlaneIntersectionType::InFront;
-        }
-        else if (distance < -sphereRadius)
-        {
-            return PlaneIntersectionType::Behind;
-        }
-        else
-        {
-            return PlaneIntersectionType::Overlaps;
-        }
-    }
-
-    FrustumIntersectionType FrustumSphere(const glm::vec4 planes[6], const glm::vec3& sphereCenter, float sphereRadius, size_t& lastAxis)
-    {
-        FrustumIntersectionType result = FrustumIntersectionType::Inside;
-        for (size_t i = 0; i < 6; ++i)
-        {
-            // if the sphere is outside on any plane, return Outside
-            // if the sphere is inside on all planes, return Inside
-            // if the sphere is overlapping on any plane, and none are outside, return Overlaps
-
-            PlaneIntersectionType planeResult = PlaneSphere(planes[i], sphereCenter, sphereRadius);
-
-            if (planeResult == PlaneIntersectionType::Behind)
-            {
-                lastAxis = i;
-                return FrustumIntersectionType::Outside;
-            }
-            else if (planeResult == PlaneIntersectionType::Overlaps)
-            {
-                result = FrustumIntersectionType::Overlaps;
-                lastAxis = i;
-            }
-        }
-
-        return result;
-    }
-
-    // the t is where the ray intersects the plane, along the ray
-    bool RayPlane(const glm::vec3& rayStart, const glm::vec3& rayDir, const glm::vec4& plane, float& t)
-    {
-        const glm::vec3 planeNormal(plane.x, plane.y, plane.z);
-        const float planeDistance = plane.w;
-
-        const float dotProduct = glm::dot(planeNormal, rayDir);
-
-        // if the ray is parallel to the plane
-        if (std::abs(dotProduct) < 1e-6f)
-        {
-            return false;
-        }
-
-        const float distanceToPlane = glm::dot(planeNormal, rayStart) - planeDistance;
-
-        t = -distanceToPlane / dotProduct;
-
-        // if the intersection is in the positive direction of the ray
-        return t >= 0;
-    }
+    bool PointTriangle(const glm::vec3& point, const Triangle& triangle);
+    bool RayPlane(const Ray& ray, const Plane& plane, float& t);
+    bool PointAABB(const glm::vec3& point, const AABB& aabb);
+    bool RayTriangle(const Ray& ray, const Triangle& triangle, float& t);
+    bool RayAABB(const Ray& ray, const AABB& aabb, float& t);
+    bool SphereSphere(const Sphere& sphere1, const Sphere& sphere2);
+    bool RaySphere(const Ray& ray, const Sphere& sphere, float& t);
+    bool PointSphere(const glm::vec3& point, const Sphere& sphere);
+    glm::vec2 Barycentric(const LineSegment& line, const glm::vec3& point);
+    glm::vec3 ProjectPointOntoPlane(const glm::vec3& point, const Plane& plane);
+    glm::vec3 Barycentric(const Triangle& triangle, const glm::vec3& point);
+    AABBIntersectionType AABBAABB(const AABB& aabb0, const AABB& aabb1);
+    PlaneIntersectionType PlaneAABB(const Plane& plane, const AABB& aabb);
+    PlaneIntersectionType PointPlane(const glm::vec3& point, const Plane& plane);
+    PlaneIntersectionType PlaneSphere(const Plane& plane, const Sphere& sphere);
+    PlaneIntersectionType PlaneTriangle(const Plane& plane, const Triangle& triangle);
+    FrustumIntersectionType FrustumSphere(const Frustum& frustum, const Sphere& sphere, size_t& lastAxis);
+    FrustumIntersectionType FrustumAABB(const Frustum& frustum, const AABB& aabb, size_t& lastAxis);
+    FrustumIntersectionType FrustumTriangle(const Frustum& frustum, const Triangle& triangle);
+    bool CubeSphere(const Cube& cube, const Sphere& sphere);
+    bool CubeCube(const Cube& cube1, const Cube& cube2);
+    bool RayCube(const Ray& ray, const Cube& cube, float& t);
 }
+

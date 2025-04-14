@@ -28,7 +28,7 @@ namespace Gep
         virtual void Unbind() = 0;
         virtual void Clear(const glm::vec3& color) = 0;
         virtual void Resize(glm::vec2 newSize) {};
-        virtual void Draw(EngineManager& em, Entity camera) = 0;
+        virtual void Draw(EngineManager& em, Entity camera, const std::function<void()>& drawFunction = [](){}) = 0;
         virtual glm::vec2 GetSize() const final { return mSize; }
         virtual glm::vec2 GetPosition() const final { return mPosition; }
 

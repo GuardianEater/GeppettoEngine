@@ -31,7 +31,7 @@ namespace Gep
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void RenderTargetWindow::Draw(EngineManager& em, Entity camera)
+    void RenderTargetWindow::Draw(EngineManager& em, Entity camera, const std::function<void()>& drawFunction)
     {
         // check if the window has changed size
         int width, height;

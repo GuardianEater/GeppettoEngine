@@ -39,8 +39,14 @@ namespace Client
 
         void Initialize();
         void Update(float dt);
+        void FrameEnd() override;
         void HandleInputs(float dt);
         void RenderImGui(float dt);
+
+    private:
+        bool mDrawColliders = false;
+        void OnModelAdded(const Gep::Event::ComponentAdded<Material>& event);
+
     };
 }
 

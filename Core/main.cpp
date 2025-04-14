@@ -17,6 +17,8 @@
 #include "Renderer.hpp"
 #include "ScriptingResource.hpp"
 #include "SoundResource.hpp"
+#include "CollisionResource.hpp"
+#include "SerializationResource.hpp"
 
 // components
 #include "CameraComponent.hpp"
@@ -29,6 +31,8 @@
 #include "TextureComponent.hpp"
 #include "LightComponent.hpp"
 #include "SoundComponent.hpp"
+#include "SphereCollider.hpp"
+#include "CubeCollider.hpp"
 
  // systems
 #include "PhysicsSystem.hpp"
@@ -39,6 +43,7 @@
 #include "SerializationSystem.hpp"
 #include "RelationSystem.hpp"
 #include "SoundSystem.hpp"
+#include "CollisionSystem.hpp"
 
 #define SOLLOUD_DYNAMIC
 #include "soloud.h"
@@ -57,6 +62,8 @@ int main() try
     // register all resources ////////////////////////////////////////////////////////////////////////
     em.RegisterResource<Client::ScriptingResource>();
     em.RegisterResource<Client::SoundResource>();
+    em.RegisterResource<Client::CollisionResource>();
+    em.RegisterResource<Client::SerializationResource>();
 
     // list of all components ///////////////////////////////////////////////////////////////////////
     Gep::type_list<
@@ -69,7 +76,9 @@ int main() try
         Client::Camera,
         Client::Texture,
         Client::Light,
-        Client::SoundComponent
+        Client::SpatialSoundEmitter,
+        Client::SphereCollider,
+        Client::CubeCollider
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////
@@ -81,7 +90,8 @@ int main() try
         Client::PhysicsSystem,
         Client::SerializationSystem,
         Client::RelationSystem,
-        Client::SoundSystem
+        Client::SoundSystem,
+        Client::CollisionSystem
     > systemTypes;
 
 
@@ -95,7 +105,10 @@ int main() try
     em.RegisterGroup<Client::Material, Client::Transform>();
     em.RegisterGroup<Client::Camera, Client::Transform>();
     em.RegisterGroup<Client::Light, Client::Transform>();
-    em.RegisterGroup<Client::SoundComponent, Client::Transform>();
+    em.RegisterGroup<Client::SpatialSoundEmitter, Client::Transform>();
+    em.RegisterGroup<Client::SphereCollider, Client::Transform>();
+    em.RegisterGroup<Client::CubeCollider, Client::Transform>();
+
     em.RegisterGroup<Client::Transform>();
     em.RegisterGroup<Client::Script>();
     em.RegisterGroup(); // empty group with all entities
