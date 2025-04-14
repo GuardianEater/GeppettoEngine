@@ -232,7 +232,7 @@ namespace Gep
         }
         else
         {
-            return PlaneIntersectionType::Stradding;
+            return PlaneIntersectionType::Straddling;
         }
     }
 
@@ -268,7 +268,7 @@ namespace Gep
         }
         else
         {
-            return PlaneIntersectionType::Stradding;
+            return PlaneIntersectionType::Straddling;
         }
     }
 
@@ -288,7 +288,7 @@ namespace Gep
 
         if (behind && inFront)
         {
-            return PlaneIntersectionType::Stradding;
+            return PlaneIntersectionType::Straddling;
         }
         else if (behind)
         {
@@ -313,7 +313,7 @@ namespace Gep
         {
             return FrustumIntersectionType::Outside;
         }
-        else if (lastAxisResult == PlaneIntersectionType::Stradding)
+        else if (lastAxisResult == PlaneIntersectionType::Straddling)
         {
             result = FrustumIntersectionType::Overlaps;
         }
@@ -330,7 +330,7 @@ namespace Gep
                 lastAxis = index;
                 return FrustumIntersectionType::Outside;
             }
-            else if (planeResult == PlaneIntersectionType::Stradding)
+            else if (planeResult == PlaneIntersectionType::Straddling)
             {
                 result = FrustumIntersectionType::Overlaps;
                 lastAxis = index;
@@ -351,7 +351,7 @@ namespace Gep
         {
             return FrustumIntersectionType::Outside;
         }
-        else if (lastAxisResult == PlaneIntersectionType::Stradding)
+        else if (lastAxisResult == PlaneIntersectionType::Straddling)
         {
             result = FrustumIntersectionType::Overlaps;
         }
@@ -368,7 +368,7 @@ namespace Gep
                 lastAxis = index;
                 return FrustumIntersectionType::Outside;
             }
-            else if (planeResult == PlaneIntersectionType::Stradding)
+            else if (planeResult == PlaneIntersectionType::Straddling)
             {
                 result = FrustumIntersectionType::Overlaps;
                 lastAxis = index;
@@ -391,7 +391,7 @@ namespace Gep
             {
                 return FrustumIntersectionType::Outside;
             }
-            else if (planeResult == PlaneIntersectionType::Stradding)
+            else if (planeResult == PlaneIntersectionType::Straddling)
             {
                 result = FrustumIntersectionType::Overlaps;
             }

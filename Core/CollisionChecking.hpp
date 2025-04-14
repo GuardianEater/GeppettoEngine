@@ -19,6 +19,7 @@ namespace Gep
         InFront,   // in the direction of the normal
         Behind,    // in the opposite direction of the normal
         Straddling, // on both sides of the plane
+        Coplanar,  // on the plane
     };
 
     enum class FrustumIntersectionType : uint8_t

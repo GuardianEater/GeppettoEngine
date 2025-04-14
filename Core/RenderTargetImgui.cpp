@@ -49,8 +49,12 @@ namespace Gep
         {
             // get mouse delta and wether or not right click is pressed to rotate the camera
             bool rightClick = ImGui::IsMouseDown(ImGuiMouseButton_Right);
+            bool mouseRightClicked = ImGui::IsMouseClicked(ImGuiMouseButton_Right);
+            bool mouseRightReleased = ImGui::IsMouseReleased(ImGuiMouseButton_Right);
+            static bool movementEnabled = false;
             ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
             bool focused = ImGui::IsWindowFocused();
+            bool hovered = ImGui::IsWindowHovered();
 
             // gets the underlying window
             ImGuiViewport* viewport = ImGui::GetWindowViewport();
@@ -64,20 +68,26 @@ namespace Gep
                 return;
             }
 
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && focused)
+            if (mouseRightClicked && hovered)
             {
+                movementEnabled = true;
+
+                ImGui::SetWindowFocus();
+
                 ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
                 ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             }
-            else if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+            else if (mouseRightReleased)
             {
+                movementEnabled = false;
+
                 ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
                 ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             }
 
-            if (rightClick && focused)
+            if (movementEnabled)
             {
                 transform.rotation.y += mouseDelta.x * sensitivity;
                 transform.rotation.x += mouseDelta.y * sensitivity;
@@ -116,8 +126,10 @@ namespace Gep
                 }
             }
 
-            if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && focused)
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && hovered)
             {
+                ImGui::SetWindowFocus();
+
                 ImVec2 mousePos = ImGui::GetMousePos();
                 ImVec2 windowPos = ImGui::GetWindowPos();
                 ImVec2 windowSize = ImGui::GetWindowSize();
