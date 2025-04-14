@@ -84,7 +84,7 @@ namespace Gep
         return mTexture;
     }
 
-    void RenderTargetTexture::Draw(EngineManager& em, Entity camera)
+    void RenderTargetTexture::Draw(EngineManager& em, Entity camera, const std::function<void()>& drawFunction)
     {
 
     }

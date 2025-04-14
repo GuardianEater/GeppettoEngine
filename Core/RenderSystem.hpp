@@ -39,6 +39,7 @@ namespace Client
 
         void Initialize();
         void Update(float dt);
+        void FrameEnd() override;
         void HandleInputs(float dt);
         void RenderImGui(float dt);
 

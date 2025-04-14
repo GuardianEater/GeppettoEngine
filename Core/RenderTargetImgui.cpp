@@ -30,7 +30,7 @@ namespace Gep
         return "Entity: " + std::to_string(entity);
     }
 
-    void RenderTargetImgui::Draw(EngineManager& em, Entity cameraEntity)
+    void RenderTargetImgui::Draw(EngineManager& em, Entity cameraEntity, const std::function<void()>& drawFunction)
     {
         Client::CollisionResource& collisionResource = em.GetResource<Client::CollisionResource>();
         Client::Camera& camera = em.GetComponent<Client::Camera>(cameraEntity);
@@ -156,6 +156,7 @@ namespace Gep
             ImVec2 impos = ImGui::GetWindowPos();
             mPosition = *reinterpret_cast<glm::vec2*>(&impos);
             ImGui::Image((void*)(intptr_t)GetTexture(), size, ImVec2(0, 1), ImVec2(1, 0));
+            drawFunction();
         }
 
         ImGui::End();

@@ -175,6 +175,12 @@ namespace Client
         HandleInputs(dt);
     }
 
+    void RenderSystem::FrameEnd()
+    {
+        // opengl clear
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+
     void RenderSystem::HandleInputs(float dt)
     {
         Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
