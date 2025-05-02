@@ -25,6 +25,12 @@ namespace Client
 
         void OnImGuiRender(Gep::EngineManager& em)
         {
+            if (!env)
+            {
+                ImGui::TextColored(ImVec4{1,0,0,1}, "Enviroment is invalid!");
+                return;
+            }
+
             ImGui::Text("Script Path: %s", path.string().c_str());
             ScriptingResource& sr = em.GetResource<ScriptingResource>();
             sol::state& lua = sr.GetLua();

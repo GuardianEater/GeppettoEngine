@@ -100,19 +100,6 @@ int main() try
 
     em.RegisterResource<Gep::OpenGLRenderer>();
 
-    // setup entity groups //////////////////////////////////////////////////////////////////////////
-    em.RegisterGroup<Client::RigidBody, Client::Transform>();
-    em.RegisterGroup<Client::Material, Client::Transform>();
-    em.RegisterGroup<Client::Camera, Client::Transform>();
-    em.RegisterGroup<Client::Light, Client::Transform>();
-    em.RegisterGroup<Client::SpatialSoundEmitter, Client::Transform>();
-    em.RegisterGroup<Client::SphereCollider, Client::Transform>();
-    em.RegisterGroup<Client::CubeCollider, Client::Transform>();
-
-    em.RegisterGroup<Client::Transform>();
-    em.RegisterGroup<Client::Script>();
-    em.RegisterGroup(); // empty group with all entities
-
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.Initialize();
     em.ResolveEvents();

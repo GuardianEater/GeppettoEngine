@@ -12,6 +12,8 @@
 #include "JsonHelp.hpp"
 #include "FunctionTraits.hpp"
 
+#include <new>
+
 namespace Gep
 {
     template<typename ...ComponentTypes, typename ...SystemTypes>
@@ -79,7 +81,7 @@ namespace Gep
     }
 
     template<typename ...ComponentTypes>
-    inline const std::vector<Entity>& EngineManager::GetEntities() const
+    inline const std::vector<Entity>& EngineManager::GetEntities()
     {
         ([&]()
             {
@@ -88,17 +90,14 @@ namespace Gep
             }
         (), ...);
 
-        Signature groupSignature;
-
-        // uses folding to create a signature from the arg list
-        ((groupSignature.set(GetComponentBitPos<ComponentTypes>())), ...);
-
-        if (!mEntityGroups.contains(groupSignature))
+        static std::vector<Entity> entities;
+        entities.clear();
+        ForEachArchetype<ComponentTypes...>([&](Entity entity, ComponentTypes&... components) 
         {
-            Log::Critical("GetEntities() Failed, EntityGroup: [", groupSignature, "] does not exist!");
-        }
+            entities.push_back(entity);
+        });
 
-        return mEntityGroups.at(groupSignature);
+        return entities;
     }
 
     template<typename... ComponentTypes, typename Func>
@@ -114,6 +113,16 @@ namespace Gep
                 }
             }
         (), ...);
+        
+        // if querying with no components iterate all entities instead
+        if constexpr (sizeof...(ComponentTypes) == 0)
+        {
+            for (auto [entity, data] : mEntityDatas)
+            {
+                lambda(entity);
+            }
+            return;
+        }
 
         Signature targetSignature = CreateSignature<ComponentTypes...>();
 
@@ -123,17 +132,19 @@ namespace Gep
             {
                 for (size_t i = 0; i < chunk.entityCount; ++i)
                 {
+                    // navigates to the entity position in the data block
                     uint8_t* byteEntity = chunk.data.data() + (i * chunk.stride);
                     Entity* entity = reinterpret_cast<Entity*>(byteEntity);
 
-                    auto getComponentRef = [&](auto* dummy) -> auto& 
+                    // helper to get the component out of a data block given a type
+                    auto getComponentRef = [&]<typename ComponentType>() -> ComponentType& 
                     {
-                        using T = std::remove_pointer_t<decltype(dummy)>;
-                        size_t offset = chunk.componentOffsets.at(GetComponentBitPos<T>());
-                        return *reinterpret_cast<T*>(byteEntity + offset);
+                        size_t offset = chunk.componentOffsets.at(GetComponentBitPos<ComponentType>());
+                        return *reinterpret_cast<ComponentType*>(byteEntity + offset);
                     };
 
-                    lambda(*entity, getComponentRef((ComponentTypes*)nullptr)...);
+                    // passes the entity, followed by all of the componenets that are in the data block
+                    lambda(*entity, getComponentRef.template operator()<ComponentTypes>()...);
                 }
             }
         }
@@ -213,10 +224,18 @@ namespace Gep
 
         newComponentData.name = GetTypeInfo<ComponentType>().PrettyName();
         newComponentData.array = std::make_shared<ComponentArray<ComponentType>>();
+
+        newComponentData.move = [](void* to, void* from) 
+            { 
+                new (to) ComponentType(std::move(*reinterpret_cast<ComponentType*>(from)));
+            };
+        newComponentData.destruct = [](void* ptr) { reinterpret_cast<ComponentType*>(ptr)->~ComponentType(); };
+
         newComponentData.add = [&](Entity entity) { AddComponent<ComponentType>(entity, ComponentType{}); };
         newComponentData.remove = [&](Entity entity) { DestroyComponent(newComponentData.index, entity); };
         newComponentData.copy = [&](Entity to, Entity from) { CopyComponent<ComponentType>(to, from); };
         newComponentData.has = [&](Entity entity) { return HasComponent(newComponentData.index, entity); };
+
         newComponentData.save = [&](Entity entity) { return SaveComponent<ComponentType>(entity); };
         newComponentData.load = [&](Entity entity, const nlohmann::json& componentJson) { LoadComponent<ComponentType>(entity, componentJson); };
 
@@ -235,36 +254,21 @@ namespace Gep
             return;
         }
 
-        ArchetypeChunkInsert(entity, components...);
+        std::ostringstream ss;
+        ((ss << "[" << GetTypeInfo<ComponentTypes>().PrettyName() << "]"), ...);
+        Log::Trace("Adding Components: [", ss.str(), "] to entity: [", entity, "]...");
 
-        ([&](const auto& component)
-            {
-                using ComponentType = std::decay_t<decltype(component)>;
+        // handle the memory of the componets
+        ArchetypeChunkInsert(entity, std::forward<ComponentTypes>(components)...);
 
-                if (!ComponentIsRegistered<ComponentType>())
-                {
-                    Log::Error("AddComponent() Failed, Component: [", GetTypeInfo<decltype(component)>().PrettyName(), "] is not registered!");
-                    return;
-                }
+        // update the signature of the entity
+        Signature signature = GetSignature(entity);
+        Signature addedComponents = CreateSignature<ComponentTypes...>();
+        SetSignature(entity, signature | addedComponents);
 
-                Log::Trace("Adding Component: [", GetTypeInfo<ComponentType>().PrettyName(), "] to entity: [", entity, "]...");
-                // formats the component types into a string
+        (SignalEvent(Event::ComponentAdded<ComponentTypes>{ entity }), ...);
 
-                GetComponentArray<ComponentType>()->insert(entity, component);
-
-                Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
-                entitySignature.set(GetComponentBitPos<ComponentType>()); // updates the entities signature with the id of the componet
-
-                // creates an entity group if it doesnt exist
-                //mEntityGroups[entitySignature].insert(entity);
-
-                SetSignature(entity, entitySignature); // sets the signature of the entity to the signature with the newly added component
-
-                SignalEvent(Event::ComponentAdded<ComponentType>{ entity });
-
-                Log::Trace("Successfully added component: [", GetTypeInfo<ComponentType>().PrettyName(), "] to entity: [", entity, "]");
-            }
-        (components), ...);
+        Log::Trace("Adding components completed");
     }
 
     template<typename ...ComponentTypes>
@@ -324,7 +328,16 @@ namespace Gep
             Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not have Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
         }
 
-        return GetComponentArray<ComponentType>()->at(entity);
+        uint64_t  componentIndex     = GetComponentBitPos<ComponentType>(); // fast
+        Signature archetypeSignature = GetSignature(entity);                // fast
+        uint64_t  chunkIndex         = GetArchetypeChunkIndex(entity);      // fast
+
+        ArchetypeChunk& chunk = mArchetypes.at(archetypeSignature);         // slow
+
+        uint64_t componentOffset  = chunk.componentOffsets[componentIndex]; // fast
+        uint8_t* byteComponentPtr = chunk.data.data() + (chunkIndex * chunk.stride) + componentOffset; // fast
+
+        return *reinterpret_cast<ComponentType*>(byteComponentPtr); 
     }
 
     template<typename ComponentType>
@@ -345,7 +358,16 @@ namespace Gep
             Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not have Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
         }
 
-        return GetComponentArray<ComponentType>()->at(entity);
+        const uint64_t  componentIndex     = GetComponentBitPos<ComponentType>(); // fast
+        const Signature archetypeSignature = GetSignature(entity);                // fast
+        const uint64_t  chunkIndex         = GetArchetypeChunkIndex(entity);      // fast
+
+        const ArchetypeChunk& chunk = mArchetypes.at(archetypeSignature);         // slow
+
+        const uint64_t componentOffset  = chunk.componentOffsets[componentIndex]; // fast
+        const uint8_t* byteComponentPtr = chunk.data.data() + (chunkIndex * chunk.stride) + componentOffset; // fast
+
+        return *reinterpret_cast<const ComponentType*>(byteComponentPtr); 
     }
 
     template <typename... ComponentTypes>
@@ -460,14 +482,6 @@ namespace Gep
         mSystemSignatures[typeID] = signature;
     }
 
-    template <typename... ComponentTypes>
-    void EngineManager::RegisterGroup()
-    {
-        Signature groupSignature = CreateSignature<ComponentTypes...>();
-
-        mEntityGroups[groupSignature];
-    }
-
     template<typename EventType, typename FunctionType>
         requires std::invocable<FunctionType, const EventType&>
     inline void EngineManager::SubscribeToEvent(FunctionType function)
@@ -544,7 +558,7 @@ namespace Gep
                 uint64_t componentOffset = chunk.componentOffsets.at(bitPos);
                 uint8_t* byteComponentDestination = chunk.data.data() + componentOffset + (chunk.entityCount * chunk.stride);
                 ComponentTypes* componentDestination = reinterpret_cast<ComponentTypes*>(byteComponentDestination);
-                memcpy(componentDestination, &component, sizeof(ComponentTypes));
+                new (componentDestination) ComponentTypes(std::move(component));
             }
         (components), ...);
 
@@ -554,7 +568,7 @@ namespace Gep
     }
 
     template<typename ...ComponentTypes>
-    inline void EngineManager::ArchetypeChunkInsert(Entity entity, ComponentTypes ...components)
+    inline void EngineManager::ArchetypeChunkInsert(Entity entity, ComponentTypes... components)
     {
         Signature oldSignature = GetSignature(entity);
         Signature newSignature = CreateSignature<ComponentTypes...>(oldSignature);
@@ -572,7 +586,7 @@ namespace Gep
             ArchetypeChunk& oldChunk = mArchetypes.at(oldSignature);
 
             uint64_t oldChunkIndex = GetArchetypeChunkIndex(entity);
-            ArchetypeChunkAppend(newChunk, entity, components...);
+            ArchetypeChunkAppend(newChunk, entity, std::forward<ComponentTypes>(components)...);
             uint64_t newChunkIndex = GetArchetypeChunkIndex(entity);
 
             ArchetypeChunkMove(oldChunk, newChunk, oldChunkIndex, newChunkIndex);

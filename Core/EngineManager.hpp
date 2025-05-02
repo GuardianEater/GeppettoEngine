@@ -83,16 +83,23 @@ namespace Gep
     // static data for components
     struct ComponentData
     {
+        // info
         Signature signature{}; // the signature of the component
         uint8_t index{}; // the position of the component in the signature
         std::string name{}; // the name of the component
         size_t size{}; // the size of the component in bytes
 
+        // useful entity functions
         std::function<bool(Entity)> has{}; // a function that checks if the entity has this component
         std::function<void(Entity)> add{}; // a function that adds this component to the given entity
         std::function<void(Entity)> remove{}; // a function that removes this component from the given entity
         std::function<void(Entity to, Entity from)> copy{}; // a function that copies this component from one entity to another
 
+        // memory functions
+        std::function<void(void* to, void* from)> move{}; // casts the given pointer to the component type and moves it to the new destination
+        std::function<void(void*)> destruct{}; // casts the given pointer to the component type and calls the destructor
+
+        // serialization functions
         std::function<nlohmann::json(Gep::Entity)> save{}; // writes this component to json
         std::function<void(Gep::Entity, const nlohmann::json&)> load{}; // adds the given component to the entity from json
 
@@ -116,9 +123,6 @@ namespace Gep
 
         template <typename... ComponentTypes, typename... SystemTypes>
         void RegisterTypes(Gep::type_list<ComponentTypes...> componentTypes, Gep::type_list<SystemTypes...> systemTypes);
-
-        template <typename... ComponentTypes>
-        void RegisterGroup();
 
         void Initialize();
 
@@ -174,8 +178,8 @@ namespace Gep
         void ForEachSibling(Entity entity, const Func& lamda) const; // iterates over all of the siblings of the entity
 
         template <typename... ComponentTypes>
-        const std::vector<Entity>& GetEntities() const;
-        std::vector<Entity> GetRootEntities() const;
+        const std::vector<Entity>& GetEntities();
+        std::vector<Entity> GetRootEntities();
 
         template<typename... ComponentTypes, typename Func>
         inline void ForEachArchetype(Func&& lambda);
@@ -343,14 +347,13 @@ namespace Gep
 
         // entities
         std::vector<Entity> mMarkedEntities; // entities that are marked to be destroyed
-        std::unordered_map<Signature, std::vector<Entity>> mEntityGroups; // used by systems, holds all entities with a matching components
         Gep::keyed_vector<EntityData> mEntityDatas; // maps from an entity -> all of data
 
         // components
         Gep::keyed_vector<ComponentData> mComponentDatas; // maps from a component type -> all of the data
         std::unordered_map<std::type_index, uint64_t> mComponentTypeToIndex; // maps a component type to its index
         std::unordered_map<std::string, uint64_t> mComponentNameToIndex; // maps a component name to its index
-        ComponentBitPos mNextComponentBitPos; // used for assigning bits in an entities signature
+        ComponentBitPos mNextComponentBitPos = 0; // used for assigning bits in an entities signature
         std::vector<std::pair<uint64_t, Entity>> mMarkedComponents;   // The entity and the Entities component type ids.
 
         // archetypes
@@ -368,9 +371,9 @@ namespace Gep
 
         // dt
         float mDeltaTime = 0.016f;
-        std::chrono::high_resolution_clock::time_point mFrameStartTime;
+        std::chrono::high_resolution_clock::time_point mFrameStartTime{};
 
-        bool mIsRunning;
+        bool mIsRunning = true;
     };
 }
 

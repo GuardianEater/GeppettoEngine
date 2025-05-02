@@ -17,13 +17,6 @@
 namespace Gep
 {
     EngineManager::EngineManager()
-        : mMarkedEntities()
-        , mEntityDatas()
-        , mMarkedComponents()
-        , mComponentDatas()
-        , mNextComponentBitPos(0)
-        , mIsRunning(true)
-        , mEntityGroups()
     {
         SubscribeToEvent<Event::WindowClosing>(this, &EngineManager::OnWindowClosing);
         // needed so the unerlying vector does not reallocate.
@@ -80,24 +73,7 @@ namespace Gep
             return;
         }
 
-        // Put this entity's signature into the array
         mEntityDatas[entity].signature = signature;
-
-        for (auto& [groupSignature, entities] : mEntityGroups)
-        {
-            // checks if the entities signature is the same as the groups signature, if so add the entity to the group
-            if ((signature & groupSignature) == groupSignature)
-            {
-                // if the entity is not in the group, add it
-                if (std::find(entities.begin(), entities.end(), entity) == entities.end())
-                    entities.push_back(entity);
-            }
-            else
-            {
-                // if the entity is in the group, remove it
-                entities.erase(std::remove(entities.begin(), entities.end(), entity), entities.end());
-            }
-        }
     }
 
     Signature EngineManager::GetSignature(Entity entity) const
@@ -105,9 +81,9 @@ namespace Gep
         if (!EntityExists(entity))
         {
             Log::Error("GetSignature() failed, Entity: [", entity, "] does not exist");
-            return Signature();
+            return Signature{};
         }
-        // Put this entity's signature into the array
+
         return mEntityDatas.at(entity).signature;
     }
 
@@ -155,10 +131,6 @@ namespace Gep
         {
             DestroyComponent(componentData.index, entity);
         });
-
-        // removes the entity from any systems it might have been in
-        for (auto& [groupSignature, entities] : mEntityGroups)
-            entities.erase(std::remove(entities.begin(), entities.end(), entity), entities.end());
 
         // for each child of the entity, remove the parent
         if (HasChild(entity))
@@ -364,7 +336,7 @@ namespace Gep
         return mEntityDatas.at(parent).children.size() > 0;
     }
 
-    std::vector<Entity> EngineManager::GetRootEntities() const
+    std::vector<Entity> EngineManager::GetRootEntities()
     {
         std::vector<Entity> rootEntities;
 
@@ -516,15 +488,9 @@ namespace Gep
 
         ArchetypeChunkErase(entity, componentIndex);
 
-        //GetComponentArray(componentID)->erase(entity);
-        GetComponentArray(componentIndex)->erase(entity);
-
-        Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
-        Signature componentSignature = mComponentDatas.at(componentIndex).signature; // gets the signature of the component
-
-        entitySignature &= ~componentSignature; // removes the component from the entity signature
-
-        SetSignature(entity, entitySignature); // sets the signature of the entity to the signature with the newly removed component
+        Signature signature = GetSignature(entity); // gets the existing signature of the entity
+        signature.reset(componentIndex);
+        SetSignature(entity, signature); // sets the signature of the entity to the signature with the newly removed component
     }
 
     bool EngineManager::HasComponent(uint64_t componentType, Entity entity) const
@@ -647,7 +613,8 @@ namespace Gep
             size_t newComponentOffset = newChunk.componentOffsets[componentIndex];
             uint8_t* componentDestination = newChunk.data.data() + (newChunkIndex * newChunk.stride) + newComponentOffset;
 
-            memcpy(componentDestination, componentSource, data.size);
+            data.move(componentDestination, componentSource);
+            data.destruct(componentSource);
         }
     }
 
@@ -655,16 +622,30 @@ namespace Gep
     {
         --chunk.entityCount;
 
-        uint8_t* byteEntityToErase = chunk.data.data() + (chunkIndex * chunk.stride);
-        uint8_t* byteEntityAtBack = chunk.data.data() + (chunk.entityCount * chunk.stride);
+        uint8_t* entityToErase = chunk.data.data() + (chunkIndex * chunk.stride);
+        uint8_t* entityAtBack = chunk.data.data() + (chunk.entityCount * chunk.stride);
 
 
-        if (byteEntityToErase != byteEntityAtBack) // if they are the same dont bother swapping
+        if (entityToErase != entityAtBack) // if they are the same dont bother swapping
         {
-            Entity swappedEntity = *reinterpret_cast<Entity*>(byteEntityAtBack);
+            Entity swappedEntity = *reinterpret_cast<Entity*>(entityAtBack);
+            Signature signature = chunk.signature;
 
-            // swaps the data of the entity to erase and the back entity so it can be popped from the back
-            std::swap_ranges(byteEntityToErase, byteEntityToErase + chunk.stride, byteEntityAtBack);
+            while (signature.any())
+            {
+                ComponentBitPos componentIndex = _tzcnt_u64(signature.to_ullong()); // get the next component index
+                const ComponentData& data = mComponentDatas.at(componentIndex);
+                signature.reset(componentIndex); // mark this component in the iteration as completed
+
+                uint64_t offset = chunk.componentOffsets[componentIndex];
+
+                uint8_t* componentToErase = entityToErase + offset;
+                uint8_t* componentAtBack = entityAtBack + offset;
+
+                data.destruct(componentToErase);
+                data.move(componentToErase, componentAtBack);
+                data.destruct(componentAtBack);
+            }
 
             SetArchetypeIndex(swappedEntity, chunkIndex);
         }
