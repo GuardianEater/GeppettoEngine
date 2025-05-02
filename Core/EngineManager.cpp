@@ -582,40 +582,28 @@ namespace Gep
         chunk.signature = signature;
         chunk.stride += sizeof(Entity); // size of the entity
 
-        Signature archetypeSignature = signature;
-        size_t currentIndex = 0; // the current index in the iteration over the components
-        while (archetypeSignature.any())
+        ForEachComponentBit(signature, [&](const ComponentData& data)
         {
-            ComponentBitPos componentIndex = _tzcnt_u64(archetypeSignature.to_ullong()); // get the next component index
-            ComponentData& data = mComponentDatas.at(componentIndex);
-
-            archetypeSignature.reset(componentIndex); // mark this component in the iteration as completed
-
-            chunk.componentOffsets.at(componentIndex) = chunk.stride;
+            chunk.componentOffsets.at(data.index) = chunk.stride;
             chunk.stride += data.size; // size of each component
-        }
+        });
     }
 
     void EngineManager::ArchetypeChunkMove(ArchetypeChunk& oldChunk, ArchetypeChunk& newChunk, uint64_t oldChunkIndex, uint64_t newChunkIndex) const
     {
         Signature similarSignature = oldChunk.signature & newChunk.signature;
 
-        while (similarSignature.any())
+        ForEachComponentBit(similarSignature, [&](const ComponentData& data)
         {
-            ComponentBitPos componentIndex = _tzcnt_u64(similarSignature.to_ullong()); // get the next component index
-            const ComponentData& data = mComponentDatas.at(componentIndex);
-
-            similarSignature.reset(componentIndex); // mark this component in the iteration as completed
-
-            size_t oldComponentOffset = oldChunk.componentOffsets[componentIndex];
+            size_t oldComponentOffset = oldChunk.componentOffsets[data.index];
             uint8_t* componentSource = oldChunk.data.data() + (oldChunkIndex * oldChunk.stride) + oldComponentOffset;
 
-            size_t newComponentOffset = newChunk.componentOffsets[componentIndex];
+            size_t newComponentOffset = newChunk.componentOffsets[data.index];
             uint8_t* componentDestination = newChunk.data.data() + (newChunkIndex * newChunk.stride) + newComponentOffset;
 
             data.move(componentDestination, componentSource);
             data.destruct(componentSource);
-        }
+        });
     }
 
     void EngineManager::ArchetypeChunkSwapPop(ArchetypeChunk& chunk, uint64_t chunkIndex)
@@ -625,19 +613,13 @@ namespace Gep
         uint8_t* entityToErase = chunk.data.data() + (chunkIndex * chunk.stride);
         uint8_t* entityAtBack = chunk.data.data() + (chunk.entityCount * chunk.stride);
 
-
         if (entityToErase != entityAtBack) // if they are the same dont bother swapping
         {
             Entity swappedEntity = *reinterpret_cast<Entity*>(entityAtBack);
-            Signature signature = chunk.signature;
 
-            while (signature.any())
+            ForEachComponentBit(chunk.signature, [&](const ComponentData& data) 
             {
-                ComponentBitPos componentIndex = _tzcnt_u64(signature.to_ullong()); // get the next component index
-                const ComponentData& data = mComponentDatas.at(componentIndex);
-                signature.reset(componentIndex); // mark this component in the iteration as completed
-
-                uint64_t offset = chunk.componentOffsets[componentIndex];
+                uint64_t offset = chunk.componentOffsets[data.index];
 
                 uint8_t* componentToErase = entityToErase + offset;
                 uint8_t* componentAtBack = entityAtBack + offset;
@@ -645,7 +627,7 @@ namespace Gep
                 data.destruct(componentToErase);
                 data.move(componentToErase, componentAtBack);
                 data.destruct(componentAtBack);
-            }
+            });
 
             SetArchetypeIndex(swappedEntity, chunkIndex);
         }

@@ -254,6 +254,15 @@ namespace Gep
             return;
         }
 
+        Signature incomingComponents = CreateSignature<ComponentTypes...>();
+        Signature currentSignature = GetSignature(entity);
+        Signature similarSignature = (currentSignature & incomingComponents);
+        if (similarSignature != 0)
+        {
+            Log::Error("AddComponent() Failed, the entity: [", entity ,"] already has the passed component");
+            return;
+        }
+
         std::ostringstream ss;
         ((ss << "[" << GetTypeInfo<ComponentTypes>().PrettyName() << "]"), ...);
         Log::Trace("Adding Components: [", ss.str(), "] to entity: [", entity, "]...");
@@ -392,19 +401,25 @@ namespace Gep
 
     template<typename Func>
         requires std::invocable<Func, const ComponentData&>
-    inline void EngineManager::ForEachComponent(Entity entity, Func lamda) const
+    inline void EngineManager::ForEachComponent(Entity entity, Func&& lamda) const
+    {
+        Signature entitySignature = GetSignature(entity);
+        ForEachComponentBit(entitySignature, lamda);
+    }
+
+    template<typename Func>
+        requires std::invocable<Func, const ComponentData&>
+    inline void EngineManager::ForEachComponentBit(Signature signature, Func&& lambda) const
     {
         // loops through each bit on a signature, 
         // gets the bit position, which is also the component id 
         // and gets the component data from that id
-
-        Signature entitySignature = GetSignature(entity);
-        while (entitySignature.any())
+        while (signature.any())
         {
-            const size_t componentID = _tzcnt_u64(entitySignature.to_ullong());
-            entitySignature.reset(componentID);
+            const size_t componentID = _tzcnt_u64(signature.to_ullong());
+            signature.reset(componentID);
 
-            lamda(mComponentDatas.at(componentID));
+            lambda(mComponentDatas.at(componentID));
         }
     }
 

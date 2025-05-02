@@ -246,7 +246,12 @@ namespace Gep
         // the lamda is required to take a const ComponentData& as a parameter and return void
         template <typename Func>
             requires std::invocable<Func, const ComponentData&>
-        void ForEachComponent(Entity entity, Func lamda) const;
+        void ForEachComponent(Entity entity, Func&& lambda) const;
+
+        // for each bit in a signature gets the corresponding component
+        template <typename Func>
+            requires std::invocable<Func, const ComponentData&>
+        void ForEachComponentBit(Signature signature, Func&& lambda) const;
 
         template <typename ComponentType>
         nlohmann::json SaveComponent(Entity entity) const;
