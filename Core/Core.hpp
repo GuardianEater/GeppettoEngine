@@ -35,6 +35,7 @@
 
 #include <typeinfo>
 #include <type_traits>
+#include <typeindex>
 
 #include <chrono>
 #include <limits>

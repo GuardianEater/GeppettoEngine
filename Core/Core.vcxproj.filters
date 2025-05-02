@@ -530,6 +530,12 @@
     <ClInclude Include="CollisionResource.hpp">
       <Filter>Client\Resources</Filter>
     </ClInclude>
+    <ClInclude Include="Archetypes.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="FunctionTraits.hpp">
+      <Filter>Backend\Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">

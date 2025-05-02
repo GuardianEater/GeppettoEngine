@@ -506,7 +506,7 @@ namespace Gep
         mMarkedComponents.clear();
     }
 
-    void EngineManager::DestroyComponent(uint64_t componentID, Entity entity)
+    void EngineManager::DestroyComponent(uint64_t componentIndex, Entity entity)
     {
         if (!EntityExists(entity))
         {
@@ -514,11 +514,13 @@ namespace Gep
             return;
         }
 
+        ArchetypeChunkErase(entity, componentIndex);
+
         //GetComponentArray(componentID)->erase(entity);
-        GetComponentArray(componentID)->erase(entity);
+        GetComponentArray(componentIndex)->erase(entity);
 
         Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
-        Signature componentSignature = mComponentDatas.at(componentID).signature; // gets the signature of the component
+        Signature componentSignature = mComponentDatas.at(componentIndex).signature; // gets the signature of the component
 
         entitySignature &= ~componentSignature; // removes the component from the entity signature
 
@@ -600,5 +602,128 @@ namespace Gep
 
     void EngineManager::OnEntityDestroyed(const Event::EntityDestroyed& event)
     {
+    }
+
+    void EngineManager::CreateArchetypeChunk(Signature signature)
+    {
+        if (mArchetypes.contains(signature))
+        {
+            Log::Critical("Cannot create chunk the given signature already exists: [", signature.to_ullong(), "]");
+        }
+
+        ArchetypeChunk& chunk = mArchetypes[signature];
+
+        chunk.signature = signature;
+        chunk.stride += sizeof(Entity); // size of the entity
+
+        Signature archetypeSignature = signature;
+        size_t currentIndex = 0; // the current index in the iteration over the components
+        while (archetypeSignature.any())
+        {
+            ComponentBitPos componentIndex = _tzcnt_u64(archetypeSignature.to_ullong()); // get the next component index
+            ComponentData& data = mComponentDatas.at(componentIndex);
+
+            archetypeSignature.reset(componentIndex); // mark this component in the iteration as completed
+
+            chunk.componentOffsets.at(componentIndex) = chunk.stride;
+            chunk.stride += data.size; // size of each component
+        }
+    }
+
+    void EngineManager::ArchetypeChunkMove(ArchetypeChunk& oldChunk, ArchetypeChunk& newChunk, uint64_t oldChunkIndex, uint64_t newChunkIndex) const
+    {
+        Signature similarSignature = oldChunk.signature & newChunk.signature;
+
+        while (similarSignature.any())
+        {
+            ComponentBitPos componentIndex = _tzcnt_u64(similarSignature.to_ullong()); // get the next component index
+            const ComponentData& data = mComponentDatas.at(componentIndex);
+
+            similarSignature.reset(componentIndex); // mark this component in the iteration as completed
+
+            size_t oldComponentOffset = oldChunk.componentOffsets[componentIndex];
+            uint8_t* componentSource = oldChunk.data.data() + (oldChunkIndex * oldChunk.stride) + oldComponentOffset;
+
+            size_t newComponentOffset = newChunk.componentOffsets[componentIndex];
+            uint8_t* componentDestination = newChunk.data.data() + (newChunkIndex * newChunk.stride) + newComponentOffset;
+
+            memcpy(componentDestination, componentSource, data.size);
+        }
+    }
+
+    void EngineManager::ArchetypeChunkSwapPop(ArchetypeChunk& chunk, uint64_t chunkIndex)
+    {
+        --chunk.entityCount;
+
+        uint8_t* byteEntityToErase = chunk.data.data() + (chunkIndex * chunk.stride);
+        uint8_t* byteEntityAtBack = chunk.data.data() + (chunk.entityCount * chunk.stride);
+
+
+        if (byteEntityToErase != byteEntityAtBack) // if they are the same dont bother swapping
+        {
+            Entity swappedEntity = *reinterpret_cast<Entity*>(byteEntityAtBack);
+
+            // swaps the data of the entity to erase and the back entity so it can be popped from the back
+            std::swap_ranges(byteEntityToErase, byteEntityToErase + chunk.stride, byteEntityAtBack);
+
+            SetArchetypeIndex(swappedEntity, chunkIndex);
+        }
+
+        chunk.data.resize(chunk.data.size() - chunk.stride);
+    }
+
+    void EngineManager::SetArchetypeIndex(Entity entity, uint64_t index)
+    {
+        mEntityDatas.at(entity).archetypeIndex = index;
+    }
+
+    uint64_t EngineManager::GetArchetypeChunkIndex(Entity entity) const
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Error("GetArchetypeChunkIndex() failed, Entity: [", entity, "] does not exist");
+            return INVALID_ENTITY;
+        }
+
+        return mEntityDatas.at(entity).archetypeIndex;
+    }
+
+    void EngineManager::ArchetypeChunkErase(Entity entity, uint64_t componentIndex)
+    {
+        Signature oldSignature = GetSignature(entity);
+        Signature targetSignature = oldSignature;
+        targetSignature.reset(componentIndex);
+
+        if (oldSignature == targetSignature)
+        {
+            Log::Warning("ArchetypeChunkErase(): When removing a component, entity: [", entity ,"] did not have the component: [", componentIndex, "]");
+            return;
+        }
+
+        ArchetypeChunk& oldChunk = mArchetypes.at(oldSignature);
+        uint64_t oldChunkIndex = GetArchetypeChunkIndex(entity);
+
+        if (targetSignature == 0) // targeting a nothing archetype, dont do any moving or allocating
+        {
+            ArchetypeChunkSwapPop(oldChunk, oldChunkIndex);
+        }
+        else
+        {
+            bool targetChunkExists = mArchetypes.contains(targetSignature);
+
+            if (!targetChunkExists)
+                CreateArchetypeChunk(targetSignature);
+
+            ArchetypeChunk& targetChunk = mArchetypes.at(targetSignature);
+
+            ArchetypeChunkAppend(targetChunk, entity);
+            uint64_t targetChunkIndex = GetArchetypeChunkIndex(entity);
+
+            ArchetypeChunkMove(oldChunk, targetChunk, oldChunkIndex, targetChunkIndex);
+            ArchetypeChunkSwapPop(oldChunk, oldChunkIndex);
+        }
+
+        if (oldChunk.entityCount == 0)
+            mArchetypes.erase(oldSignature);
     }
 }
