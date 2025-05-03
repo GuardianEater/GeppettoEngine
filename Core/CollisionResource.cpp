@@ -20,33 +20,36 @@ namespace Client
     std::vector<Gep::Entity> CollisionResource::RayCast(Gep::EngineManager& em, const Gep::Ray& ray)
     {
         std::vector<Gep::Entity> hitEntities;
-        const std::vector<Gep::Entity>& cubeEntities = em.GetEntities<Client::Transform, Client::CubeCollider>();
-        const std::vector<Gep::Entity>& sphereEntities = em.GetEntities<Client::Transform, Client::SphereCollider>();
 
-        for (const auto& entity : cubeEntities)
+        std::vector<std::pair<float, Gep::Entity>> hits;
+
+        em.ForEachArchetype<Client::Transform, Client::CubeCollider>([&](Gep::Entity entity, Client::Transform& transform, Client::CubeCollider& collider) 
         {
-            const auto& transform = em.GetComponent<Client::Transform>(entity);
-            const auto& collider = em.GetComponent<Client::CubeCollider>(entity);
-
             float t;
-
-            if (Gep::RayCube(ray, Gep::Cube{ transform.position, transform.scale / 2.0f, transform.rotation }, t))
+            if (Gep::RayCube(ray, Gep::Cube{ transform.position, transform.scale * 0.5f, transform.rotation }, t))
             {
-                hitEntities.push_back(entity);
+                hits.emplace_back(t, entity);
             }
-        }
+        });
 
-        for (const auto& entity : sphereEntities)
+        em.ForEachArchetype<Client::Transform, Client::SphereCollider>([&](Gep::Entity entity, Client::Transform& transform, Client::SphereCollider& collider)
         {
-            const auto& transform = em.GetComponent<Client::Transform>(entity);
-            const auto& collider = em.GetComponent<Client::SphereCollider>(entity);
-
             float t;
-
-            if (Gep::RaySphere(ray, Gep::Sphere{ transform.position, std::max({transform.scale.x, transform.scale.y, transform.scale.z}) / 2.0f}, t))
+            if (Gep::RaySphere(ray, Gep::Sphere{ transform.position, std::max({transform.scale.x, transform.scale.y, transform.scale.z}) * 0.5f }, t))
             {
-                hitEntities.push_back(entity);
-            }
+                hits.emplace_back(t, entity);
+            }        
+        });
+
+        std::sort(hits.begin(), hits.end(), [](const auto& a, const auto& b) 
+        {
+            return a.first < b.first;
+        });
+
+        hitEntities.reserve(hits.size());
+        for (const auto& hit : hits)
+        {
+            hitEntities.push_back(hit.second);
         }
 
         return hitEntities;

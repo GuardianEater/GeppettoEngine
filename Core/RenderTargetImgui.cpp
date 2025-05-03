@@ -126,23 +126,18 @@ namespace Gep
                 }
             }
 
+            ImVec2 contentRegionSize = ImGui::GetContentRegionAvail();
+            ImVec2 contentRegionPos = ImGui::GetCursorScreenPos();
+
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && hovered)
             {
                 ImGui::SetWindowFocus();
 
                 ImVec2 mousePos = ImGui::GetMousePos();
-                ImVec2 windowPos = ImGui::GetWindowPos();
-                ImVec2 windowSize = ImGui::GetWindowSize();
-
-                //Ray ray = Ray::FromCamera(
-                //    transform.position,
-                //    -camera.back,
-                //    glm::vec2(windowPos.x, windowPos.y),
-                //    glm::vec2(windowSize.x, windowSize.y));
 
                 Ray ray = Ray::FromMouse(
-                    glm::vec2(mousePos.x - windowPos.x, mousePos.y - windowPos.y),
-                    glm::vec2(windowSize.x, windowSize.y),
+                    glm::vec2(mousePos.x - contentRegionPos.x, mousePos.y - contentRegionPos.y),
+                    glm::vec2(contentRegionSize.x, contentRegionSize.y),
                     transform.position,
                     camera.GetViewMatrix(transform.position),
                     camera.GetProjectionMatrix()
@@ -150,24 +145,25 @@ namespace Gep
 
                 std::vector<Gep::Entity> hitEntities = collisionResource.RayCast(em, ray);
 
+                std::string hitOut;
                 for (const Gep::Entity entity : hitEntities)
-                {
-                    Gep::Log::Info("Hit entity: ", entity);
-                }
+                    hitOut += "[" + std::to_string(entity) + "]";
+
+                if (!hitEntities.empty())
+                    Gep::Log::Info("Raycast hit: ", hitOut);
             }
 
-            ImVec2 size = ImGui::GetContentRegionAvail();
 
-            if (size.x != mSize.x || size.y != mSize.y)
+            if (contentRegionSize.x != mSize.x || contentRegionSize.y != mSize.y)
             {
-                mSize.x = size.x;
-                mSize.y = size.y;
-                glViewport(0, 0, size.x, size.y);
+                mSize.x = contentRegionSize.x;
+                mSize.y = contentRegionSize.y;
+                glViewport(contentRegionPos.x, contentRegionPos.y, contentRegionSize.x, contentRegionSize.y);
             }
 
             ImVec2 impos = ImGui::GetWindowPos();
             mPosition = *reinterpret_cast<glm::vec2*>(&impos);
-            ImGui::Image((void*)(intptr_t)GetTexture(), size, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Image((void*)(intptr_t)GetTexture(), contentRegionSize, ImVec2(0, 1), ImVec2(1, 0));
             drawFunction();
         }
 
