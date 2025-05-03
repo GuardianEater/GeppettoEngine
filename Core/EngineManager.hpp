@@ -19,6 +19,7 @@
 #include "Logger.hpp"
 #include "TypeID.hpp"
 #include "KeyedVector.hpp"
+#include "Archetypes.h"
 
 #include <span>
 #include <rfl.hpp>
@@ -45,7 +46,7 @@ namespace Gep
     };
 
     template <typename T, typename Func, typename... FuncArgs>
-    concept IsInvocableMember = std::is_member_function_pointer_v<Func> && requires(T* obj, Func func, FuncArgs... args) 
+    concept IsInvocableMember = std::is_member_function_pointer_v<Func> && requires(T * obj, Func func, FuncArgs... args)
     {
         { (obj->*func)(std::forward<FuncArgs>(args)...) } -> std::same_as<void>;
     };
@@ -53,7 +54,7 @@ namespace Gep
     template <typename T>
     struct TypeHasOnComponentsRegistered : std::false_type {};
     template <typename T>
-    requires TypeHasOnComponentsRegisteredConcept<T>
+        requires TypeHasOnComponentsRegisteredConcept<T>
     struct TypeHasOnComponentsRegistered<T> : std::true_type {};
 
     template <typename T, typename Base>
@@ -71,6 +72,8 @@ namespace Gep
     // per entity data
     struct EntityData
     {
+        uint64_t archetypeIndex{ INVALID_ENTITY }; // the index into the archetype chunk where this entity has its components stored
+
         Entity parent{ INVALID_ENTITY }; // the parent of the entity, if it doesnt have a parent it is INVALID_ENTITY
         Signature signature{}; // the signature of the entity
 
@@ -80,15 +83,23 @@ namespace Gep
     // static data for components
     struct ComponentData
     {
+        // info
         Signature signature{}; // the signature of the component
         uint8_t index{}; // the position of the component in the signature
         std::string name{}; // the name of the component
+        size_t size{}; // the size of the component in bytes
 
+        // useful entity functions
         std::function<bool(Entity)> has{}; // a function that checks if the entity has this component
         std::function<void(Entity)> add{}; // a function that adds this component to the given entity
         std::function<void(Entity)> remove{}; // a function that removes this component from the given entity
         std::function<void(Entity to, Entity from)> copy{}; // a function that copies this component from one entity to another
 
+        // memory functions
+        std::function<void(void* to, void* from)> move{}; // casts the given pointer to the component type and moves it to the new destination
+        std::function<void(void*)> destruct{}; // casts the given pointer to the component type and calls the destructor
+
+        // serialization functions
         std::function<nlohmann::json(Gep::Entity)> save{}; // writes this component to json
         std::function<void(Gep::Entity, const nlohmann::json&)> load{}; // adds the given component to the entity from json
 
@@ -112,9 +123,6 @@ namespace Gep
 
         template <typename... ComponentTypes, typename... SystemTypes>
         void RegisterTypes(Gep::type_list<ComponentTypes...> componentTypes, Gep::type_list<SystemTypes...> systemTypes);
-
-        template <typename... ComponentTypes>
-        void RegisterGroup();
 
         void Initialize();
 
@@ -140,6 +148,8 @@ namespace Gep
         nlohmann::json SaveEntity(Entity entity) const;
         Entity LoadEntity(const nlohmann::json& entityJson);
 
+        template <typename... ComponentTypes>
+        Signature CreateSignature(Signature oldSignature = 0) const;
         void SetSignature(Entity entity, Signature signature);
         Signature GetSignature(Entity entity) const;
 
@@ -156,7 +166,7 @@ namespace Gep
         Entity GetRoot(Entity child) const;
 
         template <typename Func>
-        requires std::invocable<Func, Entity>
+            requires std::invocable<Func, Entity>
         void ForEachChild(Entity parent, const Func& lamda) const; // iterates over all of the children of the entity
 
         size_t GetChildCount(Entity parent) const;
@@ -164,13 +174,15 @@ namespace Gep
         bool HasChild(Entity parent) const;
 
         template <typename Func>
-        requires std::invocable<Func, Entity>
+            requires std::invocable<Func, Entity>
         void ForEachSibling(Entity entity, const Func& lamda) const; // iterates over all of the siblings of the entity
 
         template <typename... ComponentTypes>
-        const std::vector<Entity>& GetEntities() const;
-        std::vector<Entity> GetRootEntities() const;
+        const std::vector<Entity>& GetEntities();
+        std::vector<Entity> GetRootEntities();
 
+        template<typename... ComponentTypes, typename Func>
+        inline void ForEachArchetype(Func&& lambda);
 
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -193,8 +205,6 @@ namespace Gep
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // component functions //////////////////////////////////////////////////////////////////////////
 
-        std::vector<Signature> GetComponentSignatures(Entity entity);
-
         template <typename ComponentType>
         Signature GetComponentSignature() const;
 
@@ -203,7 +213,7 @@ namespace Gep
 
         template <typename... ComponentTypes>
         void AddComponent(Entity entity, ComponentTypes... components);
-        
+
         template <typename... ComponentTypes>
         void CopyComponent(Entity to, Entity from);
 
@@ -228,19 +238,30 @@ namespace Gep
         bool HasComponent(Entity entity) const;
         bool HasComponent(uint64_t componentIndex, Entity entity) const;
 
+        // checks if the given component type has been registered
         template <typename ComponentType>
         bool ComponentIsRegistered() const;
 
+        bool ComponentIsRegistered(uint64_t componentIndex) const;
+
         // the lamda is required to take a const ComponentData& as a parameter and return void
         template <typename Func>
-        requires std::invocable<Func, const ComponentData&>
-        void ForEachComponent(Entity entity, Func lamda) const;
+            requires std::invocable<Func, const ComponentData&>
+        void ForEachComponent(Entity entity, Func&& lambda) const;
+
+        // for each bit in a signature gets the corresponding component
+        template <typename Func>
+            requires std::invocable<Func, const ComponentData&>
+        void ForEachComponentBit(Signature signature, Func&& lambda) const;
 
         template <typename ComponentType>
         nlohmann::json SaveComponent(Entity entity) const;
 
         template <typename ComponentType>
         void LoadComponent(Entity entity, const nlohmann::json& componentJson);
+
+        template<typename ComponentType>
+        ComponentBitPos GetComponentBitPos() const;
 
 
 
@@ -259,11 +280,11 @@ namespace Gep
         // event functions //////////////////////////////////////////////////////////////////////////////
 
         template<typename EventType, typename FunctionType>
-        requires std::invocable<FunctionType, const EventType&>
+            requires std::invocable<FunctionType, const EventType&>
         void SubscribeToEvent(FunctionType function);
 
         template <typename EventType, typename ClassType, typename MemberFunctionType>
-        requires IsInvocableMember<ClassType, MemberFunctionType, const EventType&>
+            requires IsInvocableMember<ClassType, MemberFunctionType, const EventType&>
         void SubscribeToEvent(ClassType* object, MemberFunctionType memberFunction);
 
         template <typename EventType>
@@ -272,6 +293,9 @@ namespace Gep
         void ResolveEvents();
 
     private:
+        /////////////////////////////////////////////////////////////////////////////////////////////////
+        // helper functions /////////////////////////////////////////////////////////////////////////////
+
         std::shared_ptr<IComponentArray> GetComponentArray(uint64_t componentID);
         const std::shared_ptr<IComponentArray> GetComponentArray(uint64_t componentID) const;
 
@@ -283,11 +307,44 @@ namespace Gep
         template<typename SystemType>
         SystemType& GetSystem();
 
-        template<typename ComponentType>
-        ComponentBitPos GetComponentBitPos() const;
-
         void OnWindowClosing(const Event::WindowClosing& event);
         void OnEntityDestroyed(const Event::EntityDestroyed& event);
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////
+        // archetype helpers, should only be used inside of Primary Archetype Functions /////////////////
+
+        // prepairs a chunk for use. extracts various type information from the signature. does not touch entityCount or data.
+        void CreateArchetypeChunk(Signature signature);
+
+        // simply append the given entity and components to the end of the given chunk
+        template <typename... ComponentTypes>
+        void ArchetypeChunkAppend(ArchetypeChunk& chunk, Entity entity, ComponentTypes... components);
+
+        // shifts components that are in similar in both chunks from old to new,
+        void ArchetypeChunkMove(ArchetypeChunk& oldChunk, ArchetypeChunk& newChunk, uint64_t oldChunkIndex, uint64_t newChunkIndex) const;
+
+        // swaps the data associated with the given chunk index with the back, and removes the back of the chunk 
+        void ArchetypeChunkSwapPop(ArchetypeChunk& chunk, uint64_t chunkIndex);
+
+        void SetArchetypeChunkIndex(Entity entity, uint64_t index);
+        uint64_t GetArchetypeChunkIndex(Entity entity) const;
+
+
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////
+        // Primary Archetype Functions //////////////////////////////////////////////////////////////////
+
+        // the full insertion operation. will remove an entity from its previous archetype, copying all of each previous data, and add it to the new one automatically
+        template <typename... ComponentTypes>
+        void ArchetypeChunkInsert(Entity entity, ComponentTypes... components);
+
+        // the full deletion operation. will remove an entity from its previous archetype and add it to its new one automatically.
+        void ArchetypeChunkErase(Entity entity, uint64_t componentIndex);
+
+        // when a component is added,
+        // get the entities current archetype, and get the entities new archetype.
+        // call the mComponentInfos::Copy for all of the existing components into the new archetype
+        // copy construct from the given
 
     private:
         // events
@@ -296,15 +353,19 @@ namespace Gep
 
         // entities
         std::vector<Entity> mMarkedEntities; // entities that are marked to be destroyed
-        std::unordered_map<Signature, std::vector<Entity>> mEntityGroups; // used by systems, holds all entities with a matching components
         Gep::keyed_vector<EntityData> mEntityDatas; // maps from an entity -> all of data
 
         // components
         Gep::keyed_vector<ComponentData> mComponentDatas; // maps from a component type -> all of the data
         std::unordered_map<std::type_index, uint64_t> mComponentTypeToIndex; // maps a component type to its index
         std::unordered_map<std::string, uint64_t> mComponentNameToIndex; // maps a component name to its index
-        ComponentBitPos mNextComponentBitPos; // used for assigning bits in an entities signature
+        ComponentBitPos mNextComponentBitPos = 0; // used for assigning bits in an entities signature
         std::vector<std::pair<uint64_t, Entity>> mMarkedComponents;   // The entity and the Entities component type ids.
+
+        // archetypes
+        std::unordered_map<Signature, ArchetypeChunk> mArchetypes; // maps the signature of an archetype to the archetype itself
+
+        // probably need to turn this into a tree
 
         // systems
         std::unordered_map<uint64_t, Signature> mSystemSignatures; // the signatures of all of the systems maps the typeid of a system to its signature
@@ -314,12 +375,11 @@ namespace Gep
         // resources
         std::unordered_map<std::type_index, Gep::void_unique_ptr> mResources; // maps the type of a resource to the resource itself
 
-
         // dt
         float mDeltaTime = 0.016f;
-        std::chrono::high_resolution_clock::time_point mFrameStartTime;
+        std::chrono::high_resolution_clock::time_point mFrameStartTime{};
 
-        bool mIsRunning;
+        bool mIsRunning = true;
     };
 }
 

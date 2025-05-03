@@ -74,7 +74,7 @@ namespace Client
         const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform>();
 
         // make this unsequenced
-        std::for_each(std::execution::par_unseq, entities.begin(), entities.end(), [&](Gep::Entity entity)
+        std::for_each(entities.begin(), entities.end(), [&](Gep::Entity entity)
         {
             Transform& transform = mManager.GetComponent<Transform>(entity);
             transform.previousPosition = transform.position;

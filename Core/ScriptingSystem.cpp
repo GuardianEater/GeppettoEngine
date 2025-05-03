@@ -32,10 +32,8 @@ namespace Client
     {
         sol::state& lua = mManager.GetResource<ScriptingResource>().GetLua();
 
-        const std::vector<Gep::Entity>& entities = mManager.GetEntities<Script>();
-        for (Gep::Entity entity : entities)
+        mManager.ForEachArchetype<Script>([&](Gep::Entity entity, Script& script)
         {
-            Script& script = mManager.GetComponent<Client::Script>(entity);
             sol::table self = lua.create_table();
 
             mManager.ForEachComponent(entity, [&](const Gep::ComponentData& data)
@@ -48,7 +46,7 @@ namespace Client
                 // this will always happen once because component construction is not yet deffered
                 Gep::Log::Error("ScriptingSystem::Update() failed, script environment is invalid on entity: [", entity, "]");
 
-                continue;
+                return; // note: this is the same as continue in the foreach loop
             }
 
             script.env["self"] = self;
@@ -74,7 +72,7 @@ namespace Client
                 script.update = sol::nil; // prevents the crashed script from running further
                 script.exit = sol::nil;
             }
-        }
+        });
     }
 
     void ScriptingSystem::OnScriptAdded(const Gep::Event::ComponentAdded<Script>& event)

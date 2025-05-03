@@ -56,25 +56,16 @@ namespace Client
 
         renderer.Start();
 
-        // adds the lights to the scene
-        const std::vector<Gep::Entity>& lights = mManager.GetEntities<Light, Transform>();
-        for (Gep::Entity lightEntity : lights)
+        mManager.ForEachArchetype<Light, Transform>([&](Gep::Entity e, Light& l, Transform& t)
         {
-            const Light& light = mManager.GetComponent<Light>(lightEntity);
-            const Transform& lightTransform = mManager.GetComponent<Transform>(lightEntity);
-
-            renderer.AddLight(light.color, lightTransform.position, light.intensity);
-        }
+            renderer.AddLight(l.color, t.position, l.intensity);
+        });
 
         renderer.DrawLights();
 
         // begins rendering each everything
-        const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
-        for (Gep::Entity cameraEntity : cameras)
+        mManager.ForEachArchetype<Transform, Camera>([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
         {
-            const Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
-            Camera& cam = mManager.GetComponent<Camera>(cameraEntity);
-
             cam.renderTarget->Bind();
             cam.renderTarget->Clear({ 0.1f, 0.1f, 0.1f });
 
@@ -92,12 +83,8 @@ namespace Client
             renderer.SetCamera(pers, view, camTransform.position);
             const glm::vec2 renderSize = cam.renderTarget->GetSize();
 
-            const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform, Material>();
-            for (Gep::Entity entity : entities)
+            mManager.ForEachArchetype<Material, Transform>([&](Gep::Entity entity, Material& material, Transform& transform)
             {
-                const Transform& transform = mManager.GetComponent<Transform>(entity);
-                Material& material = mManager.GetComponent<Material>(entity);
-
                 glm::mat4 model = Gep::translation_matrix(transform.position)
                     * Gep::rotation(-transform.rotation)
                     * Gep::scale_matrix(transform.scale);
@@ -127,49 +114,44 @@ namespace Client
                 //ImGuizmo::SetDrawlist();
                 //ImGuizmo::SetRect(cam.renderTarget->GetPosition().x, cam.renderTarget->GetPosition().y, renderSize.x, renderSize.y);
                 //ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(pers), ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, glm::value_ptr(model));
-            }
+            });
 
             if (mDrawColliders)
             {
-                const std::vector<Gep::Entity>& sphereColliders = mManager.GetEntities<Transform, SphereCollider>();
-                for (Gep::Entity entity : sphereColliders)
+
+                mManager.ForEachArchetype<SphereCollider, Transform>([&](Gep::Entity e, SphereCollider& collider, Transform& transform)
                 {
-                    const Transform& transform = mManager.GetComponent<Transform>(entity);
-                    const SphereCollider& collider = mManager.GetComponent<SphereCollider>(entity);
                     glm::mat4 model = Gep::translation_matrix(transform.position)
                         * Gep::rotation(-transform.rotation)
                         * Gep::scale_matrix(std::max({ transform.scale.x, transform.scale.y, transform.scale.z }));
+
                     renderer.SetModel(model);
                     renderer.SetWireframe(true);
-                    //renderer.SetBackfaceCull(false);
                     renderer.SetSolidColor({ 1.0f, 0.0f, 0.0f });
+
                     uint64_t meshID = renderer.GetMesh("Icosphere");
                     renderer.DrawMesh(meshID);
-                }
+                });
 
-                const std::vector<Gep::Entity>& cubeColliders = mManager.GetEntities<Transform, CubeCollider>();
-                for (Gep::Entity entity : cubeColliders)
+                mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity e, CubeCollider& collider, Transform& transform)
                 {
-                    const Transform& transform = mManager.GetComponent<Transform>(entity);
-                    const CubeCollider& collider = mManager.GetComponent<CubeCollider>(entity);
                     glm::mat4 model = Gep::translation_matrix(transform.position)
                         * Gep::rotation(-transform.rotation)
                         * Gep::scale_matrix(transform.scale);
+
                     renderer.SetModel(model);
                     renderer.SetWireframe(true);
-                    //renderer.SetBackfaceCull(false);
                     renderer.SetSolidColor({ 1.0f, 0.0f, 0.0f });
+
                     uint64_t meshID = renderer.GetMesh("Cube");
                     renderer.DrawMesh(meshID);
-                }
+                });
             }
 
-            cam.renderTarget->Draw(mManager, cameraEntity);
+            cam.renderTarget->Draw(mManager, camEntity);
             cam.Resize(renderSize);
             cam.renderTarget->Unbind();
-        }
-
-
+        });
 
         renderer.End();
         HandleInputs(dt);

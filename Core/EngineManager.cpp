@@ -17,13 +17,6 @@
 namespace Gep
 {
     EngineManager::EngineManager()
-        : mMarkedEntities()
-        , mEntityDatas()
-        , mMarkedComponents()
-        , mComponentDatas()
-        , mNextComponentBitPos(0)
-        , mIsRunning(true)
-        , mEntityGroups()
     {
         SubscribeToEvent<Event::WindowClosing>(this, &EngineManager::OnWindowClosing);
         // needed so the unerlying vector does not reallocate.
@@ -80,24 +73,7 @@ namespace Gep
             return;
         }
 
-        // Put this entity's signature into the array
         mEntityDatas[entity].signature = signature;
-
-        for (auto& [groupSignature, entities] : mEntityGroups)
-        {
-            // checks if the entities signature is the same as the groups signature, if so add the entity to the group
-            if ((signature & groupSignature) == groupSignature)
-            {
-                // if the entity is not in the group, add it
-                if (std::find(entities.begin(), entities.end(), entity) == entities.end())
-                    entities.push_back(entity);
-            }
-            else
-            {
-                // if the entity is in the group, remove it
-                entities.erase(std::remove(entities.begin(), entities.end(), entity), entities.end());
-            }
-        }
     }
 
     Signature EngineManager::GetSignature(Entity entity) const
@@ -105,9 +81,9 @@ namespace Gep
         if (!EntityExists(entity))
         {
             Log::Error("GetSignature() failed, Entity: [", entity, "] does not exist");
-            return Signature();
+            return Signature{};
         }
-        // Put this entity's signature into the array
+
         return mEntityDatas.at(entity).signature;
     }
 
@@ -151,24 +127,30 @@ namespace Gep
     // adds the id back to the id pool
     void EngineManager::DestroyEntity(Entity entity)
     {
+        if (!EntityExists(entity))
+        {
+            Gep::Log::Error("DestroyEntity() failed, entity: [", entity, "] does not exist");
+            return;
+        }
+
         ForEachComponent(entity, [&](const ComponentData& componentData)
         {
             DestroyComponent(componentData.index, entity);
         });
 
-        // removes the entity from any systems it might have been in
-        for (auto& [groupSignature, entities] : mEntityGroups)
-            entities.erase(std::remove(entities.begin(), entities.end(), entity), entities.end());
-
-        // for each child of the entity, remove the parent
-        if (HasChild(entity))
-            for (Entity child : GetChildren(entity))
-                DetachEntity(child);
+        // note: this has to be a vector by value because detach changes the underlying storage
+        std::vector<Entity> children = GetChildren(entity);
+        for (Entity child : children)
+        {
+            DetachEntity(child);
+        }
         
         if (HasParent(entity))
             DetachEntity(entity);
 
         mEntityDatas.erase(entity);
+
+
 
         Log::Trace("Destroyed Entity: [", entity, "]");
     }
@@ -176,7 +158,6 @@ namespace Gep
     Entity EngineManager::CreateEntity()
     {
         Entity id = mEntityDatas.emplace();
-        SetSignature(id, 0);
 
         Log::Trace("Created Entity: [", id, "]");
 
@@ -185,7 +166,12 @@ namespace Gep
 
     Entity EngineManager::DuplicateEntity(Entity entity)
     {
-        // get the components off of the entity
+        if (!EntityExists(entity))
+        {
+            Gep::Log::Error("DuplicateEntity() failed, entity: [", entity, "] does not exist");
+            return INVALID_ENTITY;
+        }
+
         Entity newEntity = CreateEntity();
 
         ForEachComponent(entity, [&](const ComponentData& componentData)
@@ -193,12 +179,11 @@ namespace Gep
             componentData.copy(newEntity, entity);
         });
 
-        std::vector<Entity> children = GetChildren(entity);
-        for (Entity child : children)
+        ForEachChild(entity, [&](Entity child) 
         {
             Entity newChild = DuplicateEntity(child);
             AttachEntity(newEntity, newChild);
-        }
+        });
 
         return newEntity;
     }
@@ -273,7 +258,7 @@ namespace Gep
             return false;
         }
 
-        if (mEntityDatas.at(entity).parent == INVALID_ENTITY)
+        if (!EntityExists(mEntityDatas.at(entity).parent)) // note this is not an error
         {
             return false;
         }
@@ -304,7 +289,7 @@ namespace Gep
 
         Entity parent = GetParent(entity);
 
-        while (parent != INVALID_ENTITY)
+        while (EntityExists(parent))
         {
             ancestors.push_back(parent);
             parent = GetParent(parent);
@@ -321,14 +306,7 @@ namespace Gep
             return INVALID_ENTITY;
         }
 
-        Entity parent = GetParent(child);
-        while (parent != INVALID_ENTITY)
-        {
-            child = parent;
-            parent = GetParent(child);
-        }
-
-        return child;
+        return GetAncestors(child).back();
     }
 
     size_t EngineManager::GetChildCount(Entity parent) const
@@ -361,10 +339,10 @@ namespace Gep
             return false;
         }
 
-        return mEntityDatas.at(parent).children.size() > 0;
+        return !mEntityDatas.at(parent).children.empty();
     }
 
-    std::vector<Entity> EngineManager::GetRootEntities() const
+    std::vector<Entity> EngineManager::GetRootEntities()
     {
         std::vector<Entity> rootEntities;
 
@@ -467,30 +445,6 @@ namespace Gep
         return entity;
     }
 
-    std::vector<Signature> EngineManager::GetComponentSignatures(Entity entity)
-    {
-        if (!EntityExists(entity))
-        {
-            Log::Error("GetComponentSignatures() failed, Entity: [", entity, "] does not exist");
-            return std::vector<Signature>();
-        }
-
-        Signature entitySignature = GetSignature(entity);
-
-        std::vector<Signature> componentSignatures;
-
-        for (int i = 0; i < entitySignature.size(); ++i)
-        {
-            if (entitySignature[i])
-            {
-                Signature componentSig; componentSig.set(i);
-                componentSignatures.push_back(componentSig);
-            }
-        }
-
-        return componentSignatures;
-    }
-
     const Gep::keyed_vector<ComponentData>& EngineManager::GetComponentDatas() const
     {
         return mComponentDatas;
@@ -506,7 +460,7 @@ namespace Gep
         mMarkedComponents.clear();
     }
 
-    void EngineManager::DestroyComponent(uint64_t componentID, Entity entity)
+    void EngineManager::DestroyComponent(uint64_t componentIndex, Entity entity)
     {
         if (!EntityExists(entity))
         {
@@ -514,27 +468,33 @@ namespace Gep
             return;
         }
 
-        //GetComponentArray(componentID)->erase(entity);
-        GetComponentArray(componentID)->erase(entity);
+        ArchetypeChunkErase(entity, componentIndex);
 
-        Signature entitySignature = GetSignature(entity); // gets the existing signature of the entity
-        Signature componentSignature = mComponentDatas.at(componentID).signature; // gets the signature of the component
-
-        entitySignature &= ~componentSignature; // removes the component from the entity signature
-
-        SetSignature(entity, entitySignature); // sets the signature of the entity to the signature with the newly removed component
+        Signature signature = GetSignature(entity); // gets the existing signature of the entity
+        signature.reset(componentIndex);
+        SetSignature(entity, signature); // sets the signature of the entity to the signature with the newly removed component
     }
 
-    bool EngineManager::HasComponent(uint64_t componentType, Entity entity) const
+    bool EngineManager::HasComponent(uint64_t componentIndex, Entity entity) const
     {
         if (!EntityExists(entity))
         {
             Log::Error("HasComponent() failed, Entity: [", entity, "] does not exist");
             return false;
         }
+        if (!ComponentIsRegistered(componentIndex))
+        {
+            Log::Error("HasComponent() failed, component: [", entity, "] is not registered");
+            return false;
+        }
 
-        Signature componentSig = mComponentDatas.at(componentType).signature;
-        return ((GetSignature(entity) & componentSig) == componentSig);
+        Signature signature = GetSignature(entity);
+        return signature.test(componentIndex);
+    }
+
+    bool EngineManager::ComponentIsRegistered(uint64_t componentIndex) const
+    {
+        return mComponentDatas.contains(componentIndex);
     }
 
     void EngineManager::Initialize()
@@ -583,16 +543,6 @@ namespace Gep
         }
     }
 
-    std::shared_ptr<IComponentArray> EngineManager::GetComponentArray(uint64_t componentID)
-    {
-        return mComponentDatas.at(componentID).array;
-    }
-
-    const std::shared_ptr<IComponentArray> EngineManager::GetComponentArray(uint64_t componentID) const
-    {
-        return mComponentDatas.at(componentID).array;
-    }
-
     void EngineManager::OnWindowClosing(const Event::WindowClosing& event)
     {
         mIsRunning = false;
@@ -600,5 +550,177 @@ namespace Gep
 
     void EngineManager::OnEntityDestroyed(const Event::EntityDestroyed& event)
     {
+    }
+
+    void EngineManager::CreateArchetypeChunk(Signature signature)
+    {
+        if (mArchetypes.contains(signature))
+        {
+            Log::Critical("Cannot create chunk the given signature already exists: [", signature.to_string(), "]");
+        }
+
+        ArchetypeChunk& chunk = mArchetypes[signature];
+
+        chunk.signature = signature;
+        chunk.stride += sizeof(Entity); // size of the entity
+
+        ForEachComponentBit(signature, [&](const ComponentData& data)
+        {
+            chunk.componentOffsets.at(data.index) = chunk.stride;
+            chunk.stride += data.size; // size of each component
+        });
+    }
+
+    void EngineManager::ArchetypeChunkMove(ArchetypeChunk& oldChunk, ArchetypeChunk& targetChunk, uint64_t oldChunkIndex, uint64_t targetChunkIndex) const
+    {
+        if (oldChunkIndex >= oldChunk.entityCount)
+        {
+            Gep::Log::Critical("ArchetypeChunkMove() failed, the oldChunkIndex: [", oldChunkIndex, "] was outside of the capacity of the chunk, capacity: [", oldChunk.entityCount, "]");
+        }
+        if (targetChunkIndex >= targetChunk.entityCount)
+        {
+            Gep::Log::Critical("ArchetypeChunkMove() failed, the oldChunkIndex: [", targetChunkIndex, "] was outside of the capacity of the chunk, capacity: [", targetChunk.entityCount, "]");
+        }
+
+        // copy the entity
+        uint8_t* oldEntity = oldChunk.data.data() + (oldChunkIndex * oldChunk.stride);
+        uint8_t* targetEntity = targetChunk.data.data() + (targetChunkIndex * targetChunk.stride);
+        *targetEntity = *oldEntity;
+
+        Signature similarSignature = oldChunk.signature & targetChunk.signature;
+
+        // destruct the desination, move into the destination, then destruct the being moved from
+        ForEachComponentBit(similarSignature, [&](const ComponentData& data)
+        {
+            size_t oldComponentOffset = oldChunk.componentOffsets[data.index];
+            uint8_t* componentSource = oldEntity + oldComponentOffset;
+
+            size_t targetComponentOffset = targetChunk.componentOffsets[data.index];
+            uint8_t* componentDestination = targetEntity + targetComponentOffset;
+
+            data.move(componentDestination, componentSource);
+            data.destruct(componentSource);
+        });
+
+    }
+
+    void EngineManager::ArchetypeChunkSwapPop(ArchetypeChunk& chunk, uint64_t chunkIndex)
+    {
+        if (chunkIndex >= chunk.entityCount)
+        {
+            Gep::Log::Critical("ArchetypeChunkSwapPop() failed, the chunkIndex: [",chunkIndex,"] was outside of the capacity of the chunk, capacity: [", chunk.entityCount, "]");
+        }
+
+        --chunk.entityCount;
+
+        uint8_t* entityToErasePtr = chunk.data.data() + (chunkIndex * chunk.stride);
+        uint8_t* entityAtBackPtr = chunk.data.data() + (chunk.entityCount * chunk.stride);
+
+
+        if (entityToErasePtr != entityAtBackPtr) // if they are different swap with the back and remove the back
+        {
+            Entity* erasedEntity = reinterpret_cast<Entity*>(entityToErasePtr);
+            Entity* swappedEntity = reinterpret_cast<Entity*>(entityAtBackPtr);
+
+            *erasedEntity = *swappedEntity;
+
+            ForEachComponentBit(chunk.signature, [&](const ComponentData& data) 
+            {
+                uint64_t offset = chunk.componentOffsets[data.index];
+
+                uint8_t* componentToErase = entityToErasePtr + offset;
+                uint8_t* componentAtBack = entityAtBackPtr + offset;
+
+                data.destruct(componentToErase);
+                data.move(componentToErase, componentAtBack);
+                data.destruct(componentAtBack);
+            });
+
+            SetArchetypeChunkIndex(*swappedEntity, chunkIndex);
+        }
+        else // must still call the destructors on the back components
+        {
+            ForEachComponentBit(chunk.signature, [&](const ComponentData& data)
+            {
+                uint64_t offset = chunk.componentOffsets[data.index];
+                uint8_t* componentAtBack = entityAtBackPtr + offset;
+
+                data.destruct(componentAtBack);
+            });
+        }
+
+        chunk.data.resize(chunk.data.size() - chunk.stride);
+    }
+
+    void EngineManager::SetArchetypeChunkIndex(Entity entity, uint64_t index)
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Error("SetArchetypeChunkIndex() failed, Entity: [", entity, "] does not exist");
+            return;
+        }
+
+        mEntityDatas.at(entity).archetypeIndex = index;
+    }
+
+    uint64_t EngineManager::GetArchetypeChunkIndex(Entity entity) const
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Error("GetArchetypeChunkIndex() failed, Entity: [", entity, "] does not exist");
+            return INVALID_ENTITY;
+        }
+
+        return mEntityDatas.at(entity).archetypeIndex;
+    }
+
+    void EngineManager::ArchetypeChunkErase(Entity entity, uint64_t componentIndex)
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Error("ArchetypeChunkErase() failed, Entity: [", entity, "] does not exist");
+            return;
+        }
+        if (!ComponentIsRegistered(componentIndex))
+        {
+            Log::Error("ArchetypeChunkErase() failed, component: [",componentIndex,"] is not registered");
+            return;
+        }
+
+        Signature oldSignature = GetSignature(entity);
+        Signature targetSignature = oldSignature;
+        targetSignature.reset(componentIndex);
+
+        if (oldSignature == targetSignature)
+        {
+            Log::Warning("ArchetypeChunkErase(): When removing a component, entity: [", entity ,"] did not have the component: [", componentIndex, "]");
+            return;
+        }
+
+        ArchetypeChunk& oldChunk = mArchetypes.at(oldSignature);
+        uint64_t oldChunkIndex = GetArchetypeChunkIndex(entity);
+
+        if (targetSignature == 0) // targeting a nothing archetype, dont do any moving or allocating
+        {
+            ArchetypeChunkSwapPop(oldChunk, oldChunkIndex);
+        }
+        else
+        {
+            bool targetChunkExists = mArchetypes.contains(targetSignature);
+
+            if (!targetChunkExists)
+                CreateArchetypeChunk(targetSignature);
+
+            ArchetypeChunk& targetChunk = mArchetypes.at(targetSignature);
+
+            ArchetypeChunkAppend(targetChunk, entity);
+            uint64_t targetChunkIndex = GetArchetypeChunkIndex(entity);
+
+            ArchetypeChunkMove(oldChunk, targetChunk, oldChunkIndex, targetChunkIndex);
+            ArchetypeChunkSwapPop(oldChunk, oldChunkIndex);
+        }
+
+        if (oldChunk.entityCount == 0)
+            mArchetypes.erase(oldSignature);
     }
 }

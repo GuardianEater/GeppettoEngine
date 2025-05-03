@@ -252,7 +252,14 @@ namespace Client
 
                 const glm::vec3 camPosition = mManager.GetComponent<Client::Transform>(camera).position;
                 const glm::vec3 targetPosition = entityTransform.position;
-                const glm::vec3 targetDirection = glm::normalize(targetPosition - camPosition);
+
+                glm::vec3 targetDirection;
+                if (targetPosition == camPosition)
+                    targetDirection = { 0.333f, 0.333f, 0.333f };
+                else
+                    targetDirection = glm::normalize(targetPosition - camPosition);
+
+
                 const float distance = glm::distance(targetPosition, camPosition);
 
                 // atan2 handles full 360-degree rotations

@@ -243,7 +243,9 @@
     <ClCompile Include="RenderTargetWindow.cpp" />
     <ClInclude Include="CollisionChecking.hpp" />
     <ClInclude Include="CollisionSystem.hpp" />
+    <ClInclude Include="FunctionTraits.hpp" />
     <ClInclude Include="GetCallerInfo.hpp" />
+    <ClInclude Include="Archetypes.h" />
     <ClInclude Include="JsonHelp.hpp" />
     <ClInclude Include="ObjMesh.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
