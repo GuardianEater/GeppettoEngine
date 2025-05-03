@@ -207,7 +207,7 @@ namespace Gep
     template <typename ComponentType>
     void EngineManager::RegisterComponent()
     {
-        if (ComponentIsRegistered<ComponentType>())
+        if (mComponentTypeToIndex.contains(typeid(ComponentType)))
         {
             Log::Error("RegisterComponent() Failed, Component: [", GetTypeInfo<ComponentType>().PrettyName(), "] is already registered!");
             return;
@@ -356,12 +356,10 @@ namespace Gep
         {
             Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not exist!");
         }
-
         if (!ComponentIsRegistered<ComponentType>())
         {
             Log::Critical("GetComponent() Failed, Component: [", GetTypeInfo<ComponentType>().PrettyName(), "] is not registered!");
         }
-
         if (!HasComponent<ComponentType>(entity))
         {
             Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not have Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
@@ -384,8 +382,7 @@ namespace Gep
     {
         if (!EntityExists(entity))
         {
-            Log::Error("HasComponent() Failed, Entity: [", entity, "] does not exist!");
-            return false;
+            Log::Critical("HasComponent() Failed, Entity: [", entity, "] does not exist!");
         }
 
         Signature componentSig = CreateSignature<ComponentTypes...>();
@@ -396,7 +393,9 @@ namespace Gep
     template<typename ComponentType>
     inline bool EngineManager::ComponentIsRegistered() const
     {
-        return mComponentTypeToIndex.contains(typeid(ComponentType));
+        static bool registered = mComponentTypeToIndex.contains(typeid(ComponentType));
+
+        return registered;
     }
 
     template<typename Func>
@@ -552,14 +551,18 @@ namespace Gep
     {
         // this is gross, however it needs to be done in a single line so its statically cached
         static const uint64_t index = mComponentDatas.at(mComponentTypeToIndex.at(typeid(ComponentType))).index;
-
+        
         return index;
     }
 
     template<typename... ComponentTypes>
     inline void EngineManager::ArchetypeChunkAppend(ArchetypeChunk& chunk, Entity entity, ComponentTypes... components)
     {
-        Gep::type_list<ComponentTypes...> componentTypes;
+        if (!EntityExists(entity))
+        {
+            Log::Error("ArchetypeChunkAppend() Failed, Entity: [", entity, "] does not exist!");
+            return;
+        }
 
         chunk.data.resize(chunk.data.size() + chunk.stride);
 
@@ -579,12 +582,18 @@ namespace Gep
 
         uint64_t backIndex = chunk.entityCount;
         ++chunk.entityCount;
-        SetArchetypeIndex(entity, backIndex);
+        SetArchetypeChunkIndex(entity, backIndex);
     }
 
     template<typename ...ComponentTypes>
     inline void EngineManager::ArchetypeChunkInsert(Entity entity, ComponentTypes... components)
     {
+        if (!EntityExists(entity))
+        {
+            Log::Error("ArchetypeChunkInsert() Failed, Entity: [", entity, "] does not exist!");
+            return;
+        }
+
         Signature oldSignature = GetSignature(entity);
         Signature newSignature = CreateSignature<ComponentTypes...>(oldSignature);
 

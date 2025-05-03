@@ -72,7 +72,7 @@ namespace Gep
     // per entity data
     struct EntityData
     {
-        uint64_t archetypeIndex{}; // the index into the archetype chunk where this entity has its components stored
+        uint64_t archetypeIndex{ INVALID_ENTITY }; // the index into the archetype chunk where this entity has its components stored
 
         Entity parent{ INVALID_ENTITY }; // the parent of the entity, if it doesnt have a parent it is INVALID_ENTITY
         Signature signature{}; // the signature of the entity
@@ -205,8 +205,6 @@ namespace Gep
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // component functions //////////////////////////////////////////////////////////////////////////
 
-        std::vector<Signature> GetComponentSignatures(Entity entity);
-
         template <typename ComponentType>
         Signature GetComponentSignature() const;
 
@@ -240,8 +238,11 @@ namespace Gep
         bool HasComponent(Entity entity) const;
         bool HasComponent(uint64_t componentIndex, Entity entity) const;
 
+        // checks if the given component type has been registered
         template <typename ComponentType>
         bool ComponentIsRegistered() const;
+
+        bool ComponentIsRegistered(uint64_t componentIndex) const;
 
         // the lamda is required to take a const ComponentData& as a parameter and return void
         template <typename Func>
@@ -325,7 +326,7 @@ namespace Gep
         // swaps the data associated with the given chunk index with the back, and removes the back of the chunk 
         void ArchetypeChunkSwapPop(ArchetypeChunk& chunk, uint64_t chunkIndex);
 
-        void SetArchetypeIndex(Entity entity, uint64_t index);
+        void SetArchetypeChunkIndex(Entity entity, uint64_t index);
         uint64_t GetArchetypeChunkIndex(Entity entity) const;
 
 

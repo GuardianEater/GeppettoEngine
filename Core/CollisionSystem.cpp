@@ -76,41 +76,38 @@ namespace Client
             }
         }
 
-        std::vector<CubeEntity> cubeEntities;
+        std::vector<Gep::Cube> cubes;
 
         mManager.ForEachArchetype<Transform, CubeCollider>([&](Gep::Entity entity, Transform& t, CubeCollider& c)
         {
-            cubeEntities.push_back({ entity, &t, &c });
+            glm::mat3 axes = Gep::rotation(t.rotation);
+
+            cubes.push_back({ t.position, t.scale * 0.5f, t.rotation, axes });
         });
 
         // Cube-Cube collisions
-        for (size_t i = 0; i < cubeEntities.size(); ++i)
+        for (size_t i = 0; i < cubes.size(); ++i)
         {
-            for (size_t j = i + 1; j < cubeEntities.size(); ++j)
+            for (size_t j = i + 1; j < cubes.size(); ++j)
             {
-                const CubeEntity& view0 = cubeEntities[i];
-                const CubeEntity& view1 = cubeEntities[j];
+                const Gep::Cube& cube0 = cubes[i];
+                const Gep::Cube& cube1 = cubes[j];
 
-
-                if (Gep::CubeCube({ view0.transform->position, view0.transform->scale * 0.5f, view0.transform->rotation },
-                                  { view1.transform->position, view1.transform->scale * 0.5f, view1.transform->rotation }))
+                if (Gep::CubeCube(cube0, cube1))
                 {
-                    // collision detected
-                    Gep::Log::Info("Collision detected between entity ", view0.entity, " and entity ", view1.entity);
+                    Gep::Log::Info("Collision detected between 2 cubes!");
                 }
             }
         }
 
         // Sphere-Cube collisions
-        for (const CubeEntity& view0 : cubeEntities)
+        for (const Gep::Cube& cube : cubes)
         {
             for (const SphereEntity& view1 : sphereEntities)
             {
-                if (Gep::CubeSphere({view0.transform->position, view0.transform->scale * 0.5f, view0.transform->rotation },
-                                    { view1.transform->position, view1.radius }))
+                if (Gep::CubeSphere(cube, { view1.transform->position, view1.radius }))
                 {
-                    // collision detected
-                    Gep::Log::Info("Collision detected between entity ", view0.entity, " and entity ", view1.entity);
+                    Gep::Log::Info("Collision detected between cube and sphere!");
                 }
             }
         }

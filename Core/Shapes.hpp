@@ -133,5 +133,7 @@ namespace Gep
         glm::vec3 position{ 0.0f, 0.0f, 0.0f };
         glm::vec3 halfSize{ 0.5f, 0.5f, 0.5f };
         glm::vec3 rotation{ 0.0f, 0.0f, 0.0f };
+
+        glm::mat3 axes{};
     };
 }

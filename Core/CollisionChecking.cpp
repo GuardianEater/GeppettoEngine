@@ -434,43 +434,49 @@ namespace Gep
 
     static bool OverlapOnAxis(const Cube& cube1, const Cube& cube2, const glm::vec3& axis) 
     {
-        if (glm::dot(axis, axis) < 1e-6f) return true;
-
-        glm::vec3 axisNormalized = glm::normalize(axis);
-
-        glm::mat3 orientA = Gep::rotation(cube1.rotation);
-        glm::mat3 orientB = Gep::rotation(cube2.rotation);
-
         float minA, maxA;
         float minB, maxB;
 
-        ProjectOBB(cube1.position, cube1.halfSize, orientA, axisNormalized, minA, maxA);
-        ProjectOBB(cube2.position, cube2.halfSize, orientB, axisNormalized, minB, maxB);
+        ProjectOBB(cube1.position, cube1.halfSize, cube1.axes, axis, minA, maxA);
+        ProjectOBB(cube2.position, cube2.halfSize, cube2.axes, axis, minB, maxB);
 
-        return !(maxA < minB || maxB < minA); // overlap exists
+        return !(maxA < minB || maxB < minA);
     }
 
     bool CubeCube(const Cube& cube1, const Cube& cube2)
     {
-        glm::mat3 axisA = Gep::rotation(cube1.rotation);
-        glm::mat3 axisB = Gep::rotation(cube2.rotation);
+        glm::vec3 toCenter = cube2.position - cube1.position;
 
-        glm::vec3 axesToTest[15] = {
-            axisA[0], axisA[1], axisA[2],
-            axisB[0], axisB[1], axisB[2],
-            glm::cross(axisA[0], axisB[0]), glm::cross(axisA[0], axisB[1]), glm::cross(axisA[0], axisB[2]),
-            glm::cross(axisA[1], axisB[0]), glm::cross(axisA[1], axisB[1]), glm::cross(axisA[1], axisB[2]),
-            glm::cross(axisA[2], axisB[0]), glm::cross(axisA[2], axisB[1]), glm::cross(axisA[2], axisB[2]),
-        };
+        glm::vec3 axes[15]{};
+        int axisCount = 0;
 
-        for (int i = 0; i < 15; ++i)
+        // Axes from both cubes
+        for (int i = 0; i < 3; ++i) axes[axisCount++] = cube1.axes[i];
+        for (int i = 0; i < 3; ++i) axes[axisCount++] = cube2.axes[i];
+
+        // Cross products
+        for (int i = 0; i < 3; ++i)
         {
-            if (!OverlapOnAxis(cube1, cube2, axesToTest[i])) {
-                return false; // separating axis found
+            for (int j = 0; j < 3; ++j) 
+            {
+                glm::vec3 axis = glm::cross(cube1.axes[i], cube2.axes[j]);
+                if (glm::dot(axis, axis) > 1e-6f)
+                    axes[axisCount++] = axis;
             }
         }
 
-        return true; // no separating axis -> collision
+        for (int i = 0; i < axisCount; ++i) 
+        {
+            glm::vec3 axis = axes[i];
+
+            if (glm::dot(axis, axis) > 1e-6f) 
+            {
+                if (!OverlapOnAxis(cube1, cube2, glm::normalize(axis))) 
+                    return false;
+            }
+        }
+
+        return true;
     }
     
     bool RayCube(const Ray& ray, const Cube& cube, float& t)
