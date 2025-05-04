@@ -258,8 +258,11 @@
     <ClCompile Include="CollisionChecking.cpp">
       <Filter>Backend\Collision</Filter>
     </ClCompile>
+    <ClCompile Include="EditorResource.cpp">
+      <Filter>Client\Resources</Filter>
+    </ClCompile>
     <ClCompile Include="CollisionResource.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Client\Resources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -536,8 +539,8 @@
     <ClInclude Include="FunctionTraits.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="SelectedComponent.hpp">
-      <Filter>Client\Components</Filter>
+    <ClInclude Include="EditorResource.hpp">
+      <Filter>Client\Resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

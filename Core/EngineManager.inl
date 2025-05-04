@@ -260,14 +260,14 @@ namespace Gep
         newComponentData.name = GetTypeInfo<ComponentType>().PrettyName();
         newComponentData.array = std::make_shared<ComponentArray<ComponentType>>();
 
-        newComponentData.move = [](void* to, void* from) 
-            { 
-                new (to) ComponentType(std::move(*reinterpret_cast<ComponentType*>(from)));
-            };
+        newComponentData.move = [](void* to, void* from) { 
+            new (to) ComponentType(std::move(*reinterpret_cast<ComponentType*>(from)));
+        };
+
         newComponentData.destruct = [](void* ptr) { reinterpret_cast<ComponentType*>(ptr)->~ComponentType(); };
 
         newComponentData.add = [&](Entity entity) { AddComponent<ComponentType>(entity, ComponentType{}); };
-        newComponentData.remove = [&](Entity entity) { DestroyComponent(newComponentData.index, entity); };
+        newComponentData.remove = [&](Entity entity) { DestroyComponent<ComponentType>(entity); };
         newComponentData.copy = [&](Entity to, Entity from) { CopyComponent<ComponentType>(to, from); };
         newComponentData.has = [&](Entity entity) { return HasComponent(newComponentData.index, entity); };
 
@@ -292,12 +292,14 @@ namespace Gep
         Signature incomingComponents = CreateSignature<ComponentTypes...>();
         Signature currentSignature = GetSignature(entity);
         Signature similarSignature = (currentSignature & incomingComponents);
+
         if (similarSignature != 0)
         {
             Log::Error("AddComponent() Failed, the entity: [", entity ,"] already has the passed component");
             return;
         }
 
+        // formats an output trace so every component that was added gets logged
         std::ostringstream ss;
         ((ss << "[" << GetTypeInfo<ComponentTypes>().PrettyName() << "]"), ...);
         Log::Trace("Adding Components: [", ss.str(), "] to entity: [", entity, "]...");
@@ -348,10 +350,21 @@ namespace Gep
     template<typename ComponentType>
     inline void EngineManager::DestroyComponent(Entity entity)
     {
-        // TODO: remove
-        const uint64_t componentID = mComponentTypeToIndex.at(typeid(ComponentType));
+        if (!EntityExists(entity))
+        {
+            Log::Error("DestroyComponent() failed, Entity: [", entity, "] does not exist");
+            return;
+        }
 
-        DestroyComponent(componentID, entity);
+        SignalEvent(Event::ComponentRemoved<ComponentType>{ entity });
+
+        const uint64_t componentIndex = GetComponentBitPos<ComponentType>();
+
+        ArchetypeChunkErase(entity, componentIndex);
+
+        Signature signature = GetSignature(entity); // gets the existing signature of the entity
+        signature.reset(componentIndex);
+        SetSignature(entity, signature); // sets the signature of the entity to the signature with the newly removed component
     }
 
     template<typename ComponentType>
@@ -498,12 +511,12 @@ namespace Gep
         const auto view = rfl::to_view(component);
 
         view.apply([&](const auto& f)
+        {
+            if (componentDataJson.contains(f.name()))
             {
-                if (componentDataJson.contains(f.name()))
-                {
-                    Json::ReadType(componentDataJson, f.name(), *f.value());
-                }
-            });
+                Json::ReadType(componentDataJson, f.name(), *f.value());
+            }
+        });
 
         AddComponent<ComponentType>(entity, component);
     }
@@ -535,43 +548,33 @@ namespace Gep
         requires std::invocable<FunctionType, const EventType&>
     inline void EngineManager::SubscribeToEvent(FunctionType function)
     {
-        mEventDatas[typeid(EventType)].subscribers.emplace_back([function](const Gep::void_unique_ptr& eventData)
-            {
-                function(*static_cast<EventType*>(eventData.get()));
-            });
+        mEventDatas[typeid(EventType)].subscribers.emplace_back([function](const void* eventData)
+        {
+            function(*static_cast<const EventType*>(eventData));
+        });
     }
 
     template<typename EventType, typename ClassType, typename MemberFunctionType>
         requires IsInvocableMember<ClassType, MemberFunctionType, const EventType&>
     inline void EngineManager::SubscribeToEvent(ClassType* object, MemberFunctionType memberFunction)
     {
-        mEventDatas[typeid(EventType)].subscribers.emplace_back([object, memberFunction](const Gep::void_unique_ptr& eventData)
-            {
-                (object->*memberFunction)(*static_cast<EventType*>(eventData.get()));
-            });
+        mEventDatas[typeid(EventType)].subscribers.emplace_back([object, memberFunction](const void* eventData)
+        {
+            (object->*memberFunction)(*static_cast<const EventType*>(eventData));
+        });
     }
 
     template <typename EventType>
     void EngineManager::SignalEvent(const EventType& eventData)
     {
-        mEventQueue.emplace_back(typeid(EventType), make_unique_void_ptr<EventType>(eventData));
-    }
+        std::type_index id = typeid(EventType);
 
-    template <typename ComponentType>
-    std::shared_ptr<ComponentArray<ComponentType>> EngineManager::GetComponentArray()
-    {
-        // TODO: remove
-        const uint64_t componentID = mComponentTypeToIndex.at(typeid(ComponentType));
-
-        return std::static_pointer_cast<ComponentArray<ComponentType>>(GetComponentArray(componentID));
-    }
-
-    template<typename ComponentType>
-    inline const std::shared_ptr<ComponentArray<ComponentType>> EngineManager::GetComponentArray() const
-    {
-        const uint64_t componentID = mComponentTypeToIndex.at(typeid(ComponentType));
-
-        return std::static_pointer_cast<ComponentArray<ComponentType>>(GetComponentArray(componentID));
+        //get the subscribers for this event type
+        const auto& subscribers = mEventDatas[id].subscribers;
+        for (auto& subscriber : subscribers)
+        {
+            subscriber(&eventData);
+        }
     }
 
     template<typename SystemType>
@@ -584,6 +587,7 @@ namespace Gep
     template<typename ComponentType>
     ComponentBitPos EngineManager::GetComponentBitPos() const
     {
+        // note: there is no error check, if the below line crashes its because the component was not registered.
         // this is gross, however it needs to be done in a single line so its statically cached
         static const uint64_t index = mComponentDatas.at(mComponentTypeToIndex.at(typeid(ComponentType))).index;
         

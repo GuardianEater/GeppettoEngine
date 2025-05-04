@@ -95,8 +95,6 @@ namespace Gep
             return;
         }
 
-        SignalEvent(Event::EntityDestroyed{ .entity = entity });// calls subscriber functions 
-
         mMarkedEntities.push_back(entity);
     }
 
@@ -133,9 +131,11 @@ namespace Gep
             return;
         }
 
+        SignalEvent(Event::EntityDestroyed{ entity });
+
         ForEachComponent(entity, [&](const ComponentData& componentData)
         {
-            DestroyComponent(componentData.index, entity);
+            componentData.remove(entity);
         });
 
         // note: this has to be a vector by value because detach changes the underlying storage
@@ -158,6 +158,8 @@ namespace Gep
     Entity EngineManager::CreateEntity()
     {
         Entity id = mEntityDatas.emplace();
+
+        SignalEvent(Event::EntityCreated{ id });
 
         Log::Trace("Created Entity: [", id, "]");
 
@@ -452,27 +454,13 @@ namespace Gep
 
     void EngineManager::DestroyMarkedComponents()
     {
-        for (const auto& [componentID, entity] : mMarkedComponents)
+        for (const auto& [componentIndex, entity] : mMarkedComponents)
         {
-            DestroyComponent(componentID, entity);
+            ComponentData& data = mComponentDatas.at(componentIndex);
+            data.remove(entity);
         }
 
         mMarkedComponents.clear();
-    }
-
-    void EngineManager::DestroyComponent(uint64_t componentIndex, Entity entity)
-    {
-        if (!EntityExists(entity))
-        {
-            Log::Error("DestroyComponent() failed, Entity: [", entity, "] does not exist");
-            return;
-        }
-
-        ArchetypeChunkErase(entity, componentIndex);
-
-        Signature signature = GetSignature(entity); // gets the existing signature of the entity
-        signature.reset(componentIndex);
-        SetSignature(entity, signature); // sets the signature of the entity to the signature with the newly removed component
     }
 
     bool EngineManager::HasComponent(uint64_t componentIndex, Entity entity) const
@@ -522,24 +510,6 @@ namespace Gep
         for (auto systemIt = mSystemsToUpdate.rbegin(); systemIt != mSystemsToUpdate.rend(); ++systemIt)
         {
             (*systemIt)->Exit();
-        }
-    }
-
-    void EngineManager::ResolveEvents()
-    {
-        //for each type of event
-        while (!mEventQueue.empty())
-        {
-            const auto& [id, eventData] = mEventQueue.front();
-
-            //get the subscribers for this event type
-            const auto& subscribers = mEventDatas[id].subscribers;
-            for (auto& subscriber : subscribers)
-            {
-                subscriber(eventData);
-            }
-
-            mEventQueue.pop_front();
         }
     }
 

@@ -85,7 +85,6 @@ namespace Client
 
     void ScriptingSystem::OnEntityCreated(const Gep::Event::EntityCreated& event)
     {
-        Gep::Log::Important("Entity Created: [", event.entity, "] in scripti");
     }
 }
 

@@ -19,11 +19,13 @@ namespace Gep
     {
         struct IEvent{};
 
+        // signalled immediately before an entity is about to be destroyed
         struct EntityDestroyed
         { 
             Entity entity;
         };
 
+        // signalled immediately after an entity has been constructed
         struct EntityCreated
         {
             Entity entity;
@@ -74,12 +76,14 @@ namespace Gep
             double yoffset;
         };
 
+        // signalled immediately after the component was added to the entity
         template <typename ComponentType>
         struct ComponentAdded
         {
             Entity entity; // the entity the component was added to
         };
 
+        // signalled immediately before the component is going to be destroyed
         template <typename ComponentType>
         struct ComponentRemoved
         {

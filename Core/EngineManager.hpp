@@ -109,7 +109,7 @@ namespace Gep
     struct EventData
     {
         uint8_t index{};
-        std::deque<std::function<void(const Gep::void_unique_ptr&)>> subscribers{};
+        std::deque<std::function<void(const void*)>> subscribers{};
     };
 
     class EngineManager
@@ -231,7 +231,6 @@ namespace Gep
 
         template<typename ComponentType>
         void DestroyComponent(Entity entity);
-        void DestroyComponent(uint64_t componentIndex, Entity entity);
 
         template<typename ComponentType>
         ComponentType& GetComponent(Entity entity);
@@ -265,6 +264,7 @@ namespace Gep
         template <typename ComponentType>
         void LoadComponent(Entity entity, const nlohmann::json& componentJson);
 
+        // returns the index of the component. This functions return value will never change, it will always return the same value for each given type.
         template<typename ComponentType>
         ComponentBitPos GetComponentBitPos() const;
 
@@ -292,22 +292,13 @@ namespace Gep
             requires IsInvocableMember<ClassType, MemberFunctionType, const EventType&>
         void SubscribeToEvent(ClassType* object, MemberFunctionType memberFunction);
 
+        // sends out the given event data to all subscribers of the event.
         template <typename EventType>
         void SignalEvent(const EventType& eventData);
-
-        void ResolveEvents();
 
     private:
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // helper functions /////////////////////////////////////////////////////////////////////////////
-
-        std::shared_ptr<IComponentArray> GetComponentArray(uint64_t componentID);
-        const std::shared_ptr<IComponentArray> GetComponentArray(uint64_t componentID) const;
-
-        template <typename ComponentType>
-        std::shared_ptr<ComponentArray<ComponentType>> GetComponentArray();
-        template <typename ComponentType>
-        const std::shared_ptr<ComponentArray<ComponentType>> GetComponentArray() const;
 
         template<typename SystemType>
         SystemType& GetSystem();
@@ -354,7 +345,6 @@ namespace Gep
     private:
         // events
         std::unordered_map<std::type_index, EventData> mEventDatas; // typeindex of the event -> the functions that are subscribed to that event
-        std::deque<std::pair<std::type_index, Gep::void_unique_ptr>> mEventQueue; // the queue of events that need to be resolved pair<index of the event, the event itself>
 
         // entities
         std::vector<Entity> mMarkedEntities; // entities that are marked to be destroyed

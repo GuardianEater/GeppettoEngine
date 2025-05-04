@@ -15,6 +15,7 @@
 #include "Identification.hpp"
 
 #include "CollisionResource.hpp"
+#include "EditorResource.hpp"
 
 #include <ImGuizmo.h>
 
@@ -33,6 +34,8 @@ namespace Gep
     void RenderTargetImgui::Draw(EngineManager& em, Entity cameraEntity, const std::function<void()>& drawFunction)
     {
         Client::CollisionResource& collisionResource = em.GetResource<Client::CollisionResource>();
+        Client::EditorResource& editorResource = em.GetResource<Client::EditorResource>();
+
         Client::Camera& camera = em.GetComponent<Client::Camera>(cameraEntity);
         Client::Transform& transform = em.GetComponent<Client::Transform>(cameraEntity);
 
@@ -145,12 +148,10 @@ namespace Gep
 
                 std::vector<Gep::Entity> hitEntities = collisionResource.RayCast(em, ray);
 
-                std::string hitOut;
-                for (const Gep::Entity entity : hitEntities)
-                    hitOut += "[" + std::to_string(entity) + "]";
-
                 if (!hitEntities.empty())
-                    Gep::Log::Info("Raycast hit: ", hitOut);
+                    editorResource.SmartSelectEntity(hitEntities.front());
+                else if (!glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_LEFT_CONTROL))
+                    editorResource.DeselectAll();
             }
 
 

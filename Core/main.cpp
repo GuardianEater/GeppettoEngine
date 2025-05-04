@@ -19,6 +19,7 @@
 #include "SoundResource.hpp"
 #include "CollisionResource.hpp"
 #include "SerializationResource.hpp"
+#include "EditorResource.hpp"
 
 // components
 #include "CameraComponent.hpp"
@@ -64,6 +65,7 @@ int main() try
     em.RegisterResource<Client::SoundResource>();
     em.RegisterResource<Client::CollisionResource>();
     em.RegisterResource<Client::SerializationResource>();
+    em.RegisterResource<Client::EditorResource>();
 
     // list of all components ///////////////////////////////////////////////////////////////////////
     Gep::type_list<
@@ -102,7 +104,6 @@ int main() try
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.Initialize();
-    em.ResolveEvents();
 
     while (em.Running())
     {
@@ -112,11 +113,9 @@ int main() try
 
         em.DestroyMarkedComponents();
         em.DestroyMarkedEntities();
-        em.ResolveEvents();
     }
 
     em.Exit();
-    em.ResolveEvents();
 }
 catch (const std::exception& e)
 {
