@@ -150,6 +150,41 @@ namespace Gep
         }
     }
 
+    template<typename ...ComponentTypes>
+    inline size_t EngineManager::CountEntities() const
+    {
+        // checks to see if all components are regisitered
+        ([&]()
+            {
+                if (!ComponentIsRegistered<ComponentTypes>())
+                {
+                    Log::Error("ForEachArchetype() Failed, Component: [", GetTypeInfo<ComponentTypes>().PrettyName(), "] is not registered!");
+                    return;
+                }
+            }
+        (), ...);
+
+        // if querying with no components give the count of all entities
+        if constexpr (sizeof...(ComponentTypes) == 0)
+        {
+            return mEntityDatas.size();
+        }
+
+        Signature targetSignature = CreateSignature<ComponentTypes...>();
+        size_t totalCount = 0;
+
+        // accumulates the counts of all of the entities in all of the archetypes
+        for (auto& [signature, chunk] : mArchetypes)
+        {
+            if ((targetSignature & signature) == targetSignature)
+            {
+                totalCount += chunk.entityCount;
+            }
+        }
+
+        return totalCount;
+    }
+
     template<typename ResourceType>
     inline void EngineManager::RegisterResource()
     {

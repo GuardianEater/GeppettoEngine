@@ -181,8 +181,13 @@ namespace Gep
         const std::vector<Entity>& GetEntities();
         std::vector<Entity> GetRootEntities();
 
+        // iterates over entities with the given component types, also automatically gets the components from those entities
         template<typename... ComponentTypes, typename Func>
         inline void ForEachArchetype(Func&& lambda);
+
+        // counts the amount of entities with the matching components
+        template<typename... ComponentTypes>
+        inline size_t CountEntities() const;
 
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
