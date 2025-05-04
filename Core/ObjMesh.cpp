@@ -2,7 +2,7 @@
  * \file   ObjMesh.cpp
  * \brief  creates a mesh from an obj file
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   March 2025
  *********************************************************************/
 

@@ -2,7 +2,7 @@
  * \file   EngineManager.inl
  * \brief  implementation for the EngineManager templates
  *
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   January 2025
  *********************************************************************/
 

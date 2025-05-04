@@ -1,16 +1,17 @@
 /*****************************************************************//**
- * \file   SphereCollider.hpp
- * \brief  component that represents a sphere collider
+ * \file   SelectedComponent.hpp
+ * \brief  component the is added to entities that are currently selected in the editor
  * 
  * \author Travis Gronvold (2018tcg@gmail.com)
- * \date   March 2025
+ * \date   May 2025
  *********************************************************************/
 
 #pragma once
 
-#include "Core.hpp"
-
 namespace Client
 {
-    struct SphereCollider {};
+    struct Selected
+    {
+
+    };
 }

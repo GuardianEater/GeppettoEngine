@@ -2,7 +2,7 @@
  * \file   ScriptingResource.hpp
  * \brief  holds onto compiled scripts
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   February 2025
  *********************************************************************/
 

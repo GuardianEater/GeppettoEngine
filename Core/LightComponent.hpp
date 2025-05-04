@@ -2,7 +2,7 @@
  * \file   LightComponent.hpp
  * \brief  makes an entity a light source
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   February 2025
  *********************************************************************/
 

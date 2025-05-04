@@ -536,6 +536,9 @@
     <ClInclude Include="FunctionTraits.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
+    <ClInclude Include="SelectedComponent.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">

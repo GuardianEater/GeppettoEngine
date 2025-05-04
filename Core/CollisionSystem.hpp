@@ -2,7 +2,7 @@
  * \file   CollisionSystem.hpp
  * \brief  Uses various collider components to detect collisions
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   March 2025
  *********************************************************************/
 

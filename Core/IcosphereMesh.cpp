@@ -2,7 +2,7 @@
  * \file   IcosphereMesh.cpp
  * \brief  
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   January 2025
  *********************************************************************/
 

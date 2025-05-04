@@ -2,7 +2,7 @@
  * \file   FunctionTraits.hpp
  * \brief  a bunch of helpers to extract type information from an arbitrary function type
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   May 2025
  *********************************************************************/
 

@@ -2,7 +2,7 @@
  * \file   IRenderTarget.cpp
  * \brief  contained by a camera, the camera will render to this target
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   February 2025
  *********************************************************************/
 

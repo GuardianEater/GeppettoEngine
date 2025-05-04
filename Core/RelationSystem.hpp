@@ -3,7 +3,7 @@
  * \brief  system that handles relations between entities, 
  *         for example when a parent moves and its children also move
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   February 2025
  *********************************************************************/
 

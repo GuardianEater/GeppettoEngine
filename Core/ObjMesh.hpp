@@ -2,7 +2,7 @@
  * \file   ObjMesh.hpp
  * \brief  loads an obj file into a mesh
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   March 2025
  *********************************************************************/
 

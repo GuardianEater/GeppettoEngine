@@ -2,7 +2,7 @@
  * \file   GetCallerInfo_Windows.cpp
  * \brief  gets the caller information for windows
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   March 2025
  *********************************************************************/
 

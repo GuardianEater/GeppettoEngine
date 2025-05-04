@@ -2,7 +2,7 @@
  * \file   CollisionResource.hpp
  * \brief  vaious functions used for collision detection
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   April 2025
  *********************************************************************/
 

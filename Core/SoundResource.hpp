@@ -2,7 +2,7 @@
  * \file   SoundResource.hpp
  * \brief  stores sound data
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   March 2025
  *********************************************************************/
 

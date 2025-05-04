@@ -2,7 +2,7 @@
  * \file   TextureComponent.hpp
  * \brief  adds a texture to an entity
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   January 2025
  *********************************************************************/
 

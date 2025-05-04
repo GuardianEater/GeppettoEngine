@@ -2,7 +2,7 @@
  * \file   BinarySerialzer.cpp
  * \brief  serialization of binary data
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   February 2025
  *********************************************************************/
 

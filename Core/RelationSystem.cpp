@@ -2,7 +2,7 @@
  * \file   RelationSystem.cpp
  * \brief  handles relations between entities
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   February 2025
  *********************************************************************/
 

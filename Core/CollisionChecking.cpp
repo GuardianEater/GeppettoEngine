@@ -2,7 +2,7 @@
  * \file   CollisionChecking.cpp
  * \brief  implementation for a bunch of collision checking functions
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   April 2025
  *********************************************************************/
 

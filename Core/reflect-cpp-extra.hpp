@@ -2,7 +2,7 @@
  * \file   reflect-cpp-extra.hpp
  * \brief  a bunch of extra overloads for the reflect-cpp library
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   January 2025
  *********************************************************************/
 

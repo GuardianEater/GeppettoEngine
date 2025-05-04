@@ -2,7 +2,7 @@
  * \file   Logger.cpp
  * \brief  Various logging functions
  *
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   January 2025
  *********************************************************************/
 

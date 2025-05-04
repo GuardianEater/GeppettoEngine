@@ -2,7 +2,7 @@
  * \file   SerializationSystem.cpp
  * \brief  system that saves and loads the state of the engine
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   February 2025
  *********************************************************************/
 

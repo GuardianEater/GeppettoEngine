@@ -1,6 +1,6 @@
 /************************************************************
  * @file   PhongRender.cpp
- * @author Travis Gronvold (travis.gronvold@digipen.edu)
+ * @author Travis Gronvold (2018tcg@gmail.com)
  * @date   03-12-2024
  * 
  * @brief  Implementation for rendering with the PhongModel

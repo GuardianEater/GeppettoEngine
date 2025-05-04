@@ -2,7 +2,7 @@
  * \file   RenderTargetTexture.hpp
  * \brief  render target that renders to a texture
  * 
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   February 2025
  *********************************************************************/
 

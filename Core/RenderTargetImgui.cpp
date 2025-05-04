@@ -2,7 +2,7 @@
  * \file   RenderTargetImgui.cpp
  * \brief  renders to an imgui window
  *
- * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \author Travis Gronvold (2018tcg@gmail.com)
  * \date   February 2025
  *********************************************************************/
 
