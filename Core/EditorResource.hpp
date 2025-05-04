@@ -25,7 +25,9 @@ namespace Client
 
 		void SelectAnotherEntity(Gep::Entity entity);
 
-		bool IsEntitySelected(Gep::Entity entity);
+		bool IsEntitySelected(Gep::Entity entity) const;
+
+		const std::unordered_set<Gep::Entity>& GetSelectedEntities() const;
 
 	private:
 		friend class ImGuiSystem;

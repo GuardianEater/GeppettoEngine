@@ -18,7 +18,6 @@ namespace Gep
 {
     EngineManager::EngineManager()
     {
-        SubscribeToEvent<Event::WindowClosing>(this, &EngineManager::OnWindowClosing);
         // needed so the unerlying vector does not reallocate.
         mComponentDatas.reserve(MAX_COMPONENTS);
     }
@@ -63,6 +62,11 @@ namespace Gep
     float EngineManager::GetDeltaTime() const
     {
         return mDeltaTime;
+    }
+
+    void EngineManager::Shutdown()
+    {
+        mIsRunning = false;
     }
 
     void EngineManager::SetSignature(Entity entity, Signature signature)
@@ -491,8 +495,6 @@ namespace Gep
         {
             system->Initialize();
         }
-
-        SubscribeToEvent<Event::EntityDestroyed>(this, &EngineManager::OnEntityDestroyed);
     }
 
 
@@ -511,15 +513,6 @@ namespace Gep
         {
             (*systemIt)->Exit();
         }
-    }
-
-    void EngineManager::OnWindowClosing(const Event::WindowClosing& event)
-    {
-        mIsRunning = false;
-    }
-
-    void EngineManager::OnEntityDestroyed(const Event::EntityDestroyed& event)
-    {
     }
 
     void EngineManager::CreateArchetypeChunk(Signature signature)

@@ -71,6 +71,7 @@ namespace Gep
                 return;
             }
 
+            // hide mouse and enable movement while right click is down
             if (mouseRightClicked && hovered)
             {
                 movementEnabled = true;
@@ -92,52 +93,101 @@ namespace Gep
 
             if (movementEnabled)
             {
+                // rotating the camera around
                 transform.rotation.y += mouseDelta.x * sensitivity;
                 transform.rotation.x += mouseDelta.y * sensitivity;
 
+                // dont go upside down camera
                 if (transform.rotation.x > 89.99f) transform.rotation.x = 89.99f;
                 if (transform.rotation.x < -89.99f) transform.rotation.x = -89.99f;
 
+                // speed boost
                 if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
-                {
                     movementSpeed *= 4.0f;
-                }
 
+                // controls for moveing the camera around
                 if (glfwGetKey(window, GLFW_KEY_W))
-                {
                     transform.position += forward * movementSpeed;
-                }
                 if (glfwGetKey(window, GLFW_KEY_S))
-                {
                     transform.position -= forward * movementSpeed;
-                }
                 if (glfwGetKey(window, GLFW_KEY_A))
-                {
                     transform.position -= rightward * movementSpeed;
-                }
                 if (glfwGetKey(window, GLFW_KEY_D))
-                {
                     transform.position += rightward * movementSpeed;
-                }
                 if (glfwGetKey(window, GLFW_KEY_E))
-                {
                     transform.position += glm::vec3(0.0f, movementSpeed, 0.0f);
-                }
                 if (glfwGetKey(window, GLFW_KEY_Q))
-                {
                     transform.position -= glm::vec3(0.0f, movementSpeed, 0.0f);
-                }
             }
 
             ImVec2 contentRegionSize = ImGui::GetContentRegionAvail();
             ImVec2 contentRegionPos = ImGui::GetCursorScreenPos();
+            static bool guizmoActive = false;
+            static ImGuizmo::OPERATION currentOperation = ImGuizmo::OPERATION::TRANSLATE;
+            static ImGuizmo::MODE currentMode = ImGuizmo::MODE::WORLD;
 
+            // maya keybinds for changing the current gizmo
+            if (!movementEnabled)
+            {
+                if (ImGui::IsKeyDown(ImGuiKey_W))
+                    currentOperation = ImGuizmo::OPERATION::TRANSLATE;
+                else if (ImGui::IsKeyDown(ImGuiKey_E))
+                    currentOperation = ImGuizmo::OPERATION::ROTATE;
+                else if (ImGui::IsKeyDown(ImGuiKey_R))
+                    currentOperation = ImGuizmo::OPERATION::SCALE;
+            }
+
+            // update the content region size if needed
+            if (contentRegionSize.x != mSize.x || contentRegionSize.y != mSize.y)
+            {
+                mSize.x = contentRegionSize.x;
+                mSize.y = contentRegionSize.y;
+                glViewport(contentRegionPos.x, contentRegionPos.y, contentRegionSize.x, contentRegionSize.y);
+            }
+
+            glm::mat4 view = camera.GetViewMatrix(transform.position);
+            glm::mat4 pers = camera.GetProjectionMatrix();
+
+            ImVec2 impos = ImGui::GetWindowPos();
+            mPosition = *reinterpret_cast<glm::vec2*>(&impos);
+            ImGui::Image((void*)(intptr_t)GetTexture(), contentRegionSize, ImVec2(0, 1), ImVec2(1, 0)); // flipped uvs
+            drawFunction();
+
+            ImGuizmo::SetDrawlist();
+            ImGuizmo::SetRect(contentRegionPos.x, contentRegionPos.y, contentRegionSize.x, contentRegionSize.y);
+
+            const auto& selectedEntities = editorResource.GetSelectedEntities();
+            if (selectedEntities.size() == 1 && !movementEnabled)
+            {
+                Entity selectedEntity = *selectedEntities.begin();
+
+                if (em.HasComponent<Client::Transform>(selectedEntity))
+                {
+                    Client::Transform& selectedTransform = em.GetComponent<Client::Transform>(selectedEntity);
+                    glm::mat4 model = selectedTransform.GetModelMatrix();
+
+                    float snap[3] = { 0.1f, 0.1f, 0.1f };
+                    if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(pers), currentOperation, ImGuizmo::MODE::WORLD, glm::value_ptr(model), nullptr, snap))
+                    {
+                        ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(model), &selectedTransform.position[0], &selectedTransform.rotation[0], &selectedTransform.scale[0]);
+                        selectedTransform.rotation = -selectedTransform.rotation;
+                    }
+                    guizmoActive = true;
+                }
+                else
+                    guizmoActive = false;
+            }
+            else
+                guizmoActive = false;
+
+            // when the window Is clicked set the focus and fire a ray
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && hovered)
             {
                 ImGui::SetWindowFocus();
 
                 ImVec2 mousePos = ImGui::GetMousePos();
 
+                // create a ray based on the content region
                 Ray ray = Ray::FromMouse(
                     glm::vec2(mousePos.x - contentRegionPos.x, mousePos.y - contentRegionPos.y),
                     glm::vec2(contentRegionSize.x, contentRegionSize.y),
@@ -148,24 +198,15 @@ namespace Gep
 
                 std::vector<Gep::Entity> hitEntities = collisionResource.RayCast(em, ray);
 
-                if (!hitEntities.empty())
-                    editorResource.SmartSelectEntity(hitEntities.front());
-                else if (!glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_LEFT_CONTROL))
-                    editorResource.DeselectAll();
+                // if the gizmo is not in use or if the gizmo is not enabled (for some reason IsOver returns true when its not active)
+                if (!ImGuizmo::IsOver() || !guizmoActive)
+                {
+                    if (!hitEntities.empty())
+                        editorResource.SmartSelectEntity(hitEntities.front());
+                    else if (!glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_LEFT_CONTROL))
+                        editorResource.DeselectAll();
+                }
             }
-
-
-            if (contentRegionSize.x != mSize.x || contentRegionSize.y != mSize.y)
-            {
-                mSize.x = contentRegionSize.x;
-                mSize.y = contentRegionSize.y;
-                glViewport(contentRegionPos.x, contentRegionPos.y, contentRegionSize.x, contentRegionSize.y);
-            }
-
-            ImVec2 impos = ImGui::GetWindowPos();
-            mPosition = *reinterpret_cast<glm::vec2*>(&impos);
-            ImGui::Image((void*)(intptr_t)GetTexture(), contentRegionSize, ImVec2(0, 1), ImVec2(1, 0));
-            drawFunction();
         }
 
         ImGui::End();

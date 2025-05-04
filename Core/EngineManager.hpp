@@ -130,11 +130,14 @@ namespace Gep
         void Update();
         void FrameEnd();
 
+        // called on exit
         void Exit();
 
         bool Running() const;
 
         float GetDeltaTime() const;
+
+        void Shutdown();
 
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -303,8 +306,7 @@ namespace Gep
         template<typename SystemType>
         SystemType& GetSystem();
 
-        void OnWindowClosing(const Event::WindowClosing& event);
-        void OnEntityDestroyed(const Event::EntityDestroyed& event);
+
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // archetype helpers, should only be used inside of Primary Archetype Functions /////////////////

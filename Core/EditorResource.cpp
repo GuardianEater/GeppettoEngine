@@ -56,7 +56,12 @@ namespace Client
         mSelectedEntities.insert(entity);
     }
 
-    bool EditorResource::IsEntitySelected(Gep::Entity entity)
+    const std::unordered_set<Gep::Entity>& EditorResource::GetSelectedEntities() const
+    {
+        return mSelectedEntities;
+    }
+
+    bool EditorResource::IsEntitySelected(Gep::Entity entity) const
     {
         return mSelectedEntities.contains(entity);
     }
