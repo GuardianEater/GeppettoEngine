@@ -312,7 +312,7 @@ namespace Gep
         Signature addedComponents = CreateSignature<ComponentTypes...>();
         SetSignature(entity, signature | addedComponents);
 
-        (SignalEvent(Event::ComponentAdded<ComponentTypes>{ entity }), ...);
+        (SignalEvent(Event::ComponentAdded<ComponentTypes>{ entity, GetComponent<ComponentTypes>(entity) }), ...);
 
         Log::Trace("Adding components completed");
     }
@@ -356,7 +356,7 @@ namespace Gep
             return;
         }
 
-        SignalEvent(Event::ComponentRemoved<ComponentType>{ entity });
+        SignalEvent(Event::ComponentRemoved<ComponentType>{ entity, GetComponent<ComponentType>(entity) });
 
         const uint64_t componentIndex = GetComponentBitPos<ComponentType>();
 

@@ -48,6 +48,7 @@ namespace Client
         renderer.LoadMesh("assets\\meshes\\neko.obj");
         renderer.LoadMesh("assets\\meshes\\mesh6.obj");
         renderer.LoadMesh("assets\\meshes\\cube.obj");
+        renderer.LoadMesh("assets\\meshes\\Arrow.obj");
     }
 
     void RenderSystem::Update(float dt)
@@ -86,7 +87,7 @@ namespace Client
             mManager.ForEachArchetype<Material, Transform>([&](Gep::Entity entity, Material& material, Transform& transform)
             {
                 glm::mat4 model = Gep::translation_matrix(transform.position)
-                    * Gep::rotation(-transform.rotation)
+                    * Gep::rotation(transform.rotation)
                     * Gep::scale_matrix(transform.scale);
 
                 renderer.SetModel(model);
@@ -122,7 +123,7 @@ namespace Client
                 mManager.ForEachArchetype<SphereCollider, Transform>([&](Gep::Entity e, SphereCollider& collider, Transform& transform)
                 {
                     glm::mat4 model = Gep::translation_matrix(transform.position)
-                        * Gep::rotation(-transform.rotation)
+                        * Gep::rotation(transform.rotation)
                         * Gep::scale_matrix(std::max({ transform.scale.x, transform.scale.y, transform.scale.z }));
 
                     renderer.SetModel(model);
@@ -136,7 +137,7 @@ namespace Client
                 mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity e, CubeCollider& collider, Transform& transform)
                 {
                     glm::mat4 model = Gep::translation_matrix(transform.position)
-                        * Gep::rotation(-transform.rotation)
+                        * Gep::rotation(transform.rotation)
                         * Gep::scale_matrix(transform.scale);
 
                     renderer.SetModel(model);

@@ -30,7 +30,7 @@ namespace Client
         {
             glm::mat4 translationM = Gep::translation_matrix(position);
             glm::mat4 scaleM       = Gep::scale_matrix(scale);
-            glm::mat4 rotationM    = Gep::rotation(-rotation);
+            glm::mat4 rotationM    = Gep::rotation(rotation);
 
             return translationM * rotationM * scaleM;
         }

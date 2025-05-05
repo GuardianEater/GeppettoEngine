@@ -71,7 +71,8 @@ namespace Client
                 if (Gep::SphereSphere({ view0.transform->position, view0.radius },
                                       { view1.transform->position, view1.radius }))
                 {
-                    Gep::Log::Info("Collision detected between entity ", view0.entity, " and entity ", view1.entity);
+                    ////Gep::Log::Info("Collision detected between entity ", view0.entity, " and entity ", view1.entity);
+                    //mManager.SignalEvent(Gep::Event::CollisionStay{});
                 }
             }
         }
@@ -95,7 +96,8 @@ namespace Client
 
                 if (Gep::CubeCube(cube0, cube1))
                 {
-                    Gep::Log::Info("Collision detected between 2 cubes!");
+                    //Gep::Log::Trace("Collision detected between 2 cubes!");
+                    //mManager.SignalEvent(Gep::Event::CollisionStay{});
                 }
             }
         }
@@ -107,7 +109,8 @@ namespace Client
             {
                 if (Gep::CubeSphere(cube, { view1.transform->position, view1.radius }))
                 {
-                    Gep::Log::Info("Collision detected between cube and sphere!");
+                    //Gep::Log::Info("Collision detected between cube and sphere!");
+                    //mManager.SignalEvent(Gep::Event::CollisionStay{});
                 }
             }
         }

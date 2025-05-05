@@ -36,7 +36,7 @@ namespace Gep
             int keycode;
             int action; // whether the given keycode was held released or pressed, or held
             int scancode;
-            int modifier; // wether or not shift/ctrl was held down
+            int modifier; // whether or not shift/ctrl was held down
         };
 
         struct WindowResize
@@ -76,11 +76,27 @@ namespace Gep
             double yoffset;
         };
 
+        struct CollisionEnter
+        {
+            Entity entity;
+        };
+
+        struct CollisionStay
+        {
+            Entity entity;
+        };
+
+        struct CollisionExit
+        {
+            Entity entity;
+        };
+
         // signalled immediately after the component was added to the entity
         template <typename ComponentType>
         struct ComponentAdded
         {
             Entity entity; // the entity the component was added to
+            ComponentType& component;
         };
 
         // signalled immediately before the component is going to be destroyed
@@ -88,6 +104,7 @@ namespace Gep
         struct ComponentRemoved
         {
             Entity entity;
+            ComponentType& component;
         };
     }
 }

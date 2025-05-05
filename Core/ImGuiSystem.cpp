@@ -15,6 +15,7 @@
 #include "Material.hpp"
 #include "CubeCollider.hpp"
 #include "SphereCollider.hpp"
+#include "LightComponent.hpp"
 
 #include "imgui_te_engine.h"
  //#include "ImGuizmo.h"
@@ -730,6 +731,15 @@ namespace Client
                     mManager.AddComponent(entity, Material{ .meshName = "Icosphere" });
                     mManager.AddComponent(entity, Transform{});
                     mManager.AddComponent(entity, Identification{ "Sphere" });
+                    mManager.AddComponent(entity, SphereCollider{});
+                }
+                if (ImGui::MenuItem("Light"))
+                {
+                    Gep::Entity entity = mManager.CreateEntity();
+                    mManager.AddComponent(entity, Material{ .meshName = "Sphere" });
+                    mManager.AddComponent(entity, Transform{});
+                    mManager.AddComponent(entity, Light{});
+                    mManager.AddComponent(entity, Identification{ "Light" });
                     mManager.AddComponent(entity, SphereCollider{});
                 }
                 if (ImGui::MenuItem("Camera"))

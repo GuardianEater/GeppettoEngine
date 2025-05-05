@@ -122,6 +122,28 @@ namespace Gep
 
             ImVec2 contentRegionSize = ImGui::GetContentRegionAvail();
             ImVec2 contentRegionPos = ImGui::GetCursorScreenPos();
+
+            // update the content region size/position if either were changed
+            if (contentRegionSize.x != mSize.x || contentRegionSize.y != mSize.y ||
+                contentRegionPos.x != mPosition.x || contentRegionPos.y != mPosition.y)
+            {
+                mSize = *reinterpret_cast<glm::vec2*>(&contentRegionSize);
+                mPosition = *reinterpret_cast<glm::vec2*>(&contentRegionPos);
+
+                glViewport(contentRegionPos.x, contentRegionPos.y, contentRegionSize.x, contentRegionSize.y);
+            }
+
+            // draw to everything to the imgui texture
+            ImGui::Image((void*)(intptr_t)GetTexture(), contentRegionSize, ImVec2(0, 1), ImVec2(1, 0)); // flipped uvs
+            drawFunction(); // user function might be useful
+
+            // if movement is enabled do not do any gizmos
+            if (movementEnabled)
+            {
+                ImGui::End();
+                return;
+            }
+
             static bool guizmoActive = false;
             static ImGuizmo::OPERATION currentOperation = ImGuizmo::OPERATION::TRANSLATE;
             static ImGuizmo::MODE currentMode = ImGuizmo::MODE::WORLD;
@@ -137,45 +159,60 @@ namespace Gep
                     currentOperation = ImGuizmo::OPERATION::SCALE;
             }
 
-            // update the content region size if needed
-            if (contentRegionSize.x != mSize.x || contentRegionSize.y != mSize.y)
-            {
-                mSize.x = contentRegionSize.x;
-                mSize.y = contentRegionSize.y;
-                glViewport(contentRegionPos.x, contentRegionPos.y, contentRegionSize.x, contentRegionSize.y);
-            }
-
+            // prepare gizmos for rendering
+            ImGuizmo::SetDrawlist();
+            ImGuizmo::SetRect(contentRegionPos.x, contentRegionPos.y, contentRegionSize.x, contentRegionSize.y);
             glm::mat4 view = camera.GetViewMatrix(transform.position);
             glm::mat4 pers = camera.GetProjectionMatrix();
 
-            ImVec2 impos = ImGui::GetWindowPos();
-            mPosition = *reinterpret_cast<glm::vec2*>(&impos);
-            ImGui::Image((void*)(intptr_t)GetTexture(), contentRegionSize, ImVec2(0, 1), ImVec2(1, 0)); // flipped uvs
-            drawFunction();
-
-            ImGuizmo::SetDrawlist();
-            ImGuizmo::SetRect(contentRegionPos.x, contentRegionPos.y, contentRegionSize.x, contentRegionSize.y);
-
             const auto& selectedEntities = editorResource.GetSelectedEntities();
-            if (selectedEntities.size() == 1 && !movementEnabled)
+            glm::vec3 avgPos(0.0f), avgRot(0.0f), avgScale(0.0f);
+            int count = 0;
+
+            // get the averages of all selected entities
+            for (Entity e : selectedEntities)
             {
-                Entity selectedEntity = *selectedEntities.begin();
-
-                if (em.HasComponent<Client::Transform>(selectedEntity))
+                if (em.HasComponent<Client::Transform>(e))
                 {
-                    Client::Transform& selectedTransform = em.GetComponent<Client::Transform>(selectedEntity);
-                    glm::mat4 model = selectedTransform.GetModelMatrix();
-
-                    float snap[3] = { 0.1f, 0.1f, 0.1f };
-                    if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(pers), currentOperation, ImGuizmo::MODE::WORLD, glm::value_ptr(model), nullptr, snap))
-                    {
-                        ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(model), &selectedTransform.position[0], &selectedTransform.rotation[0], &selectedTransform.scale[0]);
-                        selectedTransform.rotation = -selectedTransform.rotation;
-                    }
-                    guizmoActive = true;
+                    const auto& tf = em.GetComponent<Client::Transform>(e);
+                    avgPos += tf.position;
+                    avgRot += tf.rotation;
+                    avgScale += tf.scale;
+                    ++count;
                 }
-                else
-                    guizmoActive = false;
+            }
+
+            // if any of the selected entities had a transform get the average model matrix
+            if (count != 0)
+            {
+                avgPos /= count;
+                avgScale /= count;
+                avgRot /= count;
+
+                glm::mat4 avgModel = glm::identity<glm::mat4>();
+                avgModel = glm::translate(avgModel, avgPos);
+                avgModel *= glm::mat4_cast(glm::quat(glm::radians(avgRot)));
+                avgModel = glm::scale(avgModel, avgScale);
+
+                constexpr float snap[3] = { 0.1f, 0.1f, 0.1f };
+                if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(pers), currentOperation, ImGuizmo::MODE::WORLD, glm::value_ptr(avgModel), nullptr, snap))
+                {
+                    glm::vec3 newPos{}, newRot{}, newScale{};
+                    ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(avgModel), &newPos[0], &newRot[0], &newScale[0]);
+
+                    glm::vec3 deltaPos = newPos - avgPos;
+
+                    for (Entity e : selectedEntities)
+                    {
+                        if (em.HasComponent<Client::Transform>(e))
+                        {
+                            auto& tf = em.GetComponent<Client::Transform>(e);
+
+                            tf.position += deltaPos;
+                        }
+                    }
+                }
+                guizmoActive = true;
             }
             else
                 guizmoActive = false;
@@ -210,5 +247,9 @@ namespace Gep
         }
 
         ImGui::End();
+    }
+
+    void RenderTargetImgui::HandleGuizmo(EngineManager& em)
+    {
     }
 }

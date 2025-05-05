@@ -52,19 +52,19 @@ void main(void)
     vec3 color = ambient_color * baseColor;
     
     // === Hardcoded Sky Light ===
-    vec3 skyLightDir = normalize(vec3(0.0, 1.0, 0.0)); // Light from above
-    vec3 skyLightColor = vec3(0.6, 0.7, 1.0); // Slightly bluish tint
-    float skyLightIntensity = 1.0; // Adjust as needed
-    // Diffuse from sky light
-    float NdotL_sky = max(dot(N, skyLightDir), 0.0);
-    vec3 skyDiffuse = skyLightColor * NdotL_sky * skyLightIntensity;
-    // Specular from sky light
-    vec3 H_sky = normalize(V + skyLightDir); // Blinn-Phong half-vector
-    float NdotH_sky = max(dot(N, H_sky), 0.0);
-    vec3 skySpecular = specular_coefficient * skyLightColor * pow(NdotH_sky, specular_exponent);
-    // Add sky light contribution
-    color += (baseColor * skyDiffuse + skySpecular);
-    // ============================
+//    vec3 skyLightDir = normalize(vec3(0.0, 1.0, 0.0)); // Light from above
+//    vec3 skyLightColor = vec3(0.6, 0.7, 1.0); // Slightly bluish tint
+//    float skyLightIntensity = 1.0; // Adjust as needed
+//    // Diffuse from sky light
+//    float NdotL_sky = max(dot(N, skyLightDir), 0.0);
+//    vec3 skyDiffuse = skyLightColor * NdotL_sky * skyLightIntensity;
+//    // Specular from sky light
+//    vec3 H_sky = normalize(V + skyLightDir); // Blinn-Phong half-vector
+//    float NdotH_sky = max(dot(N, H_sky), 0.0);
+//    vec3 skySpecular = specular_coefficient * skyLightColor * pow(NdotH_sky, specular_exponent);
+//    // Add sky light contribution
+//    color += (baseColor * skyDiffuse + skySpecular);
+//    // ============================
 
     // Loop over each light.
     for (int i = 0; i < light_count; i++) {

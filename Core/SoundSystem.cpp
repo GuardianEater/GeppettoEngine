@@ -19,6 +19,9 @@ namespace Client
     {
         SoundResource& soundResource = mManager.GetResource<SoundResource>();
 
+        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<SpatialSoundEmitter>>(this, &SoundSystem::OnSpatialSoundEmitterAdded);
+        mManager.SubscribeToEvent<Gep::Event::ComponentRemoved<SpatialSoundEmitter>>(this, &SoundSystem::OnSpatialSoundEmitterRemoved);
+
         soundResource.mSoundEngine.init();
         soundResource.mSoundEngine.setGlobalVolume(1.0f);
     }
@@ -81,5 +84,15 @@ namespace Client
     void SoundSystem::Exit()
     {
         mManager.GetResource<SoundResource>().mSoundEngine.deinit();
+    }
+
+    void SoundSystem::OnSpatialSoundEmitterAdded(const Gep::Event::ComponentAdded<SpatialSoundEmitter>& event)
+    {
+
+    }
+
+    void SoundSystem::OnSpatialSoundEmitterRemoved(const Gep::Event::ComponentRemoved<SpatialSoundEmitter>& event)
+    {
+        mManager.GetResource<SoundResource>().mSoundEngine.stop(event.component.soundHandle);
     }
 }
