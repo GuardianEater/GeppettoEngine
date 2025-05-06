@@ -2,7 +2,7 @@
  * \file   pch.hpp
  * \brief  precompiled header
  * 
- * \author Travis Gronvold (2018tcg@gmail.com)
+ * \author Travis Gronvold (travis.gronvold@digipen.edu)
  * \date   January 2025
  *********************************************************************/
 
