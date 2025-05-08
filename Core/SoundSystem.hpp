@@ -12,6 +12,8 @@
 
 namespace Client
 {
+    struct SpatialSoundEmitter;
+
     class SoundSystem : public Gep::ISystem
     {
     public:
@@ -19,8 +21,12 @@ namespace Client
             : ISystem(em)
         {}
 
+    private:
         void Initialize() override;
         void Update(float dt) override;
         void Exit() override;
+
+        void OnSpatialSoundEmitterAdded(const Gep::Event::ComponentAdded<SpatialSoundEmitter>& event);
+        void OnSpatialSoundEmitterRemoved(const Gep::Event::ComponentRemoved<SpatialSoundEmitter>& event);
     };
 }

@@ -402,9 +402,7 @@ namespace Gep
 
     bool CubeSphere(const Cube& cube, const Sphere& sphere)
     {
-        glm::mat3 rotationMatrix = glm::mat3(Gep::rotation(cube.rotation));
-
-        glm::vec3 localSpherePos = glm::transpose(rotationMatrix) * (sphere.position - cube.position);
+        glm::vec3 localSpherePos = glm::transpose(cube.axes) * (sphere.position - cube.position);
 
         glm::vec3 min = -cube.halfSize;
         glm::vec3 max = cube.halfSize;

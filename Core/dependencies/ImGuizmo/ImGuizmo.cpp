@@ -787,8 +787,8 @@ namespace IMGUIZMO_NAMESPACE
    static const char* scaleInfoMask[] = { "X : %5.2f", "Y : %5.2f", "Z : %5.2f", "XYZ : %5.2f" };
    static const char* rotationInfoMask[] = { "X : %5.2f deg %5.2f rad", "Y : %5.2f deg %5.2f rad", "Z : %5.2f deg %5.2f rad", "Screen : %5.2f deg %5.2f rad" };
    static const int translationInfoIndex[] = { 0,0,0, 1,0,0, 2,0,0, 1,2,0, 0,2,0, 0,1,0, 0,1,2 };
-   static const float quadMin = 0.5f;
-   static const float quadMax = 0.8f;
+   static const float quadMin = 0.2f;
+   static const float quadMax = 0.5f;
    static const float quadUV[8] = { quadMin, quadMin, quadMin, quadMax, quadMax, quadMax, quadMax, quadMin };
    static const int halfCircleSegmentCount = 64;
    static const float snapTension = 0.5f;

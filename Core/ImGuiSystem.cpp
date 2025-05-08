@@ -15,17 +15,19 @@
 #include "Material.hpp"
 #include "CubeCollider.hpp"
 #include "SphereCollider.hpp"
+#include "LightComponent.hpp"
 
 #include "imgui_te_engine.h"
  //#include "ImGuizmo.h"
 #include "SerializationResource.hpp"
+#include "EditorResource.hpp"
 
 namespace Client
 {
     ImGuiSystem::ImGuiSystem(Gep::EngineManager& em)
         : ISystem(em)
+        , mEditorResource(em.GetResource<EditorResource>())
     {
-
     }
 
     std::string ImGuiSystem::GetEntityDisplayName(Gep::Entity entity)
@@ -46,75 +48,43 @@ namespace Client
 
     void ImGuiSystem::DrawInspectorPanel()
     {
-        if (mSelectedEntities.size() == 0)
+        ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
+
+        // case where there is no entities selected
+        if (mEditorResource.mSelectedEntities.size() == 0)
         {
-            ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
             ImGui::Text("No Entity Selected");
             ImGui::End(); // Inspector
             return;
         }
 
-        ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
-        if (mSelectedEntities.size() > 1)
+        // case where there is multiple entities selected, display the names of each selected entity
+        if (mEditorResource.mSelectedEntities.size() > 1)
         {
-            ImGui::Text("%d Entities Selected", mSelectedEntities.size());
+            ImGui::Text("%d Entities Selected", mEditorResource.mSelectedEntities.size());
 
             ImGui::Separator();
 
-            for (Gep::Entity entity : mSelectedEntities)
+            for (Gep::Entity entity : mEditorResource.mSelectedEntities)
             {
                 std::string displayName = GetEntityDisplayName(entity);
                 ImGui::Text(displayName.c_str());
+
+                if (mManager.HasComponent<Material>(entity))
+                {
+                    Client::Material& material = mManager.GetComponent<Client::Material>(entity);
+                    material.selected = true;
+                }
             }
             ImGui::End(); // Inspector
             return;
         }
 
-        Gep::Entity entity = *mSelectedEntities.begin();
-
-        //if (mManager.HasComponent<Transform>(entity))
-        //{
-        //    const auto& cameras = mManager.GetEntities<Camera, Transform>();
-        //
-        //    //ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
-        //
-        //    for (Gep::Entity cameraEntity : cameras)
-        //    {
-        //        Camera& camera = mManager.GetComponent<Camera>(cameraEntity);
-        //        Transform& camTransform = mManager.GetComponent<Transform>(cameraEntity);
-        //
-        //
-        //        glm::vec2 size = camera.renderTarget->GetSize();
-        //        glm::vec2 pos = camera.renderTarget->GetPosition();
-        //
-        //        ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
-        //
-        //        glm::mat4 view = camera.GetViewMatrix(camTransform.position);
-        //        glm::mat4 proj = camera.GetProjectionMatrix();
-        //
-        //        Transform& transform = mManager.GetComponent<Transform>(entity);
-        //        glm::mat4 model = transform.GetModelMatrix();
-        //
-        //        ImGuizmo::OPERATION operation = ImGuizmo::OPERATION::TRANSLATE;
-        //        ImGuizmo::MODE mode = ImGuizmo::MODE::WORLD;
-        //
-        //        ImGuizmo::Manipulate(
-        //            glm::value_ptr(view), 
-        //            glm::value_ptr(proj), 
-        //            operation, 
-        //            mode, 
-        //            glm::value_ptr(model)
-        //        );
-        //
-        //        if (ImGuizmo::IsUsing())
-        //        {
-        //            transform.SetModelMatrix(model);
-        //        }
-        //
-        //        break;
-        //    }
-        //
-        //}
+        // case where there is only a single entity selected, display its name and all of its components
+        Gep::Entity entity = *mEditorResource.mSelectedEntities.begin();
+        std::string displayName = GetEntityDisplayName(entity);
+        ImGui::Text(displayName.c_str());
+        ImGui::Dummy({ 0.0f, 10.0f });
 
         if (mManager.HasComponent<Material>(entity))
         {
@@ -122,24 +92,21 @@ namespace Client
             material.selected = true;
         }
 
-        std::string displayName = GetEntityDisplayName(entity);
-
-        ImGui::Text(displayName.c_str());
-        ImGui::Dummy({ 0.0f, 10.0f });
-
+        // display the components imgui dropdown
         mManager.ForEachComponent(entity, [&](const Gep::ComponentData& componentData)
-            {
-                mComponentInspectorPanels[componentData.index](entity);
-            });
+        {
+            mComponentInspectorPanels[componentData.index](entity);
+        });
 
         ImGui::Dummy({ 0.0f, 10.0f });
 
         ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
         ImGui::PushStyleColor(ImGuiCol_Header, buttonColor);
 
-        // Calculate the text size and available space
+        // dropdown at the bottom of an entities panel that allows adding of components
         if (ImGui::CollapsingHeader("Add Component"))
         {
+            // iterate over the components that an entity DOESN'T have
             for (const auto& [index, componentData] : mManager.GetComponentDatas())
             {
                 if (componentData.has(entity)) continue;
@@ -222,17 +189,17 @@ namespace Client
         // change the color of tree node selected
         ImVec4 selectedColor = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
         ImVec4 defaultColor = ImGui::GetStyleColorVec4(ImGuiCol_Header);
-        ImVec4 color = mSelectedEntities.contains(entity) ? selectedColor : defaultColor;
+        ImVec4 color = mEditorResource.mSelectedEntities.contains(entity) ? selectedColor : defaultColor;
         ImVec4 hoverColor = ImVec4(color.x + 0.1f, color.y + 0.1f, color.z + 0.1f, 1.0f);
 
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, hoverColor);
-        ImGui::PushStyleColor(ImGuiCol_Header, mSelectedEntities.contains(entity) ? selectedColor : defaultColor);
+        ImGui::PushStyleColor(ImGuiCol_Header, mEditorResource.mSelectedEntities.contains(entity) ? selectedColor : defaultColor);
 
         bool isOpen = ImGui::TreeNodeEx(displayName.c_str()
             , ImGuiTreeNodeFlags_OpenOnArrow
             | ImGuiTreeNodeFlags_SpanAvailWidth
             | (mManager.HasChild(entity) ? ImGuiTreeNodeFlags_None : ImGuiTreeNodeFlags_Leaf)
-            | (mSelectedEntities.contains(entity) ? ImGuiTreeNodeFlags_Selected : ImGuiTreeNodeFlags_None));
+            | (mEditorResource.mSelectedEntities.contains(entity) ? ImGuiTreeNodeFlags_Selected : ImGuiTreeNodeFlags_None));
 
         ImGui::PopStyleColor(2);
         ImGui::PopStyleVar(2);
@@ -333,11 +300,16 @@ namespace Client
                 {
                     func(droppedEntity);
                 }
-                mSelectedEntities.clear();
+                mEditorResource.mSelectedEntities.clear();
 
             }
             ImGui::EndDragDropTarget();
         }
+    }
+
+    void ImGuiSystem::OnEntityDestroyed(const Gep::Event::EntityDestroyed& event)
+    {
+        mEditorResource.mSelectedEntities.erase(event.entity);
     }
 
     void ImGuiSystem::OnMouseScrolled(const Gep::Event::MouseScrolled& event)
@@ -356,6 +328,7 @@ namespace Client
     void ImGuiSystem::Initialize()
     {
         mManager.SubscribeToEvent<Gep::Event::MouseScrolled>(this, &ImGuiSystem::OnMouseScrolled);
+        mManager.SubscribeToEvent<Gep::Event::EntityDestroyed>(this, &ImGuiSystem::OnEntityDestroyed);
     }
 
     void ImGuiSystem::Update(float dt)
@@ -412,30 +385,30 @@ namespace Client
         ImGui::Dummy(size);
 
         EntitiesDragDropTarget([&](Gep::Entity entity)
-            {
-                mManager.DetachEntity(entity);
-            });
+        {
+            mManager.DetachEntity(entity);
+        });
 
         // clears selected entities if the background is clicked
         if (ImGui::IsItemClicked())
         {
-            mSelectedEntities.clear();
+            mEditorResource.mSelectedEntities.clear();
         }
 
         // delete selected entities
         if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
         {
-            for (Gep::Entity selectedEntity : mSelectedEntities)
+            for (Gep::Entity selectedEntity : mEditorResource.mSelectedEntities)
             {
                 mManager.MarkEntityForDestruction(selectedEntity);
             }
-            mSelectedEntities.clear();
+            mEditorResource.mSelectedEntities.clear();
         }
 
         // duplicate selected entities
         if (ImGui::IsKeyPressed(ImGuiKey_D, false) && ImGui::GetIO().KeyCtrl)
         {
-            for (Gep::Entity selectedEntity : mSelectedEntities)
+            for (Gep::Entity selectedEntity : mEditorResource.mSelectedEntities)
             {
                 mManager.DuplicateEntity(selectedEntity);
             }
@@ -443,18 +416,18 @@ namespace Client
 
         if (ImGui::IsKeyDown(ImGuiKey_F, false))
         {
-            if (mSelectedEntities.size() == 1)
+            if (mEditorResource.mSelectedEntities.size() == 1)
             {
-                StartCameraFocus(*mSelectedEntities.begin());
+                StartCameraFocus(*mEditorResource.mSelectedEntities.begin());
             }
         }
 
         if (ImGui::IsKeyPressed(ImGuiKey_A, false) && ImGui::GetIO().KeyCtrl)
         {
-            mSelectedEntities.clear();
+            mEditorResource.mSelectedEntities.clear();
             for (Gep::Entity entity : mEntities)
             {
-                mSelectedEntities.insert(entity);
+                mEditorResource.mSelectedEntities.insert(entity);
             }
         }
 
@@ -477,70 +450,67 @@ namespace Client
             // Multi-selection logic (Ctrl or Shift key)
             const bool isCtrlPressed = ImGui::GetIO().KeyCtrl;
             const bool isShiftPressed = ImGui::GetIO().KeyShift;
-            static size_t lastSelectedIndex = std::numeric_limits<size_t>::max(); // Invalid index initially
 
             // default selection
-            if (ImGui::IsItemClicked() && !isCtrlPressed && !isShiftPressed && mSelectedEntities.size() <= 1)
+            if (ImGui::IsItemClicked() && !isCtrlPressed && !isShiftPressed && mEditorResource.mSelectedEntities.size() <= 1)
             {
-                mSelectedEntities.clear();
-                mSelectedEntities.insert(entity);
-                lastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
+                mEditorResource.SelectEntity(entity);
+                mEditorResource.mLastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
             }
 
             // same as default but if there are multiple entities selected, doesn't deselect until released
-            else if (ImGui::IsItemDeactivated() && !isCtrlPressed && !isShiftPressed && mSelectedEntities.size() > 1)
+            else if (ImGui::IsItemDeactivated() && !isCtrlPressed && !isShiftPressed && mEditorResource.mSelectedEntities.size() > 1)
             {
-                mSelectedEntities.clear();
-                mSelectedEntities.insert(entity);
-                lastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
+                mEditorResource.SelectEntity(entity);
+                mEditorResource.mLastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
             }
 
             // will select the entity if it is clicked, and unselect if it is clicked again
             else if (ImGui::IsItemClicked() && isCtrlPressed && !isShiftPressed)
             {
-                if (mSelectedEntities.contains(entity))
-                    mSelectedEntities.erase(entity);
+                if (mEditorResource.IsEntitySelected(entity))
+                    mEditorResource.DeselectEntity(entity);
                 else
                 {
-                    mSelectedEntities.insert(entity);
-                    lastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
+                    mEditorResource.SelectAnotherEntity(entity);
+                    mEditorResource.mLastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
                 }
             }
 
             // multiselect with shift key
             else if (ImGui::IsItemClicked() && !isCtrlPressed && isShiftPressed)
             {
-                mSelectedEntities.clear();
-                if (lastSelectedIndex < entities.size())
+                mEditorResource.mSelectedEntities.clear();
+                if (mEditorResource.mLastSelectedIndex < entities.size())
                 {
                     size_t currentIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
-                    if (lastSelectedIndex < currentIndex)
+                    if (mEditorResource.mLastSelectedIndex < currentIndex)
                     {
-                        for (size_t i = lastSelectedIndex; i <= currentIndex; ++i)
-                            mSelectedEntities.insert(entities[i]);
+                        for (size_t i = mEditorResource.mLastSelectedIndex; i <= currentIndex; ++i)
+                            mEditorResource.SelectAnotherEntity(entities[i]);
                     }
                     else
                     {
-                        for (size_t i = currentIndex; i <= lastSelectedIndex; ++i)
-                            mSelectedEntities.insert(entities[i]);
+                        for (size_t i = currentIndex; i <= mEditorResource.mLastSelectedIndex; ++i)
+                            mEditorResource.SelectAnotherEntity(entities[i]);
                     }
                 }
             }
 
-            // Add context menu
+            // right click menu, with delete and duplicate options
             if (ImGui::BeginPopupContextItem())
             {
                 if (ImGui::MenuItem("Delete"))
                 {
-                    for (Gep::Entity selectedEntity : mSelectedEntities)
+                    for (Gep::Entity selectedEntity : mEditorResource.mSelectedEntities)
                     {
                         mManager.MarkEntityForDestruction(selectedEntity);
                     }
-                    mSelectedEntities.clear();
+                    mEditorResource.mSelectedEntities.clear();
                 }
                 if (ImGui::MenuItem("Duplicate"))
                 {
-                    for (Gep::Entity selectedEntity : mSelectedEntities)
+                    for (Gep::Entity selectedEntity : mEditorResource.mSelectedEntities)
                     {
                         mManager.DuplicateEntity(selectedEntity);
                     }
@@ -548,10 +518,10 @@ namespace Client
                 ImGui::EndPopup();
             }
 
-            // Add drag and drop source
+            // drag and drop source
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
             {
-                std::vector<Gep::Entity> selectedEntities(mSelectedEntities.begin(), mSelectedEntities.end());
+                std::vector<Gep::Entity> selectedEntities(mEditorResource.mSelectedEntities.begin(), mEditorResource.mSelectedEntities.end());
 
                 ImGui::SetDragDropPayload("ENTITY", selectedEntities.data(), selectedEntities.size() * sizeof(Gep::Entity));
                 ImGui::Text("Dragging %s", displayName.c_str());
@@ -560,11 +530,11 @@ namespace Client
 
             // Add drag and drop target
             EntitiesDragDropTarget([&](Gep::Entity droppedEntity)
-                {
-                    if (droppedEntity == entity) return;
+            {
+                if (droppedEntity == entity) return;
 
-                    mManager.AttachEntity(entity, droppedEntity);
-                });
+                mManager.AttachEntity(entity, droppedEntity);
+            });
 
             if (isOpen)
             {
@@ -752,29 +722,46 @@ namespace Client
 
             if (ImGui::BeginMenu("Create"))
             {
-                if (ImGui::MenuItem("Empty")) { mManager.CreateEntity(); }
+                if (ImGui::MenuItem("Empty"))
+                { 
+                    Gep::Entity entity = mManager.CreateEntity(); 
+                    mEditorResource.SelectEntity(entity);
+                }
                 if (ImGui::MenuItem("Cube"))
                 {
                     Gep::Entity entity = mManager.CreateEntity();
-                    mManager.AddComponent(entity, Material{ .meshName = "Cube" });
-                    mManager.AddComponent(entity, Transform{});
-                    mManager.AddComponent(entity, Identification{ "Cube" });
-                    mManager.AddComponent(entity, CubeCollider{});
+                    mManager.AddComponent(entity, Material{ .meshName = "Cube" }
+                                                , Transform{}
+                                                , Identification{ "Cube" }
+                                                , CubeCollider{});
+                    mEditorResource.SelectEntity(entity);
                 }
                 if (ImGui::MenuItem("Sphere"))
                 {
                     Gep::Entity entity = mManager.CreateEntity();
-                    mManager.AddComponent(entity, Material{ .meshName = "Icosphere" });
-                    mManager.AddComponent(entity, Transform{});
-                    mManager.AddComponent(entity, Identification{ "Sphere" });
-                    mManager.AddComponent(entity, SphereCollider{});
+                    mManager.AddComponent(entity, Material{ .meshName = "Icosphere" }
+                                                , Transform{}
+                                                , Identification{ "Sphere" }
+                                                , SphereCollider{});
+                    mEditorResource.SelectEntity(entity);
+                }
+                if (ImGui::MenuItem("Light"))
+                {
+                    Gep::Entity entity = mManager.CreateEntity();
+                    mManager.AddComponent(entity, Material{ .meshName = "Sphere" }
+                                                , Transform{}
+                                                , Light{}
+                                                , Identification{ "Light" }
+                                                , SphereCollider{});
+                    mEditorResource.SelectEntity(entity);
                 }
                 if (ImGui::MenuItem("Camera"))
                 {
                     Gep::Entity entity = mManager.CreateEntity();
-                    mManager.AddComponent(entity, Camera{});
-                    mManager.AddComponent(entity, Transform{});
-                    mManager.AddComponent(entity, Identification{ "Camera" });
+                    mManager.AddComponent(entity,Camera{}
+                                                , Transform{}
+                                                , Identification{ "Camera" });
+                    mEditorResource.SelectEntity(entity);
                 }
                 ImGui::EndMenu();
             }

@@ -22,5 +22,8 @@ namespace Gep
         {}
 
         void Draw(EngineManager& em, Entity camera, const std::function<void()>& drawFunction = []() {}) override;
+
+    private:
+        void HandleGuizmo(EngineManager& em);
     };
 }

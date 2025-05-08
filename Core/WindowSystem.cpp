@@ -76,6 +76,14 @@ namespace Client
         // Setup Dear ImGui style
         ImGui::StyleColorsDark();
 
+        ImGuizmo::AllowAxisFlip(false);
+        ImGuizmo::SetGizmoSizeClipSpace(0.2f);
+        ImGuizmo::Style& gizmoStyle = ImGuizmo::GetStyle();
+        gizmoStyle.TranslationLineThickness = 4.0f;
+        gizmoStyle.TranslationLineArrowSize = 8.0f;
+        gizmoStyle.CenterCircleSize = 5.0f;
+
+
         // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
         ImGuiStyle& style = ImGui::GetStyle();
         if (mIO->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -326,7 +334,7 @@ namespace Client
     {
         if (glfwWindowShouldClose(mPrimaryWindow))
         {
-            mManager.SignalEvent<Gep::Event::WindowClosing>({});
+            mManager.Shutdown();
         }
         glfwSwapBuffers(mPrimaryWindow);
     }

@@ -29,6 +29,9 @@
 
 namespace Client
 {
+    // forward declaration
+    class EditorResource;
+
     // Concept to check if a type has an iterator
     template <typename T>
     concept TypeIsContainer = requires(T t)
@@ -73,7 +76,7 @@ namespace Client
 
     private:
         std::vector<Gep::Entity> mEntities;
-        std::unordered_set<Gep::Entity> mSelectedEntities; // entities that are selected in the hierarchy
+        EditorResource& mEditorResource;
 
         std::vector<std::function<void(Gep::Entity)>> mComponentInspectorPanels; // component index -> function to draw the inspector
 
@@ -84,6 +87,7 @@ namespace Client
         template <typename... ComponentTypes>
         void OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes);
 
+        void OnEntityDestroyed(const Gep::Event::EntityDestroyed& event);
         void OnMouseScrolled(const Gep::Event::MouseScrolled& event);
 
         void Initialize() override;
