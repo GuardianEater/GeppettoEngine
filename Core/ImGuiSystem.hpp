@@ -87,6 +87,7 @@ namespace Client
         template <typename... ComponentTypes>
         void OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes);
 
+        void OnEntityDestroyed(const Gep::Event::EntityDestroyed& event);
         void OnMouseScrolled(const Gep::Event::MouseScrolled& event);
 
         void Initialize() override;

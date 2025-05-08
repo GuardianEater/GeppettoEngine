@@ -28,7 +28,8 @@ namespace Client
             float t;
             if (Gep::RayCube(ray, Gep::Cube{ transform.position, transform.scale * 0.5f, transform.rotation }, t))
             {
-                hits.emplace_back(t, entity);
+                if (t > 0.0f) // only accept objects infront of the ray
+                    hits.emplace_back(t, entity);
             }
         });
 
@@ -37,8 +38,9 @@ namespace Client
             float t;
             if (Gep::RaySphere(ray, Gep::Sphere{ transform.position, std::max({transform.scale.x, transform.scale.y, transform.scale.z}) * 0.5f }, t))
             {
-                hits.emplace_back(t, entity);
-            }        
+                if (t > 0.0f) // only accept objects infront of the ray
+                    hits.emplace_back(t, entity);
+            }
         });
 
         std::sort(hits.begin(), hits.end(), [](const auto& a, const auto& b) 

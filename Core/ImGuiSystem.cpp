@@ -307,6 +307,11 @@ namespace Client
         }
     }
 
+    void ImGuiSystem::OnEntityDestroyed(const Gep::Event::EntityDestroyed& event)
+    {
+        mEditorResource.mSelectedEntities.erase(event.entity);
+    }
+
     void ImGuiSystem::OnMouseScrolled(const Gep::Event::MouseScrolled& event)
     {
         static float scale = 1.0f;
@@ -323,6 +328,7 @@ namespace Client
     void ImGuiSystem::Initialize()
     {
         mManager.SubscribeToEvent<Gep::Event::MouseScrolled>(this, &ImGuiSystem::OnMouseScrolled);
+        mManager.SubscribeToEvent<Gep::Event::EntityDestroyed>(this, &ImGuiSystem::OnEntityDestroyed);
     }
 
     void ImGuiSystem::Update(float dt)
@@ -716,38 +722,46 @@ namespace Client
 
             if (ImGui::BeginMenu("Create"))
             {
-                if (ImGui::MenuItem("Empty")) { mManager.CreateEntity(); }
+                if (ImGui::MenuItem("Empty"))
+                { 
+                    Gep::Entity entity = mManager.CreateEntity(); 
+                    mEditorResource.SelectEntity(entity);
+                }
                 if (ImGui::MenuItem("Cube"))
                 {
                     Gep::Entity entity = mManager.CreateEntity();
-                    mManager.AddComponent(entity, Material{ .meshName = "Cube" });
-                    mManager.AddComponent(entity, Transform{});
-                    mManager.AddComponent(entity, Identification{ "Cube" });
-                    mManager.AddComponent(entity, CubeCollider{});
+                    mManager.AddComponent(entity, Material{ .meshName = "Cube" }
+                                                , Transform{}
+                                                , Identification{ "Cube" }
+                                                , CubeCollider{});
+                    mEditorResource.SelectEntity(entity);
                 }
                 if (ImGui::MenuItem("Sphere"))
                 {
                     Gep::Entity entity = mManager.CreateEntity();
-                    mManager.AddComponent(entity, Material{ .meshName = "Icosphere" });
-                    mManager.AddComponent(entity, Transform{});
-                    mManager.AddComponent(entity, Identification{ "Sphere" });
-                    mManager.AddComponent(entity, SphereCollider{});
+                    mManager.AddComponent(entity, Material{ .meshName = "Icosphere" }
+                                                , Transform{}
+                                                , Identification{ "Sphere" }
+                                                , SphereCollider{});
+                    mEditorResource.SelectEntity(entity);
                 }
                 if (ImGui::MenuItem("Light"))
                 {
                     Gep::Entity entity = mManager.CreateEntity();
-                    mManager.AddComponent(entity, Material{ .meshName = "Sphere" });
-                    mManager.AddComponent(entity, Transform{});
-                    mManager.AddComponent(entity, Light{});
-                    mManager.AddComponent(entity, Identification{ "Light" });
-                    mManager.AddComponent(entity, SphereCollider{});
+                    mManager.AddComponent(entity, Material{ .meshName = "Sphere" }
+                                                , Transform{}
+                                                , Light{}
+                                                , Identification{ "Light" }
+                                                , SphereCollider{});
+                    mEditorResource.SelectEntity(entity);
                 }
                 if (ImGui::MenuItem("Camera"))
                 {
                     Gep::Entity entity = mManager.CreateEntity();
-                    mManager.AddComponent(entity, Camera{});
-                    mManager.AddComponent(entity, Transform{});
-                    mManager.AddComponent(entity, Identification{ "Camera" });
+                    mManager.AddComponent(entity,Camera{}
+                                                , Transform{}
+                                                , Identification{ "Camera" });
+                    mEditorResource.SelectEntity(entity);
                 }
                 ImGui::EndMenu();
             }

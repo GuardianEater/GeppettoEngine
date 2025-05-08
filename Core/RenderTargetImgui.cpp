@@ -152,11 +152,22 @@ namespace Gep
             if (!movementEnabled)
             {
                 if (ImGui::IsKeyDown(ImGuiKey_W))
+                {
                     currentOperation = ImGuizmo::OPERATION::TRANSLATE;
+                    currentMode = ImGuizmo::MODE::WORLD;
+                }
                 else if (ImGui::IsKeyDown(ImGuiKey_E))
+                {
                     currentOperation = ImGuizmo::OPERATION::ROTATE;
+                    currentMode = ImGuizmo::MODE::LOCAL;
+                }
                 else if (ImGui::IsKeyDown(ImGuiKey_R))
-                    currentOperation = ImGuizmo::OPERATION::SCALE;
+                {
+                    Gep::Log::Error("Scale is not implemented");
+
+                    //currentOperation = ImGuizmo::OPERATION::SCALE;
+                    //currentMode = ImGuizmo::MODE::LOCAL;
+                }
             }
 
             // prepare gizmos for rendering
@@ -166,8 +177,22 @@ namespace Gep
             glm::mat4 pers = camera.GetProjectionMatrix();
 
             const auto& selectedEntities = editorResource.GetSelectedEntities();
-            glm::vec3 avgPos(0.0f), avgRot(0.0f), avgScale(0.0f);
+            glm::vec3 avgPos(0.0f);
             int count = 0;
+
+            // if there is an entity selected use its center as an average
+            if (selectedEntities.size() == 1)
+            {
+                Entity e = *selectedEntities.begin();
+                if (em.HasComponent<Client::Transform>(e))
+                {
+                    const auto& tf = em.GetComponent<Client::Transform>(e);
+                    avgPos = tf.position;
+
+                    ++count;
+                }
+
+            }
 
             // get the averages of all selected entities
             for (Entity e : selectedEntities)
@@ -176,8 +201,7 @@ namespace Gep
                 {
                     const auto& tf = em.GetComponent<Client::Transform>(e);
                     avgPos += tf.position;
-                    avgRot += tf.rotation;
-                    avgScale += tf.scale;
+
                     ++count;
                 }
             }
@@ -186,21 +210,16 @@ namespace Gep
             if (count != 0)
             {
                 avgPos /= count;
-                avgScale /= count;
-                avgRot /= count;
 
-                glm::mat4 avgModel = glm::identity<glm::mat4>();
-                avgModel = glm::translate(avgModel, avgPos);
-                avgModel *= glm::mat4_cast(glm::quat(glm::radians(avgRot)));
-                avgModel = glm::scale(avgModel, avgScale);
+                glm::mat4 avgModel = glm::translate(glm::mat4(1.0f), avgPos); // this only impacts the placement of the gizmo
 
                 constexpr float snap[3] = { 0.1f, 0.1f, 0.1f };
-                if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(pers), currentOperation, ImGuizmo::MODE::WORLD, glm::value_ptr(avgModel), nullptr, snap))
+                glm::mat4 deltaMatrix(1.0f);
+                
+                if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(pers), currentOperation, currentMode, glm::value_ptr(avgModel), glm::value_ptr(deltaMatrix), snap))
                 {
-                    glm::vec3 newPos{}, newRot{}, newScale{};
-                    ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(avgModel), &newPos[0], &newRot[0], &newScale[0]);
-
-                    glm::vec3 deltaPos = newPos - avgPos;
+                    glm::vec3 pos{ 0 }, rot{ 0 }, scl{ 0 };
+                    ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMatrix), glm::value_ptr(pos), glm::value_ptr(rot), glm::value_ptr(scl));
 
                     for (Entity e : selectedEntities)
                     {
@@ -208,7 +227,13 @@ namespace Gep
                         {
                             auto& tf = em.GetComponent<Client::Transform>(e);
 
-                            tf.position += deltaPos;
+                            glm::mat4 model = Gep::translation_matrix(tf.position)
+                                            * Gep::rotation(tf.rotation)
+                                            * Gep::scale_matrix(tf.scale); // scale aafsgd
+                            
+                            glm::mat4 newModel = deltaMatrix * model;
+
+                            ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(newModel), glm::value_ptr(tf.position), glm::value_ptr(tf.rotation), glm::value_ptr(tf.scale));
                         }
                     }
                 }

@@ -311,8 +311,12 @@ namespace Gep
             Log::Error("GetRoot() failed, Entity: [", child, "] does not exist");
             return INVALID_ENTITY;
         }
+        std::vector<Entity> ancestors = GetAncestors(child);
 
-        return GetAncestors(child).back();
+        if (ancestors.empty())
+            return child;
+
+        return ancestors.back();
     }
 
     size_t EngineManager::GetChildCount(Entity parent) const
