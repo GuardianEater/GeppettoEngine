@@ -96,7 +96,6 @@ int main() try
         Client::CollisionSystem
     > systemTypes;
 
-
     // register all types ////////////////////////////////////////////////////////////////////////////
     em.RegisterTypes(componentTypes, systemTypes);
 

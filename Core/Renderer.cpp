@@ -96,7 +96,7 @@ namespace Gep
 
         if (ext == ".obj")
         {
-            Mesh mesh = Gep::LoadObjMesh(path);
+            Mesh mesh = Gep::LoadMesh(path);
             LoadMesh(path.string(), mesh);
         }
         else

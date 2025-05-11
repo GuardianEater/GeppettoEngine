@@ -12,5 +12,5 @@
 
 namespace Gep
 {
-    Mesh LoadObjMesh(const std::filesystem::path& objPath);
+    Mesh LoadMesh(const std::filesystem::path& objPath);
 }

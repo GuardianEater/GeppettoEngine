@@ -9,10 +9,10 @@
 #pragma once
 
 #include <Core.hpp>
-#include <glm.hpp>
+#include <glm\glm.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
-#include <gtx/euler_angles.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 namespace Gep
 {
