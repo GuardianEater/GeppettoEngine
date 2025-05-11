@@ -10,7 +10,7 @@
 
 #include <Core.hpp>
 #include <glew.h>
-#include <glm.hpp>
+#include <glm\glm.hpp>
 #include <Mesh.hpp>
 #include <Camera.hpp>
 #include <ShaderProgram.hpp>
@@ -89,7 +89,6 @@ namespace Gep
         GLuint LoadShader(GLenum shaderType, const std::filesystem::path& shaderPath);
         void SetUpLightSSBO();
 
-        GLuint mSSBO;
 
     private:
         struct MeshData

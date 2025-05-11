@@ -18,7 +18,7 @@
 
 #include <rfl.hpp>
 
-#include <glm.hpp>
+#include <glm\glm.hpp>
 
 #include "Logger.hpp"
 #include "TypeID.hpp"

@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include <glm.hpp>
+#include <glm\glm.hpp>
 #include "Affine.hpp"
 
 #define GLM_ENABLE_EXPERIMENTAL
-#include <gtx/matrix_decompose.hpp>
+#include <glm\gtx\matrix_decompose.hpp>
 
 namespace Client
 {

@@ -47,6 +47,11 @@
 #include <cmath>
 #include <execution>
 
+// assimp
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 // imgui
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -54,11 +59,9 @@
 #include <imgui_stdlib.h>
 
 // glm
-
 // enable glm intrinsics
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_INTRINSICS
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -68,11 +71,11 @@
 #include <glfw/glfw3.h>
 
 // sol
-#include "sol/sol.hpp"
+#include <sol/sol.hpp>
 
 // log
-#include "Logger.hpp"
+#include <Logger.hpp>
 
 // reflect-cpp
-#include "rfl.hpp"
-#include "rfl/json.hpp"
+#include <rfl.hpp>
+#include <rfl/json.hpp>

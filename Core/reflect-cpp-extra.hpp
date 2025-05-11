@@ -9,7 +9,7 @@
 #pragma once
 
 #include <rfl.hpp>
-#include <glm.hpp>
+#include <glm\glm.hpp>
 
 namespace rfl 
 {
