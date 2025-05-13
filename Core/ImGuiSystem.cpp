@@ -41,8 +41,6 @@ namespace Client
                 displayName = id.name;
         }
 
-        displayName += " [" + std::to_string(entity) + "]";
-
         return displayName;
     }
 
@@ -497,7 +495,7 @@ namespace Client
                 }
             }
 
-            // right click menu, with delete and duplicate options
+            // right click menu, with delete and duplicate, etc options
             if (ImGui::BeginPopupContextItem())
             {
                 if (ImGui::MenuItem("Delete"))
@@ -513,6 +511,16 @@ namespace Client
                     for (Gep::Entity selectedEntity : mEditorResource.mSelectedEntities)
                     {
                         mManager.DuplicateEntity(selectedEntity);
+                    }
+                }
+
+                if (mEditorResource.mSelectedEntities.size() == 1)
+                {
+                    Gep::Entity selectedEntity = *mEditorResource.mSelectedEntities.begin();
+                    if (ImGui::MenuItem("Save as prefab"))
+                    {
+                        auto& sr = mManager.GetResource<Client::SerializationResource>();
+                        sr.SavePrefab(mManager.SaveEntity(selectedEntity), "assets\\prefabs\\" + GetEntityDisplayName(selectedEntity) + ".prefab");
                     }
                 }
                 ImGui::EndPopup();
@@ -625,9 +633,16 @@ namespace Client
                     }
 
                     // if extension is .json
-                    if (entry.path().extension() == ".scenejson")
+                    if (entry.path().extension() == ".scene")
                     {
                         mManager.GetResource<Client::SerializationResource>().ChangeScene(mManager, entry.path());
+                    }
+
+                    if (entry.path().extension() == ".prefab")
+                    {
+                        nlohmann::json prefab = mManager.GetResource<Client::SerializationResource>().LoadPrefab(entry.path());
+                        Gep::Entity prefabEntity = mManager.LoadEntity(prefab);
+                        mManager.GetResource<Client::EditorResource>().SelectEntity(prefabEntity);
                     }
                 }
                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
@@ -711,12 +726,32 @@ namespace Client
         {
             if (ImGui::BeginMenu("File"))
             {
-                if (ImGui::MenuItem("New")) { /* Handle new file */ }
-                if (ImGui::MenuItem("Open")) { /* Handle open file */ }
-                if (ImGui::MenuItem("Save")) { /* Handle save file */ }
-                if (ImGui::MenuItem("Save As")) { /* Handle save as file */ }
+                Client::SerializationResource& sr = mManager.GetResource<Client::SerializationResource>();
+
+                if (ImGui::MenuItem("New"))
+                {
+                    std::filesystem::path newScenePath = "assets\\scenes\\";
+                    size_t scenePathNumber = 1;
+                    std::string newSceneName = "New Scene";
+
+                    while (std::filesystem::exists(newScenePath / (newSceneName + ".scene")))
+                        newSceneName = newSceneName + "(" + std::to_string(scenePathNumber) + ")";
+
+                    sr.NewScene(newScenePath / (newSceneName + ".scene"));
+                }
+                if (ImGui::MenuItem("Save"))
+                {
+                    sr.SaveScene(mManager);
+                }
+                if (ImGui::MenuItem("Save As"))
+                {
+                    // make a os iterface file, for save as dialog box
+                }
                 ImGui::Separator();
-                if (ImGui::MenuItem("Exit")) { /* Handle exit */ }
+                if (ImGui::MenuItem("Exit"))
+                {
+                    mManager.Shutdown();
+                }
                 ImGui::EndMenu();
             }
 

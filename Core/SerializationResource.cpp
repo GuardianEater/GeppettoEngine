@@ -64,6 +64,18 @@ namespace Client
         SaveScene(em, currentScenePath);
     }
 
+    void SerializationResource::NewScene(const std::filesystem::path& path) const
+    {
+        std::ofstream outFile(path);
+
+        nlohmann::json sceneJson = nlohmann::json::object();
+
+        sceneJson["entities"] = nlohmann::json::array();
+        sceneJson["sceneData"] = nlohmann::json::object();
+
+        outFile << sceneJson.dump();
+    }
+
     void SerializationResource::ReloadScene(Gep::EngineManager& em)
     {
         ChangeScene(em, currentScenePath);
@@ -75,6 +87,24 @@ namespace Client
         currentScenePath = path;
         em.DestroyAllEntities();
         LoadScene(em, path);
+    }
+
+    void SerializationResource::SavePrefab(const nlohmann::json& entityJson, const std::filesystem::path& path) const
+    {
+        if (!std::filesystem::exists(path))
+            std::filesystem::create_directories(path.parent_path());
+
+        std::ofstream outFile(path);
+        outFile << entityJson.dump();
+    }
+
+    nlohmann::json SerializationResource::LoadPrefab(const std::filesystem::path& path) const
+    {
+        nlohmann::json prefab;
+        std::ifstream inFile(path);
+        inFile >> prefab;
+
+        return prefab;
     }
 
     nlohmann::json SerializationResource::SerializeScene(Gep::EngineManager& em) const

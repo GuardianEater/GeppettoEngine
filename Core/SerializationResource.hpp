@@ -26,14 +26,17 @@ namespace Client
         void LoadScene(Gep::EngineManager& em, const std::filesystem::path& path) const; // will simply load all entities from a file, it will not clear the scene nor set the active scene
 
         void SaveScene(Gep::EngineManager& em) const; // saves the current scene to the currentScenePath
+        void NewScene(const std::filesystem::path& path) const; // creates a loadable empty scene file
 
         void ReloadScene(Gep::EngineManager& em); // reloads the current scene from the currentScenePath
         void ChangeScene(Gep::EngineManager& em, const std::filesystem::path& path); // saves the current scene, clears all entities, then loads a new scene
 
+        void SavePrefab(const nlohmann::json& entityJson, const std::filesystem::path& path) const; // writes this individual entity to its own .prefab file
+        nlohmann::json LoadPrefab(const std::filesystem::path& path) const; // will simply load all entities from a file, it will not clear the scene nor set the active scene
 
         nlohmann::json SerializeScene(Gep::EngineManager& em) const;
         void DeserializeScene(Gep::EngineManager& em, const nlohmann::json& sceneJson) const;
 
-        std::filesystem::path currentScenePath = "assets/scenes/default.scenejson";
+        std::filesystem::path currentScenePath = "assets/scenes/default.scene";
     };
 }

@@ -19,7 +19,7 @@ namespace Client
 {
     void SerializationSystem::Initialize()
     {
-        mManager.GetResource<SerializationResource>().LoadScene(mManager, "assets\\scenes\\default.scenejson");
+        mManager.GetResource<SerializationResource>().LoadScene(mManager, "assets\\scenes\\default.scene");
     }
 
     void SerializationSystem::Exit()

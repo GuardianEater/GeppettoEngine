@@ -542,6 +542,9 @@
     <ClInclude Include="EditorResource.hpp">
       <Filter>Client\Resources</Filter>
     </ClInclude>
+    <ClInclude Include="ModelResource.hpp">
+      <Filter>Client\Resources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">

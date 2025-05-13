@@ -249,6 +249,7 @@
     <ClInclude Include="GetCallerInfo.hpp" />
     <ClInclude Include="Archetypes.h" />
     <ClInclude Include="JsonHelp.hpp" />
+    <ClInclude Include="ModelResource.hpp" />
     <ClInclude Include="ObjMesh.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
     <ClCompile Include="ScriptingResource.cpp" />
