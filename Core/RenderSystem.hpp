@@ -45,7 +45,7 @@ namespace Client
 
     private:
         bool mDrawColliders = false;
-        void OnModelAdded(const Gep::Event::ComponentAdded<Material>& event);
+        void OnModelAdded(const Gep::Event::ComponentAdded<Mesh>& event);
 
     };
 }

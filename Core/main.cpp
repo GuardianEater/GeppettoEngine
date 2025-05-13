@@ -72,7 +72,7 @@ int main() try
         Client::Identification,
         Client::Transform,
         Client::RigidBody,
-        Client::Material,
+        Client::Mesh,
         Client::Script,
         Client::ActiveCamera,
         Client::Camera,

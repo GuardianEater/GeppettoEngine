@@ -27,7 +27,7 @@ namespace Client
 
     void RenderSystem::Initialize()
     {
-        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<Material>>(this, &RenderSystem::OnModelAdded);
+        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<Mesh>>(this, &RenderSystem::OnModelAdded);
 
         Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
 
@@ -84,7 +84,7 @@ namespace Client
             renderer.SetCamera(pers, view, camTransform.position);
             const glm::vec2 renderSize = cam.renderTarget->GetSize();
 
-            mManager.ForEachArchetype<Material, Transform>([&](Gep::Entity entity, Material& material, Transform& transform)
+            mManager.ForEachArchetype<Mesh, Transform>([&](Gep::Entity entity, Mesh& material, Transform& transform)
             {
                 glm::mat4 model = Gep::translation_matrix(transform.position)
                     * Gep::rotation(transform.rotation)
@@ -219,17 +219,17 @@ namespace Client
         ImGui::Begin("Render System");
         ImGui::End();
     }
-    void RenderSystem::OnModelAdded(const Gep::Event::ComponentAdded<Material>& event)
+    void RenderSystem::OnModelAdded(const Gep::Event::ComponentAdded<Mesh>& event)
     {
         Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
 
         if (!mManager.HasComponent<Transform>(event.entity)
-            || !mManager.HasComponent<Material>(event.entity))
+            || !mManager.HasComponent<Mesh>(event.entity))
         {
             return;
         }
 
-        Material& material = mManager.GetComponent<Material>(event.entity);
+        Mesh& material = mManager.GetComponent<Mesh>(event.entity);
         Transform& transform = mManager.GetComponent<Transform>(event.entity);
 
 

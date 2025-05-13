@@ -1,5 +1,5 @@
 /*****************************************************************//**
- * \file   Material.hpp
+ * \file   Mesh.hpp
  * \brief  Component for storing material data such as color or texture
  *
  * \author 2018t
@@ -15,7 +15,7 @@
 
 namespace Client
 {
-    struct Material
+    struct Mesh
     {
         std::string meshName{ "Cube" };
         glm::vec3 diff_coeff = { 2.0f, 2.0f, 2.0f }; // color
