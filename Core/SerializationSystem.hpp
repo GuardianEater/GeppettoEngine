@@ -33,11 +33,10 @@ namespace Client
         template <typename... ComponentTypes>
         void OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes);
 
+        void OnAssetBrowserItemClicked(const Gep::Event::AssetBrowserItemClicked& event);
+
         void Initialize() override;
         void Exit() override;
-
-        nlohmann::json SaveScene() const;
-        void LoadScene(const nlohmann::json& sceneJson) const;
 
     private:
 

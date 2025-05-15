@@ -22,6 +22,8 @@
 #include "SerializationResource.hpp"
 #include "EditorResource.hpp"
 
+#include "OS.hpp"
+
 namespace Client
 {
     ImGuiSystem::ImGuiSystem(Gep::EngineManager& em)
@@ -632,18 +634,7 @@ namespace Client
                         break;
                     }
 
-                    // if extension is .json
-                    if (entry.path().extension() == ".scene")
-                    {
-                        mManager.GetResource<Client::SerializationResource>().ChangeScene(mManager, entry.path());
-                    }
-
-                    if (entry.path().extension() == ".prefab")
-                    {
-                        nlohmann::json prefab = mManager.GetResource<Client::SerializationResource>().LoadPrefab(entry.path());
-                        Gep::Entity prefabEntity = mManager.LoadEntity(prefab);
-                        mManager.GetResource<Client::EditorResource>().SelectEntity(prefabEntity);
-                    }
+                    mManager.SignalEvent(Gep::Event::AssetBrowserItemClicked{ entry.path(), entry.path().extension().string() });
                 }
                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
                 {
@@ -730,14 +721,9 @@ namespace Client
 
                 if (ImGui::MenuItem("New"))
                 {
-                    std::filesystem::path newScenePath = "assets\\scenes\\";
-                    size_t scenePathNumber = 1;
-                    std::string newSceneName = "New Scene";
+                    std::filesystem::path newSceneFilePath = Gep::DialogBox_SaveAs("assets\\scenes", "Scene File", "scene", "New Scene");
 
-                    while (std::filesystem::exists(newScenePath / (newSceneName + ".scene")))
-                        newSceneName = newSceneName + "(" + std::to_string(scenePathNumber) + ")";
-
-                    sr.NewScene(newScenePath / (newSceneName + ".scene"));
+                    sr.NewScene(newSceneFilePath);
                 }
                 if (ImGui::MenuItem("Save"))
                 {
@@ -745,7 +731,9 @@ namespace Client
                 }
                 if (ImGui::MenuItem("Save As"))
                 {
-                    // make a os iterface file, for save as dialog box
+                    std::filesystem::path newSceneFilePath = Gep::DialogBox_SaveAs("assets\\scenes", "Scene File", "scene", "New Scene");
+
+                    sr.SaveScene(mManager, newSceneFilePath);
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Exit"))

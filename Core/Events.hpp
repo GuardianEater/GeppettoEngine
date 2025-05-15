@@ -106,5 +106,11 @@ namespace Gep
             Entity entity;
             ComponentType& component;
         };
+
+        struct AssetBrowserItemClicked
+        {
+            std::filesystem::path path;
+            std::string extension;
+        };
     }
 }

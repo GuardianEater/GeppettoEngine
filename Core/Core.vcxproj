@@ -220,6 +220,7 @@
     </ClCompile>
     <ClCompile Include="EditorResource.cpp" />
     <ClCompile Include="EngineManager.cpp" />
+    <ClCompile Include="FileHelp.cpp" />
     <ClCompile Include="GetCallerInfo_Windows.cpp" />
     <ClCompile Include="IcosphereMesh.cpp" />
     <ClCompile Include="ImGuiSystem.cpp" />
@@ -229,6 +230,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="ObjMesh.cpp" />
+    <ClCompile Include="OS_Windows.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -245,12 +247,14 @@
     <ClInclude Include="CollisionChecking.hpp" />
     <ClInclude Include="CollisionSystem.hpp" />
     <ClInclude Include="EditorResource.hpp" />
+    <ClInclude Include="FileHelp.hpp" />
     <ClInclude Include="FunctionTraits.hpp" />
     <ClInclude Include="GetCallerInfo.hpp" />
     <ClInclude Include="Archetypes.h" />
     <ClInclude Include="JsonHelp.hpp" />
     <ClInclude Include="ModelResource.hpp" />
     <ClInclude Include="ObjMesh.hpp" />
+    <ClInclude Include="OS.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
     <ClCompile Include="ScriptingResource.cpp" />
     <ClCompile Include="ScriptingSystem.cpp" />

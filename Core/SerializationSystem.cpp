@@ -10,6 +10,7 @@
 
 #include "SerializationSystem.hpp"
 #include "SerializationResource.hpp"
+#include "EditorResource.hpp"
 
 #include "EngineManager.hpp"
 
@@ -17,8 +18,23 @@
 
 namespace Client
 {
+    void SerializationSystem::OnAssetBrowserItemClicked(const Gep::Event::AssetBrowserItemClicked& event)
+    {
+        if (event.extension == ".scene")
+        {
+            mManager.GetResource<Client::SerializationResource>().ChangeScene(mManager, event.path);
+        }
+        else if (event.extension == ".prefab")
+        {
+            nlohmann::json prefab = mManager.GetResource<Client::SerializationResource>().LoadPrefab(event.path);
+            Gep::Entity prefabEntity = mManager.LoadEntity(prefab);
+            mManager.GetResource<Client::EditorResource>().SelectEntity(prefabEntity);
+        }
+    }
     void SerializationSystem::Initialize()
     {
+        mManager.SubscribeToEvent<Gep::Event::AssetBrowserItemClicked>(this, &SerializationSystem::OnAssetBrowserItemClicked);
+
         mManager.GetResource<SerializationResource>().LoadScene(mManager, "assets\\scenes\\default.scene");
     }
 

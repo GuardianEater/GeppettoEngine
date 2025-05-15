@@ -264,6 +264,12 @@
     <ClCompile Include="CollisionResource.cpp">
       <Filter>Client\Resources</Filter>
     </ClCompile>
+    <ClCompile Include="FileHelp.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="OS_Windows.cpp">
+      <Filter>Backend\OS</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -544,6 +550,12 @@
     </ClInclude>
     <ClInclude Include="ModelResource.hpp">
       <Filter>Client\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="FileHelp.hpp">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="OS.hpp">
+      <Filter>Backend\OS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
