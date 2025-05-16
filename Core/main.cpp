@@ -24,7 +24,6 @@
 // components
 #include "CameraComponent.hpp"
 #include "ActiveCameraComponent.hpp"
-#include "Identification.hpp"
 #include "Material.hpp"
 #include "RigidBody.hpp"
 #include "Script.hpp"
@@ -57,6 +56,10 @@ int main() try
 
     Gep::Log::Important("Welcome To The Gep Engine!");
 
+    Gep::UUID uuid = Gep::UUID::GenerateNew();
+
+    Gep::Log::Important(uuid);
+
     // start the engine //////////////////////////////////////////////////////////////////////////////
     Gep::EngineManager em;
 
@@ -69,7 +72,6 @@ int main() try
 
     // list of all components ///////////////////////////////////////////////////////////////////////
     Gep::type_list<
-        Client::Identification,
         Client::Transform,
         Client::RigidBody,
         Client::Mesh,

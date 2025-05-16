@@ -23,10 +23,5 @@ namespace Client
         glm::vec3 spec_coeff = { 0.5f, 0.5f, 0.5f }; // shine color
         float spec_exponent = 5; // amount of shine
         bool selected = false;
-
-
-        void OnImGuiRender(Gep::EngineManager& em)
-        {
-        }
     };
 }

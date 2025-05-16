@@ -12,7 +12,6 @@
 #include "Transform.hpp"
 #include "CameraComponent.hpp"
 #include "EngineManager.hpp"
-#include "Identification.hpp"
 
 #include "CollisionResource.hpp"
 #include "EditorResource.hpp"
@@ -23,11 +22,12 @@ namespace Gep
 {
     static std::string GetDisplayName(EngineManager& em, Entity entity)
     {
-        if (em.HasComponent<Client::Identification>(entity))
+        std::string name = em.GetName(entity);
+        if (!name.empty())
         {
-            Client::Identification& id = em.GetComponent<Client::Identification>(entity);
-            return id.name;
+            return name;
         }
+
         return "Entity: " + std::to_string(entity);
     }
 
@@ -39,16 +39,18 @@ namespace Gep
         Client::Camera& camera = em.GetComponent<Client::Camera>(cameraEntity);
         Client::Transform& transform = em.GetComponent<Client::Transform>(cameraEntity);
 
+        const ImVec2 windowSizeMin(400, 300);
+        const ImVec2 windowSizeMax(FLT_MAX, FLT_MAX);
         const float dt = em.GetDeltaTime();
-        float movementSpeed = 5.0f * dt;
         const float sensitivity = 0.1f;
-
-
+        float movementSpeed = 5.0f * dt;
 
         const glm::vec3 forward = glm::normalize(glm::vec3(-camera.back.x, 0.0f, -camera.back.z));
         const glm::vec3 rightward = glm::normalize(glm::vec3(camera.right.x, 0.0f, camera.right.z));
 
-        if (ImGui::Begin(std::string(GetDisplayName(em, cameraEntity) + "###" + std::to_string(cameraEntity)).c_str()))
+        ImGui::SetNextWindowSize(windowSizeMin, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSizeConstraints(windowSizeMin, windowSizeMax);
+        if (ImGui::Begin((GetDisplayName(em, cameraEntity) + "###" + em.GetUUID(cameraEntity).ToString()).c_str()))
         {
             // get mouse delta and wether or not right click is pressed to rotate the camera
             bool rightClick = ImGui::IsMouseDown(ImGuiMouseButton_Right);
@@ -91,7 +93,9 @@ namespace Gep
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             }
 
-            if (movementEnabled)
+            movementEnabled = movementEnabled;
+
+            if (movementEnabled && ImGui::IsWindowFocused())
             {
                 // rotating the camera around
                 transform.rotation.y += mouseDelta.x * sensitivity;
@@ -149,7 +153,7 @@ namespace Gep
             static ImGuizmo::MODE currentMode = ImGuizmo::MODE::WORLD;
 
             // maya keybinds for changing the current gizmo
-            if (!movementEnabled)
+            if (!movementEnabled && ImGui::IsWindowFocused())
             {
                 if (ImGui::IsKeyDown(ImGuiKey_W))
                 {
@@ -161,7 +165,7 @@ namespace Gep
                     currentOperation = ImGuizmo::OPERATION::ROTATE;
                     currentMode = ImGuizmo::MODE::LOCAL;
                 }
-                else if (ImGui::IsKeyDown(ImGuiKey_R))
+                else if (ImGui::IsKeyPressed(ImGuiKey_R))
                 {
                     Gep::Log::Error("Scale is not implemented");
 

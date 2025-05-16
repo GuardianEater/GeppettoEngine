@@ -61,4 +61,28 @@ namespace Gep
     using Signature = std::bitset<MAX_COMPONENTS>; // each bit represents a component that an entity may or may not have
     using Entity = uint64_t;              // id representing an enity
     using ComponentBitPos = uint8_t;               // id representing a component
+
+    // created using the static member functions.
+    class UUID
+    {
+    private:
+        static constexpr size_t size = 24;
+        static constexpr size_t segments = 3; // determines the amount of dashes to put in it
+        static constexpr size_t bytesPerSegment = size / segments;
+
+        std::array<uint8_t, size> bytes{};
+
+    public:
+        const std::array<uint8_t, size>& GetBytes() { return bytes; };
+
+        static UUID FromString(std::string string);
+        static UUID GenerateNew();
+
+        std::string ToString() const;
+
+        bool IsValid() const;
+
+        friend std::ostream& operator<<(std::ostream& os, const UUID& uuid);
+        friend auto operator<=>(const UUID&, const UUID&) = default;
+    };
 }

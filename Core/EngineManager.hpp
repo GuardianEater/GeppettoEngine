@@ -73,11 +73,13 @@ namespace Gep
     struct EntityData
     {
         uint64_t archetypeIndex{ INVALID_ENTITY }; // the index into the archetype chunk where this entity has its components stored
-
-        Entity parent{ INVALID_ENTITY }; // the parent of the entity, if it doesnt have a parent it is INVALID_ENTITY
         Signature signature{}; // the signature of the entity
 
+        Entity parent{ INVALID_ENTITY }; // the parent of the entity, if it doesnt have a parent it is INVALID_ENTITY
         std::vector<Entity> children{}; // any children of the entity
+
+        std::string name = ""; // allows for user identification
+        UUID uuid{}; // a way to allways identify this specific entity
     };
 
     // static data for components
@@ -143,7 +145,7 @@ namespace Gep
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // entity functions /////////////////////////////////////////////////////////////////////////////
 
-        Entity CreateEntity();
+        Entity CreateEntity(const std::string& name = "", const UUID& uuid = UUID{});
         Entity DuplicateEntity(Entity entity);
         void DestroyEntity(Entity entity);
         bool EntityExists(Entity entity) const;
@@ -155,6 +157,12 @@ namespace Gep
         Signature CreateSignature(Signature oldSignature = 0) const;
         void SetSignature(Entity entity, Signature signature);
         Signature GetSignature(Entity entity) const;
+
+        void SetName(Entity entity, const std::string& name);
+        const std::string& GetName(Entity entity) const;
+
+        void SetUUID(Entity entity, const UUID& uuid);
+        const UUID& GetUUID(Entity entity) const;
 
         void MarkEntityForDestruction(Entity entity);
         void DestroyMarkedEntities();

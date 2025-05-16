@@ -34,16 +34,13 @@ namespace Client
 
     std::string ImGuiSystem::GetEntityDisplayName(Gep::Entity entity)
     {
-        std::string displayName = "Entity: " + std::to_string(entity);
-        if (mManager.HasComponent<Identification>(entity))
+        std::string name = mManager.GetName(entity);
+        if (!name.empty())
         {
-            Identification& id = mManager.GetComponent<Identification>(entity);
-
-            if (!id.name.empty())
-                displayName = id.name;
+            return name;
         }
 
-        return displayName;
+        return "Entity: " + std::to_string(entity);
     }
 
     void ImGuiSystem::DrawInspectorPanel()
@@ -82,8 +79,15 @@ namespace Client
 
         // case where there is only a single entity selected, display its name and all of its components
         Gep::Entity entity = *mEditorResource.mSelectedEntities.begin();
-        std::string displayName = GetEntityDisplayName(entity);
-        ImGui::Text(displayName.c_str());
+        std::string displayName = mManager.GetName(entity);
+        if (ImGui::InputText("Name", &displayName))
+        {
+            mManager.SetName(entity, displayName);
+        }
+        ImGui::Text("Name: %s", displayName.c_str());
+        ImGui::Text("RTID: %u", entity);
+        ImGui::Text("UUID: %s", mManager.GetUUID(entity).ToString().c_str());
+
         ImGui::Dummy({ 0.0f, 10.0f });
 
         if (mManager.HasComponent<Mesh>(entity))
@@ -754,43 +758,39 @@ namespace Client
             {
                 if (ImGui::MenuItem("Empty"))
                 { 
-                    Gep::Entity entity = mManager.CreateEntity(); 
+                    Gep::Entity entity = mManager.CreateEntity("Empty");
                     mEditorResource.SelectEntity(entity);
                 }
                 if (ImGui::MenuItem("Cube"))
                 {
-                    Gep::Entity entity = mManager.CreateEntity();
-                    mManager.AddComponent(entity, Mesh{ .meshName = "Cube" }
+                    Gep::Entity entity = mManager.CreateEntity("Cube");
+                    mManager.AddComponent(entity, Mesh{ "Cube" }
                                                 , Transform{}
-                                                , Identification{ "Cube" }
                                                 , CubeCollider{});
                     mEditorResource.SelectEntity(entity);
                 }
                 if (ImGui::MenuItem("Sphere"))
                 {
-                    Gep::Entity entity = mManager.CreateEntity();
-                    mManager.AddComponent(entity, Mesh{ .meshName = "Icosphere" }
+                    Gep::Entity entity = mManager.CreateEntity("Icosphere");
+                    mManager.AddComponent(entity, Mesh{ "Icosphere" }
                                                 , Transform{}
-                                                , Identification{ "Sphere" }
                                                 , SphereCollider{});
                     mEditorResource.SelectEntity(entity);
                 }
                 if (ImGui::MenuItem("Light"))
                 {
-                    Gep::Entity entity = mManager.CreateEntity();
-                    mManager.AddComponent(entity, Mesh{ .meshName = "Sphere" }
+                    Gep::Entity entity = mManager.CreateEntity("Light");
+                    mManager.AddComponent(entity, Mesh{ "Sphere" }
                                                 , Transform{}
                                                 , Light{}
-                                                , Identification{ "Light" }
                                                 , SphereCollider{});
                     mEditorResource.SelectEntity(entity);
                 }
                 if (ImGui::MenuItem("Camera"))
                 {
-                    Gep::Entity entity = mManager.CreateEntity();
-                    mManager.AddComponent(entity,Camera{}
-                                                , Transform{}
-                                                , Identification{ "Camera" });
+                    Gep::Entity entity = mManager.CreateEntity("Camera");
+                    mManager.AddComponent(entity, Camera{}
+                                                , Transform{});
                     mEditorResource.SelectEntity(entity);
                 }
                 ImGui::EndMenu();

@@ -344,9 +344,6 @@
     <ClInclude Include="Material.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
-    <ClInclude Include="Identification.hpp">
-      <Filter>Client\Components</Filter>
-    </ClInclude>
     <ClInclude Include="Events.hpp">
       <Filter>Backend\ECS\Events</Filter>
     </ClInclude>

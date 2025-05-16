@@ -91,6 +91,48 @@ namespace Gep
         return mEntityDatas.at(entity).signature;
     }
 
+    void EngineManager::SetName(Entity entity, const std::string& name)
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Error("SetName() failed, Entity: [", entity, "] does not exist");
+            return;
+        }
+
+        mEntityDatas.at(entity).name = name;
+    }
+
+    const std::string& EngineManager::GetName(Entity entity) const
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Critical("GetName() failed, Entity: [", entity, "] does not exist");
+        }
+
+        return mEntityDatas.at(entity).name;
+    }
+
+    void EngineManager::SetUUID(Entity entity, const UUID& uuid)
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Error("SetUUID() failed, Entity: [", entity, "] does not exist");
+            return;
+        }
+
+        mEntityDatas.at(entity).uuid = uuid;
+    }
+
+    const UUID& EngineManager::GetUUID(Entity entity) const
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Critical("GetUUID() failed, Entity: [", entity, "] does not exist");
+        }
+
+        return mEntityDatas.at(entity).uuid;
+    }
+
     void EngineManager::MarkEntityForDestruction(Entity entity)
     {
         if (!EntityExists(entity))
@@ -126,7 +168,7 @@ namespace Gep
         Gep::Log::Info("All entities destroyed");
     }
 
-    // adds the id back to the id pool
+    // adds the entity back to the entity pool
     void EngineManager::DestroyEntity(Entity entity)
     {
         if (!EntityExists(entity))
@@ -159,15 +201,22 @@ namespace Gep
         Log::Trace("Destroyed Entity: [", entity, "]");
     }
 
-    Entity EngineManager::CreateEntity()
+    Entity EngineManager::CreateEntity(const std::string& name, const UUID& uuid)
     {
-        Entity id = mEntityDatas.emplace();
+        Entity entity = mEntityDatas.emplace();
 
-        SignalEvent(Event::EntityCreated{ id });
+        SetName(entity, name);
 
-        Log::Trace("Created Entity: [", id, "]");
+        if (uuid.IsValid())
+            SetUUID(entity, uuid);
+        else
+            SetUUID(entity, UUID::GenerateNew());
 
-        return id;
+        SignalEvent(Event::EntityCreated{ entity });
+
+        Log::Trace("Created Entity: [", entity, "]");
+
+        return entity;
     }
 
     Entity EngineManager::DuplicateEntity(Entity entity)
@@ -404,7 +453,8 @@ namespace Gep
 
         entityJson["children"] = childrenJson;
         entityJson["components"] = componentsJson;
-        entityJson["id"] = entity;
+        entityJson["uuid"] = GetUUID(entity).ToString();
+        entityJson["name"] = GetName(entity);
 
         return entityJson;
     }
@@ -415,7 +465,7 @@ namespace Gep
 
         if (!entityJson.contains("components"))
         {
-            Gep::Log::Error("Entity json does not contain components");
+            Gep::Log::Warning("Entity json does not contain components");
         }
         else
         {
@@ -424,6 +474,12 @@ namespace Gep
             {
                 const std::string componentName = componentJson["type"].get<std::string>();
                 const nlohmann::json& componentDataJson = componentJson["data"];
+
+                if (!mComponentNameToIndex.contains(componentName))
+                {
+                    Gep::Log::Warning("The given entity json had an unrecognized component data in it of name ",componentName,", it will be skipped");
+                    continue;
+                }
 
                 size_t componentIndex = mComponentNameToIndex.at(componentName);
                 ComponentData& componentData = mComponentDatas.at(componentIndex);
@@ -434,7 +490,7 @@ namespace Gep
 
         if (!entityJson.contains("children"))
         {
-            Gep::Log::Error("Entity json does not contain children");
+            Gep::Log::Warning("Entity json does not contain children");
         }
         else
         {
@@ -447,9 +503,24 @@ namespace Gep
         }
 
         // will be used later to map old ids to new ids, in the case where a component references another entity
-        if (!entityJson.contains("id"))
+        if (!entityJson.contains("uuid"))
         {
-            Gep::Log::Error("Entity json does not contain an id");
+            Gep::Log::Warning("Entity json does not contain a uuid");
+        }
+        else
+        {
+            UUID uuid = UUID::FromString(entityJson["uuid"].get<std::string>());
+            if (uuid.IsValid())
+                SetUUID(entity, uuid);
+        }
+        
+        if (!entityJson.contains("name"))
+        {
+            Gep::Log::Warning("Entity json does not contain a name");
+        }
+        else
+        {
+            SetName(entity, entityJson["name"].get<std::string>());
         }
 
         return entity;
