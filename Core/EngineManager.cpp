@@ -227,18 +227,9 @@ namespace Gep
             return INVALID_ENTITY;
         }
 
-        Entity newEntity = CreateEntity();
-
-        ForEachComponent(entity, [&](const ComponentData& componentData)
-        {
-            componentData.copy(newEntity, entity);
-        });
-
-        ForEachChild(entity, [&](Entity child) 
-        {
-            Entity newChild = DuplicateEntity(child);
-            AttachEntity(newEntity, newChild);
-        });
+        nlohmann::json entityData = SaveEntity(entity);
+        Entity newEntity = LoadEntity(entityData);
+        SetUUID(newEntity, UUID::GenerateNew());
 
         return newEntity;
     }
