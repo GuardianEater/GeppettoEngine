@@ -9,7 +9,7 @@
 #pragma once
 
 #include "ImGuiSystem.hpp"
-
+#include "Events.hpp"
 namespace Client
 {
     template <typename ComponentType>
@@ -50,24 +50,26 @@ namespace Client
                 {
                     ComponentType& component = mManager.GetComponent<ComponentType>(entity);
 
-                    if constexpr (HasOnImGuiRender<ComponentType>)
-                    {
-                        component.OnImGuiRender();
-                    }
-                    else if constexpr (HasOnImGuiRenderWithManager<ComponentType>)
-                    {
-                        component.OnImGuiRender(mManager);
-                    }
-                    else
-                    {
-                        // generate a default inspector panel for the component
-                        const auto view = rfl::to_view(component);
+                    mManager.SignalEvent(Gep::Event::ComponentEditorRender<ComponentType>({ entity, component }));
 
-                        view.apply([&](const auto& f)
-                        {
-                            DrawType(f.name(), *f.value());
-                        });
-                    }
+                    //if constexpr (HasOnImGuiRender<ComponentType>)
+                    //{
+                    //    component.OnImGuiRender();
+                    //}
+                    //else if constexpr (HasOnImGuiRenderWithManager<ComponentType>)
+                    //{
+                    //    component.OnImGuiRender(mManager);
+                    //}
+                    //else
+                    //{
+                    //    // generate a default inspector panel for the component
+                    //    const auto view = rfl::to_view(component);
+
+                    //    view.apply([&](const auto& f)
+                    //    {
+                    //        DrawType(f.name(), *f.value());
+                    //    });
+                    //}
 
                     ImGui::Spacing();
                     ImGui::Separator();

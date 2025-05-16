@@ -13,6 +13,13 @@
 #include "CubeCollider.hpp"
 #include <ImGuizmo.h>
 
+#include "Transform.hpp"
+#include "Material.hpp"
+#include "CameraComponent.hpp"
+#include "TextureComponent.hpp"
+#include "LightComponent.hpp"
+
+
 namespace Client
 {
     RenderSystem::RenderSystem(Gep::EngineManager& em)
@@ -28,6 +35,10 @@ namespace Client
     void RenderSystem::Initialize()
     {
         mManager.SubscribeToEvent<Gep::Event::ComponentAdded<Mesh>>(this, &RenderSystem::OnModelAdded);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Mesh>>(this, &RenderSystem::OnMeshEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Texture>>(this, &RenderSystem::OnTextureEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Light>>(this, &RenderSystem::OnLightEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Camera>>(this, &RenderSystem::OnCameraEditorRender);
 
         Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
 
@@ -47,7 +58,6 @@ namespace Client
         renderer.LoadMesh("assets\\meshes\\dragon.obj");
         renderer.LoadMesh("assets\\meshes\\neko.obj");
         renderer.LoadMesh("assets\\meshes\\mesh6.obj");
-        renderer.LoadMesh("assets\\meshes\\cube.obj");
         renderer.LoadMesh("assets\\meshes\\Arrow.obj");
     }
 
@@ -234,6 +244,119 @@ namespace Client
 
 
         //renderer.mBVHTree.insert(event.entity, material.meshName);
+    }
+
+    void RenderSystem::OnMeshEditorRender(const Gep::Event::ComponentEditorRender<Mesh>& event)
+    {
+        Mesh& mesh = event.component;
+
+        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+        Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
+        std::vector<std::string> loadedMeshes = renderer.GetLoadedMeshes();
+
+        // drop down for selecting a mesh
+        bool meshesOpen = ImGui::BeginCombo("Meshs", mesh.meshName.c_str());
+
+        const std::vector<std::string>& allowedExtensions = renderer.GetSupportedModelFormats();
+
+        er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
+        {
+            if (!renderer.IsMeshLoaded(droppedPath.string()))
+            {
+                renderer.LoadMesh(droppedPath);
+            }
+
+            mesh.meshName = droppedPath.string();
+        });
+
+        if (meshesOpen)
+        {
+            for (const std::string& meshName : loadedMeshes)
+            {
+                bool isSelected = meshName == mesh.meshName;
+                if (ImGui::Selectable(meshName.c_str(), isSelected))
+                {
+                    mesh.meshName = meshName;
+                }
+                if (isSelected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::ColorEdit3("Diffuse Color", &mesh.diff_coeff[0]);
+        ImGui::ColorEdit3("Specular Color", &mesh.spec_coeff[0]);
+        ImGui::SliderFloat("Specular Exponent", &mesh.spec_exponent, 0.001f, 10.0f);
+    }
+
+    void RenderSystem::OnTextureEditorRender(const Gep::Event::ComponentEditorRender<Texture>& event)
+    {
+        Texture& texture = event.component;
+
+        const Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+        const Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
+        std::vector<std::filesystem::path> loadedTextures = renderer.GetLoadedTextures();
+
+        bool texturesOpen = ImGui::BeginCombo("Textures", texture.texturePath.string().c_str());
+
+        const std::vector<std::string>& supportedTextures = renderer.GetSupportedTextureFormats();
+
+        er.AssetBrowserDropTarget(supportedTextures, [&](const std::filesystem::path& droppedPath)
+        {
+            texture.texturePath = droppedPath;
+        });
+
+        if (texturesOpen)
+        {
+            for (const auto& loadedTexturePath : loadedTextures)
+            {
+                bool isSelected = loadedTexturePath == texture.texturePath;
+                if (ImGui::Selectable(loadedTexturePath.string().c_str(), isSelected))
+                {
+                    texture.texturePath = loadedTexturePath;
+                }
+                if (isSelected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+    }
+
+    void RenderSystem::OnLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event)
+    {
+        Light& light = event.component;
+
+        ImGui::ColorEdit3("Color", &light.color[0]);
+        ImGui::DragFloat("Range", &light.intensity, 1.0f, 0.001f, Gep::num_max<float>());
+    }
+
+    void RenderSystem::OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event)
+    {
+        Camera& camera = event.component;
+
+        ImGui::DragFloat("near plane", &camera.nearPlane, 0.1f, 0.001f, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
+        ImGui::DragFloat("far plane", &camera.farPlane, 0.1f, 0.001f, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
+        ImGui::DragFloat("fov", &camera.fov, 0.1f, 0.001f, 179.999f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
+
+        // drop down menu for render target
+        if (ImGui::BeginCombo("target", camera.renderTargetType.PrettyName().c_str()))
+        {
+            if (ImGui::Selectable("Imgui"))
+            {
+                camera.renderTarget = std::make_shared<Gep::RenderTargetImgui>(500, 500);
+                camera.renderTargetType = Gep::GetTypeInfo<Gep::RenderTargetImgui>();
+            }
+            if (ImGui::Selectable("Window"))
+            {
+                camera.renderTarget = std::make_shared<Gep::RenderTargetWindow>(500, 500);
+                camera.renderTargetType = Gep::GetTypeInfo<Gep::RenderTargetWindow>();
+            }
+            ImGui::EndCombo();
+        }
     }
 }
 

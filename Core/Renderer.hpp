@@ -52,6 +52,9 @@ namespace Gep
         void SetAmbientLight(const glm::vec3& color);
         std::vector<std::string> GetLoadedMeshes() const;
         std::vector<std::filesystem::path> GetLoadedTextures() const;
+
+        const std::vector<std::string>& GetSupportedModelFormats() const;
+        const std::vector<std::string>& GetSupportedTextureFormats() const;
         
         void LoadIconTexture(const std::filesystem::path& iconPath);
         GLuint GetIconTexture(const std::string& extension);

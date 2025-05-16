@@ -16,11 +16,5 @@ namespace Client
     {
         glm::vec3 color{1.0f, 1.0f, 1.0f};
         float intensity{1.0f};
-
-        void OnImGuiRender()
-        {
-            ImGui::ColorEdit3("Color", &color[0]);
-            ImGui::DragFloat("Range", &intensity, 1.0f, 0.001f, Gep::num_max<float>());
-        }
     };
 }

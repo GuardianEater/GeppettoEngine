@@ -26,6 +26,8 @@ namespace Client
     PhysicsSystem::PhysicsSystem(Gep::EngineManager& em)
         : ISystem(em)
     {
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Transform>>(this, &PhysicsSystem::OnTransformEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<RigidBody>>(this, &PhysicsSystem::OnRigidBodyEditorRender);
     }
 
     PhysicsSystem::~PhysicsSystem() = default;
@@ -46,29 +48,6 @@ namespace Client
         }
     }
 
-    void PhysicsSystem::EntityDestroyed(const Gep::Event::EntityDestroyed& eventData)
-    {
-        std::cout << "Physics system just got the entity destroyed event" << std::endl;
-    }
-
-    void PhysicsSystem::KeyPressed(const Gep::Event::KeyPressed& eventData)
-    {
-        if (eventData.action == 1)
-        {
-            std::cout << "pressed down" << std::endl;
-        }
-
-        if (eventData.action == 0)
-        {
-            std::cout << "released" << std::endl;
-        }
-
-        if (eventData.action == 2)
-        {
-            std::cout << "held" << std::endl;
-        }
-    }
-
     void PhysicsSystem::FrameEnd()
     {
         const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform>();
@@ -81,6 +60,25 @@ namespace Client
             transform.previousRotation = transform.rotation;
             transform.previousScale = transform.scale;
         });
+    }
+
+    void PhysicsSystem::OnTransformEditorRender(const Gep::Event::ComponentEditorRender<Transform>& event)
+    {
+        Transform& transform = event.component;
+
+        ImGui::DragFloat3("Position", &transform.position.x, 0.1f);
+        ImGui::DragFloat3("Scale", &transform.scale.x, 0.1f, 0.0f, Gep::num_max<float>());
+        ImGui::DragFloat3("Rotation", &transform.rotation.x, 0.1f, 0.0f, 360.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_WrapAround);
+    }
+
+    void PhysicsSystem::OnRigidBodyEditorRender(const Gep::Event::ComponentEditorRender<RigidBody>& event)
+    {
+        RigidBody& rigidBody = event.component;
+
+        ImGui::DragFloat3("Velocity", &rigidBody.velocity.x, 0.1f);
+        ImGui::DragFloat3("Acceleration", &rigidBody.acceleration.x, 0.1f);
+        ImGui::DragFloat3("Angular Velocity", &rigidBody.rotationalVelocity.x, 0.1f);
+        ImGui::DragFloat3("Angular Velocity", &rigidBody.rotationalAcceleration.x, 0.1f);
     }
 }
 

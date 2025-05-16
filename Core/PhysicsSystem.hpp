@@ -9,7 +9,8 @@
 #pragma once
 
 // backend
-#include <ISystem.hpp>
+#include "ISystem.hpp"
+#include "Events.hpp"
 
 namespace Gep
 {
@@ -24,17 +25,21 @@ namespace Gep
 
 namespace Client
 {
+    struct Transform;
+    struct RigidBody;
+
     class PhysicsSystem : public Gep::ISystem
     {
     public:
         PhysicsSystem(Gep::EngineManager& em);
         ~PhysicsSystem();
 
+    private:
         void Update(float dt) override;
-        void EntityDestroyed(const Gep::Event::EntityDestroyed& eventData);
-        void KeyPressed(const Gep::Event::KeyPressed& eventData);
-
         void FrameEnd() override;
+
+        void OnTransformEditorRender(const Gep::Event::ComponentEditorRender<Transform>& event);
+        void OnRigidBodyEditorRender(const Gep::Event::ComponentEditorRender<RigidBody>& event);
     };
 }
 

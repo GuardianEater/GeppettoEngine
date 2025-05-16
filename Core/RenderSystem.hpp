@@ -23,14 +23,13 @@
 #include "QuadMesh.hpp"
 
 // client
-#include "Transform.hpp"
-#include "Material.hpp"
-#include "CameraComponent.hpp"
-#include "TextureComponent.hpp"
-#include "LightComponent.hpp"
-
 namespace Client
 {
+    struct Mesh;
+    struct Texture;
+    struct Light;
+    struct Camera;
+
     class RenderSystem : public Gep::ISystem
     {
     public:
@@ -46,6 +45,10 @@ namespace Client
     private:
         bool mDrawColliders = false;
         void OnModelAdded(const Gep::Event::ComponentAdded<Mesh>& event);
+        void OnMeshEditorRender(const Gep::Event::ComponentEditorRender<Mesh>& event);
+        void OnTextureEditorRender(const Gep::Event::ComponentEditorRender<Texture>& event);
+        void OnLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event);
+        void OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event);
 
     };
 }

@@ -49,6 +49,7 @@ namespace Gep
 
     static HICON GetIcon(const std::filesystem::path& iconPath);
     static GLuint IconToTexture(HICON icon);
+    static GLuint BitmapToTexture(HBITMAP bitmap);
 
     void OpenGLRenderer::LoadFragmentShader(const std::filesystem::path& shaderPath)
     {
@@ -94,22 +95,16 @@ namespace Gep
 
         std::string ext = path.extension().string();
 
-        if (ext == ".obj")
-        {
-            Mesh mesh = Gep::LoadMesh(path);
-            LoadMesh(path.string(), mesh);
-        }
-        else
-        {
-            Gep::Log::Error("Cannot load mesh: [", path.string(), "] unsupported file type");
-        }
+        Mesh mesh = Gep::LoadMesh(path);
+        LoadMesh(path.string(), mesh);
     }
 
     uint64_t OpenGLRenderer::GetMesh(const std::string& name) const
     {
         if (!mMeshNameToID.contains(name))
         {
-            Gep::Log::Critical("Cannot get mesh: [", name, "] a mesh with that name has not been loaded");
+            Gep::Log::Error("Cannot get mesh: [", name, "] a mesh with that name has not been loaded");
+            return 0;
         }
 
         return mMeshNameToID.at(name);
@@ -272,6 +267,35 @@ namespace Gep
         return textures;
     }
 
+    const std::vector<std::string>& OpenGLRenderer::GetSupportedModelFormats() const
+    {
+        static std::vector<std::string> allowedExtensions = []() // initializes this vector with the extensions that work with assimp
+        {
+            std::string s;
+            Assimp::Importer importer;
+            importer.GetExtensionList(s);
+
+            s.erase(std::remove(s.begin(), s.end(), '*'), s.end());
+
+            std::vector<std::string> out;
+            std::istringstream ss(s);
+            std::string token;
+            while (std::getline(ss, token, ';'))
+                if (!token.empty())
+                    out.emplace_back(std::move(token));
+            return out;
+        }();
+
+        return allowedExtensions;
+    }
+
+    const std::vector<std::string>& OpenGLRenderer::GetSupportedTextureFormats() const
+    {
+        static std::vector<std::string> allowedExtensions = { ".jpg", ".jpeg", ".png", ".bmp"};
+
+        return allowedExtensions;
+    }
+
     void OpenGLRenderer::LoadIconTexture(const std::filesystem::path& iconPath)
     {
         if (mIconTextures.contains(iconPath.extension().string()))
@@ -313,8 +337,12 @@ namespace Gep
         if (!mIconTextures.contains(iconPath.extension().string()))
             LoadIconTexture(iconPath);
 
-        // if the icon is an image, use the image itself
-        if ((iconPath.extension().string() == ".jpg") || (iconPath.extension().string() == ".jpeg") || (iconPath.extension().string() == ".png"))
+        // check if the icon path is a supported image format
+        const std::vector<std::string>& supportedTextureFormats = GetSupportedTextureFormats();
+        auto it = std::find(supportedTextureFormats.begin(), supportedTextureFormats.end(), iconPath.extension().string());
+
+        // if the icon is a supported image, use the image itself
+        if (it != supportedTextureFormats.end())
         {
             return GetOrLoadTexture(iconPath);
         }
@@ -511,6 +539,44 @@ namespace Gep
         return nullptr;
     }
 
+    GLuint BitmapToTexture(HBITMAP bitmap)
+    {
+        if (!bitmap) return 0;
+
+        BITMAP bm{};
+        if (!GetObject(bitmap, sizeof(bm), &bm))
+            return 0;
+
+        BITMAPINFO bmpInfo{};
+        bmpInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bmpInfo.bmiHeader.biWidth = bm.bmWidth;
+        bmpInfo.bmiHeader.biHeight = -bm.bmHeight;
+        bmpInfo.bmiHeader.biPlanes = 1;
+        bmpInfo.bmiHeader.biBitCount = 32;
+        bmpInfo.bmiHeader.biCompression = BI_RGB;
+
+        std::vector<BYTE> pixels(bm.bmWidth * bm.bmHeight * 4);
+        HDC dc = GetDC(nullptr);
+        int rows = GetDIBits(dc, bitmap, 0, bm.bmHeight, pixels.data(), &bmpInfo, DIB_RGB_COLORS);
+        ReleaseDC(nullptr, dc);
+        if (rows == 0)
+            return 0;
+
+        GLuint tex = 0;
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+            bm.bmWidth, bm.bmHeight, 0,
+            GL_BGRA, GL_UNSIGNED_BYTE,
+            pixels.data());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        DeleteObject(bitmap);
+        return tex;
+
+    }
+
     GLuint IconToTexture(HICON icon)
     {
         if (!icon) return 0;
@@ -518,35 +584,7 @@ namespace Gep
         ICONINFO iconInfo;
         if (!GetIconInfo(icon, &iconInfo)) return 0;
 
-        BITMAP bm{};
-        GetObject(iconInfo.hbmColor, sizeof(BITMAP), &bm);
-
-        BITMAPINFO bmi{};
-        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        bmi.bmiHeader.biWidth = bm.bmWidth;
-        bmi.bmiHeader.biHeight = -bm.bmHeight;
-        bmi.bmiHeader.biPlanes = 1;
-        bmi.bmiHeader.biBitCount = 32;
-        bmi.bmiHeader.biCompression = BI_RGB;
-
-        std::vector<BYTE> pixels(bm.bmWidth * bm.bmHeight * 4);
-        HDC dc = GetDC(nullptr);
-        GetDIBits(dc, iconInfo.hbmColor, 0, bm.bmHeight, pixels.data(), &bmi, DIB_RGB_COLORS);
-        ReleaseDC(nullptr, dc);
-
-        GLuint texture;
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
-
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bm.bmWidth, bm.bmHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixels.data());
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        DeleteObject(iconInfo.hbmColor);
-        DeleteObject(iconInfo.hbmMask);
-        DestroyIcon(icon);
-
-        return texture;
+        return BitmapToTexture(iconInfo.hbmColor);
     }
 
     GLuint OpenGLRenderer::LoadShader(GLenum shaderType, const std::filesystem::path& shaderPath)

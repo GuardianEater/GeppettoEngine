@@ -67,6 +67,31 @@ namespace Gep
 #endif // _DEBUG
     }
 
+    template<typename Type>
+    inline void Log::FormatAdd(std::ostringstream& oss, const Type& type)
+    {
+        if constexpr (TypeHasStreamInsertion<Type>)
+        {
+            oss << type;
+        }
+        else if constexpr (TypeHasIterator<Type>)
+        {
+            oss << '[';
+            bool first = true;
+            for (const auto& e : type) 
+            {
+                if (!first) oss << ',';
+                first = false;
+                FormatAdd(oss, e);
+            }
+            oss << ']';
+        }
+        else
+        {
+            oss << "[???]";
+        }
+    }
+
     template <typename... Args>
     void Log::FormatLog(LogLevel level, const Gep::CallerInfo& caller, Args&&... args)
     {
@@ -89,8 +114,7 @@ namespace Gep
             }
         }
 
-        // writes all of the users data
-        (oss << ... << args); 
+        (FormatAdd(oss, args), ...);
 
         // print to console
         if (level >= mPrintLevel)

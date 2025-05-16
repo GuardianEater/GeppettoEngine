@@ -34,29 +34,6 @@ namespace Client
         std::shared_ptr<Gep::IRenderTarget> renderTarget = std::make_shared<Gep::RenderTargetImgui>(500, 500);
         Gep::TypeInfo renderTargetType = Gep::GetTypeInfo<Gep::RenderTargetImgui>();
 
-        void OnImGuiRender()
-        {
-            ImGui::DragFloat("near plane", &nearPlane, 0.1f, 0.001f, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
-            ImGui::DragFloat("far plane", &farPlane, 0.1f, 0.001f, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
-            ImGui::DragFloat("fov", &fov, 0.1f, 0.001f, 179.999f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
-
-            // drop down menu for render target
-            if (ImGui::BeginCombo("target", renderTargetType.PrettyName().c_str()))
-            {
-                if (ImGui::Selectable("Imgui"))
-                {
-                    renderTarget = std::make_shared<Gep::RenderTargetImgui>(500, 500);
-                    renderTargetType = Gep::GetTypeInfo<Gep::RenderTargetImgui>();
-                }
-                if (ImGui::Selectable("Window"))
-                {
-                    renderTarget = std::make_shared<Gep::RenderTargetWindow>(500, 500);
-                    renderTargetType = Gep::GetTypeInfo<Gep::RenderTargetWindow>();
-                }
-                ImGui::EndCombo();
-            }
-        }
-
         void Resize(glm::vec2 size)
         {
             aspect = size.x / size.y;

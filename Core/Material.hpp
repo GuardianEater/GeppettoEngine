@@ -12,6 +12,7 @@
 #include <EngineManager.hpp>
 #include <imgui.h>
 #include "Renderer.hpp"
+#include "EditorResource.hpp"
 
 namespace Client
 {
@@ -26,50 +27,6 @@ namespace Client
 
         void OnImGuiRender(Gep::EngineManager& em)
         {
-            Gep::OpenGLRenderer& renderer = em.GetResource<Gep::OpenGLRenderer>();
-            std::vector<std::string> loadedMeshes = renderer.GetLoadedMeshes();
-
-            // drop down for selecting a mesh
-            bool meshesOpen = ImGui::BeginCombo("Mesh", meshName.c_str());
-
-            if (ImGui::BeginDragDropTarget())
-            {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_PATH"))
-                {
-                    IM_ASSERT(payload->DataSize == sizeof(char) * (strlen((const char*)payload->Data) + 1));
-                    const char* path = (const char*)payload->Data;
-                    std::filesystem::path droppedPath(path);
-
-                    if (!renderer.IsMeshLoaded(droppedPath.string()))
-                    {
-                        renderer.LoadMesh(droppedPath);
-                    }
-
-                    meshName = droppedPath.string();
-                }
-                ImGui::EndDragDropTarget();
-            }
-
-            if (meshesOpen)
-            {
-                for (const std::string& mesh : loadedMeshes)
-                {
-                    bool isSelected = mesh == meshName;
-                    if (ImGui::Selectable(mesh.c_str(), isSelected))
-                    {
-                        meshName = mesh;
-                    }
-                    if (isSelected)
-                    {
-                        ImGui::SetItemDefaultFocus();
-                    }
-                }
-                ImGui::EndCombo();
-            }
-
-            ImGui::ColorEdit3("Diffuse Color", &diff_coeff[0]);
-            ImGui::ColorEdit3("Specular Color", &spec_coeff[0]);
-            ImGui::SliderFloat("Specular Exponent", &spec_exponent, 0.001f, 10.0f);
         }
     };
 }

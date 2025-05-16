@@ -563,12 +563,13 @@ namespace Client
 
         ImGui::Begin("Asset Browser");
 
+        static const std::filesystem::path workingDir = std::filesystem::current_path();
         static std::filesystem::path currentDirectory = std::filesystem::current_path() / "assets";
+
         const float imageSize = 64.0f * ImGui::GetIO().FontGlobalScale;
         const ImVec2 contentRegion = ImGui::GetContentRegionAvail();
         float spacing = ImGui::GetStyle().ItemSpacing.x;
-        const int imagesPerRow = static_cast<int>(contentRegion.x / (imageSize + spacing));
-        static const std::filesystem::path workingDir = std::filesystem::current_path();
+        const int imagesPerRow = static_cast<int>((contentRegion.x - ImGui::GetStyle().ScrollbarSize) / (imageSize + spacing));
 
         if (imagesPerRow < 1)
         {
@@ -577,104 +578,110 @@ namespace Client
         }
 
         static std::vector<std::filesystem::directory_entry> directories = []()
-            {
-                std::vector<std::filesystem::directory_entry> entries;
-                for (const auto& entry : std::filesystem::directory_iterator(currentDirectory))
-                {
-                    entries.push_back(entry);
-                }
-                return entries;
-            }();
-
-        ImGui::Text("Current Directory: %s", currentDirectory.filename().string().c_str());
-
-        if (currentDirectory != workingDir / "assets")
         {
-            if (ImGui::Button("Back"))
+            std::vector<std::filesystem::directory_entry> entries;
+            for (const auto& entry : std::filesystem::directory_iterator(currentDirectory))
             {
-                currentDirectory = currentDirectory.parent_path();
-                directories.clear();
-                for (const auto& entry : std::filesystem::directory_iterator(currentDirectory))
+                entries.push_back(entry);
+            }
+            return entries;
+        }();
+
+        if (ImGui::Button("Back"))
+        {
+            currentDirectory = currentDirectory.parent_path();
+            directories.clear();
+            for (const auto& entry : std::filesystem::directory_iterator(currentDirectory))
+            {
+                directories.push_back(entry);
+            }
+        }
+        ImGui::SameLine();
+        ImGui::Text("%s", currentDirectory.string().c_str());
+
+
+        ImGui::BeginChild("AssetGrid");
+
+        for (size_t i = 0; i < directories.size(); ++i)
+        {
+            const auto& entry = directories[i];
+            const std::string filename = entry.path().filename().string();
+            const std::string hiddenFilename = "##" + filename;
+            const ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+            const std::filesystem::path relativePath = entry.path().lexically_relative(workingDir);
+            const GLuint texture = renderer.GetOrLoadIconTexture(relativePath);
+
+            constexpr float imageToTextDistance = 6.0f;
+
+            ImGui::PushID(static_cast<int>(i));
+            ImGui::BeginGroup();
+
+            // first draws an image for the thumpnail of the asset
+            ImGui::Image((ImTextureID)texture, ImVec2(imageSize, imageSize));
+
+            // next draws the text under the file image
+            ImGui::SetCursorScreenPos(ImVec2(cursorPos.x, cursorPos.y + imageSize + imageToTextDistance));//
+            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + imageSize); // wrap at imageSize pixels
+            ImGui::TextWrapped("%s", filename.c_str());
+            ImGui::PopTextWrapPos();
+
+            // gets the size of the text after the wrapping is calculated
+            ImVec2 textSize = ImGui::GetItemRectSize();
+
+            // setsup the style of the button
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+            ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1, 1, 1, 0.2));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.3));
+
+            ImGui::SetCursorScreenPos(cursorPos);
+            ImGui::Button(hiddenFilename.c_str(), ImVec2(imageSize, imageSize + imageToTextDistance + textSize.y));
+            ImGui::PopStyleColor(4);
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+            {
+                // Set the payload to carry the relative path
+                std::string pathStr = relativePath.string();
+                ImGui::SetDragDropPayload("ASSET_BROWSER", pathStr.c_str(), pathStr.size() + 1);
+
+                // Display the dragged item
+                ImGui::Image((void*)(intptr_t)texture, { imageSize * 2.0f, imageSize * 2.0f });
+                ImGui::TextWrapped("%s", entry.path().filename().string().c_str());
+                ImGui::EndDragDropSource();
+            }
+
+            // Draw highlight if selected
+            if (ImGui::IsItemClicked()) 
+            {
+                if (entry.is_directory())
                 {
-                    directories.push_back(entry);
+                    currentDirectory = entry.path();
+
+                    directories.clear();
+                    for (const auto& newEntry : std::filesystem::directory_iterator(currentDirectory))
+                    {
+                        directories.push_back(newEntry);
+                    }
+                    break;
                 }
+
+                mManager.SignalEvent(Gep::Event::AssetBrowserItemClicked{ entry.path(), entry.path().extension().string() });
+            }
+
+            ImGui::EndGroup();
+            ImGui::PopID();
+
+            // Move to next column
+            if ((i + 1) % imagesPerRow == 0) 
+            {
+                ImGui::NewLine();
+            }
+            else 
+            {
+                ImGui::SameLine();
             }
         }
 
-        // Begin a table with 2 columns and some basic flags for borders and row backgrounds
-        if (ImGui::BeginTable("##AssetBrowser", imagesPerRow, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
-        {
-            // Setup each column with a fixed width.
-            for (int i = 0; i < imagesPerRow; i++)
-            {
-                ImGui::TableSetupColumn("Column", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, imageSize);
-            }
-
-            int columnIndex = 0;
-
-            for (const auto& entry : directories)
-            {
-                std::filesystem::path relativePath = entry.path().lexically_relative(workingDir);
-                GLuint texture = renderer.GetOrLoadIconTexture(relativePath);
-
-                if (columnIndex == 0) ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(columnIndex);
-                ImVec2 cursorPos = ImGui::GetCursorScreenPos();
-                if (ImGui::Selectable(std::string("##" + entry.path().string()).c_str(), false, ImGuiSelectableFlags_AllowItemOverlap, ImVec2(imageSize, imageSize)))
-                {
-                    if (entry.is_directory())
-                    {
-                        currentDirectory = entry.path();
-
-                        directories.clear();
-                        for (const auto& newEntry : std::filesystem::directory_iterator(currentDirectory))
-                        {
-                            directories.push_back(newEntry);
-                        }
-                        break;
-                    }
-
-                    mManager.SignalEvent(Gep::Event::AssetBrowserItemClicked{ entry.path(), entry.path().extension().string() });
-                }
-                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
-                {
-                    // Set the payload to carry the relative path
-                    std::string pathStr = relativePath.string();
-                    ImGui::SetDragDropPayload("ASSET_PATH", pathStr.c_str(), pathStr.size() + 1);
-
-                    // Display the dragged item
-                    ImGui::Image((void*)(intptr_t)texture, { imageSize * 2.0f, imageSize * 2.0f });
-                    ImGui::TextWrapped("%s", entry.path().filename().string().c_str());
-                    ImGui::EndDragDropSource();
-                }
-
-                if (ImGui::BeginPopupContextItem())
-                {
-                    if (ImGui::MenuItem("Open in Explorer"))
-                    {
-                        std::string command = "explorer \"" + entry.path().parent_path().string() + "\"";
-                        system(command.c_str());
-                    }
-                    if (ImGui::MenuItem("Open"))
-                    {
-                        std::string command = "start \"\" \"" + entry.path().string() + "\"";
-                        system(command.c_str());
-                    }
-                    ImGui::EndPopup();
-                }
-
-                ImGui::SetCursorScreenPos(cursorPos);
-
-                ImGui::Image((void*)(intptr_t)texture, { imageSize, imageSize });
-
-
-                ImGui::TextWrapped(entry.path().filename().string().c_str());
-
-                columnIndex = (columnIndex + 1) % imagesPerRow;
-            }
-            ImGui::EndTable();
-        }
-
+        ImGui::EndChild();
         ImGui::End();
     }
 

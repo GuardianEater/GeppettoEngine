@@ -24,6 +24,7 @@ namespace Client
     {
         mManager.SubscribeToEvent<Gep::Event::ComponentAdded<Script>>(this, &ScriptingSystem::OnScriptAdded);
         mManager.SubscribeToEvent<Gep::Event::EntityCreated>(this, &ScriptingSystem::OnEntityCreated);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Script>>(this, &ScriptingSystem::OnScriptEditorRender);
 
         mManager.GetResource<ScriptingResource>().LocateScripts();
     }
@@ -51,26 +52,17 @@ namespace Client
 
             script.env["self"] = self;
 
-            try
+            if (script.update.valid())
             {
-                if (script.update.valid())
-                {
-                    sol::protected_function_result updateResult = script.update(dt);
+                sol::protected_function_result updateResult = script.update(dt);
 
-                    if (!updateResult.valid())
-                    {
-                        sol::error err = updateResult;
-                        Gep::Log::Error("Error running script: ", err.what());
-                        script.update = sol::nil; // prevents the crashed script from running further
-                        script.exit = sol::nil;
-                    }
+                if (!updateResult.valid())
+                {
+                    sol::error err = updateResult;
+                    Gep::Log::Error("Error running script: ", err.what());
+                    script.update = sol::nil; // prevents the crashed script from running further
+                    script.exit = sol::nil;
                 }
-            }
-            catch (const sol::error& e)
-            {
-                Gep::Log::Error("Fatal Error in script: ", e.what());
-                script.update = sol::nil; // prevents the crashed script from running further
-                script.exit = sol::nil;
             }
         });
     }
@@ -81,6 +73,117 @@ namespace Client
         ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
         
         script.LoadScript(sr.GetLua(), script.path);
+    }
+
+    void ScriptingSystem::OnScriptEditorRender(const Gep::Event::ComponentEditorRender<Script>& event)
+    {
+        Script& script = event.component;
+
+        if (!script.env)
+        {
+            ImGui::TextColored(ImVec4{ 1,0,0,1 }, "Enviroment is invalid!");
+            return;
+        }
+
+        ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
+        EditorResource& er = mManager.GetResource<EditorResource>();
+        sol::state& lua = sr.GetLua();
+        const std::set<std::filesystem::path>& knownScripts = sr.GetKnownScripts();
+
+        ImGui::Text("Script Path: %s", script.path.string().c_str());
+        if (ImGui::Button("Locate new scripts", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+        {
+            sr.LocateScripts();
+        }
+
+        if (ImGui::Button("Reload script", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+        {
+            script.LoadScript(lua, script.path);
+        }
+
+        // drop down for selecting a script
+
+        bool scriptsOpen = ImGui::BeginCombo("Scripts", script.path.filename().string().c_str());
+
+        er.AssetBrowserDropTarget({ ".lua" }, [&](const std::filesystem::path& droppedPath)
+            {
+                script.LoadScript(lua, droppedPath);
+            });
+
+        if (scriptsOpen)
+        {
+            for (const auto& loadedScript : knownScripts)
+            {
+                bool isSelected = script.path == loadedScript;
+                if (ImGui::Selectable(loadedScript.filename().string().c_str(), isSelected))
+                {
+                    script.LoadScript(lua, loadedScript);
+                }
+                if (isSelected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        // Begin a table with 2 columns and some basic flags for borders and row backgrounds
+        if (ImGui::BeginTable("##scriptEnv", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+        {
+            // Setup the table columns
+            ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableHeadersRow();
+
+            // Iterate over the script environment
+            for (auto& [key, value] : script.env)
+            {
+                // Only show entries with string keys
+                if (key.get_type() == sol::type::string)
+                {
+                    ImGui::TableNextRow();
+
+                    // First column: key text
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("%s", key.as<std::string>().c_str());
+
+                    // Second column: value text based on type
+                    ImGui::TableSetColumnIndex(1);
+                    switch (value.get_type())
+                    {
+                    case sol::type::string:
+                        ImGui::Text("%s", value.as<std::string>().c_str());
+                        break;
+                    case sol::type::number:
+                        ImGui::Text("%f", value.as<float>());
+                        break;
+                    case sol::type::boolean:
+                        ImGui::Text("%s", value.as<bool>() ? "true" : "false");
+                        break;
+                    case sol::type::table:
+                        ImGui::Text("table");
+                        break;
+                    case sol::type::function:
+                    {
+                        ImGui::Text("function");
+                        sol::function func = value;
+                        sol::table info = script.env["debug"]["getinfo"](func);
+                        int numParams = info["nparams"];
+                        ImGui::SameLine();
+                        ImGui::Text("params: %d", numParams);
+                        break;
+                    }
+                    case sol::type::userdata:
+                        ImGui::Text("userdata");
+                        break;
+                    default:
+                        ImGui::Text("???");
+                        break;
+                    }
+                }
+            }
+            ImGui::EndTable();
+        }
     }
 
     void ScriptingSystem::OnEntityCreated(const Gep::Event::EntityCreated& event)

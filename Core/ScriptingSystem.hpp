@@ -37,6 +37,7 @@ namespace Client
 
     private:
         void OnScriptAdded(const Gep::Event::ComponentAdded<Script>& event);
+        void OnScriptEditorRender(const Gep::Event::ComponentEditorRender<Script>& event);
         void OnEntityCreated(const Gep::Event::EntityCreated& event);
 
         // given a componentIndex, sets up the lua fields for that compoennt

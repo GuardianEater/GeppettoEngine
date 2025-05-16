@@ -30,6 +30,19 @@ namespace Gep
         static const std::string blackred = "\033[30m\033[41m";
     }
 
+    template <typename Type>
+    concept TypeHasIterator = requires(const Type & type)
+    {
+        { type.begin() };
+        { type.end() } ;
+    };
+    
+    template <typename Type>
+    concept TypeHasStreamInsertion = requires(std::ostream& s, const Type & type)
+    {
+        { s << type };
+    };
+
     class Log
     {
     public:
@@ -60,6 +73,9 @@ namespace Gep
         static std::mutex mMutex;
         static std::unique_ptr<std::ofstream> mFileStream;
         static LogLevel mPrintLevel;
+
+        template <typename Type>
+        static void FormatAdd(std::ostringstream& oss, const Type& type);
 
         template <typename... Args>
         static void FormatLog(LogLevel level, const Gep::CallerInfo& caller, Args&&... args);

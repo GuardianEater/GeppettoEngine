@@ -108,11 +108,11 @@ namespace Client
             style.Colors[ImGuiCol_FrameBgHovered] = colorHovered;
             style.Colors[ImGuiCol_FrameBgActive]  = colorActive;
             
-            style.Colors[ImGuiCol_Tab]                = color;
-            style.Colors[ImGuiCol_TabHovered]         = colorHovered;
-            style.Colors[ImGuiCol_TabActive]          = colorActive;
-            style.Colors[ImGuiCol_TabUnfocused]       = color;
-            style.Colors[ImGuiCol_TabUnfocusedActive] = color;
+            style.Colors[ImGuiCol_Tab]               = color;
+            style.Colors[ImGuiCol_TabHovered]        = colorHovered;
+            style.Colors[ImGuiCol_TabSelected]       = colorActive;
+            style.Colors[ImGuiCol_TabDimmed]         = color;
+            style.Colors[ImGuiCol_TabDimmedSelected] = color;
 
             // sets the color of the docking panel
             style.Colors[ImGuiCol_DockingPreview] = colorBright;

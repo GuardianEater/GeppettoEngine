@@ -112,5 +112,13 @@ namespace Gep
             std::filesystem::path path;
             std::string extension;
         };
+
+        // replaced OnImGuiRender in components, gives the entity that the component belongs to and the component
+        template <typename ComponentType>
+        struct ComponentEditorRender
+        {
+            Entity entity;
+            ComponentType& component;
+        };
     }
 }
