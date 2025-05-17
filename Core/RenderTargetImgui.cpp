@@ -37,13 +37,15 @@ namespace Gep
         Client::EditorResource& editorResource = em.GetResource<Client::EditorResource>();
 
         Client::Camera& camera = em.GetComponent<Client::Camera>(cameraEntity);
-        Client::Transform& transform = em.GetComponent<Client::Transform>(cameraEntity);
+        Client::Transform& cameraTransform = em.GetComponent<Client::Transform>(cameraEntity);
+
 
         const ImVec2 windowSizeMin(400, 300);
         const ImVec2 windowSizeMax(FLT_MAX, FLT_MAX);
         const float dt = em.GetDeltaTime();
         const float sensitivity = 0.1f;
         float movementSpeed = 5.0f * dt;
+
 
         const glm::vec3 forward = glm::normalize(glm::vec3(-camera.back.x, 0.0f, -camera.back.z));
         const glm::vec3 rightward = glm::normalize(glm::vec3(camera.right.x, 0.0f, camera.right.z));
@@ -73,6 +75,8 @@ namespace Gep
                 return;
             }
 
+            UpdateCameraFocus(em, cameraEntity, dt);
+
             // hide mouse and enable movement while right click is down
             if (mouseRightClicked && hovered)
             {
@@ -98,12 +102,12 @@ namespace Gep
             if (movementEnabled && ImGui::IsWindowFocused())
             {
                 // rotating the camera around
-                transform.rotation.y += mouseDelta.x * sensitivity;
-                transform.rotation.x += mouseDelta.y * sensitivity;
+                cameraTransform.rotation.y += mouseDelta.x * sensitivity;
+                cameraTransform.rotation.x += mouseDelta.y * sensitivity;
 
                 // dont go upside down camera
-                if (transform.rotation.x > 89.99f) transform.rotation.x = 89.99f;
-                if (transform.rotation.x < -89.99f) transform.rotation.x = -89.99f;
+                if (cameraTransform.rotation.x > 89.99f) cameraTransform.rotation.x = 89.99f;
+                if (cameraTransform.rotation.x < -89.99f) cameraTransform.rotation.x = -89.99f;
 
                 // speed boost
                 if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
@@ -111,17 +115,17 @@ namespace Gep
 
                 // controls for moveing the camera around
                 if (glfwGetKey(window, GLFW_KEY_W))
-                    transform.position += forward * movementSpeed;
+                    cameraTransform.position += forward * movementSpeed;
                 if (glfwGetKey(window, GLFW_KEY_S))
-                    transform.position -= forward * movementSpeed;
+                    cameraTransform.position -= forward * movementSpeed;
                 if (glfwGetKey(window, GLFW_KEY_A))
-                    transform.position -= rightward * movementSpeed;
+                    cameraTransform.position -= rightward * movementSpeed;
                 if (glfwGetKey(window, GLFW_KEY_D))
-                    transform.position += rightward * movementSpeed;
+                    cameraTransform.position += rightward * movementSpeed;
                 if (glfwGetKey(window, GLFW_KEY_E))
-                    transform.position += glm::vec3(0.0f, movementSpeed, 0.0f);
+                    cameraTransform.position += glm::vec3(0.0f, movementSpeed, 0.0f);
                 if (glfwGetKey(window, GLFW_KEY_Q))
-                    transform.position -= glm::vec3(0.0f, movementSpeed, 0.0f);
+                    cameraTransform.position -= glm::vec3(0.0f, movementSpeed, 0.0f);
             }
 
             ImVec2 contentRegionSize = ImGui::GetContentRegionAvail();
@@ -153,67 +157,49 @@ namespace Gep
             static ImGuizmo::MODE currentMode = ImGuizmo::MODE::WORLD;
 
             // maya keybinds for changing the current gizmo
-            if (!movementEnabled)
+            if (ImGui::IsKeyDown(ImGuiKey_W))
             {
-                if (ImGui::IsKeyDown(ImGuiKey_W))
-                {
-                    currentOperation = ImGuizmo::OPERATION::TRANSLATE;
-                    currentMode = ImGuizmo::MODE::WORLD;
-                }
-                else if (ImGui::IsKeyDown(ImGuiKey_E))
-                {
-                    currentOperation = ImGuizmo::OPERATION::ROTATE;
-                    currentMode = ImGuizmo::MODE::LOCAL;
-                }
-                else if (ImGui::IsKeyPressed(ImGuiKey_R))
-                {
-                    Gep::Log::Error("Scale is not implemented");
+                currentOperation = ImGuizmo::OPERATION::TRANSLATE;
+                currentMode = ImGuizmo::MODE::WORLD;
+            }
+            else if (ImGui::IsKeyDown(ImGuiKey_E))
+            {
+                currentOperation = ImGuizmo::OPERATION::ROTATE;
+                currentMode = ImGuizmo::MODE::LOCAL;
+            }
+            else if (ImGui::IsKeyPressed(ImGuiKey_R))
+            {
+                Gep::Log::Error("Scale is not implemented");
 
-                    //currentOperation = ImGuizmo::OPERATION::SCALE;
-                    //currentMode = ImGuizmo::MODE::LOCAL;
-                }
+                //currentOperation = ImGuizmo::OPERATION::SCALE;
+                //currentMode = ImGuizmo::MODE::LOCAL;
             }
 
             // prepare gizmos for rendering
             ImGuizmo::SetDrawlist();
             ImGuizmo::SetRect(contentRegionPos.x, contentRegionPos.y, contentRegionSize.x, contentRegionSize.y);
-            glm::mat4 view = camera.GetViewMatrix(transform.position);
+            glm::mat4 view = camera.GetViewMatrix(cameraTransform.position);
             glm::mat4 pers = camera.GetProjectionMatrix();
 
             const auto& selectedEntities = editorResource.GetSelectedEntities();
+            std::vector<EntityTransformPair> selectedWithTransform;
             glm::vec3 avgPos(0.0f);
-            int count = 0;
-
-            // if there is an entity selected use its center as an average
-            if (selectedEntities.size() == 1)
-            {
-                Entity e = *selectedEntities.begin();
-                if (em.HasComponent<Client::Transform>(e))
-                {
-                    const auto& tf = em.GetComponent<Client::Transform>(e);
-                    avgPos = tf.position;
-
-                    ++count;
-                }
-
-            }
 
             // get the averages of all selected entities
             for (Entity e : selectedEntities)
             {
                 if (em.HasComponent<Client::Transform>(e))
                 {
-                    const auto& tf = em.GetComponent<Client::Transform>(e);
+                    auto& tf = em.GetComponent<Client::Transform>(e);
+                    selectedWithTransform.emplace_back(e, tf);
                     avgPos += tf.position;
-
-                    ++count;
                 }
             }
 
             // if any of the selected entities had a transform get the average model matrix
-            if (count != 0)
+            if (!selectedWithTransform.empty())
             {
-                avgPos /= count;
+                avgPos /= selectedWithTransform.size();
 
                 glm::mat4 avgModel = glm::translate(glm::mat4(1.0f), avgPos); // this only impacts the placement of the gizmo
 
@@ -225,20 +211,17 @@ namespace Gep
                     glm::vec3 pos{ 0 }, rot{ 0 }, scl{ 0 };
                     ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMatrix), glm::value_ptr(pos), glm::value_ptr(rot), glm::value_ptr(scl));
 
-                    for (Entity e : selectedEntities)
+                    for (EntityTransformPair etp : selectedWithTransform)
                     {
-                        if (em.HasComponent<Client::Transform>(e))
-                        {
-                            auto& tf = em.GetComponent<Client::Transform>(e);
+                        auto& tf = etp.transform;
 
-                            glm::mat4 model = Gep::translation_matrix(tf.position)
-                                            * Gep::rotation(tf.rotation)
-                                            * Gep::scale_matrix(tf.scale); // scale aafsgd
+                        glm::mat4 model = Gep::translation_matrix(tf.position)
+                                        * Gep::rotation(tf.rotation)
+                                        * Gep::scale_matrix(tf.scale); // scale aafsgd
                             
-                            glm::mat4 newModel = deltaMatrix * model;
+                        glm::mat4 newModel = deltaMatrix * model;
 
-                            ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(newModel), glm::value_ptr(tf.position), glm::value_ptr(tf.rotation), glm::value_ptr(tf.scale));
-                        }
+                        ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(newModel), glm::value_ptr(tf.position), glm::value_ptr(tf.rotation), glm::value_ptr(tf.scale));
                     }
                 }
                 guizmoActive = true;
@@ -247,6 +230,11 @@ namespace Gep
                 guizmoActive = false;
 
             // when the window Is clicked set the focus and fire a ray
+            if (ImGui::IsKeyPressed(ImGuiKey_F) && !selectedWithTransform.empty())
+            {
+                StartCameraFocus(em, cameraEntity, avgPos, ComputeContainingScale(selectedWithTransform, avgPos));
+            }
+
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && hovered)
             {
                 ImGui::SetWindowFocus();
@@ -257,8 +245,8 @@ namespace Gep
                 Ray ray = Ray::FromMouse(
                     glm::vec2(mousePos.x - contentRegionPos.x, mousePos.y - contentRegionPos.y),
                     glm::vec2(contentRegionSize.x, contentRegionSize.y),
-                    transform.position,
-                    camera.GetViewMatrix(transform.position),
+                    cameraTransform.position,
+                    camera.GetViewMatrix(cameraTransform.position),
                     camera.GetProjectionMatrix()
                 );
 
@@ -280,5 +268,62 @@ namespace Gep
 
     void RenderTargetImgui::HandleGuizmo(EngineManager& em)
     {
+    }
+
+    void RenderTargetImgui::StartCameraFocus(EngineManager& em, Gep::Entity camera, const glm::vec3& targetPosition, float targetScale)
+    {
+        Client::Transform& cameraTransform = em.GetComponent<Client::Transform>(camera);
+
+        cameraTransform.rotation = glm::mod(cameraTransform.rotation, glm::vec3(360.0f)); // prevents camera from unwinding
+        const glm::vec3 camPosition = cameraTransform.position;
+
+        glm::vec3 targetDirection;
+        if (targetPosition == camPosition)
+            targetDirection = { 0.333f, 0.333f, 0.333f };
+        else
+            targetDirection = glm::normalize(targetPosition - camPosition);
+
+        const float distance = glm::distance(targetPosition, camPosition);
+
+        // atan2 handles full 360-degree rotations
+        float pitch = glm::degrees(asin(glm::clamp(-targetDirection.y, -1.0f, 1.0f)));
+        float yaw = glm::degrees(atan2(targetDirection.x, -targetDirection.z));
+        float roll = 0.0f;
+
+        mCameraTargetPosition = camPosition + (targetDirection * (distance - (targetScale * 1.2f)));
+        mCameraTargetPosition -= targetDirection * 1.0f;
+        mCameraTargetRotation = glm::mod(glm::vec3{ pitch, yaw, roll }, 360.0f);
+        mCameraLerping = true;
+    }
+
+    void RenderTargetImgui::UpdateCameraFocus(EngineManager& em, Gep::Entity camera, float dt)
+    {
+        if (!mCameraLerping) return;
+
+        glm::vec3& currentRotation = em.GetComponent<Client::Transform>(camera).rotation;
+        glm::vec3& currentPosition = em.GetComponent<Client::Transform>(camera).position;
+
+        currentRotation = glm::mix(currentRotation, mCameraTargetRotation, 0.01f);
+        currentPosition = glm::mix(currentPosition, mCameraTargetPosition, 0.01f);
+
+        if (glm::length(mCameraTargetRotation - currentRotation) < 0.01 &&
+            glm::length(mCameraTargetPosition - currentPosition) < 0.01)
+        {
+            mCameraLerping = false;
+        }
+    }
+
+    float RenderTargetImgui::ComputeContainingScale(const std::vector<EntityTransformPair>& etps, const glm::vec3& avgPos)
+    {
+        float maxDistance = 0.0f;
+
+        for (const EntityTransformPair& etp : etps)
+        {
+            float distanceToCenter = glm::length(etp.transform.position - avgPos);
+            float totalDistance = distanceToCenter + std::max({ etp.transform.scale.x,etp.transform.scale.y,etp.transform.scale.z });
+            maxDistance = std::max(maxDistance, totalDistance);
+        }
+
+        return maxDistance;
     }
 }

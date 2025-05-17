@@ -220,8 +220,10 @@ namespace Client
             if (mManager.HasComponent<Client::Transform>(entity) && !mManager.HasComponent<Client::Camera>(entity))
             {
                 Transform& entityTransform = mManager.GetComponent<Client::Transform>(entity);
+                Transform& cameraTransform = mManager.GetComponent<Client::Transform>(camera);
 
-                const glm::vec3 camPosition = mManager.GetComponent<Client::Transform>(camera).position;
+                cameraTransform.rotation = glm::mod(cameraTransform.rotation, glm::vec3(360.0f)); // prevents camera from unwinding
+                const glm::vec3 camPosition = cameraTransform.position;
                 const glm::vec3 targetPosition = entityTransform.position;
 
                 glm::vec3 targetDirection;
@@ -422,7 +424,7 @@ namespace Client
         {
             if (mEditorResource.mSelectedEntities.size() == 1)
             {
-                StartCameraFocus(*mEditorResource.mSelectedEntities.begin());
+                //StartCameraFocus(*mEditorResource.mSelectedEntities.begin());
             }
         }
 
