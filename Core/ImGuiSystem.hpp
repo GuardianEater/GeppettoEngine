@@ -64,13 +64,6 @@ namespace Client
         requires std::invocable<FunctionType, Gep::Entity>
         void EntitiesDragDropTarget(FunctionType func);
 
-        
-        void StartCameraFocus(Gep::Entity entity); // sets the target that the camera will look at
-        void UpdateCameraFocus(float dt); // lerps the camera to the target entity set with StartCameraFocus
-        bool mCameraLerping = false;
-        glm::vec3 mCameraTargetRotation{};
-        glm::vec3 mCameraTargetPosition{};
-
         std::vector<Gep::Entity> SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm);
 
     private:

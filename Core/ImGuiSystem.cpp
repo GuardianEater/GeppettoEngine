@@ -73,6 +73,15 @@ namespace Client
                     material.selected = true;
                 }
             }
+
+            std::string name = mManager.GetName(*mEditorResource.mSelectedEntities.begin());
+            if (ImGui::InputText("Batch Rename", &name))
+            {
+                for (Gep::Entity entity : mEditorResource.mSelectedEntities)
+                {
+                    mManager.SetName(entity, name);
+                }
+            }
             ImGui::End(); // Inspector
             return;
         }
@@ -209,65 +218,6 @@ namespace Client
         ImGui::PopStyleVar(2);
 
         return isOpen;
-    }
-
-    void ImGuiSystem::StartCameraFocus(Gep::Entity entity)
-    {
-        // should probably change this so it only does it on editor camera
-        const std::vector<Gep::Entity>& activeCameras = mManager.GetEntities<Client::Camera, Client::Transform>();
-        for (Gep::Entity camera : activeCameras)
-        {
-            if (mManager.HasComponent<Client::Transform>(entity) && !mManager.HasComponent<Client::Camera>(entity))
-            {
-                Transform& entityTransform = mManager.GetComponent<Client::Transform>(entity);
-                Transform& cameraTransform = mManager.GetComponent<Client::Transform>(camera);
-
-                cameraTransform.rotation = glm::mod(cameraTransform.rotation, glm::vec3(360.0f)); // prevents camera from unwinding
-                const glm::vec3 camPosition = cameraTransform.position;
-                const glm::vec3 targetPosition = entityTransform.position;
-
-                glm::vec3 targetDirection;
-                if (targetPosition == camPosition)
-                    targetDirection = { 0.333f, 0.333f, 0.333f };
-                else
-                    targetDirection = glm::normalize(targetPosition - camPosition);
-
-
-                const float distance = glm::distance(targetPosition, camPosition);
-
-                // atan2 handles full 360-degree rotations
-                float pitch = glm::degrees(asin(glm::clamp(-targetDirection.y, -1.0f, 1.0f)));
-                float yaw = glm::degrees(atan2(targetDirection.x, -targetDirection.z));
-                float roll = 0.0f;
-
-                mCameraTargetPosition = camPosition + (targetDirection * (distance - std::max({ entityTransform.scale.x, entityTransform.scale.y, entityTransform.scale.z })));
-                mCameraTargetPosition -= targetDirection * 1.0f;
-                mCameraTargetRotation = { pitch, yaw, roll };
-                mCameraLerping = true;
-            }
-        }
-    }
-
-    void ImGuiSystem::UpdateCameraFocus(float dt)
-    {
-        if (mCameraLerping)
-        {
-            const std::vector<Gep::Entity>& activeCameras = mManager.GetEntities<Client::Camera, Client::Transform>();
-            for (Gep::Entity camera : activeCameras)
-            {
-                glm::vec3& currentRotation = mManager.GetComponent<Client::Transform>(camera).rotation;
-                glm::vec3& currentPosition = mManager.GetComponent<Client::Transform>(camera).position;
-
-                currentRotation = glm::mix(currentRotation, mCameraTargetRotation, 0.01f);
-                currentPosition = glm::mix(currentPosition, mCameraTargetPosition, 0.01f);
-
-                if (glm::length(mCameraTargetRotation - currentRotation) < 0.01 &&
-                    glm::length(mCameraTargetPosition - currentPosition) < 0.01)
-                {
-                    mCameraLerping = false;
-                }
-            }
-        }
     }
 
     std::vector<Gep::Entity> ImGuiSystem::SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm)
@@ -420,14 +370,6 @@ namespace Client
             }
         }
 
-        if (ImGui::IsKeyDown(ImGuiKey_F, false))
-        {
-            if (mEditorResource.mSelectedEntities.size() == 1)
-            {
-                //StartCameraFocus(*mEditorResource.mSelectedEntities.begin());
-            }
-        }
-
         if (ImGui::IsKeyPressed(ImGuiKey_A, false) && ImGui::GetIO().KeyCtrl)
         {
             mEditorResource.mSelectedEntities.clear();
@@ -439,7 +381,6 @@ namespace Client
 
         DrawInspectorPanel();
         DrawAssetBrowser();
-        UpdateCameraFocus(dt);
 
         ImGui::End(); // Entities
     }
