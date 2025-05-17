@@ -142,7 +142,7 @@ namespace Gep
             drawFunction(); // user function might be useful
 
             // if movement is enabled do not do any gizmos
-            if (movementEnabled)
+            if (movementEnabled || !ImGui::IsWindowFocused())
             {
                 ImGui::End();
                 return;
@@ -153,7 +153,7 @@ namespace Gep
             static ImGuizmo::MODE currentMode = ImGuizmo::MODE::WORLD;
 
             // maya keybinds for changing the current gizmo
-            if (!movementEnabled && ImGui::IsWindowFocused())
+            if (!movementEnabled)
             {
                 if (ImGui::IsKeyDown(ImGuiKey_W))
                 {
@@ -268,8 +268,8 @@ namespace Gep
                 if (!ImGuizmo::IsOver() || !guizmoActive)
                 {
                     if (!hitEntities.empty())
-                        editorResource.SmartSelectEntity(hitEntities.front());
-                    else if (!glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_LEFT_CONTROL))
+                        editorResource.SmartSelectEntity(hitEntities.front(), window);
+                    else if (!glfwGetKey(window, GLFW_KEY_LEFT_CONTROL))
                         editorResource.DeselectAll();
                 }
             }

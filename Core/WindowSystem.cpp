@@ -62,7 +62,7 @@ namespace Client
         mIO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
         mIO->ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
         mIO->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
-
+        mIO->ConfigWindowsMoveFromTitleBarOnly = true;
         //mFont = mIO->Fonts->AddFontFromFileTTF("assets/fonts/arial.ttf", 16.0f);
 
         ImFontConfig fontConfig;

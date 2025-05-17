@@ -28,6 +28,7 @@ namespace Client
         {
             nlohmann::json prefab = mManager.GetResource<Client::SerializationResource>().LoadPrefab(event.path);
             Gep::Entity prefabEntity = mManager.LoadEntity(prefab);
+            mManager.SetUUID(prefabEntity, Gep::UUID::GenerateNew());
             mManager.GetResource<Client::EditorResource>().SelectEntity(prefabEntity);
         }
     }

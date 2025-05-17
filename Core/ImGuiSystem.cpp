@@ -154,7 +154,7 @@ namespace Client
                 ImGui::TableNextColumn();
                 ImGui::Text("%s", component.name.c_str());
                 ImGui::TableNextColumn();
-                ImGui::Text("%u", component.array->size());
+                ImGui::Text("%u", component.count);
                 ImGui::TableNextColumn();
                 ImGui::Text("%u", component.index);
             }
@@ -730,24 +730,28 @@ namespace Client
             {
                 Client::SerializationResource& sr = mManager.GetResource<Client::SerializationResource>();
 
-                if (ImGui::MenuItem("New"))
+                if (ImGui::MenuItem("New", "Ctrl+N"))
                 {
                     std::filesystem::path newSceneFilePath = Gep::DialogBox_SaveAs("assets\\scenes", "Scene File", "scene", "New Scene");
 
                     sr.NewScene(newSceneFilePath);
                 }
-                if (ImGui::MenuItem("Save"))
+                if (ImGui::MenuItem("Save", "Ctrl+S"))
                 {
                     sr.SaveScene(mManager);
                 }
-                if (ImGui::MenuItem("Save As"))
+                if (ImGui::MenuItem("Save As", "Ctrl+Alt+S"))
                 {
                     std::filesystem::path newSceneFilePath = Gep::DialogBox_SaveAs("assets\\scenes", "Scene File", "scene", "New Scene");
 
                     sr.SaveScene(mManager, newSceneFilePath);
                 }
+                if (ImGui::MenuItem("Open project in explorer"))
+                {
+                    Gep::OpenInExplorer(std::filesystem::current_path());
+                }
                 ImGui::Separator();
-                if (ImGui::MenuItem("Exit"))
+                if (ImGui::MenuItem("Exit", "Ctrl+Alt+Esc"))
                 {
                     mManager.Shutdown();
                 }

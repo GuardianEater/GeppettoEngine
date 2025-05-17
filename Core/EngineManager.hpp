@@ -90,6 +90,7 @@ namespace Gep
         uint8_t index{}; // the position of the component in the signature
         std::string name{}; // the name of the component
         size_t size{}; // the size of the component in bytes
+        size_t count{}; // the amount of components of this type
 
         // useful entity functions
         std::function<bool(Entity)> has{}; // a function that checks if the entity has this component
@@ -104,8 +105,6 @@ namespace Gep
         // serialization functions
         std::function<nlohmann::json(Gep::Entity)> save{}; // writes this component to json
         std::function<void(Gep::Entity, const nlohmann::json&)> load{}; // adds the given component to the entity from json
-
-        std::shared_ptr<IComponentArray> array{}; // where all of the components of this type are stored
     };
 
     struct EventData

@@ -16,7 +16,7 @@ namespace Client
 	class EditorResource
 	{
 	public:
-		void SmartSelectEntity(Gep::Entity entity);
+		void SmartSelectEntity(Gep::Entity entity, GLFWwindow* window = nullptr);
 
 		void SelectEntity(Gep::Entity entity);
 		void DeselectEntity(Gep::Entity entity);

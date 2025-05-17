@@ -120,7 +120,6 @@ namespace Client
 
                 uint64_t meshID = renderer.GetMesh(material.meshName);
                 renderer.DrawMesh(meshID);
-                material.selected = false;
 
                 //ImGuizmo::SetDrawlist();
                 //ImGuizmo::SetRect(cam.renderTarget->GetPosition().x, cam.renderTarget->GetPosition().y, renderSize.x, renderSize.y);
@@ -162,6 +161,11 @@ namespace Client
             cam.renderTarget->Draw(mManager, camEntity);
             cam.Resize(renderSize);
             cam.renderTarget->Unbind();
+        });
+
+        mManager.ForEachArchetype<Mesh, Transform>([&](Gep::Entity entity, Mesh& material, Transform& transform)
+        {
+            material.selected = false;
         });
 
         renderer.End();

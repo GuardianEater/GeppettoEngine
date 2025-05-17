@@ -228,8 +228,13 @@ namespace Gep
         CoUninitialize();
         return folderPath;
     }
+
+    void OpenInExplorer(const std::filesystem::path& path)
+    {
+        ShellExecuteW(nullptr, L"open", path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+    }
 }
-#else // _WIN32
+#else // ^^^ _WIN32 ^^^
 
 namespace Gep
 {

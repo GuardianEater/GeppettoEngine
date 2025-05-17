@@ -21,4 +21,7 @@ namespace Gep
     // create a folder picker dialog starting at the given filepath
     std::filesystem::path DialogBox_PickFolder(const std::filesystem::path& initialDir);
 
+    // opens a given folderpath in explorer and opens a filepath in whatever the default editor is for the file
+    void OpenInExplorer(const std::filesystem::path& path);
+
 }

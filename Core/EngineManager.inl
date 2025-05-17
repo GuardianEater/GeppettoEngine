@@ -258,7 +258,6 @@ namespace Gep
         newComponentData.size = sizeof(ComponentType);
 
         newComponentData.name = GetTypeInfo<ComponentType>().PrettyName();
-        newComponentData.array = std::make_shared<ComponentArray<ComponentType>>();
 
         newComponentData.move = [](void* to, void* from) { 
             new (to) ComponentType(std::move(*reinterpret_cast<ComponentType*>(from)));
@@ -306,6 +305,8 @@ namespace Gep
 
         // handle the memory of the componets
         ArchetypeChunkInsert(entity, std::forward<ComponentTypes>(components)...);
+
+        (mComponentDatas.at(GetComponentBitPos<ComponentTypes>()).count++, ...);
 
         // update the signature of the entity
         Signature signature = GetSignature(entity);
@@ -361,6 +362,7 @@ namespace Gep
         const uint64_t componentIndex = GetComponentBitPos<ComponentType>();
 
         ArchetypeChunkErase(entity, componentIndex);
+        mComponentDatas.at(GetComponentBitPos<ComponentType>()).count--;
 
         Signature signature = GetSignature(entity); // gets the existing signature of the entity
         signature.reset(componentIndex);

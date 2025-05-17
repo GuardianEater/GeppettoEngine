@@ -11,10 +11,13 @@
 
 namespace Client
 {
-    void EditorResource::SmartSelectEntity(Gep::Entity entity)
+    void EditorResource::SmartSelectEntity(Gep::Entity entity, GLFWwindow* window)
     {
+        if (!window)
+            window = glfwGetCurrentContext();
+
         // if holding control continue selecting entities
-        if (glfwGetKey(glfwGetCurrentContext(), GLFW_KEY_LEFT_CONTROL))
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL))
         {
             // if already selected deselect
             if (IsEntitySelected(entity))

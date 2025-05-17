@@ -94,8 +94,12 @@ namespace Client
         if (!std::filesystem::exists(path))
             std::filesystem::create_directories(path.parent_path());
 
+        nlohmann::json prefab = entityJson;
+        if (prefab.contains("uuid"))
+            prefab["uuid"] = Gep::UUID{}.ToString(); // assign an invalid uuid so a new one will get generated on load
+
         std::ofstream outFile(path);
-        outFile << entityJson.dump();
+        outFile << prefab.dump();
     }
 
     nlohmann::json SerializationResource::LoadPrefab(const std::filesystem::path& path) const
