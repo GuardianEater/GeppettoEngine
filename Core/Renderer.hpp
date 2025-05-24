@@ -34,8 +34,9 @@ namespace Gep
 
         // loads resources into the renderer
         void LoadMesh(const std::string& name, const Mesh& mesh);
-        void LoadMesh(const std::filesystem::path& path); // path.stem().string() will be used as the name
+        void LoadMesh(const std::filesystem::path& path); // path.string() will be used as the name
         uint64_t GetMesh(const std::string& name) const;
+        uint64_t GetOrLoadMesh(const std::string& path); // if this is a predefined name it will still work. Must be given a path otherwise.
 
         bool IsMeshLoaded(const std::string& name) const;
 
@@ -43,6 +44,7 @@ namespace Gep
         void SetTexture(GLuint texture);
         void SetHighlight(bool highlight);
         void SetSolidColor(const glm::vec3& color);
+        void SetIgnoreLight(bool ignore);
         void SetCamera(const Camera& camera);
         void SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec3& eye);
         void SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent);
@@ -118,6 +120,7 @@ namespace Gep
         bool mNextMeshIsTextured = false;
         bool mNextMeshIsHighlighted = false;
         bool mNextMeshIsSolidColor = false;
+        bool mNextMeshIgnoresLight = false;
         glm::vec3 mSolidColor{};
 
         Gep::keyed_vector<MeshData> mMeshDatas;

@@ -262,7 +262,9 @@
     <ClCompile Include="SerializationSystem.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
     <ClInclude Include="Shapes.hpp" />
+    <ClInclude Include="SkyboxMesh.hpp" />
     <ClInclude Include="SoundComponent.hpp" />
+    <ClCompile Include="SkyboxMesh.cpp" />
     <ClCompile Include="SoundResource.cpp" />
     <ClCompile Include="SoundSystem.cpp" />
     <ClCompile Include="SphereMesh.cpp" />

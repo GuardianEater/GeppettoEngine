@@ -240,6 +240,21 @@ namespace Client
         return result;
     }
 
+    void ImGuiSystem::SetAssetBrowserPath(const std::filesystem::path& newPath)
+    {
+        mAssetBrowserPath = newPath;
+        mAssetBrowserEntries.clear();
+        for (const auto& entry : std::filesystem::directory_iterator(mAssetBrowserPath))
+        {
+            mAssetBrowserEntries.push_back(entry);
+        }
+    }
+
+    void ImGuiSystem::ReloadAssetBrowser()
+    {
+        SetAssetBrowserPath(mAssetBrowserPath);
+    }
+
     template <typename FunctionType>
         requires std::invocable<FunctionType, Gep::Entity>
     void ImGuiSystem::EntitiesDragDropTarget(FunctionType func)
@@ -281,10 +296,43 @@ namespace Client
         }
     }
 
+    void ImGuiSystem::OnFileDropped(const Gep::Event::FileDropped& event)
+    {
+        // checks if there are and duplicates, if there are any cancel the copy
+        for (const auto& path : event.droppedFiles)
+        {
+            auto it = std::find_if(mAssetBrowserEntries.begin(), mAssetBrowserEntries.end(), [path](const auto& entry)
+            {
+                return path.filename() == entry.path().filename();
+            });
+
+            if (it != mAssetBrowserEntries.end())
+            {
+                Gep::Log::Error("Cannot drop files, the file: ", path.filename().string(), " already exists in the current working directory. No files were copied.");
+                return;
+            }
+        }
+
+        for (const auto& path : event.droppedFiles)
+        {
+            std::filesystem::copy(path, mAssetBrowserPath, std::filesystem::copy_options::recursive);
+        }
+
+        ReloadAssetBrowser();
+    }
+
     void ImGuiSystem::Initialize()
     {
         mManager.SubscribeToEvent<Gep::Event::MouseScrolled>(this, &ImGuiSystem::OnMouseScrolled);
         mManager.SubscribeToEvent<Gep::Event::EntityDestroyed>(this, &ImGuiSystem::OnEntityDestroyed);
+        mManager.SubscribeToEvent<Gep::Event::FileDropped>(this, &ImGuiSystem::OnFileDropped);
+
+        mAssetBrowserPath = std::filesystem::current_path() / "assets";
+
+        for (const auto& entry : std::filesystem::directory_iterator(mAssetBrowserPath))
+        {
+            mAssetBrowserEntries.push_back(entry);
+        }
     }
 
     void ImGuiSystem::Update(float dt)
@@ -511,7 +559,6 @@ namespace Client
         ImGui::Begin("Asset Browser");
 
         static const std::filesystem::path workingDir = std::filesystem::current_path();
-        static std::filesystem::path currentDirectory = std::filesystem::current_path() / "assets";
 
         const float imageSize = 64.0f * ImGui::GetIO().FontGlobalScale;
         const ImVec2 contentRegion = ImGui::GetContentRegionAvail();
@@ -524,34 +571,19 @@ namespace Client
             return;
         }
 
-        static std::vector<std::filesystem::directory_entry> directories = []()
-        {
-            std::vector<std::filesystem::directory_entry> entries;
-            for (const auto& entry : std::filesystem::directory_iterator(currentDirectory))
-            {
-                entries.push_back(entry);
-            }
-            return entries;
-        }();
-
         if (ImGui::Button("Back"))
         {
-            currentDirectory = currentDirectory.parent_path();
-            directories.clear();
-            for (const auto& entry : std::filesystem::directory_iterator(currentDirectory))
-            {
-                directories.push_back(entry);
-            }
+            SetAssetBrowserPath(mAssetBrowserPath.parent_path());
         }
         ImGui::SameLine();
-        ImGui::Text("%s", currentDirectory.string().c_str());
+        ImGui::Text("%s", mAssetBrowserPath.string().c_str());
 
 
         ImGui::BeginChild("AssetGrid");
 
-        for (size_t i = 0; i < directories.size(); ++i)
+        for (size_t i = 0; i < mAssetBrowserEntries.size(); ++i)
         {
-            const auto& entry = directories[i];
+            const auto& entry = mAssetBrowserEntries[i];
             const std::string filename = entry.path().filename().string();
             const std::string hiddenFilename = "##" + filename;
             const ImVec2 cursorPos = ImGui::GetCursorScreenPos();
@@ -596,18 +628,11 @@ namespace Client
                 ImGui::EndDragDropSource();
             }
 
-            // Draw highlight if selected
             if (ImGui::IsItemClicked()) 
             {
                 if (entry.is_directory())
                 {
-                    currentDirectory = entry.path();
-
-                    directories.clear();
-                    for (const auto& newEntry : std::filesystem::directory_iterator(currentDirectory))
-                    {
-                        directories.push_back(newEntry);
-                    }
+                    SetAssetBrowserPath(entry.path());
                     break;
                 }
 

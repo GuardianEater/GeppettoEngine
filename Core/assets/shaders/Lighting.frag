@@ -17,6 +17,7 @@ layout(location=11) uniform int light_count;
 layout(location=12) uniform bool isSolidColor;
 layout(location=13) uniform vec3 solidColor;
 layout(location=14) uniform bool isHighlighted;
+layout(location=15) uniform bool ignoreLight;
 
 struct Light
 {
@@ -41,33 +42,33 @@ void main(void)
     
     // Determine the base color from texture or solid color.
     vec3 baseColor = vec3(1.0);
-    if (isSolidColor) {
+    if (isSolidColor) 
+    {
         frag_color = vec4(solidColor, 1);
         return;
-    } else if (use_texture) {
+    } 
+    else if (use_texture) 
+    {
         baseColor = texture(texture_sampler, uv).rgb;
+        baseColor *= diffuse_coefficient;
+    }
+    else
+    {
+        baseColor = diffuse_coefficient;
+    }
+
+    if (ignoreLight)
+    {
+        frag_color = vec4(baseColor, 1.0);
+        return;
     }
     
     // Start with ambient contribution.
     vec3 color = ambient_color * baseColor;
-    
-    // === Hardcoded Sky Light ===
-//    vec3 skyLightDir = normalize(vec3(0.0, 1.0, 0.0)); // Light from above
-//    vec3 skyLightColor = vec3(0.6, 0.7, 1.0); // Slightly bluish tint
-//    float skyLightIntensity = 1.0; // Adjust as needed
-//    // Diffuse from sky light
-//    float NdotL_sky = max(dot(N, skyLightDir), 0.0);
-//    vec3 skyDiffuse = skyLightColor * NdotL_sky * skyLightIntensity;
-//    // Specular from sky light
-//    vec3 H_sky = normalize(V + skyLightDir); // Blinn-Phong half-vector
-//    float NdotH_sky = max(dot(N, H_sky), 0.0);
-//    vec3 skySpecular = specular_coefficient * skyLightColor * pow(NdotH_sky, specular_exponent);
-//    // Add sky light contribution
-//    color += (baseColor * skyDiffuse + skySpecular);
-//    // ============================
 
     // Loop over each light.
-    for (int i = 0; i < light_count; i++) {
+    for (int i = 0; i < light_count; i++) 
+    {
         // Compute the light vector.
         vec3 lightVector = lights[i].position - world_position.xyz;
         float lightDistance = length(lightVector);
@@ -89,7 +90,8 @@ void main(void)
     }
     
     // Optionally apply a highlight effect.
-    if (isHighlighted) {
+    if (isHighlighted) 
+    {
         color = mix(color, vec3(1.0, 1.0, 0.0), 0.9);
     }
     

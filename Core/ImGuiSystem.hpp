@@ -65,11 +65,14 @@ namespace Client
         void EntitiesDragDropTarget(FunctionType func);
 
         std::vector<Gep::Entity> SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm);
+        void SetAssetBrowserPath(const std::filesystem::path& newPath);
+        void ReloadAssetBrowser();
 
     private:
         std::vector<Gep::Entity> mEntities;
         EditorResource& mEditorResource;
-
+        std::filesystem::path mAssetBrowserPath;
+        std::vector<std::filesystem::directory_entry> mAssetBrowserEntries; // the files that are visible from the asset browser path
         std::vector<std::function<void(Gep::Entity)>> mComponentInspectorPanels; // component index -> function to draw the inspector
 
     public:
@@ -81,6 +84,7 @@ namespace Client
 
         void OnEntityDestroyed(const Gep::Event::EntityDestroyed& event);
         void OnMouseScrolled(const Gep::Event::MouseScrolled& event);
+        void OnFileDropped(const Gep::Event::FileDropped& event);
 
         void Initialize() override;
         void Update(float dt) override;

@@ -301,6 +301,7 @@ namespace Client
         glfwSetScrollCallback(mPrimaryWindow, GLFW_ScrollCallback);
         glfwSetWindowSizeCallback(mPrimaryWindow, GLFW_WindowResizeCallback);
         glfwSetWindowPosCallback(mPrimaryWindow, GLFW_WindowPositionCallback);
+        glfwSetDropCallback(mPrimaryWindow, GLFW_DropCallback);
 
         glewExperimental = GL_TRUE; // Ensure GLEW uses modern techniques for managing OpenGL functionality
         if (glewInit() != GLEW_OK)
@@ -353,20 +354,26 @@ namespace Client
     void WindowSystem::GLFW_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
         WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
-        if (ws) ws->mManager.SignalEvent<Gep::Event::KeyPressed>({ key, scancode, action, mods });
+        if (!ws) return;
+
+        ws->mManager.SignalEvent<Gep::Event::KeyPressed>({ key, scancode, action, mods });
     }
 
     void WindowSystem::GLFW_MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     {
         WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
-        if (ws) ws->mManager.SignalEvent<Gep::Event::MouseClicked>({ button, action, mods });
+        if (!ws) return;
+
+        ws->mManager.SignalEvent<Gep::Event::MouseClicked>({ button, action, mods });
     }
 
     void WindowSystem::GLFW_MousePositionCallback(GLFWwindow* window, double x, double y)
     {
-        static double prevX = 0, prevY = 0;
         WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
-        if (ws) ws->mManager.SignalEvent<Gep::Event::MouseMoved>({ x, y, prevX, prevY});
+        if (!ws) return;
+
+        static double prevX = 0, prevY = 0;
+        ws->mManager.SignalEvent<Gep::Event::MouseMoved>({ x, y, prevX, prevY});
         prevX = x;
         prevY = y;
     }
@@ -374,19 +381,39 @@ namespace Client
     void WindowSystem::GLFW_WindowResizeCallback(GLFWwindow* window, int width, int height)
     {
         WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
-        if (ws) ws->mManager.SignalEvent<Gep::Event::WindowResize>({ width, height });
+        if (!ws) return;
+
+        ws->mManager.SignalEvent<Gep::Event::WindowResize>({ width, height });
     }
 
     void WindowSystem::GLFW_WindowPositionCallback(GLFWwindow* window, int x, int y)
     {
         WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
-        if (ws) ws->mManager.SignalEvent<Gep::Event::WindowMoved>({ x, y });
+        if (!ws) return;
+
+        ws->mManager.SignalEvent<Gep::Event::WindowMoved>({ x, y });
     }
 
     void WindowSystem::GLFW_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
     {
         WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
-        if (ws) ws->mManager.SignalEvent<Gep::Event::MouseScrolled>({ xoffset, yoffset });
+        if (!ws) return;
+            
+        ws->mManager.SignalEvent<Gep::Event::MouseScrolled>({ xoffset, yoffset });
+    }
+
+    void WindowSystem::GLFW_DropCallback(GLFWwindow* window, int count, const char** cpaths)
+    {
+        WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+        if (!ws) return;
+
+        std::vector<std::filesystem::path> paths;
+        for (int i = 0; i < count; ++i)
+        {
+            paths.emplace_back(cpaths[i]);
+        }
+
+        ws->mManager.SignalEvent<Gep::Event::FileDropped>({ std::move(paths) });
     }
 }
 

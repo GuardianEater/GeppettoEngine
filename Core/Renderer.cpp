@@ -45,6 +45,7 @@ namespace Gep
         SolidColor,
 
         IsHighlighted,
+        IgnoreLight,
     };
 
     static HICON GetIcon(const std::filesystem::path& iconPath);
@@ -108,6 +109,14 @@ namespace Gep
         }
 
         return mMeshNameToID.at(name);
+    }
+
+    uint64_t OpenGLRenderer::GetOrLoadMesh(const std::string& meshName)
+    {
+        if (!mMeshNameToID.contains(meshName))
+            LoadMesh(std::filesystem::path(meshName));
+
+        return GetMesh(meshName);
     }
 
     bool OpenGLRenderer::IsMeshLoaded(const std::string& name) const
@@ -190,6 +199,11 @@ namespace Gep
         glUseProgram(0);
     }
 
+    void OpenGLRenderer::SetIgnoreLight(bool ignore)
+    {
+        mNextMeshIgnoresLight = ignore;
+    }
+
     void OpenGLRenderer::SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec3& eye)
     {
         glUseProgram(mProgram.GetProgramID());
@@ -247,9 +261,9 @@ namespace Gep
     {
         std::vector<std::string> meshes;
 
-        for (const auto& [name, _] : mMeshNameToID)
+        for (const auto& [name, id] : mMeshNameToID)
         {
-            meshes.push_back(name);
+            meshes.emplace_back(name);
         }
 
         return meshes;
@@ -468,6 +482,7 @@ namespace Gep
         glUseProgram(mProgram.GetProgramID());
         glBindVertexArray(md.mVertexArrayObject);
         glUniform1i(GLUniformLocation::UseTexture, mNextMeshIsTextured && mTexturesEnabled);
+        glUniform1i(GLUniformLocation::IgnoreLight, mNextMeshIgnoresLight);
 
         // If outlining is enabled, render the outline first
         if (mNextMeshIsHighlighted)

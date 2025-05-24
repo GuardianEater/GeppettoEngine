@@ -76,6 +76,11 @@ namespace Gep
             double yoffset;
         };
 
+        struct FileDropped
+        {
+            std::vector<std::filesystem::path> droppedFiles; // the path to the dropped files
+        };
+
         struct CollisionEnter
         {
             Entity entity;

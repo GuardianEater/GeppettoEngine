@@ -273,6 +273,9 @@
     <ClCompile Include="StringHelp.cpp">
       <Filter>Backend</Filter>
     </ClCompile>
+    <ClCompile Include="SkyboxMesh.cpp">
+      <Filter>Backend\Rendering\Meshes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -559,6 +562,9 @@
     </ClInclude>
     <ClInclude Include="StringHelp.hpp">
       <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="SkyboxMesh.hpp">
+      <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

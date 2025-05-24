@@ -18,6 +18,7 @@
 #include "CameraComponent.hpp"
 #include "TextureComponent.hpp"
 #include "LightComponent.hpp"
+#include "SkyboxMesh.hpp"
 
 
 namespace Client
@@ -47,7 +48,7 @@ namespace Client
 
         renderer.Compile();
         renderer.BackfaceCull();
-        renderer.SetAmbientLight({ 0.1, 0.1, 0.1 });
+        renderer.SetAmbientLight({ 0.2f, 0.2f, 0.2f });
 
         renderer.LoadErrorTexture("assets\\textures\\Error.png");
 
@@ -55,10 +56,7 @@ namespace Client
         renderer.LoadMesh("Sphere", Gep::SphereMesh(10, 10));
         renderer.LoadMesh("Cube", Gep::CubeMesh());
         renderer.LoadMesh("Icosphere", Gep::IcosphereMesh(3));
-        renderer.LoadMesh("assets\\meshes\\dragon.obj");
-        renderer.LoadMesh("assets\\meshes\\neko.obj");
-        renderer.LoadMesh("assets\\meshes\\mesh6.obj");
-        renderer.LoadMesh("assets\\meshes\\Arrow.obj");
+        renderer.LoadMesh("Skybox", Gep::SkyboxMesh());
     }
 
     void RenderSystem::Update(float dt)
@@ -101,7 +99,7 @@ namespace Client
                     * Gep::scale_matrix(transform.scale);
 
                 renderer.SetModel(model);
-                renderer.SetMaterial(material.diff_coeff, material.spec_coeff, material.spec_exponent);
+                renderer.SetMaterial(material.color, material.spec_coeff, material.spec_exponent);
 
                 if (mManager.HasComponent<Texture>(entity))
                 {
@@ -118,7 +116,9 @@ namespace Client
                     renderer.SetSolidColor(light.color * light.intensity);
                 }
 
-                uint64_t meshID = renderer.GetMesh(material.meshName);
+                renderer.SetIgnoreLight(material.ignoreLight);
+
+                uint64_t meshID = renderer.GetOrLoadMesh(material.meshName);
                 renderer.DrawMesh(meshID);
 
                 //ImGuizmo::SetDrawlist();
@@ -277,7 +277,7 @@ namespace Client
         {
             for (const std::string& meshName : loadedMeshes)
             {
-                bool isSelected = meshName == mesh.meshName;
+                bool isSelected = (meshName == mesh.meshName);
                 if (ImGui::Selectable(meshName.c_str(), isSelected))
                 {
                     mesh.meshName = meshName;
@@ -290,9 +290,10 @@ namespace Client
             ImGui::EndCombo();
         }
 
-        ImGui::ColorEdit3("Diffuse Color", &mesh.diff_coeff[0]);
+        ImGui::ColorEdit3("Color", &mesh.color[0]);
         ImGui::ColorEdit3("Specular Color", &mesh.spec_coeff[0]);
-        ImGui::SliderFloat("Specular Exponent", &mesh.spec_exponent, 0.001f, 10.0f);
+        ImGui::DragFloat("Specular Exponent", &mesh.spec_exponent, 0.1f, 0.1f, FLT_MAX);
+        ImGui::Checkbox("Ignore Light", &mesh.ignoreLight);
     }
 
     void RenderSystem::OnTextureEditorRender(const Gep::Event::ComponentEditorRender<Texture>& event)
