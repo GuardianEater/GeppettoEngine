@@ -13,7 +13,7 @@
 #include <glm\glm.hpp>
 #include <Mesh.hpp>
 #include <Camera.hpp>
-#include <ShaderProgram.hpp>
+#include "Shader.hpp"
 
 #include <mutex>
 
@@ -24,13 +24,17 @@
 
 namespace Gep
 {
+    struct PBRMaterial
+    {
+        float ao; // ambient occlusion
+        float roughness;
+        float metalness;
+        glm::vec3 color;
+    };
+
     class OpenGLRenderer
     {
     public:
-        // sets up the main shader program
-        void LoadFragmentShader(const std::filesystem::path& shaderPath);
-        void LoadVertexShader(const std::filesystem::path& shaderPath);
-        void Compile();
 
         // loads resources into the renderer
         void LoadMesh(const std::string& name, const Mesh& mesh);
@@ -40,6 +44,8 @@ namespace Gep
 
         bool IsMeshLoaded(const std::string& name) const;
 
+        void SetShader(const std::string& name);
+
         // changes how the renderer will draw the next object
         void SetTexture(GLuint texture);
         void SetHighlight(bool highlight);
@@ -47,11 +53,10 @@ namespace Gep
         void SetIgnoreLight(bool ignore);
         void SetCamera(const Camera& camera);
         void SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec3& eye);
-        void SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent);
+        void SetMaterial(const PBRMaterial& material);
         void SetModel(const glm::mat4& modelingMatrix);
         void SetWireframe(bool wireframe);
         void SetBackfaceCull(bool backfaceCull);
-        void SetAmbientLight(const glm::vec3& color);
         std::vector<std::string> GetLoadedMeshes() const;
         std::vector<std::filesystem::path> GetLoadedTextures() const;
 
@@ -88,12 +93,7 @@ namespace Gep
         void AddLight(const glm::vec3& color, const glm::vec3& position, float intensity); // adds a light to the renderered, will be sent to the shader when DrawLights is called
 
         void DrawLights(); // will send all added lights to the shader
-    private:
-
-
-        GLuint LoadShader(GLenum shaderType, const std::filesystem::path& shaderPath);
         void SetUpLightSSBO();
-
 
     private:
         struct MeshData
@@ -110,18 +110,23 @@ namespace Gep
         };
 
     private:
-        ShaderProgram mProgram{};
+        std::unordered_map<std::string, Shader> mShaders; // maps from the shader name, to the actual shader
+        std::string mActiveShaderName = "";
+
         //keyed_vector<MeshData> mMeshDatas;
         bool mWireframeMode = false;
         bool mTexturesEnabled = true;
 
         bool mNextMeshIsBackfaceCulling = true; // if false, back faces will be drawn
         bool mNextMeshIsWireframe = false;
-        bool mNextMeshIsTextured = false;
         bool mNextMeshIsHighlighted = false;
         bool mNextMeshIsSolidColor = false;
-        bool mNextMeshIgnoresLight = false;
         glm::vec3 mSolidColor{};
+
+        // camera
+        glm::mat4 mNextPerspective{};
+        glm::mat4 mNextView{};
+        glm::vec4 mNextEye{};
 
         Gep::keyed_vector<MeshData> mMeshDatas;
         std::unordered_map<std::string, uint64_t> mMeshNameToID;

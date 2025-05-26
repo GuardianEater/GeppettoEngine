@@ -28,11 +28,11 @@ namespace Client
 
         glm::mat4 GetModelMatrix() const
         {
-            glm::mat4 translationM = Gep::translation_matrix(position);
-            glm::mat4 rotationM    = Gep::rotation(rotation);
-            glm::mat4 scaleM       = Gep::scale_matrix(scale);
-
-            return translationM * rotationM * scaleM;
+            glm::mat4 model = Gep::translation_matrix(position)
+                            * Gep::rotation(rotation)
+                            * Gep::scale_matrix(scale);
+            
+            return model;
         }
 
         void OnScriptAccess(sol::usertype<Transform>& luaType)

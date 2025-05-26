@@ -52,22 +52,6 @@ namespace Gep
     static GLuint IconToTexture(HICON icon);
     static GLuint BitmapToTexture(HBITMAP bitmap);
 
-    void OpenGLRenderer::LoadFragmentShader(const std::filesystem::path& shaderPath)
-    {
-        mProgram.LoadFragmentShader(shaderPath);
-    }
-
-    void OpenGLRenderer::LoadVertexShader(const std::filesystem::path& shaderPath)
-    {
-        mProgram.LoadVertexShader(shaderPath);
-    }
-
-    void OpenGLRenderer::Compile()
-    {
-        mProgram.Compile();
-        SetUpLightSSBO();
-    }
-
     void OpenGLRenderer::LoadMesh(const std::string& name, const Mesh& mesh)
     {
         if (mMeshNameToID.contains(name))
@@ -124,6 +108,27 @@ namespace Gep
         return mMeshNameToID.contains(name);
     }
 
+    void OpenGLRenderer::SetShader(const std::string& name)
+    {
+        mActiveShaderName = ""; // incase this function fails make sure the shader is set to nothing first
+
+        std::string fragPath = "assets\\shaders\\" + name + ".frag";
+        std::string vertPath = "assets\\shaders\\" + name + ".vert";
+
+        // load a new shader if
+        if (!mShaders.contains(name))
+        {
+            auto [it, newInsertion] = mShaders.emplace(std::piecewise_construct, std::forward_as_tuple(name), std::forward_as_tuple(vertPath, fragPath));
+            if (!it->second.IsValid())
+            {
+                Gep::Log::Error("Shader at path: [", fragPath, "] and [", vertPath, "] did not compile");
+                return;
+            }
+        }
+
+        mActiveShaderName = name;
+    }
+
     void OpenGLRenderer::ToggleWireframes()
     {
         mWireframeMode = !mWireframeMode;
@@ -169,7 +174,8 @@ namespace Gep
         const glm::mat4 view = camera.GetView();
         const glm::vec4 eye = camera.GetEyePosition();
 
-        glUseProgram(mProgram.GetProgramID());
+
+
         glUniformMatrix4fv(0, 1, false, &pers[0][0]);
         glUniformMatrix4fv(1, 1, false, &view[0][0]);
         glUniform4fv(4, 1, &eye[0]);
@@ -178,12 +184,14 @@ namespace Gep
 
     void OpenGLRenderer::SetTexture(GLuint texture)
     {
-        glUseProgram(mProgram.GetProgramID());
+        Shader& activeShader = mShaders.at(mActiveShaderName);
 
-        glBindTexture(GL_TEXTURE_2D, texture);
-        mNextMeshIsTextured = true;
+        activeShader.Use([&]()
+        {
+            glBindTexture(GL_TEXTURE_2D, texture);
+        });
 
-        glUseProgram(0);
+        activeShader.SetUniform("isUsingTexture", mTexturesEnabled);
     }
 
     void OpenGLRenderer::SetHighlight(bool highlight)
@@ -193,36 +201,34 @@ namespace Gep
 
     void OpenGLRenderer::SetSolidColor(const glm::vec3& color)
     {
-        glUseProgram(mProgram.GetProgramID());
-        glUniform1i(GLUniformLocation::IsSolidColor, 1);
-        glUniform3fv(GLUniformLocation::SolidColor, 1, &color[0]);
-        glUseProgram(0);
+        Shader& activeShader = mShaders.at(mActiveShaderName);
+
+        activeShader.SetUniform("isSolidColor", true);
+        activeShader.SetUniform("solidColor", color);
     }
 
     void OpenGLRenderer::SetIgnoreLight(bool ignore)
     {
-        mNextMeshIgnoresLight = ignore;
+        Shader& activeShader = mShaders.at(mActiveShaderName);
+
+        activeShader.SetUniform("isIgnoringLight", ignore);
     }
 
     void OpenGLRenderer::SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec3& eye)
     {
-        glUseProgram(mProgram.GetProgramID());
-        glUniformMatrix4fv(GLUniformLocation::Perspective, 1, false, &pers[0][0]);
-        glUniformMatrix4fv(GLUniformLocation::ViewMatrix, 1, false, &view[0][0]);
-
-        const glm::vec4 eye4 = glm::vec4(eye, 1);
-        glUniform4fv(GLUniformLocation::Eye, 1, &eye4[0]);
-        glUseProgram(0);
+        mNextPerspective = pers;
+        mNextView = view;
+        mNextEye = glm::vec4(eye, 1.0f);
     }
 
     void OpenGLRenderer::SetModel(const glm::mat4& modelingMatrix)
     {
+        Shader& activeShader = mShaders.at(mActiveShaderName);
+
         glm::mat4 normal = glm::mat4(glm::mat3(affine_inverse(modelingMatrix)));
 
-        glUseProgram(mProgram.GetProgramID());
-        glUniformMatrix4fv(GLUniformLocation::ModelMatrix, 1, false, &modelingMatrix[0][0]);
-        glUniformMatrix4fv(GLUniformLocation::NormalMatrix, 1, true, &normal[0][0]);
-        glUseProgram(0);
+        activeShader.SetUniform("modelMatrix", modelingMatrix);
+        activeShader.SetUniform("normalMatrix", normal, true);
     }
 
     void OpenGLRenderer::SetWireframe(bool wireframe)
@@ -235,26 +241,20 @@ namespace Gep
         mNextMeshIsBackfaceCulling = backfaceCull;
     }
 
-    void OpenGLRenderer::SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent)
+    void OpenGLRenderer::SetMaterial(const PBRMaterial& material)
     {
-        glUseProgram(mProgram.GetProgramID());
-        glUniform3fv(GLUniformLocation::DiffuseCoefficient, 1, &diffuseCoeff[0]);
-        glUniform3fv(GLUniformLocation::SpecularCoefficient, 1, &specularCoeff[0]);
-        glUniform1fv(GLUniformLocation::SpecularExponent, 1, &specularExponent);
-        glUseProgram(0);
+        Shader& activeShader = mShaders.at(mActiveShaderName);
+        
+        activeShader.SetUniform("material.ao", material.ao);
+        activeShader.SetUniform("material.roughness", material.roughness);
+        activeShader.SetUniform("material.metallic", material.metalness);
+        activeShader.SetUniform("material.color", material.color);
     }
 
     // toggle textures
     void OpenGLRenderer::ToggleTextures()
     {
         mTexturesEnabled = !mTexturesEnabled;
-    }
-
-    void OpenGLRenderer::SetAmbientLight(const glm::vec3& color)
-    {
-        glUseProgram(mProgram.GetProgramID());
-        glUniform3fv(GLUniformLocation::AmbientColor, 1, &color[0]);
-        glUseProgram(0);
     }
 
     std::vector<std::string> OpenGLRenderer::GetLoadedMeshes() const
@@ -470,6 +470,12 @@ namespace Gep
 
         const MeshData& md = mMeshDatas.at(meshID);
         constexpr std::uint64_t faceSize = sizeof(Mesh::Face) / sizeof(GLuint);
+        Shader& activeShader = mShaders.at(mActiveShaderName);
+
+        activeShader.SetUniform("lightCount", static_cast<int>(mLightData.size()));
+        activeShader.SetUniform("perspectiveMatrix", mNextPerspective);
+        activeShader.SetUniform("viewMatrix", mNextView);
+        activeShader.SetUniform("camPosition", mNextEye);
 
         if (mNextMeshIsBackfaceCulling)
         {
@@ -479,32 +485,30 @@ namespace Gep
         else
             glDisable(GL_CULL_FACE);
 
-        glUseProgram(mProgram.GetProgramID());
-        glBindVertexArray(md.mVertexArrayObject);
-        glUniform1i(GLUniformLocation::UseTexture, mNextMeshIsTextured && mTexturesEnabled);
-        glUniform1i(GLUniformLocation::IgnoreLight, mNextMeshIgnoresLight);
-
-        // If outlining is enabled, render the outline first
-        if (mNextMeshIsHighlighted)
+        activeShader.Use([&]() 
         {
-            glUniform1i(GLUniformLocation::IsHighlighted, 1);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glBindVertexArray(md.mVertexArrayObject);
+
+            // If outlining is enabled, render the outline first
+            if (mNextMeshIsHighlighted)
+            {
+                activeShader.SetUniform("isHighlighted", true);
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                activeShader.SetUniform("isHighlighted", false);
+            }
+
+            if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            glUniform1i(GLUniformLocation::IsHighlighted, 0);
-        }
+            if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
-        if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            glBindVertexArray(0);
+        });
 
-        glUniform1i(GLUniformLocation::IsSolidColor, 0); // reset solid color
+        activeShader.SetUniform("isUsingTexture", false);
+        activeShader.SetUniform("isSolidColor", false);
 
-        //glBindTexture(GL_TEXTURE_2D, 0);
-        glBindVertexArray(0);
-        glUseProgram(0);
-
-        mNextMeshIsTextured = false;
         mNextMeshIsWireframe = false;
         mNextMeshIsBackfaceCulling = true;
     }
@@ -537,10 +541,6 @@ namespace Gep
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, mLightSSBO);
         glBufferData(GL_SHADER_STORAGE_BUFFER, mLightData.size() * sizeof(LightData), mLightData.data(), GL_DYNAMIC_DRAW);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-        glUseProgram(mProgram.GetProgramID());
-        glUniform1i(GLUniformLocation::LightCount, static_cast<int>(mLightData.size()));
-        glUseProgram(0);
     }
 
     HICON GetIcon(const std::filesystem::path& iconPath)
@@ -600,36 +600,6 @@ namespace Gep
         if (!GetIconInfo(icon, &iconInfo)) return 0;
 
         return BitmapToTexture(iconInfo.hbmColor);
-    }
-
-    GLuint OpenGLRenderer::LoadShader(GLenum shaderType, const std::filesystem::path& shaderPath)
-    {
-        std::string source;
-
-        std::ifstream inFile(shaderPath);
-        assert(!(!inFile.is_open()) && "Failed to open shader file");
-
-        source.assign((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
-        inFile.close();
-
-        GLuint shaderID = glCreateShader(shaderType);
-        const char* c_source = source.c_str();
-        glShaderSource(shaderID, 1, &c_source, 0);
-        glCompileShader(shaderID);
-
-#ifdef _DEBUG
-        GLint errorValue = 0;
-        glGetShaderiv(shaderID, GL_COMPILE_STATUS, &errorValue);
-        if (!errorValue)
-        {
-            std::string message;
-            message.resize(1024);
-            glGetShaderInfoLog(shaderID, message.capacity(), 0, message.data());
-            std::cout << "Failed to Compile Shader " << shaderPath.string() << '\n' << message << std::endl;
-            throw std::runtime_error("Failed to Compile Shader");
-        }
-#endif // _DEBUG
-        return shaderID;
     }
 
     void OpenGLRenderer::MeshData::GenVertexBuffer(const Mesh& mesh)

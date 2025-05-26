@@ -31,6 +31,20 @@ namespace Gep
             Entity entity;
         };
 
+        // signalled after the entity being attached
+        struct EntityAttached
+        {
+            Entity child;
+            Entity parent;
+        };
+
+        // signalled prior to the entity being detached
+        struct EntityDetached
+        {
+            Entity child;
+            Entity parent;
+        };
+
         struct KeyPressed
         {
             int keycode;

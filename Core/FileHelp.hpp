@@ -14,4 +14,7 @@ namespace Gep
 {
     // given a file path, if it already exists on disk will make it unique
     std::filesystem::path UniqueFileName(const std::filesystem::path& path);
+
+    // reads a file from the given path into a string, will silently fail and return "" if the path doesnt exist
+    std::string ReadFile(const std::filesystem::path& path);
 }

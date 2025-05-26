@@ -30,5 +30,14 @@ namespace Gep
 
         return result;
     }
+
+    std::string ReadFile(const std::filesystem::path& path)
+    {
+        std::ifstream in(path);
+
+        if (!in) return "";
+
+        return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+    }
 }
 

@@ -43,12 +43,8 @@ namespace Client
 
         Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
 
-        renderer.LoadVertexShader("assets\\shaders\\Lighting.vert");
-        renderer.LoadFragmentShader("assets\\shaders\\Lighting.frag");
-
-        renderer.Compile();
+        renderer.SetUpLightSSBO();
         renderer.BackfaceCull();
-        renderer.SetAmbientLight({ 0.2f, 0.2f, 0.2f });
 
         renderer.LoadErrorTexture("assets\\textures\\Error.png");
 
@@ -57,6 +53,8 @@ namespace Client
         renderer.LoadMesh("Cube", Gep::CubeMesh());
         renderer.LoadMesh("Icosphere", Gep::IcosphereMesh(3));
         renderer.LoadMesh("Skybox", Gep::SkyboxMesh());
+
+        glEnable(GL_DEPTH_TEST);
     }
 
     void RenderSystem::Update(float dt)
@@ -94,12 +92,11 @@ namespace Client
 
             mManager.ForEachArchetype<Mesh, Transform>([&](Gep::Entity entity, Mesh& material, Transform& transform)
             {
-                glm::mat4 model = Gep::translation_matrix(transform.position)
-                    * Gep::rotation(transform.rotation)
-                    * Gep::scale_matrix(transform.scale);
+                glm::mat4 model = transform.GetModelMatrix();
 
+                renderer.SetShader(material.shaderName);
                 renderer.SetModel(model);
-                renderer.SetMaterial(material.color, material.spec_coeff, material.spec_exponent);
+                renderer.SetMaterial({ material.ao, material.roughness, material.metalness, material.color });
 
                 if (mManager.HasComponent<Texture>(entity))
                 {
@@ -290,9 +287,10 @@ namespace Client
             ImGui::EndCombo();
         }
 
+        ImGui::DragFloat("Ambient Occlusion", &mesh.ao, 0.001f, 0.0f, 1.0f);
+        ImGui::DragFloat("Roughness", &mesh.roughness, 0.001f, 0.0f, 1.0f);
+        ImGui::DragFloat("Metalness", &mesh.metalness, 0.001f, 0.0f, 1.0f);
         ImGui::ColorEdit3("Color", &mesh.color[0]);
-        ImGui::ColorEdit3("Specular Color", &mesh.spec_coeff[0]);
-        ImGui::DragFloat("Specular Exponent", &mesh.spec_exponent, 0.1f, 0.1f, FLT_MAX);
         ImGui::Checkbox("Ignore Light", &mesh.ignoreLight);
     }
 
@@ -336,7 +334,7 @@ namespace Client
         Light& light = event.component;
 
         ImGui::ColorEdit3("Color", &light.color[0]);
-        ImGui::DragFloat("Range", &light.intensity, 1.0f, 0.001f, Gep::num_max<float>());
+        ImGui::DragFloat("Intensity", &light.intensity, 1.0f, 0.001f, Gep::num_max<float>());
     }
 
     void RenderSystem::OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event)
