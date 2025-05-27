@@ -449,24 +449,23 @@ namespace Client
 
         ImGui::BeginChild("Entities");
         DrawEntities(roots, dt);
-        ImGui::EndChild();
-
         // detach entities if they are dropped into any open space, adds a little bit of extra dropping space aswell
-        //ImVec2 size = ImGui::GetContentRegionAvail();
-        //if (size.y < 0.0f) size.y = 0.0f;
-        //size.y += 200.0f;
-        //ImGui::Dummy(size);
+        ImVec2 size = ImGui::GetContentRegionAvail();
+        size.y = 200 * ImGui::GetIO().FontGlobalScale;
+        ImGui::Dummy(size);
 
-        //EntitiesDragDropTarget([&](Gep::Entity entity)
-        //{
-        //    mManager.DetachEntity(entity);
-        //});
+        EntitiesDragDropTarget([&](Gep::Entity entity)
+        {
+            mManager.DetachEntity(entity);
+        });
 
         // clears selected entities if the background is clicked
         if (ImGui::IsItemClicked())
         {
             mEditorResource.mSelectedEntities.clear();
         }
+        ImGui::EndChild();
+
 
         // delete selected entities
         if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
