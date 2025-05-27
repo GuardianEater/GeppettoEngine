@@ -109,6 +109,12 @@ namespace Client
                 .color = mesh.color
             };
 
+            if (mManager.HasComponent<Light>(entity))
+            {
+                material.color = mManager.GetComponent<Light>(entity).color;
+                mesh.ignoreLight = true;
+            }
+
             Gep::ObjectUniforms uniforms
             {
                 .modelMatrix = model,
