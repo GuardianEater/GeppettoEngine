@@ -299,7 +299,7 @@ namespace Client
 
     void ImGuiSystem::OnEntityCreated(const Gep::Event::EntityCreated& event)
     {
-        mEditorResource.mHeirarchyEntities.push_back(event.entity);
+        mEditorResource.mHierarchyEntities.push_back(event.entity);
     }
 
     void ImGuiSystem::OnEntityDestroyed(const Gep::Event::EntityDestroyed& event)
@@ -307,7 +307,7 @@ namespace Client
         mEditorResource.mSelectedEntities.erase(event.entity);
 
         // removes the entity from the heirarchy
-        auto& es = mEditorResource.mHeirarchyEntities;
+        auto& es = mEditorResource.mHierarchyEntities;
         es.erase(std::remove(es.begin(), es.end(), event.entity), es.end());
     }
 
@@ -393,7 +393,7 @@ namespace Client
         //ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
         ImGui::InputTextWithHint("###Search", "Search", &search);
 
-        auto& heirarchyEnts = mEditorResource.mHeirarchyEntities;
+        auto& heirarchyEnts = mEditorResource.mHierarchyEntities;
 
         std::vector<Gep::Entity> roots;
         if (search.empty())
@@ -489,7 +489,7 @@ namespace Client
         if (ImGui::IsKeyPressed(ImGuiKey_A, false) && ImGui::GetIO().KeyCtrl)
         {
             mEditorResource.mSelectedEntities.clear();
-            for (Gep::Entity entity : mEditorResource.mHeirarchyEntities)
+            for (Gep::Entity entity : mEditorResource.mHierarchyEntities)
             {
                 mEditorResource.mSelectedEntities.insert(entity);
             }

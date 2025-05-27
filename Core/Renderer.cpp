@@ -222,57 +222,10 @@ namespace Gep
         mNextMeshIsHighlighted = highlight;
     }
 
-    //void OpenGLRenderer::SetSolidColor(const glm::vec3& color)
-    //{
-    //    Shader& activeShader = mShaders.at(mActiveShaderName);
-
-    //    activeShader.SetUniform("isSolidColor", true);
-    //    activeShader.SetUniform("solidColor", color);
-    //}
-
-    //void OpenGLRenderer::SetIgnoreLight(bool ignore)
-    //{
-    //    Shader& activeShader = mShaders.at(mActiveShaderName);
-
-    //    activeShader.SetUniform("isIgnoringLight", ignore);
-    //}
-
-    //void OpenGLRenderer::SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec3& eye)
-    //{
-    //    mNextPerspective = pers;
-    //    mNextView = view;
-    //    mNextEye = glm::vec4(eye, 1.0f);
-    //}
-
-    //void OpenGLRenderer::SetModel(const glm::mat4& modelingMatrix)
-    //{
-    //    Shader& activeShader = mShaders.at(mActiveShaderName);
-
-    //    glm::mat4 normal = glm::mat4(glm::mat3(affine_inverse(modelingMatrix)));
-
-    //    activeShader.SetUniform("modelMatrix", modelingMatrix);
-    //    activeShader.SetUniform("normalMatrix", normal, true);
-    //}
-
     void OpenGLRenderer::SetWireframe(bool wireframe)
     {
         mNextMeshIsWireframe = wireframe;
     }
-
-    //void OpenGLRenderer::SetBackfaceCull(bool backfaceCull)
-    //{
-    //    mNextMeshIsBackfaceCulling = backfaceCull;
-    //}
-
-    //void OpenGLRenderer::SetMaterial(const PBRMaterial& material)
-    //{
-    //    Shader& activeShader = mShaders.at(mActiveShaderName);
-    //    
-    //    activeShader.SetUniform("material.ao", material.ao);
-    //    activeShader.SetUniform("material.roughness", material.roughness);
-    //    activeShader.SetUniform("material.metallic", material.metalness);
-    //    activeShader.SetUniform("material.color", material.color);
-    //}
 
     // toggle textures
     void OpenGLRenderer::ToggleTextures()

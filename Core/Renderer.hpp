@@ -89,13 +89,8 @@ namespace Gep
         // changes how the renderer will draw the next object
         void SetTexture(GLuint texture);
         void SetHighlight(bool highlight);
-        //void SetSolidColor(const glm::vec3& color);
-        //void SetIgnoreLight(bool ignore);
-        //void SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec3& eye);
-        //void SetMaterial(const PBRMaterial& material);
-        //void SetModel(const glm::mat4& modelingMatrix);
         void SetWireframe(bool wireframe);
-        //void SetBackfaceCull(bool backfaceCull);
+
         std::vector<std::string> GetLoadedMeshes() const;
         std::vector<std::filesystem::path> GetLoadedTextures() const;
 
