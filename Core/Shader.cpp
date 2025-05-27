@@ -167,11 +167,11 @@ namespace Gep
 			size_t quoteIndex1 = shaderSource.find('\"', includeIndex + searchString.size());
 
 			if (quoteIndex1 == std::string::npos)
-				throw "Invalid syntax around [#include] in shader";
+				throw std::runtime_error("Invalid syntax around [#include] in shader");
 
 			size_t quoteIndex2 = shaderSource.find('\"', quoteIndex1 + 1);
 			if (quoteIndex2 == std::string::npos)
-				throw "Invalid syntax around [#include] in shader";
+				throw std::runtime_error("Invalid syntax around [#include] in shader");
 
 			std::string includeFileName = shaderSource.substr(quoteIndex1 + 1, quoteIndex2 - quoteIndex1 - 1); // get the name of the file included
 
