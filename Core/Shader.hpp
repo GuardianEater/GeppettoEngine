@@ -27,6 +27,12 @@ namespace Gep
         void SetUniform(const std::string& name, int v);
         void SetUniform(const std::string& name, float v);
 
+        void SetUniform(size_t location, const glm::vec3& v);
+        void SetUniform(size_t location, const glm::vec4& v);
+        void SetUniform(size_t location, const glm::mat4& v, bool transpose = false);
+        void SetUniform(size_t location, int v);
+        void SetUniform(size_t location, float v);
+
         // during the scope of the lamda the shader is bound
         template <typename Func>
         void Use(Func&& func);
@@ -34,6 +40,7 @@ namespace Gep
     private:
         GLuint Compile(GLenum shaderType, const std::string& source) const;
         GLuint CreateProgram(GLuint vertexShader, GLuint fragmentShader) const;
+        std::string ReadShader(const std::filesystem::path& path); // reads in the data and handles includes
 
         void Bind();
         void Unbind();

@@ -43,7 +43,13 @@ namespace Client
 
         Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
 
+        renderer.SetShader("assets\\shaders\\PBR.vert", "assets\\shaders\\PBR.frag");
+        renderer.SetHighlightShader("assets\\shaders\\Highlight.vert", "assets\\shaders\\Highlight.frag");
+
         renderer.SetUpLightSSBO();
+        renderer.SetUpObjectUniformsSSBO();
+        renderer.SetUpCameraUniformsSSBO();
+
         renderer.BackfaceCull();
 
         renderer.LoadErrorTexture("assets\\textures\\Error.png");
@@ -63,16 +69,67 @@ namespace Client
 
         renderer.Start();
 
+        // prepares all of the light uniform values
         mManager.ForEachArchetype<Light, Transform>([&](Gep::Entity e, Light& l, Transform& t)
         {
-            renderer.AddLight(l.color, t.position, l.intensity);
+            Gep::LightUniforms uniforms
+            {
+                .position = t.position,
+                .color = l.color,
+                .intensity = l.intensity
+            };
+
+            renderer.AddLightUniforms(uniforms);
         });
+        renderer.CommitLightUniforms();
 
-        renderer.DrawLights();
-
-        // begins rendering each everything
         mManager.ForEachArchetype<Transform, Camera>([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
         {
+            Gep::CameraUniforms uniforms
+            {
+                .perspectiveMatrix = cam.GetProjectionMatrix(),
+                .viewMatrix = cam.GetViewMatrix(camTransform.position),
+                .camPosition = glm::vec4(camTransform.position, 1.0f),
+            };
+
+            renderer.AddCameraUniforms(uniforms);
+        });
+        renderer.CommitCameraUniforms();
+
+        mManager.ForEachArchetype<Mesh, Transform>([&](Gep::Entity entity, Mesh& mesh, Transform& transform)
+        {
+            glm::mat4 model = transform.GetModelMatrix();
+            glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(model)));
+
+            Gep::PBRMaterial material
+            {
+                .ao = mesh.ao, // ambient occlusion
+                .roughness = mesh.roughness,
+                .metalness = mesh.metalness,
+                .color = mesh.color
+            };
+
+            Gep::ObjectUniforms uniforms
+            {
+                .modelMatrix = model,
+                .normalMatrix = normal,
+                .isUsingTexture = mManager.HasComponent<Texture>(entity),
+                .isIgnoringLight = mesh.ignoreLight,
+                .isSolidColor = false,
+                .isHighlighted = mesh.selected,
+                .material = material
+            };
+
+            renderer.AddObjectUniforms(uniforms);
+        });
+        renderer.CommitObjectUniforms();
+
+        // main render passes
+        size_t cameraIndex = 0;
+        mManager.ForEachArchetype<Transform, Camera>([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
+        {
+            renderer.SetCameraIndex(cameraIndex++);
+
             cam.renderTarget->Bind();
             cam.renderTarget->Clear({ 0.1f, 0.1f, 0.1f });
 
@@ -84,20 +141,11 @@ namespace Client
             cam.up = { sin(camRotation.x) * sin(camRotation.y), cos(camRotation.x), -sin(camRotation.x) * cos(camRotation.y) };
             cam.back = glm::normalize(glm::cross(cam.right, cam.up));
 
-            const glm::mat4 pers = cam.GetProjectionMatrix();
-            const glm::mat4 view = cam.GetViewMatrix(camTransform.position);
-
-            renderer.SetCamera(pers, view, camTransform.position);
             const glm::vec2 renderSize = cam.renderTarget->GetSize();
 
+            size_t objectIndex = 0;
             mManager.ForEachArchetype<Mesh, Transform>([&](Gep::Entity entity, Mesh& material, Transform& transform)
             {
-                glm::mat4 model = transform.GetModelMatrix();
-
-                renderer.SetShader(material.shaderName);
-                renderer.SetModel(model);
-                renderer.SetMaterial({ material.ao, material.roughness, material.metalness, material.color });
-
                 if (mManager.HasComponent<Texture>(entity))
                 {
                     const Texture& texture = mManager.GetComponent<Texture>(entity);
@@ -106,54 +154,42 @@ namespace Client
                 }
 
                 renderer.SetHighlight(material.selected);
-
-                if (mManager.HasComponent<Client::Light>(entity))
-                {
-                    Light& light = mManager.GetComponent<Client::Light>(entity);
-                    renderer.SetSolidColor(light.color * light.intensity);
-                }
-
-                renderer.SetIgnoreLight(material.ignoreLight);
-
+                renderer.SetObjectIndex(objectIndex++);
                 uint64_t meshID = renderer.GetOrLoadMesh(material.meshName);
                 renderer.DrawMesh(meshID);
-
-                //ImGuizmo::SetDrawlist();
-                //ImGuizmo::SetRect(cam.renderTarget->GetPosition().x, cam.renderTarget->GetPosition().y, renderSize.x, renderSize.y);
-                //ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(pers), ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::WORLD, glm::value_ptr(model));
             });
 
-            if (mDrawColliders)
-            {
-
-                mManager.ForEachArchetype<SphereCollider, Transform>([&](Gep::Entity e, SphereCollider& collider, Transform& transform)
-                {
-                    glm::mat4 model = Gep::translation_matrix(transform.position)
-                        * Gep::rotation(transform.rotation)
-                        * Gep::scale_matrix(std::max({ transform.scale.x, transform.scale.y, transform.scale.z }));
-
-                    renderer.SetModel(model);
-                    renderer.SetWireframe(true);
-                    renderer.SetSolidColor({ 1.0f, 0.0f, 0.0f });
-
-                    uint64_t meshID = renderer.GetMesh("Icosphere");
-                    renderer.DrawMesh(meshID);
-                });
-
-                mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity e, CubeCollider& collider, Transform& transform)
-                {
-                    glm::mat4 model = Gep::translation_matrix(transform.position)
-                        * Gep::rotation(transform.rotation)
-                        * Gep::scale_matrix(transform.scale);
-
-                    renderer.SetModel(model);
-                    renderer.SetWireframe(true);
-                    renderer.SetSolidColor({ 1.0f, 0.0f, 0.0f });
-
-                    uint64_t meshID = renderer.GetMesh("Cube");
-                    renderer.DrawMesh(meshID);
-                });
-            }
+            //if (mDrawColliders)
+            //{
+            //
+            //    mManager.ForEachArchetype<SphereCollider, Transform>([&](Gep::Entity e, SphereCollider& collider, Transform& transform)
+            //    {
+            //        glm::mat4 model = Gep::translation_matrix(transform.position)
+            //            * Gep::rotation(transform.rotation)
+            //            * Gep::scale_matrix(std::max({ transform.scale.x, transform.scale.y, transform.scale.z }));
+            //
+            //        renderer.SetModel(model);
+            //        renderer.SetWireframe(true);
+            //        renderer.SetSolidColor({ 1.0f, 0.0f, 0.0f });
+            //
+            //        uint64_t meshID = renderer.GetMesh("Icosphere");
+            //        renderer.DrawMesh(meshID);
+            //    });
+            //
+            //    mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity e, CubeCollider& collider, Transform& transform)
+            //    {
+            //        glm::mat4 model = Gep::translation_matrix(transform.position)
+            //            * Gep::rotation(transform.rotation)
+            //            * Gep::scale_matrix(transform.scale);
+            //
+            //        renderer.SetModel(model);
+            //        renderer.SetWireframe(true);
+            //        renderer.SetSolidColor({ 1.0f, 0.0f, 0.0f });
+            //
+            //        uint64_t meshID = renderer.GetMesh("Cube");
+            //        renderer.DrawMesh(meshID);
+            //    });
+            //}
 
             cam.renderTarget->Draw(mManager, camEntity);
             cam.Resize(renderSize);

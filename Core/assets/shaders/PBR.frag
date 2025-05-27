@@ -1,45 +1,11 @@
 #version 430
 
-// structures //////////////////////////////////////////////////////////////////
-
-struct Light
-{
-  vec3 position; // the location of the light source
-  vec3 color; // the color of the light source
-  float intensity;
-};
-
-struct PBRMaterial
-{
-  float ao; // ambientOcclusion
-  float roughness;
-  float metallic;
-  vec3 color; // albedo
-};
+#include "Common.glsl"
 
 // in variables ////////////////////////////////////////////////////////////////
 in vec4 worldNormal;   // the normal vector of the surface hit
 in vec4 worldPosition; // the point that the light hits
 in vec2 uvOut;       // the uv coordinates of the surface hit
-
-// uniforms ////////////////////////////////////////////////////////////////////
-uniform vec4 camPosition;
-uniform sampler2D textureSampler;
-uniform int isUsingTexture;
-uniform int isIgnoringLight;
-uniform int isSolidColor;
-uniform int isHighlighted;
-uniform int lightCount;
-uniform vec3 solidColor; // the solid color to use, when isSolidColor is true
-uniform PBRMaterial material;
-
-// constants ///////////////////////////////////////////////////////////////////
-const float PI = 3.14159265359;
-
-layout(std430, binding=1) buffer LightBuffer
-{
-  Light lights[];
-};
 
 // out /////////////////////////////////////////////////////////////////////////
 out vec4 frag_color; // the resulting pixel color
@@ -49,27 +15,24 @@ vec3 CalculatePBRLightingTotal();
 
 void main(void)
 {
+  const ObjectUniforms object = objectUniforms[objectIndex];
+
   // Normalize surface normal and compute view vector.
   vec3 N = normalize(worldNormal.xyz);
   
   // Determine the base color from texture or solid color.
   vec3 baseColor = vec3(1.0);
-  if (isSolidColor == 1) 
+  if (object.isSolidColor == 1) 
   {
-    frag_color = vec4(solidColor, 1.0);
+    frag_color = vec4(object.material.color, 1.0);
     return;
   } 
-  else if (isHighlighted == 1)
-  {
-    frag_color = vec4(1.0, 1.0, 0.0, 1.0);
-    return;
-  }
   else
   {
-    baseColor = material.color;
+    baseColor = object.material.color;
   }
 
-  if (isIgnoringLight == 1)
+  if (object.isIgnoringLight == 1)
   {
     frag_color = vec4(baseColor, 1.0);
     return;
@@ -85,7 +48,7 @@ vec3 SchlickFresnel(float vDotH)
 {
   const float dielectricDefault = 0.04;
   vec3 F0 = vec3(dielectricDefault);
-  F0 = mix(F0, material.color, material.metallic);
+  F0 = mix(F0, objectUniforms[objectIndex].material.color, objectUniforms[objectIndex].material.metallic);
 
   const float clamped = clamp(1.0 - vDotH, 0.0, 1.0);
   const vec3 result = F0 + (1.0 - F0) * pow(clamped, 5);
@@ -95,7 +58,7 @@ vec3 SchlickFresnel(float vDotH)
 
 float GeometrySchlickGGX(float dp)
 {
-  float k = (material.roughness + 1.0) * (material.roughness + 1.0) / 8.0;
+  float k = (objectUniforms[objectIndex].material.roughness + 1.0) * (objectUniforms[objectIndex].material.roughness + 1.0) / 8.0;
   float denom = dp * (1.0 - k) + k;
   
   return dp / denom;
@@ -110,7 +73,7 @@ float GeometrySmith(float nDotV, float nDotL)
 // calculates D in the pbr equation
 float GGXDistribution(float nDotH)
 {
-  float alpha2 = pow(material.roughness, 4);
+  float alpha2 = pow(objectUniforms[objectIndex].material.roughness, 4);
   float d = nDotH * nDotH * (alpha2 - 1.0) + 1.0;
   float ggx = alpha2 / (PI * d * d);
 
@@ -118,7 +81,7 @@ float GGXDistribution(float nDotH)
 }
 
 // only for point lights
-vec3 CalculatePBRLighting(Light light, vec3 n, vec3 objectColor)
+vec3 CalculatePBRLighting(LightUniforms light, vec3 n, vec3 objectColor)
 {
   vec3 l = vec3(0.0);
 
@@ -129,7 +92,7 @@ vec3 CalculatePBRLighting(Light light, vec3 n, vec3 objectColor)
   float attenuation = 1.0 / (lightToPixelDist * lightToPixelDist);
   vec3 radiance = light.color * attenuation * light.intensity;
 
-  vec3 v = normalize(camPosition.xyz - worldPosition.xyz); // view vector
+  vec3 v = normalize(cameraUniforms[cameraIndex].camPosition.xyz - worldPosition.xyz); // view vector
   vec3 h = normalize(v + l); // half vector
 
   float nDotH = max(dot(n, h), 0.0); // clamp to 0 for values less than 0
@@ -143,7 +106,7 @@ vec3 CalculatePBRLighting(Light light, vec3 n, vec3 objectColor)
 
   vec3 ks = F; // specular coefficient
   vec3 kd = vec3(1.0) - ks; // diffuse coefficient
-  kd *= 1.0 - material.metallic;
+  kd *= 1.0 - objectUniforms[objectIndex].material.metallic;
 
   vec3 numerator = D * G * F;
   float denominator = 4.0 * nDotL * nDotV + 0.0001; // prevents division by 0
@@ -162,8 +125,8 @@ vec3 CalculatePBRLightingTotal()
   vec3 color = vec3(0.0); // the final color of the fragment
 
   // loop over each light.
-  vec3 objectColor = material.color;
-  if (isUsingTexture == 1) 
+  vec3 objectColor = objectUniforms[objectIndex].material.color;
+  if (objectUniforms[objectIndex].isUsingTexture == 1) 
   {
     //objectColor = texture(textureSampler, uvOut).rgb;
   }
@@ -172,7 +135,7 @@ vec3 CalculatePBRLightingTotal()
   {
     color += CalculatePBRLighting(lights[i], n, objectColor);
   }
-  vec3 ambient = vec3(0.03) * objectColor * material.ao;
+  vec3 ambient = vec3(0.03) * objectColor * objectUniforms[objectIndex].material.ao;
   color += ambient;
 
   // HDR tone mapping

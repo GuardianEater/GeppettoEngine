@@ -108,25 +108,66 @@ namespace Gep
         return mMeshNameToID.contains(name);
     }
 
-    void OpenGLRenderer::SetShader(const std::string& name)
+    void OpenGLRenderer::SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
     {
-        mActiveShaderName = ""; // incase this function fails make sure the shader is set to nothing first
+        mActiveShader = std::make_unique<Shader>(vertPath, fragPath);
+    }
 
-        std::string fragPath = "assets\\shaders\\" + name + ".frag";
-        std::string vertPath = "assets\\shaders\\" + name + ".vert";
+    void OpenGLRenderer::SetHighlightShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
+    {
+        mHighlightShader = std::make_unique<Shader>(vertPath, fragPath);
+    }
 
-        // load a new shader if
-        if (!mShaders.contains(name))
-        {
-            auto [it, newInsertion] = mShaders.emplace(std::piecewise_construct, std::forward_as_tuple(name), std::forward_as_tuple(vertPath, fragPath));
-            if (!it->second.IsValid())
-            {
-                Gep::Log::Error("Shader at path: [", fragPath, "] and [", vertPath, "] did not compile");
-                return;
-            }
-        }
+    void OpenGLRenderer::AddObjectUniforms(const ObjectUniforms& uniforms)
+    {
+        mObjectUniforms.push_back(uniforms);
+    }
 
-        mActiveShaderName = name;
+    void OpenGLRenderer::AddCameraUniforms(const CameraUniforms& uniforms)
+    {
+        mCameraUniforms.push_back(uniforms);
+    }
+
+    void OpenGLRenderer::AddLightUniforms(const LightUniforms& uniforms)
+    {
+        mLightUniforms.push_back(uniforms);
+    }
+
+    void OpenGLRenderer::CommitObjectUniforms()
+    {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mObjectUniformsSSBO);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, mObjectUniforms.size() * sizeof(ObjectUniforms), mObjectUniforms.data(), GL_DYNAMIC_DRAW);
+    }
+
+    void OpenGLRenderer::CommitCameraUniforms()
+    {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mCameraUniformsSSBO);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, mCameraUniforms.size() * sizeof(CameraUniforms), mCameraUniforms.data(), GL_DYNAMIC_DRAW);
+    }
+
+    void OpenGLRenderer::CommitLightUniforms()
+    {
+        SetLightCount(mLightUniforms.size());
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mLightUniformsSSBO);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, mLightUniforms.size() * sizeof(LightUniforms), mLightUniforms.data(), GL_DYNAMIC_DRAW);
+    }
+
+    void OpenGLRenderer::SetObjectIndex(size_t index)
+    {
+        mActiveShader->SetUniform(1, static_cast<int>(index));
+        mHighlightShader->SetUniform(1, static_cast<int>(index));
+    }
+
+    void OpenGLRenderer::SetCameraIndex(size_t index)
+    {
+        mActiveShader->SetUniform(0, static_cast<int>(index));
+        mHighlightShader->SetUniform(0, static_cast<int>(index));
+    }
+
+    void OpenGLRenderer::SetLightCount(size_t count)
+    {
+        mActiveShader->SetUniform(2, static_cast<int>(count));
+        mHighlightShader->SetUniform(2, static_cast<int>(count));
     }
 
     void OpenGLRenderer::ToggleWireframes()
@@ -168,30 +209,12 @@ namespace Gep
         //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void OpenGLRenderer::SetCamera(const Camera& camera)
-    {
-        const glm::mat4 pers = camera.GetPerspective();
-        const glm::mat4 view = camera.GetView();
-        const glm::vec4 eye = camera.GetEyePosition();
-
-
-
-        glUniformMatrix4fv(0, 1, false, &pers[0][0]);
-        glUniformMatrix4fv(1, 1, false, &view[0][0]);
-        glUniform4fv(4, 1, &eye[0]);
-        glUseProgram(0);
-    }
-
     void OpenGLRenderer::SetTexture(GLuint texture)
     {
-        Shader& activeShader = mShaders.at(mActiveShaderName);
-
-        activeShader.Use([&]()
+        mActiveShader->Use([&]()
         {
             glBindTexture(GL_TEXTURE_2D, texture);
         });
-
-        activeShader.SetUniform("isUsingTexture", mTexturesEnabled);
     }
 
     void OpenGLRenderer::SetHighlight(bool highlight)
@@ -199,57 +222,57 @@ namespace Gep
         mNextMeshIsHighlighted = highlight;
     }
 
-    void OpenGLRenderer::SetSolidColor(const glm::vec3& color)
-    {
-        Shader& activeShader = mShaders.at(mActiveShaderName);
+    //void OpenGLRenderer::SetSolidColor(const glm::vec3& color)
+    //{
+    //    Shader& activeShader = mShaders.at(mActiveShaderName);
 
-        activeShader.SetUniform("isSolidColor", true);
-        activeShader.SetUniform("solidColor", color);
-    }
+    //    activeShader.SetUniform("isSolidColor", true);
+    //    activeShader.SetUniform("solidColor", color);
+    //}
 
-    void OpenGLRenderer::SetIgnoreLight(bool ignore)
-    {
-        Shader& activeShader = mShaders.at(mActiveShaderName);
+    //void OpenGLRenderer::SetIgnoreLight(bool ignore)
+    //{
+    //    Shader& activeShader = mShaders.at(mActiveShaderName);
 
-        activeShader.SetUniform("isIgnoringLight", ignore);
-    }
+    //    activeShader.SetUniform("isIgnoringLight", ignore);
+    //}
 
-    void OpenGLRenderer::SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec3& eye)
-    {
-        mNextPerspective = pers;
-        mNextView = view;
-        mNextEye = glm::vec4(eye, 1.0f);
-    }
+    //void OpenGLRenderer::SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec3& eye)
+    //{
+    //    mNextPerspective = pers;
+    //    mNextView = view;
+    //    mNextEye = glm::vec4(eye, 1.0f);
+    //}
 
-    void OpenGLRenderer::SetModel(const glm::mat4& modelingMatrix)
-    {
-        Shader& activeShader = mShaders.at(mActiveShaderName);
+    //void OpenGLRenderer::SetModel(const glm::mat4& modelingMatrix)
+    //{
+    //    Shader& activeShader = mShaders.at(mActiveShaderName);
 
-        glm::mat4 normal = glm::mat4(glm::mat3(affine_inverse(modelingMatrix)));
+    //    glm::mat4 normal = glm::mat4(glm::mat3(affine_inverse(modelingMatrix)));
 
-        activeShader.SetUniform("modelMatrix", modelingMatrix);
-        activeShader.SetUniform("normalMatrix", normal, true);
-    }
+    //    activeShader.SetUniform("modelMatrix", modelingMatrix);
+    //    activeShader.SetUniform("normalMatrix", normal, true);
+    //}
 
     void OpenGLRenderer::SetWireframe(bool wireframe)
     {
         mNextMeshIsWireframe = wireframe;
     }
 
-    void OpenGLRenderer::SetBackfaceCull(bool backfaceCull)
-    {
-        mNextMeshIsBackfaceCulling = backfaceCull;
-    }
+    //void OpenGLRenderer::SetBackfaceCull(bool backfaceCull)
+    //{
+    //    mNextMeshIsBackfaceCulling = backfaceCull;
+    //}
 
-    void OpenGLRenderer::SetMaterial(const PBRMaterial& material)
-    {
-        Shader& activeShader = mShaders.at(mActiveShaderName);
-        
-        activeShader.SetUniform("material.ao", material.ao);
-        activeShader.SetUniform("material.roughness", material.roughness);
-        activeShader.SetUniform("material.metallic", material.metalness);
-        activeShader.SetUniform("material.color", material.color);
-    }
+    //void OpenGLRenderer::SetMaterial(const PBRMaterial& material)
+    //{
+    //    Shader& activeShader = mShaders.at(mActiveShaderName);
+    //    
+    //    activeShader.SetUniform("material.ao", material.ao);
+    //    activeShader.SetUniform("material.roughness", material.roughness);
+    //    activeShader.SetUniform("material.metallic", material.metalness);
+    //    activeShader.SetUniform("material.color", material.color);
+    //}
 
     // toggle textures
     void OpenGLRenderer::ToggleTextures()
@@ -470,12 +493,6 @@ namespace Gep
 
         const MeshData& md = mMeshDatas.at(meshID);
         constexpr std::uint64_t faceSize = sizeof(Mesh::Face) / sizeof(GLuint);
-        Shader& activeShader = mShaders.at(mActiveShaderName);
-
-        activeShader.SetUniform("lightCount", static_cast<int>(mLightData.size()));
-        activeShader.SetUniform("perspectiveMatrix", mNextPerspective);
-        activeShader.SetUniform("viewMatrix", mNextView);
-        activeShader.SetUniform("camPosition", mNextEye);
 
         if (mNextMeshIsBackfaceCulling)
         {
@@ -485,29 +502,26 @@ namespace Gep
         else
             glDisable(GL_CULL_FACE);
 
-        activeShader.Use([&]() 
+        if (mNextMeshIsHighlighted)
         {
-            glBindVertexArray(md.mVertexArrayObject);
-
-            // If outlining is enabled, render the outline first
-            if (mNextMeshIsHighlighted)
+            mHighlightShader->Use([&]() 
             {
-                activeShader.SetUniform("isHighlighted", true);
+                glBindVertexArray(md.mVertexArrayObject);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
                 glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                activeShader.SetUniform("isHighlighted", false);
-            }
+                glBindVertexArray(0);
+            });
+        }
 
+        mActiveShader->Use([&]() 
+        {
+            glBindVertexArray(md.mVertexArrayObject);
             if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
             if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
             glBindVertexArray(0);
         });
-
-        activeShader.SetUniform("isUsingTexture", false);
-        activeShader.SetUniform("isSolidColor", false);
 
         mNextMeshIsWireframe = false;
         mNextMeshIsBackfaceCulling = true;
@@ -515,31 +529,35 @@ namespace Gep
 
     void OpenGLRenderer::End()
     {
-        mLightData.clear();
-    }
-
-    void OpenGLRenderer::AddLight(const glm::vec3& color, const glm::vec3& position, float intensity)
-    {
-        LightData& data = mLightData.emplace_back();
-
-        data.position = position;
-        data.color = color;
-        data.intensity = intensity;
+        mLightUniforms.clear();
+        mObjectUniforms.clear();
+        mCameraUniforms.clear();
     }
 
     void OpenGLRenderer::SetUpLightSSBO()
     {
-        glGenBuffers(1, &mLightSSBO);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mLightSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, 1 * sizeof(LightData), nullptr, GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mLightSSBO);
+        glGenBuffers(1, &mLightUniformsSSBO);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mLightUniformsSSBO);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LightUniforms) * 1, nullptr, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mLightUniformsSSBO); // the number is the binding value of the buffer declared in the shader
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }
 
-    void OpenGLRenderer::DrawLights()
+    void OpenGLRenderer::SetUpObjectUniformsSSBO()
     {
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mLightSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, mLightData.size() * sizeof(LightData), mLightData.data(), GL_DYNAMIC_DRAW);
+        glGenBuffers(1, &mObjectUniformsSSBO);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mObjectUniformsSSBO);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ObjectUniforms) * 1, nullptr, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mObjectUniformsSSBO);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    }
+
+    void OpenGLRenderer::SetUpCameraUniformsSSBO()
+    {
+        glGenBuffers(1, &mCameraUniformsSSBO);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mCameraUniformsSSBO);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CameraUniforms) * 1, nullptr, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, mCameraUniformsSSBO);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }
 

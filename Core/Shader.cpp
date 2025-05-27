@@ -14,8 +14,8 @@ namespace Gep
 {
     Shader::Shader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
     {
-        std::string vertSource = Gep::ReadFile(vertPath);
-        std::string fragSource = Gep::ReadFile(fragPath);
+        std::string vertSource = ReadShader(vertPath);
+        std::string fragSource = ReadShader(fragPath);
 
 		GLuint vertShader = Compile(GL_VERTEX_SHADER, vertSource);
 		GLuint fragShader = Compile(GL_FRAGMENT_SHADER, fragSource);
@@ -30,36 +30,63 @@ namespace Gep
 
 	void Shader::SetUniform(const std::string& name, const glm::vec3& v)
 	{
-		Bind();
-		glUniform3fv(glGetUniformLocation(mProgram, name.c_str()), 1, glm::value_ptr(v));
-		Unbind();
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
 	}
 
 	void Shader::SetUniform(const std::string& name, const glm::vec4& v)
 	{
-		Bind();
-		glUniform4fv(glGetUniformLocation(mProgram, name.c_str()), 1, glm::value_ptr(v));
-		Unbind();
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
 	}
 
 	void Shader::SetUniform(const std::string& name, const glm::mat4& v, bool transpose)
 	{
-		Bind();
-		glUniformMatrix4fv(glGetUniformLocation(mProgram, name.c_str()), 1, transpose, glm::value_ptr(v));
-		Unbind();
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v, transpose);
 	}
 
 	void Shader::SetUniform(const std::string& name, int v)
 	{
-		Bind();
-		glUniform1i(glGetUniformLocation(mProgram, name.c_str()), v);
-		Unbind();
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
 	}
 
 	void Shader::SetUniform(const std::string& name, float v)
 	{
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
+	}
+
+	void Shader::SetUniform(size_t location, const glm::vec3& v)
+	{
 		Bind();
-		glUniform1f(glGetUniformLocation(mProgram, name.c_str()), v);
+		glUniform3fv(location, 1, glm::value_ptr(v));
+		Unbind();
+	}
+
+	void Shader::SetUniform(size_t location, const glm::vec4& v)
+	{
+		Bind();
+		glUniform4fv(location, 1, glm::value_ptr(v));
+		Unbind();
+
+	}
+
+	void Shader::SetUniform(size_t location, const glm::mat4& v, bool transpose)
+	{
+		Bind();
+		glUniformMatrix4fv(location, 1, transpose, glm::value_ptr(v));
+		Unbind();
+
+	}
+
+	void Shader::SetUniform(size_t location, int v)
+	{
+		Bind();
+		glUniform1i(location, v);
+		Unbind();
+	}
+
+	void Shader::SetUniform(size_t location, float v)
+	{
+		Bind();
+		glUniform1f(location, v);
 		Unbind();
 	}
 
@@ -127,6 +154,39 @@ namespace Gep
 		return program;
 	}
 
+	std::string Shader::ReadShader(const std::filesystem::path& path)
+	{
+		std::string shaderSource = Gep::ReadFile(path);
+		
+		const std::string searchString = "#include";
+		size_t includeIndex = shaderSource.find(searchString);
+		size_t linestartIndex = shaderSource.rfind('\n', includeIndex) + 1; // 1 after the new line is the current line start
+		size_t lineEndIndex = shaderSource.find('\n', linestartIndex);
+		while (includeIndex != std::string::npos)
+		{
+			size_t quoteIndex1 = shaderSource.find('\"', includeIndex + searchString.size());
+
+			if (quoteIndex1 == std::string::npos)
+				throw "Invalid syntax around [#include] in shader";
+
+			size_t quoteIndex2 = shaderSource.find('\"', quoteIndex1 + 1);
+			if (quoteIndex2 == std::string::npos)
+				throw "Invalid syntax around [#include] in shader";
+
+			std::string includeFileName = shaderSource.substr(quoteIndex1 + 1, quoteIndex2 - quoteIndex1 - 1); // get the name of the file included
+
+			std::string includedSource = Gep::ReadFile(path.parent_path() / includeFileName); // read in the included files source
+
+			shaderSource.erase(linestartIndex, lineEndIndex - linestartIndex); // remove the include line
+
+			shaderSource.insert(linestartIndex, includedSource); // inserts the included source into where the include statement was
+
+			includeIndex = shaderSource.find(searchString, linestartIndex); // move to the next include if there is once
+		}
+
+		return shaderSource;
+	}
+
 	void Shader::Bind()
 	{
 		glGetIntegerv(GL_CURRENT_PROGRAM, &mPrevious);
@@ -137,7 +197,5 @@ namespace Gep
 	void Shader::Unbind()
 	{
 		glUseProgram(mPrevious);
-
-		mPrevious = 0;
 	}
 }

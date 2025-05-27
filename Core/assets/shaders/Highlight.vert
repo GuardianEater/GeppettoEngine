@@ -12,13 +12,8 @@ out vec4 worldPosition; // surface point
 out vec4 worldNormal;   // normal at position
 out vec2 uvOut;         // texture coordinates
 
-void main(void)
+void main()
 {
   worldPosition = objectUniforms[objectIndex].modelMatrix * position;
-
-  worldNormal = normalize(objectUniforms[objectIndex].normalMatrix * normal);
-
-  uvOut = uv;
-
-  gl_Position = cameraUniforms[cameraIndex].perspectiveMatrix * cameraUniforms[cameraIndex].viewMatrix * worldPosition;
+  gl_Position   = cameraUniforms[cameraIndex].perspectiveMatrix * cameraUniforms[cameraIndex].viewMatrix * worldPosition;
 }
