@@ -377,8 +377,8 @@ namespace Client
     {
         Camera& camera = event.component;
 
-        ImGui::DragFloat("near plane", &camera.nearPlane, 0.1f, 0.001f, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
-        ImGui::DragFloat("far plane", &camera.farPlane, 0.1f, 0.001f, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
+        ImGui::DragFloat("near plane", &camera.nearPlane, 0.1f, 0.1f, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
+        ImGui::DragFloat("far plane", &camera.farPlane, 0.1f, camera.nearPlane, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
         ImGui::DragFloat("fov", &camera.fov, 0.1f, 0.001f, 179.999f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
 
         // drop down menu for render target
