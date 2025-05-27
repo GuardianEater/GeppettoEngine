@@ -356,6 +356,9 @@
   <ItemGroup>
     <None Include="assets\shaders\basic.frag" />
     <None Include="assets\shaders\basic.vert" />
+    <None Include="assets\shaders\Common.glsl" />
+    <None Include="assets\shaders\Highlight.frag" />
+    <None Include="assets\shaders\Highlight.vert" />
     <None Include="assets\shaders\Lighting.frag" />
     <None Include="assets\shaders\Lighting.vert" />
     <None Include="assets\shaders\forward.frag" />

@@ -59,7 +59,6 @@ namespace Gep
         float intensity;
     };
 
-
     class OpenGLRenderer
     {
     public:

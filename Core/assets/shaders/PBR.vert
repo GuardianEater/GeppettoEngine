@@ -16,7 +16,7 @@ void main(void)
 {
   worldPosition = objectUniforms[objectIndex].modelMatrix * position;
 
-  worldNormal = normalize(objectUniforms[objectIndex].normalMatrix * normal);
+  worldNormal = vec4(normalize(transpose(inverse(mat3(objectUniforms[objectIndex].modelMatrix))) * vec3(normal)), 1.0);
 
   uvOut = uv;
 

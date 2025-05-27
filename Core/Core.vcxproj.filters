@@ -640,5 +640,14 @@
     <None Include="assets\shaders\PBR.vert">
       <Filter>Backend\Rendering\Shaders</Filter>
     </None>
+    <None Include="assets\shaders\Common.glsl">
+      <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
+    <None Include="assets\shaders\Highlight.frag">
+      <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
+    <None Include="assets\shaders\Highlight.vert">
+      <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
