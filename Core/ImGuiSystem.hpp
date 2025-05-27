@@ -69,7 +69,6 @@ namespace Client
         void ReloadAssetBrowser();
 
     private:
-        std::vector<Gep::Entity> mEntities;
         EditorResource& mEditorResource;
         std::filesystem::path mAssetBrowserPath;
         std::vector<std::filesystem::directory_entry> mAssetBrowserEntries; // the files that are visible from the asset browser path
@@ -79,16 +78,23 @@ namespace Client
 
         ImGuiSystem(Gep::EngineManager& em);
 
+        // special events //
         template <typename... ComponentTypes>
         void OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes);
 
+        // events //
+        void OnEntityCreated(const Gep::Event::EntityCreated& event);
         void OnEntityDestroyed(const Gep::Event::EntityDestroyed& event);
         void OnMouseScrolled(const Gep::Event::MouseScrolled& event);
         void OnFileDropped(const Gep::Event::FileDropped& event);
+        void OnEntityAttached(const Gep::Event::EntityAttached& event);
+        void OnEntityDetached(const Gep::Event::EntityDetached& event);
 
+        // game loop //
         void Initialize() override;
         void Update(float dt) override;
 
+        // helpers //
         void DrawEntities(const std::vector<Gep::Entity>& entities, float dt);
         void DrawAssetBrowser();
         void DrawToolbar();

@@ -49,7 +49,10 @@
 #include "soloud.h"
 #include "soloud_wav.h"
 
-int main() try
+int main()  
+#ifndef _DEBUG
+try
+#endif
 {
     Gep::Log::SetPrintLevel(Gep::Log::LogLevel::info);
     Gep::Log::SetOutputFile("log.txt");
@@ -118,6 +121,7 @@ int main() try
 
     em.Exit();
 }
+#ifndef _DEBUG
 catch (const std::exception& e)
 {
     Gep::Log::Error("Caught exception: ", e.what());
@@ -127,3 +131,4 @@ catch (...)
 {
     return 1;
 }
+#endif // !_DEBUG

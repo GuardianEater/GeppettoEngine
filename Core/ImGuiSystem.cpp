@@ -224,14 +224,33 @@ namespace Client
     {
         std::vector<Gep::Entity> result;
 
+        // lowers, then splits up the search term by spaces
+        std::string lowerSearchTerm = searchTerm;
+        Gep::ToLower(lowerSearchTerm);
+
         for (Gep::Entity entity : entities)
         {
             std::string displayName = GetEntityDisplayName(entity);
-            if (displayName.find(searchTerm) != std::string::npos)
+            Gep::ToLower(displayName);
+
+            // extracts the current search term
+            std::istringstream iss(lowerSearchTerm);
+            std::string currentSearchTerm;
+            bool matchesAll = true;
+            while (iss >> currentSearchTerm)
+            {
+                // if the entities name matchs ALL of the search terms, add it only then
+                if (displayName.find(currentSearchTerm) == std::string::npos)
+                {
+                    matchesAll = false;
+                }
+            }
+            if (matchesAll)
             {
                 result.push_back(mManager.GetRoot(entity));
             }
         }
+
 
         // remove duplicates
         std::sort(result.begin(), result.end());
@@ -278,9 +297,18 @@ namespace Client
         }
     }
 
+    void ImGuiSystem::OnEntityCreated(const Gep::Event::EntityCreated& event)
+    {
+        mEditorResource.mHierarchyEntities.push_back(event.entity);
+    }
+
     void ImGuiSystem::OnEntityDestroyed(const Gep::Event::EntityDestroyed& event)
     {
         mEditorResource.mSelectedEntities.erase(event.entity);
+
+        // removes the entity from the heirarchy
+        auto& es = mEditorResource.mHierarchyEntities;
+        es.erase(std::remove(es.begin(), es.end(), event.entity), es.end());
     }
 
     void ImGuiSystem::OnMouseScrolled(const Gep::Event::MouseScrolled& event)
@@ -321,11 +349,23 @@ namespace Client
         ReloadAssetBrowser();
     }
 
+    void ImGuiSystem::OnEntityAttached(const Gep::Event::EntityAttached& event)
+    {
+
+    }
+
+    void ImGuiSystem::OnEntityDetached(const Gep::Event::EntityDetached& event)
+    {
+    }
+
     void ImGuiSystem::Initialize()
     {
         mManager.SubscribeToEvent<Gep::Event::MouseScrolled>(this, &ImGuiSystem::OnMouseScrolled);
         mManager.SubscribeToEvent<Gep::Event::EntityDestroyed>(this, &ImGuiSystem::OnEntityDestroyed);
+        mManager.SubscribeToEvent<Gep::Event::EntityCreated>(this, &ImGuiSystem::OnEntityCreated);
         mManager.SubscribeToEvent<Gep::Event::FileDropped>(this, &ImGuiSystem::OnFileDropped);
+        mManager.SubscribeToEvent<Gep::Event::EntityAttached>(this, &ImGuiSystem::OnEntityAttached);
+        mManager.SubscribeToEvent<Gep::Event::EntityDetached>(this, &ImGuiSystem::OnEntityDetached);
 
         mAssetBrowserPath = std::filesystem::current_path() / "assets";
 
@@ -350,42 +390,68 @@ namespace Client
         {
             ImGui::SetKeyboardFocusHere();
         }
-        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        //ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
         ImGui::InputTextWithHint("###Search", "Search", &search);
 
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
+        auto& heirarchyEnts = mEditorResource.mHierarchyEntities;
 
-        mEntities = mManager.GetEntities();
-        // set sorting here
-        // can organize by search filter aswell
-
-        // get only the entities that are parents
-        std::vector<Gep::Entity> parents;
+        std::vector<Gep::Entity> roots;
         if (search.empty())
         {
-            for (Gep::Entity entity : mEntities)
+            for (Gep::Entity entity : heirarchyEnts)
             {
                 if (!mManager.HasParent(entity))
                 {
-                    parents.push_back(entity);
+                    roots.push_back(entity);
                 }
             }
         }
         else
         {
-            parents = SearchEntities(mEntities, search);
+            roots = SearchEntities(heirarchyEnts, search);
+        }
+
+        ImGui::SameLine();
+        if (ImGui::BeginCombo("Sort", "", ImGuiComboFlags_::ImGuiComboFlags_NoPreview))
+        {
+            if (ImGui::Selectable("Name"))
+            {
+                std::sort(heirarchyEnts.begin(), heirarchyEnts.end(), [&](Gep::Entity a, Gep::Entity b)
+                {
+                    const std::string& aName = mManager.GetName(a);
+                    const std::string& bName = mManager.GetName(b);
+                    return aName < bName;  // ascending order
+                });
+            }
+            if (ImGui::Selectable("RTID"))
+            {
+                std::sort(heirarchyEnts.begin(), heirarchyEnts.end(), [&](Gep::Entity a, Gep::Entity b)
+                {
+                    return a < b;
+                });
+            }
+            if (ImGui::Selectable("UUID"))
+            {
+                std::sort(heirarchyEnts.begin(), heirarchyEnts.end(), [&](Gep::Entity a, Gep::Entity b)
+                {
+                    const std::string& aUUID = mManager.GetUUID(a).ToString();
+                    const std::string& bUUID = mManager.GetUUID(b).ToString();
+                    return aUUID < bUUID;  // descending order
+                });
+            }
+            ImGui::EndCombo();
         }
 
 
-        DrawEntities(parents, dt);
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
 
-
+        ImGui::BeginChild("Entities");
+        DrawEntities(roots, dt);
         // detach entities if they are dropped into any open space, adds a little bit of extra dropping space aswell
         ImVec2 size = ImGui::GetContentRegionAvail();
-        if (size.y < 0.0f) size.y = 0.0f;
-        size.y += 200.0f;
+        size.y = 200 * ImGui::GetIO().FontGlobalScale;
         ImGui::Dummy(size);
 
         EntitiesDragDropTarget([&](Gep::Entity entity)
@@ -398,6 +464,8 @@ namespace Client
         {
             mEditorResource.mSelectedEntities.clear();
         }
+        ImGui::EndChild();
+
 
         // delete selected entities
         if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
@@ -421,7 +489,7 @@ namespace Client
         if (ImGui::IsKeyPressed(ImGuiKey_A, false) && ImGui::GetIO().KeyCtrl)
         {
             mEditorResource.mSelectedEntities.clear();
-            for (Gep::Entity entity : mEntities)
+            for (Gep::Entity entity : mEditorResource.mHierarchyEntities)
             {
                 mEditorResource.mSelectedEntities.insert(entity);
             }

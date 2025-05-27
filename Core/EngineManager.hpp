@@ -189,7 +189,7 @@ namespace Gep
 
         template <typename... ComponentTypes>
         const std::vector<Entity>& GetEntities();
-        std::vector<Entity> GetRootEntities();
+        std::vector<Entity> GetRoots();
 
         // iterates over entities with the given component types, also automatically gets the components from those entities
         template<typename... ComponentTypes, typename Func>

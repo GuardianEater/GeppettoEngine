@@ -273,6 +273,8 @@ namespace Gep
 
         mEntityDatas.at(parent).children.push_back(child);
         mEntityDatas.at(child).parent = parent;
+
+        SignalEvent(Event::EntityAttached{ child, parent });
     }
 
     void EngineManager::DetachEntity(Entity child)
@@ -290,6 +292,8 @@ namespace Gep
         }
 
         Entity parent = mEntityDatas[child].parent;
+
+        SignalEvent(Event::EntityDetached({ child, parent }));
 
         std::vector<Entity>& children = mEntityDatas[parent].children;
         children.erase(std::remove(children.begin(), children.end(), child), children.end());
@@ -392,7 +396,7 @@ namespace Gep
         return !mEntityDatas.at(parent).children.empty();
     }
 
-    std::vector<Entity> EngineManager::GetRootEntities()
+    std::vector<Entity> EngineManager::GetRoots()
     {
         std::vector<Entity> rootEntities;
 

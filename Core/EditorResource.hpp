@@ -36,6 +36,8 @@ namespace Client
 		void AssetBrowserDropTarget(const std::vector<std::string>& allowedExtension, Func&& onDrop) const;
 
 	private:
+		std::vector<Gep::Entity> mHierarchyEntities; // the order of the entities in the hierarchy
+
 		friend class ImGuiSystem;
 		std::unordered_set<Gep::Entity> mSelectedEntities;
 		size_t mLastSelectedIndex;

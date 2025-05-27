@@ -251,6 +251,7 @@
     <ClInclude Include="FunctionTraits.hpp" />
     <ClInclude Include="GetCallerInfo.hpp" />
     <ClInclude Include="Archetypes.h" />
+    <ClInclude Include="HeirarchyStorage.hpp" />
     <ClInclude Include="JsonHelp.hpp" />
     <ClInclude Include="ModelResource.hpp" />
     <ClInclude Include="ObjMesh.hpp" />
@@ -260,7 +261,8 @@
     <ClCompile Include="ScriptingSystem.cpp" />
     <ClCompile Include="SerializationResource.cpp" />
     <ClCompile Include="SerializationSystem.cpp" />
-    <ClCompile Include="ShaderProgram.cpp" />
+    <ClCompile Include="Shader.cpp" />
+    <ClInclude Include="Shader.hpp" />
     <ClInclude Include="Shapes.hpp" />
     <ClInclude Include="SkyboxMesh.hpp" />
     <ClInclude Include="SoundComponent.hpp" />
@@ -343,7 +345,6 @@
     <ClInclude Include="PhysicsSystem.hpp" />
     <ClInclude Include="Renderer.hpp" />
     <ClInclude Include="ISystem.hpp" />
-    <ClInclude Include="ShaderProgram.hpp" />
     <ClInclude Include="StringHelp.hpp" />
     <ClInclude Include="Tags.hpp" />
     <ClInclude Include="TextureComponent.hpp" />
@@ -355,12 +356,17 @@
   <ItemGroup>
     <None Include="assets\shaders\basic.frag" />
     <None Include="assets\shaders\basic.vert" />
+    <None Include="assets\shaders\Common.glsl" />
+    <None Include="assets\shaders\Highlight.frag" />
+    <None Include="assets\shaders\Highlight.vert" />
     <None Include="assets\shaders\Lighting.frag" />
     <None Include="assets\shaders\Lighting.vert" />
     <None Include="assets\shaders\forward.frag" />
     <None Include="assets\shaders\forward.vert" />
     <None Include="assets\shaders\main.frag" />
     <None Include="assets\shaders\main.vert" />
+    <None Include="assets\shaders\PBR.frag" />
+    <None Include="assets\shaders\PBR.vert" />
     <None Include="assets\shaders\PhongRender.frag" />
     <None Include="assets\shaders\PhongRender.vert" />
     <None Include="BVHTree.inl" />

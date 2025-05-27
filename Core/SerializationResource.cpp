@@ -117,7 +117,7 @@ namespace Client
         nlohmann::json sceneData = nlohmann::json::object();
         nlohmann::json entitiesJson = nlohmann::json::array();
 
-        std::vector<Gep::Entity> entities = em.GetRootEntities();
+        std::vector<Gep::Entity> entities = em.GetRoots();
         for (Gep::Entity entity : entities)
         {
             nlohmann::json entityJson = em.SaveEntity(entity);

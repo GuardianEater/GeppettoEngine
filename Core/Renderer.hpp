@@ -13,7 +13,7 @@
 #include <glm\glm.hpp>
 #include <Mesh.hpp>
 #include <Camera.hpp>
-#include <ShaderProgram.hpp>
+#include "Shader.hpp"
 
 #include <mutex>
 
@@ -24,13 +24,44 @@
 
 namespace Gep
 {
+    struct alignas(16) PBRMaterial
+    {
+        float ao;        // ambient occlusion
+        float roughness; 
+        float metalness; float pad0;
+        glm::vec3 color; float pad1;
+    };
+
+    struct alignas(16) ObjectUniforms
+    {
+        glm::mat4 modelMatrix;
+        glm::mat4 normalMatrix;
+
+        int isUsingTexture;
+        int isIgnoringLight; 
+        int isSolidColor;    
+        int isHighlighted;   
+        PBRMaterial material;
+    };
+
+    struct alignas(16) CameraUniforms
+    {
+        glm::mat4 perspectiveMatrix;
+        glm::mat4 viewMatrix;
+
+        glm::vec4 camPosition;
+    };
+
+    struct LightUniforms
+    {
+        glm::vec3 position; float pad;
+        glm::vec3 color;   
+        float intensity;
+    };
+
     class OpenGLRenderer
     {
     public:
-        // sets up the main shader program
-        void LoadFragmentShader(const std::filesystem::path& shaderPath);
-        void LoadVertexShader(const std::filesystem::path& shaderPath);
-        void Compile();
 
         // loads resources into the renderer
         void LoadMesh(const std::string& name, const Mesh& mesh);
@@ -40,18 +71,26 @@ namespace Gep
 
         bool IsMeshLoaded(const std::string& name) const;
 
+        void SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
+        void SetHighlightShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
+
+        void AddObjectUniforms(const ObjectUniforms& uniforms);
+        void AddCameraUniforms(const CameraUniforms& uniforms);
+        void AddLightUniforms(const LightUniforms& uniforms); // adds a light to the renderered, will be sent to the shader when DrawLights is called
+
+        void CommitObjectUniforms(); // moves all of the data from the cpu to the gpu
+        void CommitCameraUniforms(); // moves all of the data from the cpu to the gpu
+        void CommitLightUniforms(); // will send all added lights to the shader
+
+        void SetObjectIndex(size_t index);
+        void SetCameraIndex(size_t index);
+        void SetLightCount(size_t count); 
+
         // changes how the renderer will draw the next object
         void SetTexture(GLuint texture);
         void SetHighlight(bool highlight);
-        void SetSolidColor(const glm::vec3& color);
-        void SetIgnoreLight(bool ignore);
-        void SetCamera(const Camera& camera);
-        void SetCamera(const glm::mat4& pers, const glm::mat4& view, const glm::vec3& eye);
-        void SetMaterial(const glm::vec3& diffuseCoeff, const glm::vec3& specularCoeff, float specularExponent);
-        void SetModel(const glm::mat4& modelingMatrix);
         void SetWireframe(bool wireframe);
-        void SetBackfaceCull(bool backfaceCull);
-        void SetAmbientLight(const glm::vec3& color);
+
         std::vector<std::string> GetLoadedMeshes() const;
         std::vector<std::filesystem::path> GetLoadedTextures() const;
 
@@ -85,16 +124,10 @@ namespace Gep
         void Start(const glm::vec3& color = { 0, 0, 0 });
         void End();
 
-        void AddLight(const glm::vec3& color, const glm::vec3& position, float intensity); // adds a light to the renderered, will be sent to the shader when DrawLights is called
 
-        void DrawLights(); // will send all added lights to the shader
-    private:
-
-
-        GLuint LoadShader(GLenum shaderType, const std::filesystem::path& shaderPath);
         void SetUpLightSSBO();
-
-
+        void SetUpObjectUniformsSSBO();
+        void SetUpCameraUniformsSSBO();
     private:
         struct MeshData
         {
@@ -110,18 +143,24 @@ namespace Gep
         };
 
     private:
-        ShaderProgram mProgram{};
+
+        std::unique_ptr<Shader> mActiveShader;
+        std::unique_ptr<Shader> mHighlightShader;
+
         //keyed_vector<MeshData> mMeshDatas;
         bool mWireframeMode = false;
         bool mTexturesEnabled = true;
 
         bool mNextMeshIsBackfaceCulling = true; // if false, back faces will be drawn
         bool mNextMeshIsWireframe = false;
-        bool mNextMeshIsTextured = false;
         bool mNextMeshIsHighlighted = false;
         bool mNextMeshIsSolidColor = false;
-        bool mNextMeshIgnoresLight = false;
         glm::vec3 mSolidColor{};
+
+        // camera
+        glm::mat4 mNextPerspective{};
+        glm::mat4 mNextView{};
+        glm::vec4 mNextEye{};
 
         Gep::keyed_vector<MeshData> mMeshDatas;
         std::unordered_map<std::string, uint64_t> mMeshNameToID;
@@ -133,15 +172,14 @@ namespace Gep
 
         std::mutex mTextureLoadingMutex{};
 
-        struct LightData
-        {
-            alignas(16) glm::vec3 position;
-            alignas(16) glm::vec3 color;
-            float intensity;
-        };
+        GLuint mLightUniformsSSBO{};
+        std::vector<LightUniforms> mLightUniforms;
 
-        GLuint mLightSSBO{};
-        std::vector<LightData> mLightData;
+        GLuint mObjectUniformsSSBO{};
+        std::vector<ObjectUniforms> mObjectUniforms;
+
+        GLuint mCameraUniformsSSBO{};
+        std::vector<CameraUniforms> mCameraUniforms;
 
         public:
         Gep::bvh_tree<uint64_t, Gep::Entity> mBVHTree;
