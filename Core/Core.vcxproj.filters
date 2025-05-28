@@ -572,6 +572,9 @@
     <ClInclude Include="Shader.hpp">
       <Filter>Backend\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="STLHelp.hpp">
+      <Filter>Backend</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">

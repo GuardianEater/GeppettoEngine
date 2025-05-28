@@ -531,19 +531,15 @@ namespace Gep
 
         const uint64_t typeID = typeid(SystemType).hash_code();
 
-        mSystems[typeID] = std::make_shared<SystemType>(*this);
+        SystemData& sd = mSystems[typeID];
 
-        mSystemsToUpdate.push_back(mSystems.at(typeID));
+        sd.system = std::make_shared<SystemType>(*this);
+        sd.name = GetTypeInfo<SystemType>().PrettyName();
+        sd.size = sizeof(SystemType);
 
-        Log::Info("Registered System: [", GetTypeInfo<SystemType>().PrettyName(), "]");
-    }
+        mSystemsToUpdate.push_back(sd.system);
 
-    template <typename SystemType>
-    void EngineManager::SetSystemSignature(Signature signature)
-    {
-        const uint64_t typeID = typeid(SystemType).hash_code();
-
-        mSystemSignatures[typeID] = signature;
+        Log::Info("Registered System: [", sd.name, "]");
     }
 
     template<typename EventType, typename FunctionType>
@@ -583,7 +579,7 @@ namespace Gep
     SystemType& EngineManager::GetSystem()
     {
         const uint64_t typeID = typeid(SystemType).hash_code();
-        return *std::static_pointer_cast<SystemType>(mSystems.at(typeID));
+        return *std::static_pointer_cast<SystemType>(mSystems.at(typeID).system);
     }
 
     template<typename ComponentType>

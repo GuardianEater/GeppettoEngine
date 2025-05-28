@@ -559,6 +559,11 @@ namespace Gep
         return mComponentDatas.contains(componentIndex);
     }
 
+    const std::unordered_map<Signature, ArchetypeChunk>& EngineManager::GetArchetypes() const
+    {
+        return mArchetypes;
+    }
+
     void EngineManager::Initialize()
     {
         for (const auto& system : mSystemsToUpdate)

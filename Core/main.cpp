@@ -49,18 +49,20 @@
 #include "soloud.h"
 #include "soloud_wav.h"
 
+#include <opencv2/opencv.hpp>
+
 int main()  
 #ifndef _DEBUG
 try
 #endif
 {
+
     Gep::Log::SetPrintLevel(Gep::Log::LogLevel::info);
     Gep::Log::SetOutputFile("log.txt");
 
     Gep::Log::Important("Welcome To The Gep Engine!");
 
     Gep::UUID uuid = Gep::UUID::GenerateNew();
-
     Gep::Log::Important(uuid);
 
     // start the engine //////////////////////////////////////////////////////////////////////////////

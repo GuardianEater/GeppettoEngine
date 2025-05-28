@@ -128,7 +128,7 @@ vec3 CalculatePBRLightingTotal()
   vec3 objectColor = objectUniforms[objectIndex].material.color;
   if (objectUniforms[objectIndex].isUsingTexture == 1) 
   {
-    objectColor = texture(textureSampler, uvOut).rgb;
+    objectColor *= texture(textureSampler, uvOut).rgb;
   }
 
   for (int i = 0; i < lightCount; i++) 

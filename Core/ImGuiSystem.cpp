@@ -140,21 +140,25 @@ namespace Client
         ImGui::SetNextWindowSize({ 230.0f, 300.0f });
         ImGui::Begin("Info", nullptr, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoResize);
 
+        // performance information
         ImGui::Text("FPS: %.2f", ImGui::GetIO().Framerate);
         ImGui::Text("Latency: %.2f ms", ImGui::GetIO().DeltaTime * 1000.0f);
         ImGui::Separator();
 
+        // entity information
         ImGui::Text("Entities: %d", mManager.GetEntities().size());
-        const auto& components = mManager.GetComponentDatas();
-        ImGui::Text("Components Registered: %d", components.size());
         ImGui::Separator();
 
+        // component information
+        const auto& components = mManager.GetComponentDatas();
+        ImGui::Text("Components Registered: %u", components.size());
 
-        if (ImGui::BeginTable("ComponentTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+        if (ImGui::BeginTable("ComponentTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
         {
             ImGui::TableSetupColumn("Component", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("Active", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableHeadersRow();
 
             for (const auto& [index, component] : components)
@@ -166,11 +170,47 @@ namespace Client
                 ImGui::Text("%u", component.count);
                 ImGui::TableNextColumn();
                 ImGui::Text("%u", component.index);
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", component.size);
             }
 
             ImGui::EndTable();
         }
+        ImGui::Separator();
 
+        // archetype information
+        const auto& archetypes = mManager.GetArchetypes();
+        ImGui::Text("Active Archetypes: %u", archetypes.size());
+        if (ImGui::BeginTable("ArchetypeTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+        {
+            ImGui::TableSetupColumn("Archetype", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Active", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Stride", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableHeadersRow();
+
+            for (const auto& [signature, chunk] : archetypes)
+            {
+                ImGui::TableNextRow();
+                std::string archetypeContents = "<";
+                mManager.ForEachComponentBit(signature, [&](const Gep::ComponentData& data)
+                {
+                    archetypeContents += data.name + ", ";
+                });
+                archetypeContents.pop_back(); // remove the space
+                archetypeContents.back() = '>'; // replace the comma
+
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", archetypeContents.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", chunk.entityCount);
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", chunk.stride);
+
+            }
+
+            ImGui::EndTable();
+        }
+        ImGui::Separator();
         ImGui::End(); // Info
     }
 

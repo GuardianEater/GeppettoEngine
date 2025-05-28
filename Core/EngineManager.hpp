@@ -107,6 +107,21 @@ namespace Gep
         std::function<void(Gep::Entity, const nlohmann::json&)> load{}; // adds the given component to the entity from json
     };
 
+    struct SystemData
+    {
+        std::string name{};
+        size_t size{};
+
+        float timeInFrameStart{};
+        float timeInFrameEnd{};
+        float timeInUpdate{};
+        float timeInInitialize{};
+        float timeInExit{};
+
+        std::shared_ptr<ISystem> system;
+    };
+
+    // static event data. data that is per event type
     struct EventData
     {
         uint8_t index{};
@@ -278,6 +293,7 @@ namespace Gep
         template<typename ComponentType>
         ComponentBitPos GetComponentBitPos() const;
 
+        const std::unordered_map<Signature, ArchetypeChunk>& GetArchetypes() const;
 
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -346,10 +362,6 @@ namespace Gep
         // the full deletion operation. will remove an entity from its previous archetype and add it to its new one automatically.
         void ArchetypeChunkErase(Entity entity, uint64_t componentIndex);
 
-        // when a component is added,
-        // get the entities current archetype, and get the entities new archetype.
-        // call the mComponentInfos::Copy for all of the existing components into the new archetype
-        // copy construct from the given
 
     private:
         // events
@@ -367,13 +379,11 @@ namespace Gep
         std::vector<std::pair<uint64_t, Entity>> mMarkedComponents;   // The entity and the Entities component type ids.
 
         // archetypes
+        // probably need to turn this into a tree
         std::unordered_map<Signature, ArchetypeChunk> mArchetypes; // maps the signature of an archetype to the archetype itself
 
-        // probably need to turn this into a tree
-
         // systems
-        std::unordered_map<uint64_t, Signature> mSystemSignatures; // the signatures of all of the systems maps the typeid of a system to its signature
-        std::unordered_map<uint64_t, std::shared_ptr<ISystem>> mSystems;// maps the typeid of a system to the actual system class
+        std::unordered_map<uint64_t, SystemData> mSystems;// maps the typeid of a system to the actual system class
         std::vector <std::shared_ptr<ISystem>> mSystemsToUpdate; // the list of systems that need to be updated
 
         // resources
