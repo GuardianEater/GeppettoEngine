@@ -111,6 +111,7 @@ namespace Gep
     {
         std::string name{};
         size_t size{};
+        uint64_t index{};
 
         float timeInFrameStart{};
         float timeInFrameEnd{};
@@ -291,7 +292,7 @@ namespace Gep
 
         // returns the index of the component. This functions return value will never change, it will always return the same value for each given type.
         template<typename ComponentType>
-        ComponentBitPos GetComponentBitPos() const;
+        uint64_t GetComponentIndex() const;
 
         const std::unordered_map<Signature, ArchetypeChunk>& GetArchetypes() const;
 
@@ -305,7 +306,7 @@ namespace Gep
         template <typename SystemType>
         void SetSystemSignature(Signature signature);
 
-
+        const Gep::keyed_vector<SystemData>& GetSystemDatas() const;
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // event functions //////////////////////////////////////////////////////////////////////////////
@@ -329,6 +330,10 @@ namespace Gep
         template<typename SystemType>
         SystemType& GetSystem();
 
+        template<typename SystemType>
+        uint64_t GetSystemIndex();
+
+        const SystemData& GetSystemData(uint64_t systemIndex) const;
 
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -383,8 +388,9 @@ namespace Gep
         std::unordered_map<Signature, ArchetypeChunk> mArchetypes; // maps the signature of an archetype to the archetype itself
 
         // systems
-        std::unordered_map<uint64_t, SystemData> mSystems;// maps the typeid of a system to the actual system class
-        std::vector <std::shared_ptr<ISystem>> mSystemsToUpdate; // the list of systems that need to be updated
+        std::unordered_map<std::type_index, uint64_t> mSystemTypeToIndex; // given the type of the system finds the index; always prefer GetSystemIndex()
+        Gep::keyed_vector<SystemData> mSystems;
+        std::vector <uint64_t> mSystemsToUpdate; // the list of systems that need to be updated, registration determines order
 
         // resources
         std::unordered_map<std::type_index, Gep::void_unique_ptr> mResources; // maps the type of a resource to the resource itself
