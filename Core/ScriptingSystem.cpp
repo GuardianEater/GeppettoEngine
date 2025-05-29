@@ -141,43 +141,62 @@ namespace Client
                 // Only show entries with string keys
                 if (key.get_type() == sol::type::string)
                 {
+                    std::string keyString = key.as<std::string>().c_str();
                     ImGui::TableNextRow();
 
                     // First column: key text
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("%s", key.as<std::string>().c_str());
+                    ImGui::Text("%s", keyString.c_str());
 
                     // Second column: value text based on type
                     ImGui::TableSetColumnIndex(1);
                     switch (value.get_type())
                     {
                     case sol::type::string:
-                        ImGui::Text("%s", value.as<std::string>().c_str());
+                    {
+                        std::string s = value.as<std::string>();
+                        if (ImGui::InputText((std::string("##") + keyString).c_str(), &s))
+                        {
+                            script.env[key] = s;
+                        }
                         break;
+                    }
                     case sol::type::number:
-                        ImGui::Text("%f", value.as<float>());
+                    {
+                        float f = value.as<float>();
+                        if (ImGui::InputFloat((std::string("##") + keyString).c_str(), &f))
+                        {
+                            script.env[key] = f;
+                        }
                         break;
+                    }
                     case sol::type::boolean:
-                        ImGui::Text("%s", value.as<bool>() ? "true" : "false");
+                    {
+                        bool b = value.as<float>();
+                        if (ImGui::Checkbox((std::string("##") + keyString).c_str(), &b))
+                        {
+                            script.env[key] = b;
+                        }
                         break;
+                    }
                     case sol::type::table:
-                        ImGui::Text("table");
+                    {
+                        ImGui::TextDisabled("Table");
                         break;
+                    }
                     case sol::type::function:
                     {
-                        ImGui::Text("function");
-                        sol::function func = value;
-                        sol::table info = script.env["debug"]["getinfo"](func);
-                        int numParams = info["nparams"];
-                        ImGui::SameLine();
-                        ImGui::Text("params: %d", numParams);
+                        // sol::function func = value;
+                        // sol::table info = script.env["debug"]["getinfo"](func);
+                        // int numParams = info["nparams"];
+                        ImGui::TextDisabled("Function");
                         break;
                     }
                     case sol::type::userdata:
-                        ImGui::Text("userdata");
+                        ImGui::TextDisabled("userdata");
                         break;
                     default:
-                        ImGui::Text("???");
+                        ImGui::TextDisabled("???");
                         break;
                     }
                 }

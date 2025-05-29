@@ -78,7 +78,7 @@ namespace Client
         ImGui::DragFloat3("Velocity", &rigidBody.velocity.x, 0.1f);
         ImGui::DragFloat3("Acceleration", &rigidBody.acceleration.x, 0.1f);
         ImGui::DragFloat3("Angular Velocity", &rigidBody.rotationalVelocity.x, 0.1f);
-        ImGui::DragFloat3("Angular Velocity", &rigidBody.rotationalAcceleration.x, 0.1f);
+        ImGui::DragFloat3("Angular Acceleration", &rigidBody.rotationalAcceleration.x, 0.1f);
     }
 }
 

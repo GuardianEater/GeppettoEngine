@@ -21,20 +21,22 @@ void main(void)
   vec3 N = normalize(worldNormal.xyz);
   
   // Determine the base color from texture or solid color.
-  vec3 baseColor = vec3(1.0);
   if (object.isSolidColor == 1) 
   {
     frag_color = vec4(object.material.color, 1.0);
     return;
   } 
-  else
-  {
-    baseColor = object.material.color;
-  }
 
   if (object.isIgnoringLight == 1)
   {
-    frag_color = vec4(baseColor, 1.0);
+    if (object.isUsingTexture == 1) 
+    {
+      frag_color = texture(textureSampler, uvOut);
+    }
+    else
+    {
+      frag_color = vec4(object.material.color, 1.0);
+    }
     return;
   }
   
@@ -90,7 +92,7 @@ vec3 CalculatePBRLighting(LightUniforms light, vec3 n, vec3 objectColor)
   l = normalize(l);
   
   float attenuation = 1.0 / (lightToPixelDist * lightToPixelDist);
-  vec3 radiance = light.color * attenuation * light.intensity;
+  vec3 radiance = light.color * attenuation * light.intensity * 100.0;
 
   vec3 v = normalize(cameraUniforms[cameraIndex].camPosition.xyz - worldPosition.xyz); // view vector
   vec3 h = normalize(v + l); // half vector
