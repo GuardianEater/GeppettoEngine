@@ -20,11 +20,14 @@
 #include "LightComponent.hpp"
 #include "SkyboxMesh.hpp"
 
+#include "RenderResource.hpp"
+
 
 namespace Client
 {
     RenderSystem::RenderSystem(Gep::EngineManager& em)
         : ISystem(em)
+        , mRenderResource(em.GetResource<Client::RenderResource>())
     {
 
     }
@@ -41,7 +44,7 @@ namespace Client
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Light>>(this, &RenderSystem::OnLightEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Camera>>(this, &RenderSystem::OnCameraEditorRender);
 
-        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+        Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
 
         renderer.SetShader("assets\\shaders\\PBR.vert", "assets\\shaders\\PBR.frag");
         renderer.SetHighlightShader("assets\\shaders\\Highlight.vert", "assets\\shaders\\Highlight.frag");
@@ -65,7 +68,7 @@ namespace Client
 
     void RenderSystem::Update(float dt)
     {
-        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+        Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
 
         renderer.Start();
 
@@ -83,6 +86,7 @@ namespace Client
         });
         renderer.CommitLightUniforms();
 
+        // prepares the camera uniforms
         mManager.ForEachArchetype<Transform, Camera>([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
         {
             Gep::CameraUniforms uniforms
@@ -96,6 +100,7 @@ namespace Client
         });
         renderer.CommitCameraUniforms();
 
+        // prepare the object uniforms
         mManager.ForEachArchetype<Mesh, Transform>([&](Gep::Entity entity, Mesh& mesh, Transform& transform)
         {
             glm::mat4 model = transform.GetModelMatrix();
@@ -219,7 +224,7 @@ namespace Client
 
     void RenderSystem::HandleInputs(float dt)
     {
-        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+        Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
 
         const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
         const float movementSpeed = 10 * dt;
@@ -272,18 +277,12 @@ namespace Client
         ImGui::Begin("Render System");
         ImGui::End();
     }
+
     void RenderSystem::OnModelAdded(const Gep::Event::ComponentAdded<Mesh>& event)
     {
-        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
-
-        if (!mManager.HasComponent<Transform>(event.entity)
-            || !mManager.HasComponent<Mesh>(event.entity))
-        {
-            return;
-        }
+        Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
 
         Mesh& material = mManager.GetComponent<Mesh>(event.entity);
-        Transform& transform = mManager.GetComponent<Transform>(event.entity);
 
 
         //renderer.mBVHTree.insert(event.entity, material.meshName);
@@ -293,7 +292,7 @@ namespace Client
     {
         Mesh& mesh = event.component;
 
-        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+        Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
         std::vector<std::string> loadedMeshes = renderer.GetLoadedMeshes();
 
@@ -340,7 +339,7 @@ namespace Client
     {
         Texture& texture = event.component;
 
-        const Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+        const Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
         const Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
         std::vector<std::filesystem::path> loadedTextures = renderer.GetLoadedTextures();
 

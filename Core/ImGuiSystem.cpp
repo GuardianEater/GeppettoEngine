@@ -20,6 +20,7 @@
 #include "imgui_te_engine.h"
  //#include "ImGuizmo.h"
 #include "SerializationResource.hpp"
+#include "RenderResource.hpp"
 #include "EditorResource.hpp"
 
 #include "OS.hpp"
@@ -140,21 +141,25 @@ namespace Client
         ImGui::SetNextWindowSize({ 230.0f, 300.0f });
         ImGui::Begin("Info", nullptr, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoResize);
 
+        // performance information
         ImGui::Text("FPS: %.2f", ImGui::GetIO().Framerate);
         ImGui::Text("Latency: %.2f ms", ImGui::GetIO().DeltaTime * 1000.0f);
         ImGui::Separator();
 
+        // entity information
         ImGui::Text("Entities: %d", mManager.GetEntities().size());
-        const auto& components = mManager.GetComponentDatas();
-        ImGui::Text("Components Registered: %d", components.size());
         ImGui::Separator();
 
+        // component information
+        const auto& components = mManager.GetComponentDatas();
+        ImGui::Text("Components Registered: %u", components.size());
 
-        if (ImGui::BeginTable("ComponentTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+        if (ImGui::BeginTable("ComponentTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
         {
             ImGui::TableSetupColumn("Component", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("Active", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableHeadersRow();
 
             for (const auto& [index, component] : components)
@@ -166,10 +171,93 @@ namespace Client
                 ImGui::Text("%u", component.count);
                 ImGui::TableNextColumn();
                 ImGui::Text("%u", component.index);
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", component.size);
             }
 
             ImGui::EndTable();
         }
+        ImGui::Separator();
+
+        // archetype information
+        const auto& archetypes = mManager.GetArchetypes();
+        ImGui::Text("Active Archetypes: %u", archetypes.size());
+        if (ImGui::BeginTable("ArchetypeTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+        {
+            ImGui::TableSetupColumn("Archetype", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Active", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Stride", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableHeadersRow();
+
+            for (const auto& [signature, chunk] : archetypes)
+            {
+                ImGui::TableNextRow();
+                std::string archetypeContents = "<";
+                mManager.ForEachComponentBit(signature, [&](const Gep::ComponentData& data)
+                {
+                    archetypeContents += data.name + ", ";
+                });
+                archetypeContents.pop_back(); // remove the space
+                archetypeContents.back() = '>'; // replace the comma
+
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", archetypeContents.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", chunk.entityCount);
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", chunk.stride);
+            }
+
+            ImGui::EndTable();
+        }
+        ImGui::Separator();
+
+        const auto& systems = mManager.GetSystemDatas();
+        ImGui::Text("Active Systems: %u", systems.size());
+        if (ImGui::BeginTable("SystemTable", 9, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+        {
+            ImGui::TableSetupColumn("System", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Initialize", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Frame Start", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Update", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Frame End", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Exit", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Frame %", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableHeadersRow();
+
+            for (const auto& [index, data] : systems)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", data.name);
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", data.index);
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", data.size);
+                ImGui::TableNextColumn();
+                ImGui::Text("%.3fms", data.timeInInitialize * 1000.0f);
+                ImGui::TableNextColumn();
+                ImGui::Text("%.3fms", data.timeInFrameStart * 1000.0f);
+                ImGui::TableNextColumn();
+                ImGui::Text("%.3fms", data.timeInUpdate * 1000.0f);
+                ImGui::TableNextColumn();
+                ImGui::Text("%.3fms", data.timeInFrameEnd * 1000.0f);
+                ImGui::TableNextColumn();
+                ImGui::Text("%.3fms", data.timeInExit * 1000.0f);
+
+                float engineFrameTime = mManager.GetDeltaTime();
+                float systemFrameTime = data.timeInFrameStart + data.timeInUpdate + data.timeInFrameEnd;
+
+                ImGui::TableNextColumn();
+                ImGui::Text("%.1f%", (systemFrameTime / engineFrameTime) * 100.0f);
+            }
+
+            ImGui::EndTable();
+        }
+        ImGui::Separator();
+
 
         ImGui::End(); // Info
     }
@@ -218,6 +306,10 @@ namespace Client
         ImGui::PopStyleVar(2);
 
         return isOpen;
+    }
+
+    void ImGuiSystem::DrawQuickTest()
+    {
     }
 
     std::vector<Gep::Entity> ImGuiSystem::SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm)
@@ -380,6 +472,7 @@ namespace Client
         DrawInfoPanel();
         DrawExtras();
         DrawToolbar();
+        DrawQuickTest();
 
         ImGui::Begin("Entities");
 
@@ -622,7 +715,7 @@ namespace Client
 
     void ImGuiSystem::DrawAssetBrowser()
     {
-        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+        Gep::OpenGLRenderer& renderer = mManager.GetResource<Client::RenderResource>().mRenderer;
 
         ImGui::Begin("Asset Browser");
 

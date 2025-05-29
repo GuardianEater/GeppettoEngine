@@ -59,6 +59,11 @@ namespace Gep
         float intensity;
     };
 
+    struct ObjectRenderInfo
+    {
+        GLuint texture;
+    };
+
     class OpenGLRenderer
     {
     public:

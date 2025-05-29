@@ -33,7 +33,7 @@ namespace Gep
     template<typename ...ComponentTypes>
     inline Signature EngineManager::CreateSignature(Signature oldSignature) const
     {
-        (oldSignature.set(GetComponentBitPos<ComponentTypes>()), ...);
+        (oldSignature.set(GetComponentIndex<ComponentTypes>()), ...);
 
         return oldSignature;
     }
@@ -139,7 +139,7 @@ namespace Gep
                     // helper to get the component out of a data block given a type
                     auto getComponentRef = [&]<typename ComponentType>() -> ComponentType& 
                     {
-                        size_t offset = chunk.componentOffsets.at(GetComponentBitPos<ComponentType>());
+                        size_t offset = chunk.componentOffsets.at(GetComponentIndex<ComponentType>());
                         return *reinterpret_cast<ComponentType*>(byteEntity + offset);
                     };
 
@@ -306,7 +306,7 @@ namespace Gep
         // handle the memory of the componets
         ArchetypeChunkInsert(entity, std::forward<ComponentTypes>(components)...);
 
-        (mComponentDatas.at(GetComponentBitPos<ComponentTypes>()).count++, ...);
+        (mComponentDatas.at(GetComponentIndex<ComponentTypes>()).count++, ...);
 
         // update the signature of the entity
         Signature signature = GetSignature(entity);
@@ -359,10 +359,10 @@ namespace Gep
 
         SignalEvent(Event::ComponentRemoved<ComponentType>{ entity, GetComponent<ComponentType>(entity) });
 
-        const uint64_t componentIndex = GetComponentBitPos<ComponentType>();
+        const uint64_t componentIndex = GetComponentIndex<ComponentType>();
 
         ArchetypeChunkErase(entity, componentIndex);
-        mComponentDatas.at(GetComponentBitPos<ComponentType>()).count--;
+        mComponentDatas.at(GetComponentIndex<ComponentType>()).count--;
 
         Signature signature = GetSignature(entity); // gets the existing signature of the entity
         signature.reset(componentIndex);
@@ -387,7 +387,7 @@ namespace Gep
             Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not have Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
         }
 
-        uint64_t  componentIndex     = GetComponentBitPos<ComponentType>(); // fast
+        uint64_t  componentIndex     = GetComponentIndex<ComponentType>(); // fast
         Signature archetypeSignature = GetSignature(entity);                // fast
         uint64_t  chunkIndex         = GetArchetypeChunkIndex(entity);      // fast
 
@@ -415,7 +415,7 @@ namespace Gep
             Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not have Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
         }
 
-        const uint64_t  componentIndex     = GetComponentBitPos<ComponentType>(); // fast
+        const uint64_t  componentIndex     = GetComponentIndex<ComponentType>(); // fast
         const Signature archetypeSignature = GetSignature(entity);                // fast
         const uint64_t  chunkIndex         = GetArchetypeChunkIndex(entity);      // fast
 
@@ -529,21 +529,22 @@ namespace Gep
         static_assert(TypeInheritsFrom<SystemType, ISystem>, "SystemType must inherit from ISystem");
         Log::Info("Registering System: [", GetTypeInfo<SystemType>().PrettyName(), "]...");
 
-        const uint64_t typeID = typeid(SystemType).hash_code();
+        const std::type_index typeID = typeid(SystemType);
 
-        mSystems[typeID] = std::make_shared<SystemType>(*this);
+        size_t systemIndex = mSystems.emplace();
+        SystemData& sd = mSystems.at(systemIndex);
 
-        mSystemsToUpdate.push_back(mSystems.at(typeID));
+        sd.system = std::make_shared<SystemType>(*this);
+        sd.name   = GetTypeInfo<SystemType>().PrettyName();
+        sd.size   = sizeof(SystemType);
+        sd.index  = systemIndex;
 
-        Log::Info("Registered System: [", GetTypeInfo<SystemType>().PrettyName(), "]");
-    }
+        mSystemTypeToIndex[typeID] = systemIndex;
+        uint64_t cached = GetSystemIndex<SystemType>(); // cache the index
 
-    template <typename SystemType>
-    void EngineManager::SetSystemSignature(Signature signature)
-    {
-        const uint64_t typeID = typeid(SystemType).hash_code();
+        mSystemsToUpdate.push_back(systemIndex);
 
-        mSystemSignatures[typeID] = signature;
+        Log::Info("Registered System: [", sd.name, "]");
     }
 
     template<typename EventType, typename FunctionType>
@@ -582,12 +583,21 @@ namespace Gep
     template<typename SystemType>
     SystemType& EngineManager::GetSystem()
     {
-        const uint64_t typeID = typeid(SystemType).hash_code();
-        return *std::static_pointer_cast<SystemType>(mSystems.at(typeID));
+        const uint64_t index = GetSystemIndex<SystemType>();
+
+        return *std::static_pointer_cast<SystemType>(mSystems.at(index).system);
+    }
+
+    template<typename SystemType>
+    uint64_t EngineManager::GetSystemIndex()
+    {
+        static const uint64_t index = mSystems.at(mSystemTypeToIndex.at(typeid(SystemType))).index;
+
+        return index;
     }
 
     template<typename ComponentType>
-    ComponentBitPos EngineManager::GetComponentBitPos() const
+    uint64_t EngineManager::GetComponentIndex() const
     {
         // note: there is no error check, if the below line crashes its because the component was not registered.
         // this is gross, however it needs to be done in a single line so its statically cached
@@ -613,7 +623,7 @@ namespace Gep
 
         ([&](auto& component)
             {
-                uint64_t bitPos = GetComponentBitPos<ComponentTypes>();
+                uint64_t bitPos = GetComponentIndex<ComponentTypes>();
                 uint64_t componentOffset = chunk.componentOffsets.at(bitPos);
                 uint8_t* byteComponentDestination = chunk.data.data() + componentOffset + (chunk.entityCount * chunk.stride);
                 ComponentTypes* componentDestination = reinterpret_cast<ComponentTypes*>(byteComponentDestination);

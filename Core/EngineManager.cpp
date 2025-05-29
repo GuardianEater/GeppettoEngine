@@ -36,18 +36,26 @@ namespace Gep
         mFrameStartTime = std::chrono::high_resolution_clock::now();
 
         // loop though all of the systems in order and call their start functions
-        for (auto& system : mSystemsToUpdate)
+        for (const auto index : mSystemsToUpdate)
         {
-            system->FrameStart();
+            SystemData& sd = mSystems.at(index);
+            auto systemStartTime = std::chrono::high_resolution_clock::now();
+            sd.system->FrameStart();
+            auto systemEndTime = std::chrono::high_resolution_clock::now();
+            sd.timeInFrameStart = std::chrono::duration<float>(systemEndTime - systemStartTime).count();
         }
     }
 
     void EngineManager::FrameEnd()
     {
         // loop though all of the systems in referse order and call their exit functions
-        for (auto systemIt = mSystemsToUpdate.rbegin(); systemIt != mSystemsToUpdate.rend(); ++systemIt)
+        for (auto indexIt = mSystemsToUpdate.rbegin(); indexIt != mSystemsToUpdate.rend(); ++indexIt)
         {
-            (*systemIt)->FrameEnd();
+            SystemData& sd = mSystems.at(*indexIt);
+            auto systemStartTime = std::chrono::high_resolution_clock::now();
+            sd.system->FrameEnd();
+            auto systemEndTime = std::chrono::high_resolution_clock::now();
+            sd.timeInFrameEnd = std::chrono::duration<float>(systemEndTime - systemStartTime).count();
         }
 
         auto endTime = std::chrono::high_resolution_clock::now();
@@ -559,30 +567,57 @@ namespace Gep
         return mComponentDatas.contains(componentIndex);
     }
 
+    const std::unordered_map<Signature, ArchetypeChunk>& EngineManager::GetArchetypes() const
+    {
+        return mArchetypes;
+    }
+
+    const Gep::keyed_vector<SystemData>& EngineManager::GetSystemDatas() const
+    {
+        return mSystems;
+    }
+
     void EngineManager::Initialize()
     {
-        for (const auto& system : mSystemsToUpdate)
+        for (const auto& index : mSystemsToUpdate)
         {
-            system->Initialize();
+            SystemData& sd = mSystems.at(index);
+            auto systemStartTime = std::chrono::high_resolution_clock::now();
+            sd.system->Initialize();
+            auto systemEndTime = std::chrono::high_resolution_clock::now();
+            sd.timeInInitialize = std::chrono::duration<float>(systemEndTime - systemStartTime).count();
         }
     }
 
 
     void EngineManager::Update()
     {
-        for (const auto& system : mSystemsToUpdate)
+        for (const auto& index : mSystemsToUpdate)
         {
-            system->Update(mDeltaTime);
+            SystemData& sd = mSystems.at(index);
+            auto systemStartTime = std::chrono::high_resolution_clock::now();
+            sd.system->Update(mDeltaTime);
+            auto systemEndTime = std::chrono::high_resolution_clock::now();
+            sd.timeInUpdate = std::chrono::duration<float>(systemEndTime - systemStartTime).count();
         }
     }
 
     void EngineManager::Exit()
     {
-        // loop though all of the systems in referse order and call their exit functions
+        // loop though all of the systems in reverse order and call their exit functions
         for (auto systemIt = mSystemsToUpdate.rbegin(); systemIt != mSystemsToUpdate.rend(); ++systemIt)
         {
-            (*systemIt)->Exit();
+            SystemData& sd = mSystems.at(*systemIt);
+            auto systemStartTime = std::chrono::high_resolution_clock::now();
+            sd.system->Exit();
+            auto systemEndTime = std::chrono::high_resolution_clock::now();
+            sd.timeInExit = std::chrono::duration<float>(systemEndTime - systemStartTime).count();
         }
+    }
+
+    const SystemData& EngineManager::GetSystemData(uint64_t systemIndex) const
+    {
+        return mSystems.at(systemIndex);
     }
 
     void EngineManager::CreateArchetypeChunk(Signature signature)

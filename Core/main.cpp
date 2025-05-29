@@ -14,7 +14,7 @@
 #include "Logger.hpp"
 
 // resources
-#include "Renderer.hpp"
+#include "RenderResource.hpp"
 #include "ScriptingResource.hpp"
 #include "SoundResource.hpp"
 #include "CollisionResource.hpp"
@@ -49,18 +49,20 @@
 #include "soloud.h"
 #include "soloud_wav.h"
 
+#include <opencv2/opencv.hpp>
+
 int main()  
 #ifndef _DEBUG
 try
 #endif
 {
+
     Gep::Log::SetPrintLevel(Gep::Log::LogLevel::info);
     Gep::Log::SetOutputFile("log.txt");
 
     Gep::Log::Important("Welcome To The Gep Engine!");
 
     Gep::UUID uuid = Gep::UUID::GenerateNew();
-
     Gep::Log::Important(uuid);
 
     // start the engine //////////////////////////////////////////////////////////////////////////////
@@ -72,6 +74,7 @@ try
     em.RegisterResource<Client::CollisionResource>();
     em.RegisterResource<Client::SerializationResource>();
     em.RegisterResource<Client::EditorResource>();
+    em.RegisterResource<Client::RenderResource>();
 
     // list of all components ///////////////////////////////////////////////////////////////////////
     Gep::type_list<
@@ -104,7 +107,6 @@ try
     // register all types ////////////////////////////////////////////////////////////////////////////
     em.RegisterTypes(componentTypes, systemTypes);
 
-    em.RegisterResource<Gep::OpenGLRenderer>();
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.Initialize();

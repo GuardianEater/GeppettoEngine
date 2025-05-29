@@ -14,7 +14,7 @@
 // backend
 #include "ISystem.hpp"
 #include "EngineManager.hpp"
-#include "Renderer.hpp"
+#include "RenderResource.hpp"
 
 // Meshes
 #include "SphereMesh.hpp"
@@ -50,6 +50,7 @@ namespace Client
         void OnLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event);
         void OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event);
 
+        Client::RenderResource& mRenderResource;
     };
 }
 
