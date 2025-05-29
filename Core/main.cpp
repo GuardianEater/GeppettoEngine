@@ -14,7 +14,7 @@
 #include "Logger.hpp"
 
 // resources
-#include "Renderer.hpp"
+#include "RenderResource.hpp"
 #include "ScriptingResource.hpp"
 #include "SoundResource.hpp"
 #include "CollisionResource.hpp"
@@ -74,6 +74,7 @@ try
     em.RegisterResource<Client::CollisionResource>();
     em.RegisterResource<Client::SerializationResource>();
     em.RegisterResource<Client::EditorResource>();
+    em.RegisterResource<Client::RenderResource>();
 
     // list of all components ///////////////////////////////////////////////////////////////////////
     Gep::type_list<
@@ -106,7 +107,6 @@ try
     // register all types ////////////////////////////////////////////////////////////////////////////
     em.RegisterTypes(componentTypes, systemTypes);
 
-    em.RegisterResource<Gep::OpenGLRenderer>();
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.Initialize();

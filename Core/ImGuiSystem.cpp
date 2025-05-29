@@ -20,6 +20,7 @@
 #include "imgui_te_engine.h"
  //#include "ImGuizmo.h"
 #include "SerializationResource.hpp"
+#include "RenderResource.hpp"
 #include "EditorResource.hpp"
 
 #include "OS.hpp"
@@ -307,6 +308,10 @@ namespace Client
         return isOpen;
     }
 
+    void ImGuiSystem::DrawQuickTest()
+    {
+    }
+
     std::vector<Gep::Entity> ImGuiSystem::SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm)
     {
         std::vector<Gep::Entity> result;
@@ -467,6 +472,7 @@ namespace Client
         DrawInfoPanel();
         DrawExtras();
         DrawToolbar();
+        DrawQuickTest();
 
         ImGui::Begin("Entities");
 
@@ -709,7 +715,7 @@ namespace Client
 
     void ImGuiSystem::DrawAssetBrowser()
     {
-        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+        Gep::OpenGLRenderer& renderer = mManager.GetResource<Client::RenderResource>().mRenderer;
 
         ImGui::Begin("Asset Browser");
 

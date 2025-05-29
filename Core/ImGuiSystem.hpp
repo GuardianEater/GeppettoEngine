@@ -58,6 +58,7 @@ namespace Client
         void DrawInfoPanel();
         void DrawExtras();
         bool DrawEntityNode(Gep::Entity entity);
+        void DrawQuickTest();
 
         // calls the given function for each entity dropped
         template <typename FunctionType>

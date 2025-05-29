@@ -24,6 +24,7 @@
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <EnableASAN>true</EnableASAN>
+    <UseDynamicDebugging>false</UseDynamicDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -31,6 +32,7 @@
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <UseDynamicDebugging>false</UseDynamicDebugging>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -239,6 +241,7 @@
     <ClCompile Include="QuadMesh.cpp" />
     <ClCompile Include="RelationSystem.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="RenderResource.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="IRenderTarget.cpp" />
     <ClCompile Include="RenderTargetImgui.cpp" />
@@ -253,9 +256,9 @@
     <ClInclude Include="Archetypes.h" />
     <ClInclude Include="HeirarchyStorage.hpp" />
     <ClInclude Include="JsonHelp.hpp" />
-    <ClInclude Include="ModelResource.hpp" />
     <ClInclude Include="ObjMesh.hpp" />
     <ClInclude Include="OS.hpp" />
+    <ClInclude Include="RenderResource.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
     <ClCompile Include="ScriptingResource.cpp" />
     <ClCompile Include="ScriptingSystem.cpp" />

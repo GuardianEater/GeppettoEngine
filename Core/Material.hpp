@@ -19,9 +19,6 @@ namespace Client
     struct Mesh
     {
         std::string meshName{ "Cube" };
-        std::string shaderName{ "PBR" };
-        glm::vec3 spec_coeff = { 0.0f, 0.0f, 0.0f }; // shine color
-        float spec_exponent = 1.0f; // amount of shine
         bool selected = false;
         bool ignoreLight = false;
 

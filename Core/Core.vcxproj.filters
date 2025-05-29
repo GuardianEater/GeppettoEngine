@@ -279,6 +279,9 @@
     <ClCompile Include="Shader.cpp">
       <Filter>Backend\Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="RenderResource.cpp">
+      <Filter>Client\Resources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -551,9 +554,6 @@
     <ClInclude Include="EditorResource.hpp">
       <Filter>Client\Resources</Filter>
     </ClInclude>
-    <ClInclude Include="ModelResource.hpp">
-      <Filter>Client\Resources</Filter>
-    </ClInclude>
     <ClInclude Include="FileHelp.hpp">
       <Filter>Backend</Filter>
     </ClInclude>
@@ -574,6 +574,9 @@
     </ClInclude>
     <ClInclude Include="STLHelp.hpp">
       <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderResource.hpp">
+      <Filter>Client\Resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
