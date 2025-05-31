@@ -11,7 +11,7 @@
 #include <glm\glm.hpp>
 #include <EngineManager.hpp>
 #include <imgui.h>
-#include "Renderer.hpp"
+#include "OpenGLRenderer.hpp"
 #include "EditorResource.hpp"
 
 namespace Client

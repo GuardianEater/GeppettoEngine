@@ -240,7 +240,7 @@
     <ClCompile Include="PhysicsSystem.cpp" />
     <ClCompile Include="QuadMesh.cpp" />
     <ClCompile Include="RelationSystem.cpp" />
-    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="OpenGLRenderer.cpp" />
     <ClCompile Include="RenderResource.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="IRenderTarget.cpp" />
@@ -346,7 +346,7 @@
     <ClInclude Include="ImGuiSystem.hpp" />
     <ClInclude Include="Mesh.hpp" />
     <ClInclude Include="PhysicsSystem.hpp" />
-    <ClInclude Include="Renderer.hpp" />
+    <ClInclude Include="OpenGLRenderer.hpp" />
     <ClInclude Include="ISystem.hpp" />
     <ClInclude Include="STLHelp.hpp" />
     <ClInclude Include="StringHelp.hpp" />

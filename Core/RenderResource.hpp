@@ -13,7 +13,7 @@
 
 #include "Core.hpp"
 
-#include "Renderer.hpp"
+#include "OpenGLRenderer.hpp"
 
 #include "KeyedVector.hpp"
 #include "Shader.hpp"

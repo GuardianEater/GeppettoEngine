@@ -73,6 +73,9 @@
     <Filter Include="Client\Editor">
       <UniqueIdentifier>{99815ced-d820-40ab-abbb-52e71e26ea01}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Backend\Rendering\NewRenderAPI">
+      <UniqueIdentifier>{b7ee87c3-26eb-4f55-bab6-214fce77edd0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -117,7 +120,7 @@
     <ClCompile Include="SphereMesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer.cpp">
+    <ClCompile Include="OpenGLRenderer.cpp">
       <Filter>Backend\Rendering</Filter>
     </ClCompile>
     <ClCompile Include="dependencies\reflect-cpp\src\reflectcpp.cpp">
@@ -276,11 +279,11 @@
     <ClCompile Include="SkyboxMesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClCompile>
-    <ClCompile Include="Shader.cpp">
-      <Filter>Backend\Rendering</Filter>
-    </ClCompile>
     <ClCompile Include="RenderResource.cpp">
       <Filter>Client\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -326,7 +329,7 @@
     <ClInclude Include="ISystem.hpp">
       <Filter>Backend\ECS</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer.hpp">
+    <ClInclude Include="OpenGLRenderer.hpp">
       <Filter>Backend\Rendering</Filter>
     </ClInclude>
     <ClInclude Include="Camera.hpp">
@@ -569,14 +572,14 @@
     <ClInclude Include="HeirarchyStorage.hpp">
       <Filter>Client\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Shader.hpp">
-      <Filter>Backend\Rendering</Filter>
-    </ClInclude>
     <ClInclude Include="STLHelp.hpp">
       <Filter>Backend</Filter>
     </ClInclude>
     <ClInclude Include="RenderResource.hpp">
       <Filter>Client\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.hpp">
+      <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
