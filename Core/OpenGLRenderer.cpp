@@ -18,6 +18,7 @@
 #undef max
 
 #include "ObjMesh.hpp"
+#include "Renderer.hpp"
 namespace Gep
 {
     enum GLVertexAttributeLocation : GLint
@@ -110,12 +111,12 @@ namespace Gep
 
     void OpenGLRenderer::SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
     {
-        mActiveShader = std::make_unique<Shader>(vertPath, fragPath);
+        mActiveShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
     }
 
     void OpenGLRenderer::SetHighlightShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
     {
-        mHighlightShader = std::make_unique<Shader>(vertPath, fragPath);
+        mHighlightShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
     }
 
     void OpenGLRenderer::AddObjectUniforms(const ObjectUniforms& uniforms)
@@ -595,13 +596,13 @@ namespace Gep
         glBindVertexArray(mVertexArrayObject);
 
         glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
-        glVertexAttribPointer(GLVertexAttributeLocation::Position, 3, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, position));
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, position));
         glEnableVertexAttribArray(0);
 
-        glVertexAttribPointer(GLVertexAttributeLocation::Normal, 3, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+        glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, normal));
         glEnableVertexAttribArray(1);
 
-        glVertexAttribPointer(GLVertexAttributeLocation::TexCoord, 2, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
+        glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
         glEnableVertexAttribArray(2);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mFaceBuffer);

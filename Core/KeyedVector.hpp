@@ -108,7 +108,7 @@ namespace Gep
             const_iterator& operator=(const const_iterator&) = default;
             constexpr const_iterator& operator++();
             constexpr const_iterator operator++(int);
-            constexpr std::pair<const uint64_t, typename keyed_vector<T>::const_iterator::reference> operator*() const;
+            constexpr std::pair<const uint64_t, reference> operator*() const;
             constexpr pointer operator->() const;
             constexpr bool operator==(const const_iterator& other) const;
             constexpr bool operator!=(const const_iterator& other) const;

@@ -12,18 +12,29 @@
 
 namespace Gep
 {
-    Shader::Shader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
-    {
-        std::string vertSource = ReadShader(vertPath);
-        std::string fragSource = ReadShader(fragPath);
+	Shader Shader::FromFile(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
+	{
+		Shader newShader{};
 
-		GLuint vertShader = Compile(GL_VERTEX_SHADER, vertSource);
-		GLuint fragShader = Compile(GL_FRAGMENT_SHADER, fragSource);
+		std::string vertSrc = ReadShader(vertPath);
+		std::string fragSrc = ReadShader(fragPath);
 
-		mProgram = CreateProgram(vertShader, fragShader);
-    }
+		return FromSource(vertSrc, fragSrc);
+	}
 
-    bool Shader::IsValid() const
+	Shader Shader::FromSource(const std::string& vertSrc, const std::string& fragSrc)
+	{
+		Shader newShader{};
+
+		GLuint vertShader = Compile(GL_VERTEX_SHADER, vertSrc);
+		GLuint fragShader = Compile(GL_FRAGMENT_SHADER, fragSrc);
+
+		newShader.mProgram = CreateProgram(vertShader, fragShader);
+
+		return newShader;
+	}
+
+	bool Shader::IsValid() const
     {
 		return mProgram != 0;
     }
@@ -57,40 +68,33 @@ namespace Gep
 	{
 		Bind();
 		glUniform3fv(location, 1, glm::value_ptr(v));
-		Unbind();
 	}
 
 	void Shader::SetUniform(size_t location, const glm::vec4& v)
 	{
 		Bind();
 		glUniform4fv(location, 1, glm::value_ptr(v));
-		Unbind();
-
 	}
 
 	void Shader::SetUniform(size_t location, const glm::mat4& v, bool transpose)
 	{
 		Bind();
 		glUniformMatrix4fv(location, 1, transpose, glm::value_ptr(v));
-		Unbind();
-
 	}
 
 	void Shader::SetUniform(size_t location, int v)
 	{
 		Bind();
 		glUniform1i(location, v);
-		Unbind();
 	}
 
 	void Shader::SetUniform(size_t location, float v)
 	{
 		Bind();
 		glUniform1f(location, v);
-		Unbind();
 	}
 
-    GLuint Shader::Compile(GLenum shaderType, const std::string& source) const
+    GLuint Shader::Compile(GLenum shaderType, const std::string& source)
     {
 		GLuint shaderID = glCreateShader(shaderType);
 		const char* c_source = source.c_str();
@@ -113,7 +117,7 @@ namespace Gep
 		return shaderID;
     }
 
-	GLuint Shader::CreateProgram(GLuint vertShader, GLuint fragShader) const
+	GLuint Shader::CreateProgram(GLuint vertShader, GLuint fragShader)
 	{
 		GLuint program = glCreateProgram();
 
@@ -189,13 +193,11 @@ namespace Gep
 
 	void Shader::Bind()
 	{
-		glGetIntegerv(GL_CURRENT_PROGRAM, &mPrevious);
-
 		glUseProgram(mProgram);
 	}
 
 	void Shader::Unbind()
 	{
-		glUseProgram(mPrevious);
+		glUseProgram(0);
 	}
 }

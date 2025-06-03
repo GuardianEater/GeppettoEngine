@@ -17,7 +17,8 @@ namespace Gep
     class Shader
     {
     public:
-        Shader(const std::filesystem::path& vertexShader, const std::filesystem::path& fragmentShader);
+        static Shader FromFile(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath); // reads shaders in from files, supports includes
+        static Shader FromSource(const std::string& vertSrc, const std::string& fragSrc); // reads shader in from source, this DOES NOT support includes
 
         bool IsValid() const; // checks if the shader compiled successfully
 
@@ -33,21 +34,22 @@ namespace Gep
         void SetUniform(size_t location, int v);
         void SetUniform(size_t location, float v);
 
-        // during the scope of the lamda the shader is bound
-        template <typename Func>
-        void Use(Func&& func);
-
-    private:
-        GLuint Compile(GLenum shaderType, const std::string& source) const;
-        GLuint CreateProgram(GLuint vertexShader, GLuint fragmentShader) const;
-        std::string ReadShader(const std::filesystem::path& path); // reads in the data and handles includes
-
         void Bind();
         void Unbind();
+        
+        template <typename Func>
+        void Use(Func&& func); // during the scope of the lamda the shader is bound
 
     private:
+        friend class Renderer;
+
+    private:
+        static GLuint Compile(GLenum shaderType, const std::string& source);
+        static GLuint CreateProgram(GLuint vertexShader, GLuint fragmentShader);
+        static std::string ReadShader(const std::filesystem::path& path); // reads in the data and handles includes
+        
+    private:
         GLuint mProgram = 0;
-        GLint mPrevious = 0; // used to preserve a stack, restores whatever program was active on unbind
     };
 
     template<typename Func>

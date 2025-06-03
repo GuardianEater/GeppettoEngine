@@ -285,6 +285,9 @@
     <ClCompile Include="Shader.cpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Backend\Rendering\NewRenderAPI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -579,6 +582,9 @@
       <Filter>Client\Resources</Filter>
     </ClInclude>
     <ClInclude Include="Shader.hpp">
+      <Filter>Backend\Rendering\NewRenderAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.hpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClInclude>
   </ItemGroup>

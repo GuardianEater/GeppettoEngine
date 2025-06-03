@@ -53,7 +53,7 @@ namespace Client
     {
         ///////////////////////////////////////////////////////////////////////////////////////
         /// ImGui setup ///////////////////////////////////////////////////////////////////////
-        const char* glsl_version = "#version 430";
+        const char* glsl_version = "#version 440";
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();

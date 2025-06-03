@@ -241,6 +241,7 @@
     <ClCompile Include="QuadMesh.cpp" />
     <ClCompile Include="RelationSystem.cpp" />
     <ClCompile Include="OpenGLRenderer.cpp" />
+    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RenderResource.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="IRenderTarget.cpp" />
@@ -258,6 +259,7 @@
     <ClInclude Include="JsonHelp.hpp" />
     <ClInclude Include="ObjMesh.hpp" />
     <ClInclude Include="OS.hpp" />
+    <ClInclude Include="Renderer.hpp" />
     <ClInclude Include="RenderResource.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
     <ClCompile Include="ScriptingResource.cpp" />

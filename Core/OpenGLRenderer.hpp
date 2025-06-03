@@ -186,7 +186,7 @@ namespace Gep
         GLuint mCameraUniformsSSBO{};
         std::vector<CameraUniforms> mCameraUniforms;
 
-        public:
+    public:
         Gep::bvh_tree<uint64_t, Gep::Entity> mBVHTree;
     };
 }
