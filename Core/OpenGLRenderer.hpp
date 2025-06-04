@@ -144,7 +144,7 @@ namespace Gep
             GLuint mVertexArrayObject = num_max<GLuint>();
             GLuint mVertexBuffer = num_max<GLuint>();
             GLuint mFaceBuffer = num_max<GLuint>();
-            size_t mFaceCount{};
+            size_t mIndexCount{};
         };
 
     private:

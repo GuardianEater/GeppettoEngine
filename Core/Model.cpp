@@ -60,7 +60,7 @@ namespace Gep
         }
     }
 
-    Model FromFile(const std::filesystem::path& path)
+    Model Model::FromFile(const std::filesystem::path & path)
     {
         Model model;
 
@@ -91,7 +91,7 @@ namespace Gep
         return model;
     }
 
-    const std::vector<std::string>& SupportedExtensions()
+    const std::vector<std::string>& Model::SupportedExtensions()
     {
         static std::vector<std::string> allowedExtensions = []() // initializes this vector with the extensions that work with assimp
         {

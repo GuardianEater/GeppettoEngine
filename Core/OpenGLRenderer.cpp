@@ -17,7 +17,6 @@
 #undef min
 #undef max
 
-#include "ObjMesh.hpp"
 #include "Renderer.hpp"
 namespace Gep
 {
@@ -81,7 +80,7 @@ namespace Gep
 
         std::string ext = path.extension().string();
 
-        Mesh mesh = Gep::LoadMesh(path);
+        Mesh mesh = Model::FromFile(path).meshes.front();
         LoadMesh(path.string(), mesh);
     }
 
@@ -446,7 +445,6 @@ namespace Gep
         }
 
         const MeshData& md = mMeshDatas.at(meshID);
-        constexpr std::uint64_t faceSize = sizeof(Mesh::Face) / sizeof(GLuint);
 
         if (mNextMeshIsBackfaceCulling)
         {
@@ -462,7 +460,7 @@ namespace Gep
             {
                 glBindVertexArray(md.mVertexArrayObject);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
+                glDrawElements(GL_TRIANGLES, md.mIndexCount, GL_UNSIGNED_INT, 0);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
                 glBindVertexArray(0);
             });
@@ -472,7 +470,7 @@ namespace Gep
         {
             glBindVertexArray(md.mVertexArrayObject);
             if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, md.mIndexCount, GL_UNSIGNED_INT, 0);
             if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             glBindVertexArray(0);
         });
@@ -578,16 +576,16 @@ namespace Gep
     {
         glGenBuffers(1, &mVertexBuffer);
         glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh.mVertices.size(), mesh.mVertices.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh.vertices.size(), mesh.vertices.data(), GL_STATIC_DRAW);
     }
 
     void OpenGLRenderer::MeshData::GenFaceBuffer(const Mesh& mesh)
     {
         glGenBuffers(1, &mFaceBuffer);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mFaceBuffer);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Mesh::Face) * mesh.mFaces.size(), mesh.mFaces.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * mesh.indices.size(), mesh.indices.data(), GL_STATIC_DRAW);
 
-        mFaceCount = mesh.mFaces.size();
+        mIndexCount = mesh.indices.size();
     }
 
     void OpenGLRenderer::MeshData::BindBuffers()
