@@ -8,11 +8,7 @@
 
 #pragma once
 
-#include <Core.hpp>
-#include <glew.h>
-#include <glm\glm.hpp>
-#include <GLFW/glfw3.h>
-#include <filesystem>
+#include <glm/glm.hpp>
 #include <vector>
 
 #include "Shapes.hpp"
@@ -31,22 +27,21 @@ namespace Gep
 
     struct Mesh
     {
-        using Face = glm::vec<3, GLuint>;
-        using Edge = glm::vec<2, GLuint>;
+        std::string name = "Unnamed";
 
-        std::vector<Vertex> mVertices{};
-        std::vector<Face> mFaces{};
+        std::vector<Vertex> vertices{};
+        std::vector<uint32_t> indices{};
 
-        AABB mBoundingBox{};
+        AABB boundingBox{};
 
         void CalculateBoundingBox()
         {
-            mBoundingBox.min = glm::vec3(FLT_MAX);
-            mBoundingBox.max = glm::vec3(-FLT_MAX);
-            for (const Vertex& vertex : mVertices)
+            boundingBox.min = glm::vec3(FLT_MAX);
+            boundingBox.max = glm::vec3(-FLT_MAX);
+            for (const Vertex& vertex : vertices)
             {
-                mBoundingBox.min = glm::min(mBoundingBox.min, vertex.position);
-                mBoundingBox.max = glm::max(mBoundingBox.max, vertex.position);
+                boundingBox.min = glm::min(boundingBox.min, vertex.position);
+                boundingBox.max = glm::max(boundingBox.max, vertex.position);
             }
         }
 
@@ -55,11 +50,11 @@ namespace Gep
         {
             CalculateBoundingBox();
 
-            glm::vec3 center = (mBoundingBox.min + mBoundingBox.max) * 0.5f;
-            glm::vec3 size   = mBoundingBox.max - mBoundingBox.min;
+            glm::vec3 center = (boundingBox.min + boundingBox.max) * 0.5f;
+            glm::vec3 size   = boundingBox.max - boundingBox.min;
 
             float maxDim = glm::max(size.x, glm::max(size.y, size.z));
-            for (Vertex& vertex : mVertices)
+            for (Vertex& vertex : vertices)
             {
                 vertex.position = (vertex.position - center) / maxDim;
             }

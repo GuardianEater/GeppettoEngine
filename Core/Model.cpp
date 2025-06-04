@@ -1,23 +1,16 @@
 /*****************************************************************//**
- * \file   ObjMesh.cpp
- * \brief  creates a mesh from an obj file
+ * \file   Model.cpp
+ * \brief  
  * 
- * \author Travis Gronvold (2018tcg@gmail.com)
- * \date   March 2025
+ * \author Travis Gronvold (travis.gronvold@digipen.edu)
+ * \date   June 2025
  *********************************************************************/
 
 #include "pch.hpp"
-
-#include "ObjMesh.hpp"
-#include "Mesh.hpp"
-
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
+#include "Model.hpp"
 
 namespace Gep
 {
-
     static void ProcessNode(const aiNode* node, const aiScene* scene, Gep::Mesh& mesh)
     {
         for (unsigned int i = 0; i < node->mNumMeshes; ++i)
@@ -25,7 +18,7 @@ namespace Gep
             aiMesh* ai_mesh = scene->mMeshes[node->mMeshes[i]];
 
             // Convert vertices
-            size_t vertex_offset = mesh.mVertices.size();
+            size_t vertex_offset = mesh.vertices.size();
             for (unsigned int v = 0; v < ai_mesh->mNumVertices; ++v)
             {
                 Gep::Vertex vertex;
@@ -40,27 +33,23 @@ namespace Gep
                     ? glm::vec3{ ai_mesh->mNormals[v].x, ai_mesh->mNormals[v].y, ai_mesh->mNormals[v].z }
                     : glm::vec3{ 0.0f, 0.0f, 0.0f };
 
-                    ai_mesh->mMaterialIndex;
+                ai_mesh->mMaterialIndex;
 
                 vertex.texCoord = (ai_mesh->HasTextureCoords(0))
                     ? glm::vec2{ ai_mesh->mTextureCoords[0][v].x, ai_mesh->mTextureCoords[0][v].y }
                     : glm::vec2{ 0.0f, 0.0f };
 
-                mesh.mVertices.push_back(vertex);
+                mesh.vertices.push_back(vertex);
             }
 
             // Convert indices
             for (unsigned int f = 0; f < ai_mesh->mNumFaces; ++f)
             {
                 const aiFace& face = ai_mesh->mFaces[f];
-                if (face.mNumIndices == 3)
-                {
-                    mesh.mFaces.push_back({
-                        static_cast<uint32_t>(vertex_offset + face.mIndices[0]),
-                        static_cast<uint32_t>(vertex_offset + face.mIndices[1]),
-                        static_cast<uint32_t>(vertex_offset + face.mIndices[2])
-                        });
-                }
+
+                mesh.indices.push_back(static_cast<uint32_t>(vertex_offset + face.mIndices[0]));
+                mesh.indices.push_back(static_cast<uint32_t>(vertex_offset + face.mIndices[1]));
+                mesh.indices.push_back(static_cast<uint32_t>(vertex_offset + face.mIndices[2]));
             }
         }
 
@@ -71,9 +60,9 @@ namespace Gep
         }
     }
 
-    Gep::Mesh LoadMesh(const std::filesystem::path& path)
+    Model FromFile(const std::filesystem::path& path)
     {
-        Gep::Mesh mesh;
+        Model model;
 
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(
@@ -82,7 +71,7 @@ namespace Gep
             aiProcess_GenNormals |
             aiProcess_JoinIdenticalVertices |
             aiProcess_ImproveCacheLocality |
-            aiProcess_SortByPType | 
+            aiProcess_SortByPType |
             aiProcess_OptimizeGraph |
             aiProcess_OptimizeMeshes
         );
@@ -93,10 +82,34 @@ namespace Gep
             return {};
         }
 
+        Gep::Mesh mesh;
         ProcessNode(scene->mRootNode, scene, mesh);
 
         mesh.Normalize();
-        return mesh;
+        model.meshes.push_back(mesh);
+
+        return model;
     }
 
+    const std::vector<std::string>& SupportedExtensions()
+    {
+        static std::vector<std::string> allowedExtensions = []() // initializes this vector with the extensions that work with assimp
+        {
+            std::string s;
+            Assimp::Importer importer;
+            importer.GetExtensionList(s);
+
+            s.erase(std::remove(s.begin(), s.end(), '*'), s.end());
+
+            std::vector<std::string> out;
+            std::istringstream ss(s);
+            std::string token;
+            while (std::getline(ss, token, ';'))
+                if (!token.empty())
+                    out.emplace_back(std::move(token));
+            return out;
+        }();
+
+        return allowedExtensions;
+    }
 }

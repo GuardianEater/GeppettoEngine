@@ -15,7 +15,7 @@
 #include "Mesh.hpp"
 
 #include "Transform.hpp"
-#include "Material.hpp"
+#include "MeshComponent.hpp"
 #include "SphereCollider.hpp"
 
 

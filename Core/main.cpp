@@ -24,7 +24,7 @@
 // components
 #include "CameraComponent.hpp"
 #include "ActiveCameraComponent.hpp"
-#include "Material.hpp"
+#include "MeshComponent.hpp"
 #include "RigidBody.hpp"
 #include "Script.hpp"
 #include "Transform.hpp"

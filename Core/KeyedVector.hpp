@@ -47,6 +47,7 @@ namespace Gep
         constexpr const T& operator[](size_t index) const;
         constexpr void reserve(size_t size);
         constexpr bool contains(size_t index) const;
+        constexpr const std::vector<std::optional<T>>& container() const;
 
         class iterator
         {
