@@ -27,8 +27,8 @@ namespace Client
         float metalness = 0.8f;
         glm::vec3 color = { 0.5f, 1.0f, 1.0f }; // color; both diffuse and specular coefficient in phong
 
-        GLuint meshIndex;
-        GLuint materialIndex;
-        GLuint shaderIndex;
+        GLuint meshIndex = 0;
+        GLuint materialIndex = 0;
+        GLuint shaderIndex = 0;
     };
 }

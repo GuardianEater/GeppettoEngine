@@ -27,6 +27,8 @@ namespace Gep
             0, 2, 3
         };
 
+        name = "Quad";
+
         Normalize();
     }
 }

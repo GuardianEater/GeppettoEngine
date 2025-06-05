@@ -18,6 +18,7 @@
 #include "Mesh.hpp"
 #include "Texture.hpp"
 #include "Material.hpp"
+#include "RenderTarget.hpp"
 #include "Model.hpp"
 
 // Gep
@@ -35,14 +36,12 @@ namespace Gep
         {
             glm::mat4 modelMatrix;
 
-            size_t materialIndex = 0;
-            size_t meshIndex = 0;
-            size_t shaderIndex = 0;
-
             int isUsingTexture = 0;
             int isIgnoringLight = 0;
             int isSolidColor = 0;
             int isHighlighted = 0;
+
+            Material material;
         };
 
         // gpu
@@ -52,8 +51,7 @@ namespace Gep
             glm::mat4 viewMatrix;
             glm::vec3 camPosition;
 
-            GLuint frameBuffer;
-            glm::u32vec2 frameBufferSize;
+            RenderTarget target;
         };
 
         // gpu
@@ -69,7 +67,6 @@ namespace Gep
 
         size_t LoadShader(const Shader&);
         size_t LoadTexture(const Texture&);
-        size_t LoadMaterial(const Material&);
         size_t LoadMesh(const Mesh&);
 
         template <typename Type>
@@ -80,7 +77,7 @@ namespace Gep
         KeyedVectorView<Material> GetLoadedMaterials() const; // returns a view of all loaded materials
         KeyedVectorView<Mesh> GetLoadedMeshes() const;    // returns a view of all loaded meshes
 
-        void AddObject(const ObjectRenderInfo&); // contains model, material, etc
+        void AddObject(size_t shaderID, size_t meshID, const ObjectRenderInfo&); // contains model, material, etc
         void AddLight(const LightRenderInfo&);   // contains position, brightness, etc
         void AddCamera(const CameraRenderInfo&); // contains perspective, view, etc
 

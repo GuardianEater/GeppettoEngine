@@ -245,6 +245,7 @@
     <ClCompile Include="RenderResource.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="IRenderTarget.cpp" />
+    <ClCompile Include="RenderTarget.cpp" />
     <ClCompile Include="RenderTargetImgui.cpp" />
     <ClCompile Include="RenderTargetTexture.cpp" />
     <ClCompile Include="RenderTargetWindow.cpp" />
@@ -262,6 +263,7 @@
     <ClInclude Include="OS.hpp" />
     <ClInclude Include="Renderer.hpp" />
     <ClInclude Include="RenderResource.hpp" />
+    <ClInclude Include="RenderTarget.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
     <ClCompile Include="ScriptingResource.cpp" />
     <ClCompile Include="ScriptingSystem.cpp" />

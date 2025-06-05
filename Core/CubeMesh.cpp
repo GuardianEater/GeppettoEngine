@@ -57,6 +57,8 @@ namespace Gep
             20, 22, 21,  20, 23, 22,
         };
 
+        name = "Cube";
+
         Normalize();
     }
 }

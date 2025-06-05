@@ -113,6 +113,8 @@ namespace Gep
         //    edge3[1] = north;
         //}
 
+        name = "Sphere";
+
         Normalize();
     }
 }

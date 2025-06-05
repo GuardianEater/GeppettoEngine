@@ -55,5 +55,9 @@ namespace Gep
             16, 18, 17,  16, 19, 18,
             20, 21, 22,  20, 22, 23,
         };
+
+        name = "Skybox";
+
+        Normalize();
     }
 }

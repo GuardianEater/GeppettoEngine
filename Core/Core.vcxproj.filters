@@ -291,6 +291,9 @@
     <ClCompile Include="Model.cpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClCompile>
+    <ClCompile Include="RenderTarget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -588,6 +591,9 @@
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClInclude>
     <ClInclude Include="Material.hpp">
+      <Filter>Backend\Rendering\NewRenderAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTarget.hpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClInclude>
   </ItemGroup>

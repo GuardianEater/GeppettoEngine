@@ -950,6 +950,31 @@ namespace Client
                 ImGui::EndMenu();
             }
 
+            float windowWidth = ImGui::GetWindowWidth();
+            static std::string sceneName = "MySceneName";
+
+            // Calculate text size and center position
+            ImVec2 textSize = ImGui::CalcTextSize(sceneName.c_str());
+            float textX = (windowWidth - textSize.x) * 0.5f;
+            float padding = ImGui::GetStyle().FramePadding.x * 2.0f;
+            float inputWidth = textSize.x + padding;
+            ImGui::SetCursorPosX(textX);
+
+            ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, { 0, 0, 0, 0 });
+            ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, { 0, 0, 0, 0 });
+
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputText("##SceneName", &sceneName, ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_AutoSelectAll);
+            ImGui::PopStyleColor();
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text("Rename Scene");
+                ImGui::EndTooltip();
+            }
+
+            ImGui::PopStyleColor(2);
+
             ImGui::EndMainMenuBar();
         }
     }

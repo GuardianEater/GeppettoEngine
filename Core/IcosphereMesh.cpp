@@ -128,6 +128,9 @@ namespace Gep
     {
         CreateIcosahedron();
         RefineTriangles(subdivisions);
+
+        name = "Icosphere";
+
         Normalize();
     }
 }

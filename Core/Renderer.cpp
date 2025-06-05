@@ -64,15 +64,6 @@ namespace Gep
         return newTextureDataID;
     }
 
-    size_t Renderer::LoadMaterial(const Material& newMaterial)
-    {
-        size_t newMaterialDataID = mMaterials.emplace();
-        Material_Internal& newMaterialData = mMaterials.at(newMaterialDataID);
-        newMaterialData.material = newMaterial;
-
-        return newMaterialDataID;
-    }
-
     size_t Renderer::LoadMesh(const Mesh& newMesh)
     {
         size_t newMeshDataIndex = mMeshes.emplace();
@@ -157,11 +148,11 @@ namespace Gep
         return view;
     }
 
-    void Renderer::AddObject(const ObjectRenderInfo& info)
+    void Renderer::AddObject(size_t shaderID, size_t meshID, const ObjectRenderInfo& info)
     {
-        mShaders.at(info.shaderIndex).objectRenderInfos.push_back(info);
+        mShaders.at(shaderID).objectRenderInfos.push_back(info);
 
-        Mesh_Internal& meshData = mMeshes.at(info.meshIndex);
+        Mesh_Internal& meshData = mMeshes.at(meshID);
 
         ++meshData.instanceCount;
     }
@@ -198,9 +189,8 @@ namespace Gep
         int cameraIndex = 0;
         for (const auto& cameraInfo : mCameraRenderInfos)
         {
-            glBindFramebuffer(GL_FRAMEBUFFER, cameraInfo.frameBuffer);
-            glViewport(0, 0, cameraInfo.frameBufferSize.x, cameraInfo.frameBufferSize.y);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            cameraInfo.target.Bind();
+            cameraInfo.target.Clear();
 
             for (auto [index, shaderData] : mShaders)
             {
@@ -214,6 +204,7 @@ namespace Gep
             }
 
             ++cameraIndex;
+            cameraInfo.target.Unbind();
         }
         
         glUseProgram(0);
