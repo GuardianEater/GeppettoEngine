@@ -231,7 +231,7 @@ namespace Client
             {
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
-                ImGui::Text("%s", data.name);
+                ImGui::Text("%s", data.name.c_str());
                 ImGui::TableNextColumn();
                 ImGui::Text("%u", data.index);
                 ImGui::TableNextColumn();
