@@ -96,7 +96,15 @@ namespace Client
                 .camPosition = glm::vec4(camTransform.position, 1.0f),
             };
 
-            renderer.AddCameraUniforms(uniforms);
+            // convert the camera's rotation to radians
+            glm::vec3 camRotation = glm::radians(camTransform.rotation);
+
+            // calculate the camera's right, up, and back vectors from the transforms rotation
+            cam.right = { cos(camRotation.y), 0, sin(camRotation.y) };
+            cam.up = { sin(camRotation.x) * sin(camRotation.y), cos(camRotation.x), -sin(camRotation.x) * cos(camRotation.y) };
+            cam.back = glm::normalize(glm::cross(cam.right, cam.up));
+
+            renderer.AddCameraUniforms(uniforms, cam.renderTarget);
         });
         renderer.CommitCameraUniforms();
 
@@ -131,7 +139,15 @@ namespace Client
                 .material = material
             };
 
-            renderer.AddObjectUniforms(uniforms);
+            uint64_t meshID = renderer.GetOrLoadMesh(mesh.meshName);
+            uint64_t textureID = Gep::num_max<uint64_t>();
+            if (mManager.HasComponent<Texture>(entity))
+            {
+                const Texture& texture = mManager.GetComponent<Texture>(entity);
+                textureID = renderer.GetOrLoadTexture(texture.texturePath);
+            }
+
+            renderer.AddObjectUniforms(uniforms, meshID, textureID);
         });
         renderer.CommitObjectUniforms();
 
@@ -143,14 +159,6 @@ namespace Client
 
             cam.renderTarget->Bind();
             cam.renderTarget->Clear({ 0.1f, 0.1f, 0.1f });
-
-            // convert the camera's rotation to radians
-            glm::vec3 camRotation = glm::radians(camTransform.rotation);
-
-            // calculate the camera's right, up, and back vectors from the transforms rotation
-            cam.right = { cos(camRotation.y), 0, sin(camRotation.y) };
-            cam.up = { sin(camRotation.x) * sin(camRotation.y), cos(camRotation.x), -sin(camRotation.x) * cos(camRotation.y) };
-            cam.back = glm::normalize(glm::cross(cam.right, cam.up));
 
             const glm::vec2 renderSize = cam.renderTarget->GetSize();
 

@@ -21,6 +21,7 @@
 #include "Logger.hpp"
 #include "KeyedVector.hpp"
 #include "BVHTree.hpp"
+#include "IRenderTarget.hpp"
 
 namespace Gep
 {
@@ -79,8 +80,8 @@ namespace Gep
         void SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
         void SetHighlightShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
 
-        void AddObjectUniforms(const ObjectUniforms& uniforms);
-        void AddCameraUniforms(const CameraUniforms& uniforms);
+        void AddObjectUniforms(const ObjectUniforms& uniforms, uint64_t meshID, uint64_t textureID);
+        void AddCameraUniforms(const CameraUniforms& uniforms, std::shared_ptr<Gep::IRenderTarget>& renderTarget);
         void AddLightUniforms(const LightUniforms& uniforms); // adds a light to the renderered, will be sent to the shader when DrawLights is called
 
         void CommitObjectUniforms(); // moves all of the data from the cpu to the gpu
@@ -118,6 +119,7 @@ namespace Gep
 
         // completes the rendering of the object
         void DrawMesh(uint64_t meshID);
+        void Draw(); // draws all of the submitted information
 
         void ToggleWireframes();
         void ToggleTextures();
@@ -182,9 +184,12 @@ namespace Gep
 
         GLuint mObjectUniformsSSBO{};
         std::vector<ObjectUniforms> mObjectUniforms;
+        std::vector<uint64_t> mMeshesToDraw;
+        std::vector<uint64_t> mTexturesToDraw;
 
         GLuint mCameraUniformsSSBO{};
         std::vector<CameraUniforms> mCameraUniforms;
+        std::vector<std::shared_ptr<Gep::IRenderTarget>> mRenderTargets;
 
     public:
         Gep::bvh_tree<uint64_t, Gep::Entity> mBVHTree;
