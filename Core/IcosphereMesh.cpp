@@ -37,7 +37,6 @@ namespace Gep
                 indices.push_back(i2); indices.push_back(c); indices.push_back(b);
                 indices.push_back(a);  indices.push_back(b); indices.push_back(c);
             }
-            indices = indices;
         }
     }
 

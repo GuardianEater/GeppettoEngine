@@ -965,7 +965,6 @@ namespace Client
 
             ImGui::SetNextItemWidth(inputWidth);
             ImGui::InputText("##SceneName", &sceneName, ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_AutoSelectAll);
-            ImGui::PopStyleColor();
             if (ImGui::IsItemHovered())
             {
                 ImGui::BeginTooltip();

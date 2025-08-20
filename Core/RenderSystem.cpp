@@ -57,11 +57,31 @@ namespace Client
 
         renderer.LoadErrorTexture("assets\\textures\\Error.png");
 
-        renderer.LoadMesh("Quad", Gep::QuadMesh());
-        renderer.LoadMesh("Sphere", Gep::SphereMesh(10, 10));
-        renderer.LoadMesh("Cube", Gep::CubeMesh());
-        renderer.LoadMesh("Icosphere", Gep::IcosphereMesh(3));
-        renderer.LoadMesh("Skybox", Gep::SkyboxMesh());
+        {
+            Gep::Model quad; 
+            quad.meshes.push_back(Gep::QuadMesh());
+            renderer.AddModel("Quad", quad);
+        }
+        {
+            Gep::Model sphere; 
+            sphere.meshes.push_back(Gep::SphereMesh(10, 10));
+            renderer.AddModel("Sphere", sphere);
+        }
+        {
+            Gep::Model cube;
+            cube.meshes.push_back(Gep::CubeMesh());
+            renderer.AddModel("Cube", cube);
+        } 
+        {
+            Gep::Model icosphere;
+            icosphere.meshes.push_back(Gep::IcosphereMesh(3));
+            renderer.AddModel("Icosphere", icosphere);
+        } 
+        {
+            Gep::Model skybox;
+            skybox.meshes.push_back(Gep::SkyboxMesh());
+            renderer.AddModel("Skybox", skybox);
+        }
 
         glEnable(GL_DEPTH_TEST);
     }
@@ -166,7 +186,7 @@ namespace Client
 
                 renderer.SetHighlight(material.selected);
                 renderer.SetObjectIndex(objectIndex++);
-                uint64_t meshID = renderer.GetOrLoadMesh(material.meshName);
+                uint64_t meshID = renderer.GetMesh(material.meshName);
                 renderer.DrawMesh(meshID);
             });
 
@@ -282,10 +302,12 @@ namespace Client
     {
         Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
 
-        Mesh& material = mManager.GetComponent<Mesh>(event.entity);
+        Mesh& mesh = mManager.GetComponent<Mesh>(event.entity);
 
-
-        //renderer.mBVHTree.insert(event.entity, material.meshName);
+        if (!renderer.IsMeshLoaded(mesh.meshName))
+        {
+            renderer.AddModel(mesh.meshName, Gep::Model::FromFile(mesh.meshName));
+        }
     }
 
     void RenderSystem::OnMeshEditorRender(const Gep::Event::ComponentEditorRender<Mesh>& event)
@@ -305,7 +327,7 @@ namespace Client
         {
             if (!renderer.IsMeshLoaded(droppedPath.string()))
             {
-                renderer.LoadMesh(droppedPath);
+                renderer.AddModel(droppedPath.string(), Gep::Model::FromFile(droppedPath));
             }
 
             mesh.meshName = droppedPath.string();

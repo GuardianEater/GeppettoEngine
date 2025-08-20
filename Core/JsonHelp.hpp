@@ -63,6 +63,5 @@ namespace Gep
         void ReadType(const nlohmann::json& json, const std::string_view name, glm::vec3& t);
         void ReadType(const nlohmann::json& json, const std::string_view name, glm::vec4& t);
         void ReadType(const nlohmann::json& json, const std::string_view name, glm::quat& t);
-
     }
 }

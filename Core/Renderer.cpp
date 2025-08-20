@@ -37,6 +37,8 @@ namespace Gep
         newShaderdata.shader = newShader;
 
         glGenBuffers(1, &newShaderdata.commandBuffer);
+
+        return newShaderDataID;
     }
 
     size_t Renderer::LoadTexture(const Texture& newTexture)

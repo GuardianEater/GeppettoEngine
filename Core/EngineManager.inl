@@ -306,6 +306,7 @@ namespace Gep
         // handle the memory of the componets
         ArchetypeChunkInsert(entity, std::forward<ComponentTypes>(components)...);
 
+        // keeps track of the amount of components that exist
         (mComponentDatas.at(GetComponentIndex<ComponentTypes>()).count++, ...);
 
         // update the signature of the entity

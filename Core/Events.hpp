@@ -10,6 +10,8 @@
 
 #include <Core.hpp>
 
+#include <nlohmann/json.hpp>
+
 namespace Gep
 {
     template<typename EventType>
@@ -31,7 +33,7 @@ namespace Gep
             Entity entity;
         };
 
-        // signalled after the entity being attached
+        // signalled after the entity is attached
         struct EntityAttached
         {
             Entity child;
@@ -138,6 +140,28 @@ namespace Gep
         {
             Entity entity;
             ComponentType& component;
+        };
+
+        // event is called after the component has been serialized but before it has been commited to disk.
+        // useful for making last second advanced modifications to the json data based on component data.
+        template <typename ComponentType>
+        struct ComponentSerializing
+        {
+            const ComponentType& component; // contains the component being serialized
+            nlohmann::json& componentJson; // contains the automatically reflected component data
+
+            Entity entity; // parent entity
+        };
+
+        // event is called immediately after the component has been deserialized
+        // useful for making calls, such as loading from a different file based on a filepath that the component may contain
+        template <typename ComponentType>
+        struct ComponentDeserializing
+        {
+            ComponentType& component; // contains automatically reflected data from the componentJson
+            const nlohmann::json& componentJson; // contains the original json data as read in from the file
+
+            Entity entity; // parent
         };
     }
 }

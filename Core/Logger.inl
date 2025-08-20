@@ -52,6 +52,10 @@ namespace Gep
         Gep::CallerInfo callerInfo = Gep::GetCallerInfo(_ReturnAddress());
 
         FormatLog(LogLevel::error, callerInfo, std::forward<Args>(args)...);
+
+#ifdef _DEBUG
+        __debugbreak();
+#endif // _DEBUG
     }
 
     template <typename... Args>

@@ -9,6 +9,7 @@
 #include "pch.hpp"
 
 #include "OpenGLRenderer.hpp"
+#include "Model.hpp"
 
 #define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
@@ -52,7 +53,7 @@ namespace Gep
     static GLuint IconToTexture(HICON icon);
     static GLuint BitmapToTexture(HBITMAP bitmap);
 
-    void OpenGLRenderer::LoadMesh(const std::string& name, const Mesh& mesh)
+    void OpenGLRenderer::AddModel(const std::string& name, const Gep::Model& model)
     {
         if (mMeshNameToID.contains(name))
         {
@@ -64,24 +65,9 @@ namespace Gep
         mMeshNameToID[name] = id;
         MeshData& meshData = mMeshDatas.at(id);
 
-        meshData.GenVertexBuffer(mesh);
-        meshData.GenFaceBuffer(mesh);
+        meshData.GenVertexBuffer(model.meshes.front());
+        meshData.GenFaceBuffer(model.meshes.front());
         meshData.BindBuffers();
-    }
-
-    void OpenGLRenderer::LoadMesh(const std::filesystem::path& path)
-    {
-        std::string strPath = path.string();
-        if (mMeshNameToID.contains(strPath))
-        {
-            Gep::Log::Error("Cannot load mesh: [", path.string(), "] a mesh with that name has already been loaded");
-            return;
-        }
-
-        std::string ext = path.extension().string();
-
-        Mesh mesh = Model::FromFile(path).meshes.front();
-        LoadMesh(path.string(), mesh);
     }
 
     uint64_t OpenGLRenderer::GetMesh(const std::string& name) const
@@ -93,14 +79,6 @@ namespace Gep
         }
 
         return mMeshNameToID.at(name);
-    }
-
-    uint64_t OpenGLRenderer::GetOrLoadMesh(const std::string& meshName)
-    {
-        if (!mMeshNameToID.contains(meshName))
-            LoadMesh(std::filesystem::path(meshName));
-
-        return GetMesh(meshName);
     }
 
     bool OpenGLRenderer::IsMeshLoaded(const std::string& name) const
@@ -618,7 +596,6 @@ namespace Gep
         mVertexArrayObject = num_max<GLuint>();
         mVertexBuffer = num_max<GLuint>();
         mFaceBuffer = num_max<GLuint>();
-        mFaceCount = num_max<GLuint>();
 #endif // _DEBUG
     }
 }
