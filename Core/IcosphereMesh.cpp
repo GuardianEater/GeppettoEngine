@@ -21,22 +21,22 @@ namespace Gep
     {
         for (int i = 0; i < recursionLevel; i++)
         {
-            std::vector<uint32_t> indices;
+            std::vector<uint32_t> indices2;
             for (size_t j = 0; j < indices.size(); j += 3)
             {
-                size_t i0 = indices[j + 0];
-                size_t i1 = indices[j + 1];
-                size_t i2 = indices[j + 2];
+                std::array<uint32_t, 3> tri = { indices[j], indices[j+1], indices[j+2]};
 
-                size_t a = GetMiddlePoint(i0, i1);
-                size_t b = GetMiddlePoint(i1, i2);
-                size_t c = GetMiddlePoint(i2, i0);
+                // replace triangle by 4 triangles
+                size_t a = GetMiddlePoint(tri[0], tri[1]);
+                size_t b = GetMiddlePoint(tri[1], tri[2]);
+                size_t c = GetMiddlePoint(tri[2], tri[0]);
 
-                indices.push_back(i0); indices.push_back(a); indices.push_back(c);
-                indices.push_back(i1); indices.push_back(b); indices.push_back(a);
-                indices.push_back(i2); indices.push_back(c); indices.push_back(b);
-                indices.push_back(a);  indices.push_back(b); indices.push_back(c);
+                indices2.push_back(tri[0]); indices2.push_back(a); indices2.push_back(c);
+                indices2.push_back(tri[1]); indices2.push_back(b); indices2.push_back(a);
+                indices2.push_back(tri[2]); indices2.push_back(c); indices2.push_back(b);
+                indices2.push_back(a);      indices2.push_back(b); indices2.push_back(c);
             }
+            this->indices = indices2;
         }
     }
 
