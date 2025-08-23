@@ -22,7 +22,7 @@ namespace Gep
         for (int i = 0; i < recursionLevel; i++)
         {
             std::vector<uint32_t> indices2;
-            for (size_t j = 0; j < indices.size(); j += 3)
+            for (size_t j = 0; j < this->indices.size(); j += 3)
             {
                 std::array<uint32_t, 3> tri = { indices[j], indices[j+1], indices[j+2]};
 

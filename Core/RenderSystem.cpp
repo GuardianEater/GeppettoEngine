@@ -57,6 +57,7 @@ namespace Client
 
         renderer.LoadErrorTexture("assets\\textures\\Error.png");
 
+        // load all of the default meshes
         {
             Gep::Model quad; 
             quad.meshes.push_back(Gep::QuadMesh());
@@ -306,7 +307,16 @@ namespace Client
 
         if (!renderer.IsMeshLoaded(mesh.meshName))
         {
-            renderer.AddModel(mesh.meshName, Gep::Model::FromFile(mesh.meshName));
+            if (std::filesystem::exists(mesh.meshName))
+            {
+                renderer.AddModel(mesh.meshName, Gep::Model::FromFile(mesh.meshName));
+            }
+            else
+            {
+                const std::string defaultName = Mesh{}.meshName; // re-initializes the meshname to the default value
+                Gep::Log::Warning("A model component was created with an invalid name/location: [", mesh.meshName, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
+                mesh.meshName = defaultName; 
+            }
         }
     }
 
