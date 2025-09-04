@@ -45,17 +45,14 @@
 #include "SoundSystem.hpp"
 #include "CollisionSystem.hpp"
 
-#define SOLLOUD_DYNAMIC
-#include "soloud.h"
-#include "soloud_wav.h"
-
-#include <opencv2/opencv.hpp>
+#include "OS.hpp"
 
 int main()  
 #ifndef _DEBUG
 try
 #endif
 {
+    Gep::SetDynamicLibraryDirectory("lib");
 
     Gep::Log::SetPrintLevel(Gep::Log::LogLevel::info);
     Gep::Log::SetOutputFile("log.txt");

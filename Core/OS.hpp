@@ -21,6 +21,9 @@ namespace Gep
     // create a folder picker dialog starting at the given filepath
     std::filesystem::path DialogBox_PickFolder(const std::filesystem::path& initialDir);
 
+    // usually dlls only work next to the executable, this will change the folder that they are searched for in
+    void SetDynamicLibraryDirectory(const std::filesystem::path& folder);
+
     // opens a given folderpath in explorer and opens a filepath in whatever the default editor is for the file
     void OpenInExplorer(const std::filesystem::path& path);
 

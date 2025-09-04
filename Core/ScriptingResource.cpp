@@ -80,9 +80,13 @@ namespace Client
         mKnownScripts.clear();
 
         // get all files in the scripts directory
-        for (const auto& entry : std::filesystem::directory_iterator("assets\\scripts"))
+
+        if (std::filesystem::exists("assets\\scripts"))
         {
-            mKnownScripts.insert(entry.path());
+            for (const auto& entry : std::filesystem::directory_iterator("assets\\scripts"))
+            {
+                mKnownScripts.insert(entry.path());
+            }
         }
     }
     sol::state& ScriptingResource::GetLua()

@@ -353,8 +353,15 @@ namespace Client
 
     void ImGuiSystem::SetAssetBrowserPath(const std::filesystem::path& newPath)
     {
+        if (!std::filesystem::exists(mAssetBrowserPath))
+        {
+            mAssetBrowserPath = std::filesystem::current_path();
+            Gep::Log::Error("Path given doesn't exist: [", newPath, "]. Using: [", mAssetBrowserPath, "] instead.");
+        }
+
         mAssetBrowserPath = newPath;
         mAssetBrowserEntries.clear();
+
         for (const auto& entry : std::filesystem::directory_iterator(mAssetBrowserPath))
         {
             mAssetBrowserEntries.push_back(entry);
