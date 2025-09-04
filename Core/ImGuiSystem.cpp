@@ -68,9 +68,9 @@ namespace Client
                 std::string displayName = GetEntityDisplayName(entity);
                 ImGui::Text(displayName.c_str());
 
-                if (mManager.HasComponent<Mesh>(entity))
+                if (mManager.HasComponent<ModelComponent>(entity))
                 {
-                    Client::Mesh& material = mManager.GetComponent<Client::Mesh>(entity);
+                    Client::ModelComponent& material = mManager.GetComponent<Client::ModelComponent>(entity);
                     material.selected = true;
                 }
             }
@@ -100,9 +100,9 @@ namespace Client
 
         ImGui::Dummy({ 0.0f, 10.0f });
 
-        if (mManager.HasComponent<Mesh>(entity))
+        if (mManager.HasComponent<ModelComponent>(entity))
         {
-            Client::Mesh& material = mManager.GetComponent<Client::Mesh>(entity);
+            Client::ModelComponent& material = mManager.GetComponent<Client::ModelComponent>(entity);
             material.selected = true;
         }
 
@@ -897,7 +897,7 @@ namespace Client
                 if (ImGui::MenuItem("Cube"))
                 {
                     Gep::Entity entity = mManager.CreateEntity("Cube");
-                    mManager.AddComponent(entity, Mesh{ "Cube" }
+                    mManager.AddComponent(entity, ModelComponent{ "Cube" }
                                                 , Transform{}
                                                 , CubeCollider{});
                     mEditorResource.SelectEntity(entity);
@@ -905,7 +905,7 @@ namespace Client
                 if (ImGui::MenuItem("Sphere"))
                 {
                     Gep::Entity entity = mManager.CreateEntity("Icosphere");
-                    mManager.AddComponent(entity, Mesh{ "Icosphere" }
+                    mManager.AddComponent(entity, ModelComponent{ "Icosphere" }
                                                 , Transform{}
                                                 , SphereCollider{});
                     mEditorResource.SelectEntity(entity);
@@ -913,7 +913,7 @@ namespace Client
                 if (ImGui::MenuItem("Light"))
                 {
                     Gep::Entity entity = mManager.CreateEntity("Light");
-                    mManager.AddComponent(entity, Mesh{ "Sphere" }
+                    mManager.AddComponent(entity, ModelComponent{ "Sphere" }
                                                 , Transform{}
                                                 , Light{}
                                                 , SphereCollider{});

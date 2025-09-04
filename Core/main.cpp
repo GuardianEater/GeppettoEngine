@@ -62,9 +62,6 @@ try
 
     Gep::Log::Important("Welcome To The Gep Engine!");
 
-    Gep::UUID uuid = Gep::UUID::GenerateNew();
-    Gep::Log::Important(uuid);
-
     // start the engine //////////////////////////////////////////////////////////////////////////////
     Gep::EngineManager em;
 
@@ -80,7 +77,7 @@ try
     Gep::type_list<
         Client::Transform,
         Client::RigidBody,
-        Client::Mesh,
+        Client::ModelComponent,
         Client::Script,
         Client::ActiveCamera,
         Client::Camera,

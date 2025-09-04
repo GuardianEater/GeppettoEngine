@@ -16,7 +16,7 @@
 
 namespace Client
 {
-    struct Mesh
+    struct ModelComponent
     {
         std::string meshName{ "Cube" };
         bool selected = false;

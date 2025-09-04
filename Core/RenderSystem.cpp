@@ -38,8 +38,8 @@ namespace Client
 
     void RenderSystem::Initialize()
     {
-        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<Mesh>>(this, &RenderSystem::OnModelAdded);
-        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Mesh>>(this, &RenderSystem::OnMeshEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<ModelComponent>>(this, &RenderSystem::OnModelAdded);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<ModelComponent>>(this, &RenderSystem::OnMeshEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Texture>>(this, &RenderSystem::OnTextureEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Light>>(this, &RenderSystem::OnLightEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Camera>>(this, &RenderSystem::OnCameraEditorRender);
@@ -122,33 +122,33 @@ namespace Client
         renderer.CommitCameraUniforms();
 
         // prepare the object uniforms
-        mManager.ForEachArchetype<Mesh, Transform>([&](Gep::Entity entity, Mesh& mesh, Transform& transform)
+        mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
         {
-            glm::mat4 model = transform.GetModelMatrix();
-            glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(model)));
+            glm::mat4 modelMatrix = transform.GetModelMatrix();
+            glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
 
             Gep::PBRMaterial material
             {
-                .ao = mesh.ao, // ambient occlusion
-                .roughness = mesh.roughness,
-                .metalness = mesh.metalness,
-                .color = mesh.color
+                .ao = model.ao, // ambient occlusion
+                .roughness = model.roughness,
+                .metalness = model.metalness,
+                .color = model.color
             };
 
             if (mManager.HasComponent<Light>(entity))
             {
                 material.color = mManager.GetComponent<Light>(entity).color;
-                mesh.ignoreLight = true;
+                model.ignoreLight = true;
             }
 
             Gep::ObjectUniforms uniforms
             {
-                .modelMatrix = model,
+                .modelMatrix = modelMatrix,
                 .normalMatrix = normal,
                 .isUsingTexture = mManager.HasComponent<Texture>(entity),
-                .isIgnoringLight = mesh.ignoreLight,
+                .isIgnoringLight = model.ignoreLight,
                 .isSolidColor = false,
-                .isHighlighted = mesh.selected,
+                .isHighlighted = model.selected,
                 .material = material
             };
 
@@ -176,7 +176,7 @@ namespace Client
             const glm::vec2 renderSize = cam.renderTarget->GetSize();
 
             size_t objectIndex = 0;
-            mManager.ForEachArchetype<Mesh, Transform>([&](Gep::Entity entity, Mesh& material, Transform& transform)
+            mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
             {
                 if (mManager.HasComponent<Texture>(entity))
                 {
@@ -185,9 +185,9 @@ namespace Client
                     renderer.SetTexture(textureid);
                 }
 
-                renderer.SetHighlight(material.selected);
+                renderer.SetHighlight(model.selected);
                 renderer.SetObjectIndex(objectIndex++);
-                uint64_t meshID = renderer.GetMesh(material.meshName);
+                uint64_t meshID = renderer.GetMesh(model.meshName);
                 renderer.DrawMesh(meshID);
             });
 
@@ -228,9 +228,9 @@ namespace Client
             cam.renderTarget->Unbind();
         });
 
-        mManager.ForEachArchetype<Mesh, Transform>([&](Gep::Entity entity, Mesh& material, Transform& transform)
+        mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
         {
-            material.selected = false;
+                model.selected = false;
         });
 
         renderer.End();
@@ -299,11 +299,11 @@ namespace Client
         ImGui::End();
     }
 
-    void RenderSystem::OnModelAdded(const Gep::Event::ComponentAdded<Mesh>& event)
+    void RenderSystem::OnModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event)
     {
         Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
 
-        Mesh& mesh = mManager.GetComponent<Mesh>(event.entity);
+        ModelComponent& mesh = mManager.GetComponent<ModelComponent>(event.entity);
 
         if (!renderer.IsMeshLoaded(mesh.meshName))
         {
@@ -313,16 +313,16 @@ namespace Client
             }
             else
             {
-                const std::string defaultName = Mesh{}.meshName; // re-initializes the meshname to the default value
+                const std::string defaultName = ModelComponent{}.meshName; // re-initializes the meshname to the default value
                 Gep::Log::Warning("A model component was created with an invalid name/location: [", mesh.meshName, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
                 mesh.meshName = defaultName; 
             }
         }
     }
 
-    void RenderSystem::OnMeshEditorRender(const Gep::Event::ComponentEditorRender<Mesh>& event)
+    void RenderSystem::OnMeshEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event)
     {
-        Mesh& mesh = event.component;
+        ModelComponent& mesh = event.component;
 
         Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
