@@ -96,14 +96,17 @@ namespace Gep
         mHighlightShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
     }
 
-    void OpenGLRenderer::AddObjectUniforms(const ObjectUniforms& uniforms)
+    void OpenGLRenderer::AddObjectUniforms(const ObjectUniforms& uniforms, uint64_t meshID, uint64_t textureID)
     {
         mObjectUniforms.push_back(uniforms);
+        mMeshesToDraw.push_back(meshID);
+        mTexturesToDraw.push_back(textureID);
     }
 
-    void OpenGLRenderer::AddCameraUniforms(const CameraUniforms& uniforms)
+    void OpenGLRenderer::AddCameraUniforms(const CameraUniforms& uniforms, std::shared_ptr<Gep::IRenderTarget>& renderTarget)
     {
         mCameraUniforms.push_back(uniforms);
+        mRenderTargets.push_back(renderTarget);
     }
 
     void OpenGLRenderer::AddLightUniforms(const LightUniforms& uniforms)
@@ -457,11 +460,24 @@ namespace Gep
         mNextMeshIsBackfaceCulling = true;
     }
 
+    void OpenGLRenderer::Draw()
+    {
+        for (uint64_t i = 0; i < mCameraUniforms.size(); ++i)
+        {
+            SetCameraIndex(i);
+        }
+    }
+
     void OpenGLRenderer::End()
     {
         mLightUniforms.clear();
+
         mObjectUniforms.clear();
+        mMeshesToDraw.clear();
+        mTexturesToDraw.clear();
+
         mCameraUniforms.clear();
+        mRenderTargets.clear();
     }
 
     void OpenGLRenderer::SetUpLightSSBO()
