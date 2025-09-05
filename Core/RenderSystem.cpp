@@ -160,7 +160,7 @@ namespace Client
                 .material = material
             };
 
-            uint64_t meshID = renderer.GetOrLoadMesh(mesh.meshName);
+            uint64_t meshID = renderer.GetMesh(model.meshName);
             uint64_t textureID = Gep::num_max<uint64_t>();
             if (mManager.HasComponent<Texture>(entity))
             {
