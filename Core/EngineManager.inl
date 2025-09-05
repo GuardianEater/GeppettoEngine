@@ -513,11 +513,23 @@ namespace Gep
         ComponentType component{};
         const auto view = rfl::to_view(component);
 
-        view.apply([&](const auto& f)
+        view.apply([&](const auto& componentField)
         {
-            if (componentDataJson.contains(f.name()))
+            if (componentDataJson.contains(componentField.name())) // checks if the type being read in matches the type of the variable 
             {
-                Json::ReadType(componentDataJson, f.name(), *f.value());
+                try
+                {
+                    // reads the components variable name from the json data into the location of that variable
+                    Json::ReadType(componentDataJson, componentField.name(), *componentField.value());
+                }
+                catch(const std::exception& e)
+                {
+                    const nlohmann::json& componentFieldJson = componentDataJson.at(componentField.name());
+                    using ComponentFieldType = decltype(*componentField.value());
+
+                    Gep::Log::Error("\nFailed to read in a field on component: [", Gep::GetTypeInfo<ComponentType>().PrettyName(),"]. "
+                                    "Attempted to read: [", componentFieldJson.type_name(), ": ", componentFieldJson.dump(), "] into: [", componentField.name(), ": ", Gep::GetTypeInfo<ComponentFieldType>().Name(), "].");
+                }
             }
         });
 
