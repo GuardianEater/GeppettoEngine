@@ -24,7 +24,7 @@
 // components
 #include "CameraComponent.hpp"
 #include "ActiveCameraComponent.hpp"
-#include "Material.hpp"
+#include "ModelComponent.hpp"
 #include "RigidBody.hpp"
 #include "Script.hpp"
 #include "Transform.hpp"
@@ -45,25 +45,19 @@
 #include "SoundSystem.hpp"
 #include "CollisionSystem.hpp"
 
-#define SOLLOUD_DYNAMIC
-#include "soloud.h"
-#include "soloud_wav.h"
-
-#include <opencv2/opencv.hpp>
+#include "OS.hpp"
 
 int main()  
 #ifndef _DEBUG
 try
 #endif
 {
+    Gep::SetDynamicLibraryDirectory("lib");
 
     Gep::Log::SetPrintLevel(Gep::Log::LogLevel::info);
     Gep::Log::SetOutputFile("log.txt");
 
     Gep::Log::Important("Welcome To The Gep Engine!");
-
-    Gep::UUID uuid = Gep::UUID::GenerateNew();
-    Gep::Log::Important(uuid);
 
     // start the engine //////////////////////////////////////////////////////////////////////////////
     Gep::EngineManager em;
@@ -80,7 +74,7 @@ try
     Gep::type_list<
         Client::Transform,
         Client::RigidBody,
-        Client::Mesh,
+        Client::ModelComponent,
         Client::Script,
         Client::ActiveCamera,
         Client::Camera,

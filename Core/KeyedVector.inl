@@ -129,6 +129,12 @@ namespace Gep
     }
 
     template<typename T>
+    inline constexpr const std::vector<std::optional<T>>& keyed_vector<T>::container() const
+    {
+        return mData;
+    }
+
+    template<typename T>
     constexpr typename keyed_vector<T>::const_iterator keyed_vector<T>::begin() const
     {
         return const_iterator(mData.begin(), mData.end());

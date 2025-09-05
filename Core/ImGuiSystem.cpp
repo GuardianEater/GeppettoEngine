@@ -12,7 +12,7 @@
 
 #include "CameraComponent.hpp"
 #include "Transform.hpp"
-#include "Material.hpp"
+#include "ModelComponent.hpp"
 #include "CubeCollider.hpp"
 #include "SphereCollider.hpp"
 #include "LightComponent.hpp"
@@ -68,9 +68,9 @@ namespace Client
                 std::string displayName = GetEntityDisplayName(entity);
                 ImGui::Text(displayName.c_str());
 
-                if (mManager.HasComponent<Mesh>(entity))
+                if (mManager.HasComponent<ModelComponent>(entity))
                 {
-                    Client::Mesh& material = mManager.GetComponent<Client::Mesh>(entity);
+                    Client::ModelComponent& material = mManager.GetComponent<Client::ModelComponent>(entity);
                     material.selected = true;
                 }
             }
@@ -100,9 +100,9 @@ namespace Client
 
         ImGui::Dummy({ 0.0f, 10.0f });
 
-        if (mManager.HasComponent<Mesh>(entity))
+        if (mManager.HasComponent<ModelComponent>(entity))
         {
-            Client::Mesh& material = mManager.GetComponent<Client::Mesh>(entity);
+            Client::ModelComponent& material = mManager.GetComponent<Client::ModelComponent>(entity);
             material.selected = true;
         }
 
@@ -353,8 +353,15 @@ namespace Client
 
     void ImGuiSystem::SetAssetBrowserPath(const std::filesystem::path& newPath)
     {
+        if (!std::filesystem::exists(mAssetBrowserPath))
+        {
+            mAssetBrowserPath = std::filesystem::current_path();
+            Gep::Log::Error("Path given doesn't exist: [", newPath, "]. Using: [", mAssetBrowserPath, "] instead.");
+        }
+
         mAssetBrowserPath = newPath;
         mAssetBrowserEntries.clear();
+
         for (const auto& entry : std::filesystem::directory_iterator(mAssetBrowserPath))
         {
             mAssetBrowserEntries.push_back(entry);
@@ -897,7 +904,7 @@ namespace Client
                 if (ImGui::MenuItem("Cube"))
                 {
                     Gep::Entity entity = mManager.CreateEntity("Cube");
-                    mManager.AddComponent(entity, Mesh{ "Cube" }
+                    mManager.AddComponent(entity, ModelComponent{ "Cube" }
                                                 , Transform{}
                                                 , CubeCollider{});
                     mEditorResource.SelectEntity(entity);
@@ -905,7 +912,7 @@ namespace Client
                 if (ImGui::MenuItem("Sphere"))
                 {
                     Gep::Entity entity = mManager.CreateEntity("Icosphere");
-                    mManager.AddComponent(entity, Mesh{ "Icosphere" }
+                    mManager.AddComponent(entity, ModelComponent{ "Icosphere" }
                                                 , Transform{}
                                                 , SphereCollider{});
                     mEditorResource.SelectEntity(entity);
@@ -913,7 +920,7 @@ namespace Client
                 if (ImGui::MenuItem("Light"))
                 {
                     Gep::Entity entity = mManager.CreateEntity("Light");
-                    mManager.AddComponent(entity, Mesh{ "Sphere" }
+                    mManager.AddComponent(entity, ModelComponent{ "Sphere" }
                                                 , Transform{}
                                                 , Light{}
                                                 , SphereCollider{});
@@ -949,6 +956,30 @@ namespace Client
                 if (ImGui::MenuItem("Inspector", nullptr, &showInspector)) { /* Toggle Inspector */ }
                 ImGui::EndMenu();
             }
+
+            float windowWidth = ImGui::GetWindowWidth();
+            static std::string sceneName = "MySceneName";
+
+            // Calculate text size and center position
+            ImVec2 textSize = ImGui::CalcTextSize(sceneName.c_str());
+            float textX = (windowWidth - textSize.x) * 0.5f;
+            float padding = ImGui::GetStyle().FramePadding.x * 2.0f;
+            float inputWidth = textSize.x + padding;
+            ImGui::SetCursorPosX(textX);
+
+            ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, { 0, 0, 0, 0 });
+            ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, { 0, 0, 0, 0 });
+
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputText("##SceneName", &sceneName, ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_AutoSelectAll);
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text("Rename Scene");
+                ImGui::EndTooltip();
+            }
+
+            ImGui::PopStyleColor(2);
 
             ImGui::EndMainMenuBar();
         }

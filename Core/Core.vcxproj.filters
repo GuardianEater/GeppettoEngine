@@ -249,9 +249,6 @@
     <ClCompile Include="GetCallerInfo_Windows.cpp">
       <Filter>Backend\OS</Filter>
     </ClCompile>
-    <ClCompile Include="ObjMesh.cpp">
-      <Filter>Backend\Rendering\Meshes</Filter>
-    </ClCompile>
     <ClCompile Include="SoundResource.cpp">
       <Filter>Client\Resources</Filter>
     </ClCompile>
@@ -287,6 +284,15 @@
     </ClCompile>
     <ClCompile Include="Renderer.cpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>Backend\Rendering\NewRenderAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="Model.cpp">
+      <Filter>Backend\Rendering\NewRenderAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTarget.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -353,7 +359,7 @@
     <ClInclude Include="RigidBody.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
-    <ClInclude Include="Material.hpp">
+    <ClInclude Include="ModelComponent.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
     <ClInclude Include="Events.hpp">
@@ -365,13 +371,7 @@
     <ClInclude Include="dependencies\imgui\imgui_stdlib.h">
       <Filter>ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="AxisMesh.hpp">
-      <Filter>Backend\Rendering\Meshes</Filter>
-    </ClInclude>
     <ClInclude Include="CameraComponent.hpp">
-      <Filter>Client\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="MeshComponent.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
     <ClInclude Include="TypeList.hpp">
@@ -524,9 +524,6 @@
     <ClInclude Include="GetCallerInfo.hpp">
       <Filter>Backend\OS</Filter>
     </ClInclude>
-    <ClInclude Include="ObjMesh.hpp">
-      <Filter>Backend\Rendering\Meshes</Filter>
-    </ClInclude>
     <ClInclude Include="SoundComponent.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
@@ -585,6 +582,18 @@
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClInclude>
     <ClInclude Include="Renderer.hpp">
+      <Filter>Backend\Rendering\NewRenderAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.hpp">
+      <Filter>Backend\Rendering\NewRenderAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.hpp">
+      <Filter>Backend\Rendering\NewRenderAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.hpp">
+      <Filter>Backend\Rendering\NewRenderAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTarget.hpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClInclude>
   </ItemGroup>

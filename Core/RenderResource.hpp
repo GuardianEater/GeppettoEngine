@@ -17,6 +17,9 @@
 
 #include "KeyedVector.hpp"
 #include "Shader.hpp"
+
+#include "Renderer.hpp"
+
 namespace Gep
 {
     class EngineManager;
@@ -29,6 +32,10 @@ namespace Client
     public:
         Gep::OpenGLRenderer mRenderer;
 
+        //Gep::OpenGLRenderer mOldRenderer;
+        std::unique_ptr<Gep::Renderer> mNewRenderer;
+
     private:
+        std::unordered_map<std::filesystem::path, size_t> mLoadedMeshes;
     };
 }

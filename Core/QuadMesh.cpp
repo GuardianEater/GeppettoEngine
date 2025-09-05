@@ -13,7 +13,7 @@ namespace Gep
 {
     QuadMesh::QuadMesh()
     {
-        mVertices = {
+        vertices = {
             // front
             // positions          // normals           // texture coords
             {{-1.0f,  1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
@@ -22,10 +22,12 @@ namespace Gep
             {{ 1.0f,  1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},           
         };
 
-        mFaces = {
-            {0, 1, 2},
-            {0, 2, 3}
+        indices = {
+            0, 1, 2,
+            0, 2, 3
         };
+
+        name = "Quad";
 
         Normalize();
     }

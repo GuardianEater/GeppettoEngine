@@ -16,9 +16,14 @@ namespace Gep
 {
     Renderer::Renderer()
     {
+        // basic setup
+        glEnable(GL_CULL_FACE);
+
+        // buffer setup
         BufferGen();
         BufferSetupAttributes();
 
+        // ssbo setup
         SetupObjectSSBO();
         SetupLightSSBO();
         SetupCameraSSBO();
@@ -32,6 +37,8 @@ namespace Gep
         newShaderdata.shader = newShader;
 
         glGenBuffers(1, &newShaderdata.commandBuffer);
+
+        return newShaderDataID;
     }
 
     size_t Renderer::LoadTexture(const Texture& newTexture)
@@ -39,7 +46,7 @@ namespace Gep
         size_t newTextureDataID = mTextures.emplace();
         Texture_Internal& newTextureData = mTextures.at(newTextureDataID);
 
-        newTextureData.texure = newTexture;
+        newTextureData.texture = newTexture;
 
         glGenTextures(1, &newTextureData.handle);
         glBindTexture(GL_TEXTURE_2D, newTextureData.handle);
@@ -57,11 +64,6 @@ namespace Gep
         glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
 
         return newTextureDataID;
-    }
-
-    size_t Renderer::LoadMaterial(const PBRMaterial& newMaterial)
-    {
-        return mMaterials.insert(newMaterial);
     }
 
     size_t Renderer::LoadMesh(const Mesh& newMesh)
@@ -84,7 +86,7 @@ namespace Gep
             allVertices.insert(allVertices.end(), meshData.mesh.vertices.begin(), meshData.mesh.vertices.end());
             
             for (uint32_t index : meshData.mesh.indices)
-                allIndices.push_back(index + currentVertexBufferOffset); // correct the indecies to point to the correct location in the combined vertex buffer
+                allIndices.push_back(index + currentVertexBufferOffset); // correct the indices to point to the correct location in the combined vertex buffer
 
             currentVertexBufferOffset += meshData.mesh.vertices.size();
             currentIndexBufferOffset += meshData.mesh.indices.size();
@@ -104,11 +106,55 @@ namespace Gep
         return newMeshDataIndex;
     }
 
-    void Renderer::AddObject(const ObjectRenderInfo& info)
+    Renderer::KeyedVectorView<Mesh> Renderer::GetLoadedMeshes() const
     {
-        mObjectRenderInfos.push_back(info);
+        KeyedVectorView<Mesh> view;
+        view.reserve(mMeshes.size());
 
-        Mesh_Internal& meshData = mMeshes.at(info.meshIndex);
+        for (const auto [index, mesh] : mMeshes)
+            view.push_back({ index, &mesh.mesh });
+
+        return view;
+    }
+
+    Renderer::KeyedVectorView<Shader> Renderer::GetLoadedShaders() const
+    {
+        KeyedVectorView<Shader> view;
+        view.reserve(mShaders.size());
+
+        for (const auto [index, shader] : mShaders)
+            view.push_back({ index, &shader.shader });
+
+        return view;
+    }
+
+    Renderer::KeyedVectorView<Texture> Renderer::GetLoadedTextures() const
+    {
+        KeyedVectorView<Texture> view;
+        view.reserve(mTextures.size());
+
+        for (const auto [index, texture] : mTextures)
+            view.push_back({ index, &texture.texture });
+
+        return view;
+    }
+
+    Renderer::KeyedVectorView<Material> Renderer::GetLoadedMaterials() const
+    {
+        KeyedVectorView<Material> view;
+        view.reserve(mMaterials.size());
+
+        for (const auto [index, material] : mMaterials)
+            view.push_back({ index, &material.material });
+
+        return view;
+    }
+
+    void Renderer::AddObject(size_t shaderID, size_t meshID, const ObjectRenderInfo& info)
+    {
+        mShaders.at(shaderID).objectRenderInfos.push_back(info);
+
+        Mesh_Internal& meshData = mMeshes.at(meshID);
 
         ++meshData.instanceCount;
     }
@@ -125,7 +171,6 @@ namespace Gep
 
     void Renderer::Render()
     {
-        CommitObjectInfo();
         CommitLightInfo();
         CommitCameraInfo();
 
@@ -134,30 +179,42 @@ namespace Gep
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mLightSSBO);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, mCameraSSBO);
 
-        for (auto [index, shaderData] : mShaders)
-        {
-            shaderData.shader.Bind();
-            CommitDrawCommands(shaderData);
-            glBindBuffer(GL_DRAW_INDIRECT_BUFFER, shaderData.commandBuffer);
+        // sort objects by shader / when an object is added add it to its associated shader instead
+        // one shader per object
 
-            int cameraIndex = 0;
-            for (const auto& cameraInfo : mCameraRenderInfos)
+        // for each camera
+            // for each shader
+                // for each object in this shader
+
+        // make a clear call that clears all connected cameras
+
+        int cameraIndex = 0;
+        for (const auto& cameraInfo : mCameraRenderInfos)
+        {
+            cameraInfo.target.Bind();
+            cameraInfo.target.Clear();
+
+            for (auto [index, shaderData] : mShaders)
             {
+                shaderData.shader.Bind();
+                CommitDrawCommands(shaderData);
+                CommitObjectInfo(shaderData);
+                glBindBuffer(GL_DRAW_INDIRECT_BUFFER, shaderData.commandBuffer);
                 shaderData.shader.SetUniform(0, cameraIndex);
 
-                glBindFramebuffer(GL_FRAMEBUFFER, cameraInfo.frameBuffer);
-                glViewport(0, 0, cameraInfo.frameBufferSize.x, cameraInfo.frameBufferSize.y);
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, shaderData.drawCommandCount, 0);
-                ++cameraIndex;
             }
+
+            ++cameraIndex;
+            cameraInfo.target.Unbind();
         }
         
         glUseProgram(0);
 
+        for (auto [index, shaderData] : mShaders)
+            shaderData.objectRenderInfos.clear();
+
         // cleanup all of the frame data
-        mObjectRenderInfos.clear();
         mLightRenderInfos.clear();
         mCameraRenderInfos.clear();
     }
@@ -201,10 +258,10 @@ namespace Gep
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
     }
 
-    void Renderer::CommitObjectInfo()
+    void Renderer::CommitObjectInfo(Shader_Internal& shader)
     {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, mObjectSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, mObjectRenderInfos.size() * sizeof(ObjectRenderInfo), mObjectRenderInfos.data(), GL_DYNAMIC_DRAW);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, shader.objectRenderInfos.size() * sizeof(ObjectRenderInfo), shader.objectRenderInfos.data(), GL_DYNAMIC_DRAW);
     }
 
     void Renderer::CommitLightInfo()
@@ -276,35 +333,5 @@ namespace Gep
             glEnableVertexAttribArray(2);
         }
         glBindVertexArray(0);
-    }
-
-    Renderer::Texture Renderer::Texture::FromFile(const std::filesystem::path& path)
-    {
-        Texture result{};
-
-        int width;
-        int height;
-        int channels; // this will be the original value before the image is forced to the required channels
-        int requiredChannels = 4; // Force RGBA
-
-        unsigned char* data = stbi_load(path.string().c_str(), &width, &height, &channels, requiredChannels);
-        if (!data) 
-        {
-            Gep::Log::Error("Failed to load texture: [", path.string(), "]");
-            return {};
-        }
-
-        // calculate data total size
-        size_t dataSize = static_cast<size_t>(result.width) * result.height * result.channels;
-
-        // move the data into the vector
-        result.data.assign(data, data + dataSize);
-        result.width = width;
-        result.height = height;
-        result.channels = requiredChannels; // make sure to use required channels here and not the returned channels
-
-        stbi_image_free(data);
-
-        return result;
     }
 }

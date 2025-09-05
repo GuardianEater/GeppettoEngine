@@ -9,6 +9,7 @@
 #include "pch.hpp"
 
 #include "OpenGLRenderer.hpp"
+#include "Model.hpp"
 
 #define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
@@ -17,7 +18,6 @@
 #undef min
 #undef max
 
-#include "ObjMesh.hpp"
 #include "Renderer.hpp"
 namespace Gep
 {
@@ -53,7 +53,7 @@ namespace Gep
     static GLuint IconToTexture(HICON icon);
     static GLuint BitmapToTexture(HBITMAP bitmap);
 
-    void OpenGLRenderer::LoadMesh(const std::string& name, const Mesh& mesh)
+    void OpenGLRenderer::AddModel(const std::string& name, const Gep::Model& model)
     {
         if (mMeshNameToID.contains(name))
         {
@@ -65,24 +65,9 @@ namespace Gep
         mMeshNameToID[name] = id;
         MeshData& meshData = mMeshDatas.at(id);
 
-        meshData.GenVertexBuffer(mesh);
-        meshData.GenFaceBuffer(mesh);
+        meshData.GenVertexBuffer(model.meshes.front());
+        meshData.GenFaceBuffer(model.meshes.front());
         meshData.BindBuffers();
-    }
-
-    void OpenGLRenderer::LoadMesh(const std::filesystem::path& path)
-    {
-        std::string strPath = path.string();
-        if (mMeshNameToID.contains(strPath))
-        {
-            Gep::Log::Error("Cannot load mesh: [", path.string(), "] a mesh with that name has already been loaded");
-            return;
-        }
-
-        std::string ext = path.extension().string();
-
-        Mesh mesh = Gep::LoadMesh(path);
-        LoadMesh(path.string(), mesh);
     }
 
     uint64_t OpenGLRenderer::GetMesh(const std::string& name) const
@@ -94,14 +79,6 @@ namespace Gep
         }
 
         return mMeshNameToID.at(name);
-    }
-
-    uint64_t OpenGLRenderer::GetOrLoadMesh(const std::string& meshName)
-    {
-        if (!mMeshNameToID.contains(meshName))
-            LoadMesh(std::filesystem::path(meshName));
-
-        return GetMesh(meshName);
     }
 
     bool OpenGLRenderer::IsMeshLoaded(const std::string& name) const
@@ -449,7 +426,6 @@ namespace Gep
         }
 
         const MeshData& md = mMeshDatas.at(meshID);
-        constexpr std::uint64_t faceSize = sizeof(Mesh::Face) / sizeof(GLuint);
 
         if (mNextMeshIsBackfaceCulling)
         {
@@ -465,7 +441,7 @@ namespace Gep
             {
                 glBindVertexArray(md.mVertexArrayObject);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
+                glDrawElements(GL_TRIANGLES, md.mIndexCount, GL_UNSIGNED_INT, 0);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
                 glBindVertexArray(0);
             });
@@ -475,7 +451,7 @@ namespace Gep
         {
             glBindVertexArray(md.mVertexArrayObject);
             if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            glDrawElements(GL_TRIANGLES, faceSize * md.mFaceCount, GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, md.mIndexCount, GL_UNSIGNED_INT, 0);
             if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             glBindVertexArray(0);
         });
@@ -594,16 +570,16 @@ namespace Gep
     {
         glGenBuffers(1, &mVertexBuffer);
         glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh.mVertices.size(), mesh.mVertices.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh.vertices.size(), mesh.vertices.data(), GL_STATIC_DRAW);
     }
 
     void OpenGLRenderer::MeshData::GenFaceBuffer(const Mesh& mesh)
     {
         glGenBuffers(1, &mFaceBuffer);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mFaceBuffer);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Mesh::Face) * mesh.mFaces.size(), mesh.mFaces.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * mesh.indices.size(), mesh.indices.data(), GL_STATIC_DRAW);
 
-        mFaceCount = mesh.mFaces.size();
+        mIndexCount = mesh.indices.size();
     }
 
     void OpenGLRenderer::MeshData::BindBuffers()
@@ -636,7 +612,6 @@ namespace Gep
         mVertexArrayObject = num_max<GLuint>();
         mVertexBuffer = num_max<GLuint>();
         mFaceBuffer = num_max<GLuint>();
-        mFaceCount = num_max<GLuint>();
 #endif // _DEBUG
     }
 }

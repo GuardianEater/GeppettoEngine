@@ -11,9 +11,17 @@
 // external
 #include <glm/glm.hpp>
 #include <limits>
+#include <ranges>
 
 // rendering
 #include "Shader.hpp"
+#include "Mesh.hpp"
+#include "Texture.hpp"
+#include "Material.hpp"
+#include "RenderTarget.hpp"
+#include "Model.hpp"
+
+// Gep
 #include "KeyedVector.hpp"
 
 namespace Gep
@@ -24,27 +32,16 @@ namespace Gep
     {
     public:
         // gpu
-        struct alignas(16) PBRMaterial
-        {
-            glm::vec3 color; GLuint colorTexture;
-            float ao;        GLuint aoTexture;  // ambient occlusion
-            float roughness; GLuint roughnessTexture;
-            float metalness; GLuint metalnessTexture;
-        };
-
-        // gpu
         struct alignas(16) ObjectRenderInfo
         {
             glm::mat4 modelMatrix;
-
-            size_t materialIndex = 0;
-            size_t meshIndex = 0;
-            size_t shaderIndex = 0;
 
             int isUsingTexture = 0;
             int isIgnoringLight = 0;
             int isSolidColor = 0;
             int isHighlighted = 0;
+
+            Material material;
         };
 
         // gpu
@@ -54,8 +51,7 @@ namespace Gep
             glm::mat4 viewMatrix;
             glm::vec3 camPosition;
 
-            GLuint frameBuffer;
-            glm::u32vec2 frameBufferSize;
+            RenderTarget target;
         };
 
         // gpu
@@ -66,42 +62,22 @@ namespace Gep
             float intensity;
         };
 
-        // gpu
-        struct Vertex
-        {
-            glm::vec3 position{};
-            glm::vec3 normal{};
-            glm::vec2 texCoord{};
-        };
-
-        // cpu
-        struct Mesh
-        {
-            std::vector<Vertex> vertices;
-            std::vector<uint32_t> indices;
-        };
-
-        // cpu
-        struct Texture
-        {
-            static Texture FromFile(const std::filesystem::path& path);
-
-            std::vector<uint8_t> data;
-
-            uint32_t width = 0;
-            uint32_t height = 0;
-            uint32_t channels = 0;
-        };
-
     public:
         Renderer();
 
         size_t LoadShader(const Shader&);
         size_t LoadTexture(const Texture&);
-        size_t LoadMaterial(const PBRMaterial&);
         size_t LoadMesh(const Mesh&);
 
-        void AddObject(const ObjectRenderInfo&); // contains model, material, etc
+        template <typename Type>
+        using KeyedVectorView = std::vector<std::pair<size_t, const Type*>>;
+
+        KeyedVectorView<Shader> GetLoadedShaders()   const;   // returns a view of all loaded shaders
+        KeyedVectorView<Texture> GetLoadedTextures()  const;  // returns a view of all loaded textures
+        KeyedVectorView<Material> GetLoadedMaterials() const; // returns a view of all loaded materials
+        KeyedVectorView<Mesh> GetLoadedMeshes() const;    // returns a view of all loaded meshes
+
+        void AddObject(size_t shaderID, size_t meshID, const ObjectRenderInfo&); // contains model, material, etc
         void AddLight(const LightRenderInfo&);   // contains position, brightness, etc
         void AddCamera(const CameraRenderInfo&); // contains perspective, view, etc
 
@@ -126,17 +102,28 @@ namespace Gep
             uint32_t instanceCount{};      // the amount of this mesh to be rendered
         };
 
+        struct Material_Internal
+        {
+            Material material;
+
+            GLuint colorTexture;
+            GLuint aoTexture;  // ambient occlusion
+            GLuint roughnessTexture;
+            GLuint metalnessTexture;
+        };
+
         struct Shader_Internal
         {
             Shader shader; // the shader that was given
 
-            GLuint commandBuffer = 0;    // opengl handle, contains all draw commands, generated for each mesh
-            size_t drawCommandCount = 0; // the amount of draw commands 
+            GLuint commandBuffer = 0;                         // opengl handle, contains all draw commands, generated for each mesh
+            size_t drawCommandCount = 0;                      // the amount of draw commands 
+            std::vector<ObjectRenderInfo> objectRenderInfos; // the objects being drawn with this shader
         };
 
         struct Texture_Internal
         {
-            Texture texure;
+            Texture texture;
 
             GLuint handle;
         };
@@ -146,7 +133,7 @@ namespace Gep
         void SetupLightSSBO();  // prepares mLightSSBO to be used by its associated commit function
         void SetupCameraSSBO(); // prepares mCameraSSBO to be used by its associated commit function
 
-        void CommitObjectInfo();   // sends all collected object info to the gpu
+        void CommitObjectInfo(Shader_Internal& shader);   // sends all collected object info to the gpu
         void CommitLightInfo();    // sends all collected light info to the gpu
         void CommitCameraInfo();   // sends all collected camera info to the gpu
         void CommitDrawCommands(Shader_Internal& shaderData); // sends all of the collected draw commands to the gpu
@@ -157,10 +144,10 @@ namespace Gep
     private:
         Gep::keyed_vector<Mesh_Internal> mMeshes;      // all of the mesh data that has been loaded
         Gep::keyed_vector<Shader_Internal> mShaders;   // all of the shader programs that have been loaded
-        Gep::keyed_vector<PBRMaterial> mMaterials;     // all of the materials that have been loaded
+        Gep::keyed_vector<Material_Internal> mMaterials;     // all of the materials that have been loaded
         Gep::keyed_vector<Texture_Internal> mTextures; // all of the textures that have been loaded
 
-        std::vector<ObjectRenderInfo> mObjectRenderInfos; // all objects the are queued to be drawn, passed directly to the gpu
+        //std::vector<ObjectRenderInfo> objectRenderInfos; // all objects the are queued to be drawn, passed directly to the gpu
         std::vector<LightRenderInfo>  mLightRenderInfos;  // all lights that are queued to be drawn, passed directly to the gpu
         std::vector<CameraRenderInfo> mCameraRenderInfos; // all cameras that are queued to be drawn to, passed directly to the gpu
 

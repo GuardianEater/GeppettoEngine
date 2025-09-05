@@ -49,13 +49,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(ProjectDir)dependencies\glm\include;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine;$(ProjectDir)dependencies\nlohmann\include;$(ProjectDir)dependencies\ImGuizmo;$(ProjectDir)dependencies\sol2\include;$(ProjectDir)dependencies\soloud\include;$(ProjectDir)dependencies\opencv\include;$(ProjectDir)dependencies\assimp\include;$(ProjectDir)dependencies\opencv\include</IncludePath>
     <SourcePath>$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\lua;$(SourcePath)</SourcePath>
-    <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(ProjectDir)dependencies\soloud\lib;$(SolutionDir)x64\Debug;$(ProjectDir)dependencies\assimp\lib\x64;$(ProjectDir)dependencies\opencv\x64\vc16\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(ProjectDir)dependencies\soloud\lib;$(SolutionDir)x64\Debug;$(ProjectDir)dependencies\assimp\lib;$(ProjectDir)dependencies\opencv\lib;$(LibraryPath)</LibraryPath>
     <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(ProjectDir)dependencies\glm\include;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\lua;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine;$(ProjectDir)dependencies\nlohmann\include;$(ProjectDir)dependencies\ImGuizmo;$(ProjectDir)dependencies\sol2\include;$(ProjectDir)dependencies\soloud\include;$(ProjectDir)dependencies\opencv\include;$(ProjectDir)dependencies\assimp\include;</IncludePath>
     <SourcePath>$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\lua;$(SourcePath)</SourcePath>
-    <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(ProjectDir)dependencies\soloud\lib;$(SolutionDir)x64\Debug;$(ProjectDir)dependencies\assimp\lib\x64;$(ProjectDir)dependencies\opencv\x64\vc16\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(ProjectDir)dependencies\soloud\lib;$(SolutionDir)x64\Debug;$(ProjectDir)dependencies\assimp\lib;$(ProjectDir)dependencies\opencv\lib;$(LibraryPath)</LibraryPath>
     <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -231,7 +231,7 @@
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
-    <ClCompile Include="ObjMesh.cpp" />
+    <ClCompile Include="Model.cpp" />
     <ClCompile Include="OS_Windows.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -245,6 +245,7 @@
     <ClCompile Include="RenderResource.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="IRenderTarget.cpp" />
+    <ClCompile Include="RenderTarget.cpp" />
     <ClCompile Include="RenderTargetImgui.cpp" />
     <ClCompile Include="RenderTargetTexture.cpp" />
     <ClCompile Include="RenderTargetWindow.cpp" />
@@ -257,10 +258,12 @@
     <ClInclude Include="Archetypes.h" />
     <ClInclude Include="HeirarchyStorage.hpp" />
     <ClInclude Include="JsonHelp.hpp" />
-    <ClInclude Include="ObjMesh.hpp" />
+    <ClInclude Include="Material.hpp" />
+    <ClInclude Include="Model.hpp" />
     <ClInclude Include="OS.hpp" />
     <ClInclude Include="Renderer.hpp" />
     <ClInclude Include="RenderResource.hpp" />
+    <ClInclude Include="RenderTarget.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
     <ClCompile Include="ScriptingResource.cpp" />
     <ClCompile Include="ScriptingSystem.cpp" />
@@ -276,13 +279,13 @@
     <ClCompile Include="SoundSystem.cpp" />
     <ClCompile Include="SphereMesh.cpp" />
     <ClCompile Include="StringHelp.cpp" />
+    <ClCompile Include="Texture.cpp" />
     <ClCompile Include="TypeID.cpp" />
     <ClCompile Include="WindowSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ActiveCameraComponent.hpp" />
     <ClInclude Include="Affine.hpp" />
-    <ClInclude Include="AxisMesh.hpp" />
     <ClInclude Include="BinarySerializer.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="CameraComponent.hpp" />
@@ -311,8 +314,7 @@
     <ClInclude Include="ImGuizmoSystem.hpp" />
     <ClInclude Include="LightComponent.hpp" />
     <ClInclude Include="Logger.hpp" />
-    <ClInclude Include="Material.hpp" />
-    <ClInclude Include="MeshComponent.hpp" />
+    <ClInclude Include="ModelComponent.hpp" />
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="QuadMesh.hpp" />
     <ClInclude Include="reflect-cpp-extra.hpp" />
@@ -353,6 +355,7 @@
     <ClInclude Include="STLHelp.hpp" />
     <ClInclude Include="StringHelp.hpp" />
     <ClInclude Include="Tags.hpp" />
+    <ClInclude Include="Texture.hpp" />
     <ClInclude Include="TextureComponent.hpp" />
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="TypeID.hpp" />

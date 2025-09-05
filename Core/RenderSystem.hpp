@@ -25,7 +25,7 @@
 // client
 namespace Client
 {
-    struct Mesh;
+    struct ModelComponent;
     struct Texture;
     struct Light;
     struct Camera;
@@ -44,8 +44,8 @@ namespace Client
 
     private:
         bool mDrawColliders = false;
-        void OnModelAdded(const Gep::Event::ComponentAdded<Mesh>& event);
-        void OnMeshEditorRender(const Gep::Event::ComponentEditorRender<Mesh>& event);
+        void OnModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event);
+        void OnMeshEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event);
         void OnTextureEditorRender(const Gep::Event::ComponentEditorRender<Texture>& event);
         void OnLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event);
         void OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event);

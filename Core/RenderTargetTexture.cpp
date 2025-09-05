@@ -62,7 +62,7 @@ namespace Gep
     void RenderTargetTexture::Clear(const glm::vec3& color)
     {
         glClearColor(color.r, color.g, color.b, 1.0f);
-        glClearDepth(1);
+        glClearDepth(1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 

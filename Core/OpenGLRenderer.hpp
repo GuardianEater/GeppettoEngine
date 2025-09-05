@@ -23,6 +23,8 @@
 #include "BVHTree.hpp"
 #include "IRenderTarget.hpp"
 
+#include "Model.hpp"
+
 namespace Gep
 {
     struct alignas(16) PBRMaterial
@@ -70,10 +72,8 @@ namespace Gep
     public:
 
         // loads resources into the renderer
-        void LoadMesh(const std::string& name, const Mesh& mesh);
-        void LoadMesh(const std::filesystem::path& path); // path.string() will be used as the name
+        void AddModel(const std::string& name, const Gep::Model& model);
         uint64_t GetMesh(const std::string& name) const;
-        uint64_t GetOrLoadMesh(const std::string& path); // if this is a predefined name it will still work. Must be given a path otherwise.
 
         bool IsMeshLoaded(const std::string& name) const;
 
@@ -146,7 +146,7 @@ namespace Gep
             GLuint mVertexArrayObject = num_max<GLuint>();
             GLuint mVertexBuffer = num_max<GLuint>();
             GLuint mFaceBuffer = num_max<GLuint>();
-            size_t mFaceCount{};
+            size_t mIndexCount{};
         };
 
     private:

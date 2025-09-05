@@ -229,6 +229,12 @@ namespace Gep
         return folderPath;
     }
 
+    void SetDynamicLibraryDirectory(const std::filesystem::path& folder)
+    {
+        //SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+        //DLL_DIRECTORY_COOKIE cookie = AddDllDirectory(folder.wstring().c_str());
+    }
+
     void OpenInExplorer(const std::filesystem::path& path)
     {
         ShellExecuteW(nullptr, L"open", path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
@@ -251,6 +257,11 @@ namespace Gep
     std::filesystem::path DialogBox_PickFolder(const std::filesystem::path& initialDir)
     {
         throw "The function DialogBox_PickFolder does not have a definition on this OS";
+    }
+
+    void SetDynamicLibraryDirectory(const std::filesystem::path& folder)
+    {
+        throw "The function SetDynamicLibraryDirectory does not have a definition on this OS";
     }
 } // namespace Gep
 
