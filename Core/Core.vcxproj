@@ -315,7 +315,7 @@
     <ClInclude Include="ImGuizmoSystem.hpp" />
     <ClInclude Include="LightComponent.hpp" />
     <ClInclude Include="Logger.hpp" />
-    <ClInclude Include="MeshComponent.hpp" />
+    <ClInclude Include="ModelComponent.hpp" />
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="QuadMesh.hpp" />
     <ClInclude Include="reflect-cpp-extra.hpp" />

@@ -14,7 +14,7 @@
 #include <ImGuizmo.h>
 
 #include "Transform.hpp"
-#include "MeshComponent.hpp"
+#include "ModelComponent.hpp"
 #include "CameraComponent.hpp"
 #include "TextureComponent.hpp"
 #include "LightComponent.hpp"

@@ -359,7 +359,7 @@
     <ClInclude Include="RigidBody.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
-    <ClInclude Include="MeshComponent.hpp">
+    <ClInclude Include="ModelComponent.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
     <ClInclude Include="Events.hpp">

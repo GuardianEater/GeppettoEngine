@@ -12,7 +12,7 @@
 
 #include "CameraComponent.hpp"
 #include "Transform.hpp"
-#include "MeshComponent.hpp"
+#include "ModelComponent.hpp"
 #include "CubeCollider.hpp"
 #include "SphereCollider.hpp"
 #include "LightComponent.hpp"
