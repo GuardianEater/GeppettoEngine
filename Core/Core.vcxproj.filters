@@ -596,9 +596,6 @@
     <ClInclude Include="RenderTarget.hpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClInclude>
-    <ClInclude Include="AssetLocation.hpp">
-      <Filter>Backend\Tools</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">

@@ -116,7 +116,6 @@
     <ClCompile Include="CollisionResource.cpp" />
     <ClCompile Include="CollisionSystem.cpp" />
     <ClCompile Include="Core.cpp" />
-    <ClInclude Include="AssetLocation.hpp" />
     <ClInclude Include="BVHTree.hpp" />
     <ClInclude Include="CollisionResource.hpp" />
     <ClInclude Include="CubeCollider.hpp" />
