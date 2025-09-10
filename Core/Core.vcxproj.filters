@@ -282,9 +282,6 @@
     <ClCompile Include="Shader.cpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer.cpp">
-      <Filter>Backend\Rendering\NewRenderAPI</Filter>
-    </ClCompile>
     <ClCompile Include="Texture.cpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClCompile>
@@ -293,6 +290,9 @@
     </ClCompile>
     <ClCompile Include="RenderTarget.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Quaternion.cpp">
+      <Filter>Backend\Tools</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -581,9 +581,6 @@
     <ClInclude Include="Shader.hpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer.hpp">
-      <Filter>Backend\Rendering\NewRenderAPI</Filter>
-    </ClInclude>
     <ClInclude Include="Texture.hpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClInclude>
@@ -595,6 +592,12 @@
     </ClInclude>
     <ClInclude Include="RenderTarget.hpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="Quaternion.hpp">
+      <Filter>Backend\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureLibrary.hpp">
+      <Filter>Client</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

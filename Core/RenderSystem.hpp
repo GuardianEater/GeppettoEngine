@@ -45,7 +45,7 @@ namespace Client
     private:
         bool mDrawColliders = false;
         void OnModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event);
-        void OnMeshEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event);
+        void OnModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event);
         void OnTextureEditorRender(const Gep::Event::ComponentEditorRender<Texture>& event);
         void OnLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event);
         void OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event);

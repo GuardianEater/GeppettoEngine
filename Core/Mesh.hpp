@@ -15,14 +15,23 @@
 
 namespace Gep
 {
-    /**
-     * Typical Mesh.
-     */
+    // based on International Journal of Algebra, Vol. 2, 2008, no. 19,905 - 918
+    // VQS-transformation basically scales r by s, rotates the outcome by q, and then
+    // translates the latter by v.
+    struct VQS // VQM
+    {
+        glm::vec4 position; // translation
+        glm::quat rotation; // rotation
+        float scale; // uniform scaling factor
+    };
+
     struct Vertex
     {
         glm::vec3 position{};
         glm::vec3 normal{};
         glm::vec2 texCoord{};
+        std::array<uint8_t, 4> boneIndices;
+        std::array<float, 4> boneWeights;
     };
 
     struct Mesh
@@ -31,6 +40,7 @@ namespace Gep
 
         std::vector<Vertex> vertices{};
         std::vector<uint32_t> indices{};
+        uint32_t materialIndex{}; // the material inside of model that this 
 
         AABB boundingBox{};
 
@@ -59,6 +69,37 @@ namespace Gep
                 vertex.position = (vertex.position - center) / maxDim;
             }
         }
+    };
+
+    struct Bone
+    {
+        std::string name = "Unnamed";
+
+        uint32_t parentIndex;
+        VQS toModelFromBone; // from the bind pose
+        VQS toBoneFromModel; // inverse of the previous
+    };
+
+    struct Skeleton
+    {
+        std::vector<Bone> bones; // must always be sorted
+    };
+
+    struct KeyFrame
+    {
+        float time; // time since the start of the animation
+        VQS toParentFromBone;
+    };
+
+    struct Track
+    {
+        std::vector<KeyFrame> keyFrames;
+    };
+
+    struct Animation
+    {
+        float duration; // total duration of the animations
+        std::vector<Track> tracks;
     };
 }
 

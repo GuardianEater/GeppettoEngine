@@ -239,9 +239,9 @@
     </ClCompile>
     <ClCompile Include="PhysicsSystem.cpp" />
     <ClCompile Include="QuadMesh.cpp" />
+    <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="RelationSystem.cpp" />
     <ClCompile Include="OpenGLRenderer.cpp" />
-    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RenderResource.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="IRenderTarget.cpp" />
@@ -261,7 +261,7 @@
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="Model.hpp" />
     <ClInclude Include="OS.hpp" />
-    <ClInclude Include="Renderer.hpp" />
+    <ClInclude Include="Quaternion.hpp" />
     <ClInclude Include="RenderResource.hpp" />
     <ClInclude Include="RenderTarget.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
@@ -357,6 +357,7 @@
     <ClInclude Include="Tags.hpp" />
     <ClInclude Include="Texture.hpp" />
     <ClInclude Include="TextureComponent.hpp" />
+    <ClInclude Include="TextureLibrary.hpp" />
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="TypeID.hpp" />
     <ClInclude Include="TypeList.hpp" />

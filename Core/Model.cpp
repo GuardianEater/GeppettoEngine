@@ -11,64 +11,82 @@
 
 namespace Gep
 {
-    static void ProcessNode(const aiNode* node, const aiScene* scene, Gep::Mesh& mesh)
+    // moves all data from the aiScene into the internal model format
+    static void LoadMaterials(Gep::Model& model, const aiScene* scene)
     {
-        for (unsigned int i = 0; i < node->mNumMeshes; ++i)
+        model.materials.reserve(scene->mNumMaterials);
+
+        for (unsigned int i = 0; i < scene->mNumMaterials; ++i)
         {
-            aiMesh* ai_mesh = scene->mMeshes[node->mMeshes[i]];
+            Material& material = model.materials.emplace_back();
+            aiMaterial* assimpMaterial = scene->mMaterials[i];
 
-            // Convert vertices
-            size_t vertex_offset = mesh.vertices.size();
-            for (unsigned int v = 0; v < ai_mesh->mNumVertices; ++v)
-            {
-                Gep::Vertex vertex;
+            aiColor3D diffuseColor(1.f, 1.f, 1.f);
+            if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor))
+                material.color = { diffuseColor.r, diffuseColor.g, diffuseColor.b };
 
-                vertex.position = {
-                    ai_mesh->mVertices[v].x,
-                    ai_mesh->mVertices[v].y,
-                    ai_mesh->mVertices[v].z
-                };
-
-                vertex.normal = ai_mesh->HasNormals()
-                    ? glm::vec3{ ai_mesh->mNormals[v].x, ai_mesh->mNormals[v].y, ai_mesh->mNormals[v].z }
-                    : glm::vec3{ 0.0f, 0.0f, 0.0f };
-
-                ai_mesh->mMaterialIndex;
-
-                vertex.texCoord = (ai_mesh->HasTextureCoords(0))
-                    ? glm::vec2{ ai_mesh->mTextureCoords[0][v].x, ai_mesh->mTextureCoords[0][v].y }
-                    : glm::vec2{ 0.0f, 0.0f };
-
-                mesh.vertices.push_back(vertex);
-            }
-
-            // Convert indices
-            for (unsigned int f = 0; f < ai_mesh->mNumFaces; ++f)
-            {
-                const aiFace& face = ai_mesh->mFaces[f];
-
-                mesh.indices.push_back(static_cast<uint32_t>(vertex_offset + face.mIndices[0]));
-                mesh.indices.push_back(static_cast<uint32_t>(vertex_offset + face.mIndices[1]));
-                mesh.indices.push_back(static_cast<uint32_t>(vertex_offset + face.mIndices[2]));
-            }
+            aiString texPath;
+            if (aiReturn_SUCCESS == assimpMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &texPath))
+                material.diffuseTexturePath = texPath.C_Str();
         }
+    }
 
-        // Recursively process child nodes
-        for (unsigned int i = 0; i < node->mNumChildren; ++i)
+    // normalizes a model so it fits inside of a unit cube
+    static void NormalizeModel(Gep::Model& model)
+    {
+
+    }
+
+    static void LoadVertices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
+    {
+        mesh.vertices.reserve(assimpMesh->mNumVertices);
+
+        for (unsigned int i = 0; i < assimpMesh->mNumVertices; ++i) {
+            Vertex& v = mesh.vertices.emplace_back();
+
+            v.position = { assimpMesh->mVertices[i].x, assimpMesh->mVertices[i].y, assimpMesh->mVertices[i].z };
+
+            if (assimpMesh->HasNormals())
+                v.normal = { assimpMesh->mNormals[i].x, assimpMesh->mNormals[i].y, assimpMesh->mNormals[i].z };
+
+            if (assimpMesh->HasTextureCoords(0))
+                v.texCoord = { assimpMesh->mTextureCoords[0][i].x, assimpMesh->mTextureCoords[0][i].y };
+        }
+    }
+
+    static void LoadIndices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
+    {
+        for (unsigned int i = 0; i < assimpMesh->mNumFaces; ++i) 
         {
-            ProcessNode(node->mChildren[i], scene, mesh);
+            const aiFace& face = assimpMesh->mFaces[i];
+
+            for (unsigned int j = 0; j < face.mNumIndices; ++j)
+                mesh.indices.push_back(face.mIndices[j]);
+        }
+    }
+
+    static void LoadMeshes(Gep::Model& model, const aiScene* scene)
+    {
+        model.meshes.reserve(scene->mNumMeshes);
+
+        for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
+        {
+            Mesh& mesh = model.meshes.emplace_back();
+
+            LoadVertices(mesh, scene->mMeshes[i]);
+            LoadIndices(mesh, scene->mMeshes[i]);
+
+            mesh.materialIndex = scene->mMeshes[i]->mMaterialIndex;
         }
     }
 
     Model Model::FromFile(const std::filesystem::path & path)
     {
-        Model model;
-
         Assimp::Importer importer;
-        const aiScene* scene = importer.ReadFile(
-            path.string(),
+        const aiScene* scene = importer.ReadFile(path.string(),
             aiProcess_Triangulate |
             aiProcess_GenNormals |
+            aiProcess_FlipUVs |
             aiProcess_JoinIdenticalVertices |
             aiProcess_ImproveCacheLocality |
             aiProcess_SortByPType |
@@ -82,11 +100,10 @@ namespace Gep
             return {};
         }
 
-        Gep::Mesh mesh;
-        ProcessNode(scene->mRootNode, scene, mesh);
+        Gep::Model model;
 
-        mesh.Normalize();
-        model.meshes.push_back(mesh);
+        LoadMeshes(model, scene);
+        LoadMaterials(model, scene);
 
         return model;
     }

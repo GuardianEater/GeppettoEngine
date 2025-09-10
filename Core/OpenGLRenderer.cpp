@@ -18,7 +18,6 @@
 #undef min
 #undef max
 
-#include "Renderer.hpp"
 namespace Gep
 {
     enum GLVertexAttributeLocation : GLint
@@ -53,37 +52,72 @@ namespace Gep
     static GLuint IconToTexture(HICON icon);
     static GLuint BitmapToTexture(HBITMAP bitmap);
 
+    void OpenGLRenderer::AddModelFromFile(const std::string& path)
+    {
+        if (mModelNameToID.contains(path))
+        {
+            Gep::Log::Error("Cannot load mesh: [", path, "] a mesh with that name has already been loaded");
+            return;
+        }
+
+        Model model = Model::FromFile(path);
+
+        uint64_t id = mModelHandles.emplace();
+        mModelNameToID[path] = id;
+        ModelGPUHandle& modelHandle = mModelHandles.at(id); // create a handle for this model
+
+        for (const auto& mesh : model.meshes)
+        {
+            MeshGPUHandle& meshHandle = modelHandle.meshHandles.emplace_back(); // create a handle for this mesh
+
+            const std::filesystem::path& diffuseTexturePath = model.materials.at(mesh.materialIndex).diffuseTexturePath;
+            std::filesystem::path root(path);
+            root = root.parent_path();
+
+            meshHandle.materialHandle.diffuseTexture = GetOrLoadTexture(root / diffuseTexturePath);
+            meshHandle.GenVertexBuffer(mesh);
+            meshHandle.GenIndexBuffer(mesh);
+            meshHandle.BindBuffers();
+        }
+    }
+
     void OpenGLRenderer::AddModel(const std::string& name, const Gep::Model& model)
     {
-        if (mMeshNameToID.contains(name))
+        if (mModelNameToID.contains(name))
         {
             Gep::Log::Error("Cannot load mesh: [", name, "] a mesh with that name has already been loaded");
             return;
         }
 
-        uint64_t id = mMeshDatas.emplace();
-        mMeshNameToID[name] = id;
-        MeshData& meshData = mMeshDatas.at(id);
+        uint64_t id = mModelHandles.emplace();
+        mModelNameToID[name] = id;
+        ModelGPUHandle& modelHandle = mModelHandles.at(id);
 
-        meshData.GenVertexBuffer(model.meshes.front());
-        meshData.GenFaceBuffer(model.meshes.front());
-        meshData.BindBuffers();
+        for (const Mesh& mesh : model.meshes)
+        {
+            MeshGPUHandle& meshHandle = modelHandle.meshHandles.emplace_back();
+
+            meshHandle.materialHandle.diffuseTexture = GetErrorTexture();
+            meshHandle.GenVertexBuffer(mesh);
+            meshHandle.GenIndexBuffer(mesh);
+            meshHandle.BindBuffers();
+        }
     }
 
-    uint64_t OpenGLRenderer::GetMesh(const std::string& name) const
+    uint64_t OpenGLRenderer::GetModel(const std::string& name) const
     {
-        if (!mMeshNameToID.contains(name))
+        if (!mModelNameToID.contains(name))
         {
             Gep::Log::Error("Cannot get mesh: [", name, "] a mesh with that name has not been loaded");
             return 0;
         }
 
-        return mMeshNameToID.at(name);
+        return mModelNameToID.at(name);
     }
 
     bool OpenGLRenderer::IsMeshLoaded(const std::string& name) const
     {
-        return mMeshNameToID.contains(name);
+        return mModelNameToID.contains(name);
     }
 
     void OpenGLRenderer::SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
@@ -156,19 +190,26 @@ namespace Gep
         mWireframeMode = !mWireframeMode;
     }
 
-    void OpenGLRenderer::UnloadMesh(const std::string& name)
+    void OpenGLRenderer::UnloadModel(const std::string& name)
     {
-        if (!mMeshNameToID.contains(name))
+        if (!mModelNameToID.contains(name))
         {
             Gep::Log::Error("Cannot unload mesh: [", name, "] a mesh with that name has not been loaded");
             return;
         }
 
-        uint64_t id = mMeshNameToID.at(name);
-        MeshData& meshData = mMeshDatas.at(id);
-        meshData.DeleteBuffers();
-        mMeshDatas.erase(id);
-        mMeshNameToID.erase(name);
+        // aquire the model id from the name
+        uint64_t id = mModelNameToID.at(name);
+        ModelGPUHandle& modelHandle = mModelHandles.at(id);
+
+        // delete all meshes owned by the model
+        for (MeshGPUHandle& meshHandle : modelHandle.meshHandles)
+        {
+            meshHandle.DeleteBuffers();
+        }
+
+        mModelHandles.erase(id);
+        mModelNameToID.erase(name);
     }
 
     void OpenGLRenderer::BackfaceCull(bool enabled)
@@ -218,7 +259,7 @@ namespace Gep
     {
         std::vector<std::string> meshes;
 
-        for (const auto& [name, id] : mMeshNameToID)
+        for (const auto& [name, id] : mModelNameToID)
         {
             meshes.emplace_back(name);
         }
@@ -345,7 +386,14 @@ namespace Gep
 
     void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)
     {
-        if (!std::filesystem::exists(texturePath)) {
+        if (mTextures.contains(texturePath))
+        {
+            Gep::Log::Error("Failed to load texture: [", texturePath.string(), "] a texture with that name is already loaded.");
+            return;
+        }
+
+        if (!std::filesystem::exists(texturePath)) 
+        {
             Gep::Log::Error("Cannot load texture: [", texturePath.string(), "] does not exist");
             return;
         }
@@ -358,10 +406,12 @@ namespace Gep
 
         int required_channels = 4; // Force RGBA
         unsigned char* image = stbi_load(texturePath.string().c_str(), &width, &height, &channels, required_channels);
-        if (!image) {
+        if (!image) 
+        {
             Gep::Log::Error("Failed to load texture: [", texturePath.string(), "]");
             return;
         }
+
 
         GLuint& texture = mTextures[texturePath];
         glGenTextures(1, &texture);
@@ -386,7 +436,7 @@ namespace Gep
         if (!mTextures.contains(texturePath))
         {
             Gep::Log::Error("Cannot get texture: [", texturePath, "] a texture with that name has not been loaded");
-            return 0;
+            return GetErrorTexture();
         }
 
         return mTextures.at(texturePath);
@@ -396,6 +446,9 @@ namespace Gep
     {
         if (!mTextures.contains(texturePath))
             LoadTexture(texturePath);
+
+        if (!mTextures.contains(texturePath))
+            return GetErrorTexture();
 
         return mTextures.at(texturePath);
     }
@@ -417,15 +470,15 @@ namespace Gep
         return mErrorTexture;
     }
 
-    void OpenGLRenderer::DrawMesh(uint64_t meshID)
+    void OpenGLRenderer::DrawModel(uint64_t modelID)
     {
-        if (!mMeshDatas.contains(meshID))
+        if (!mModelHandles.contains(modelID))
         {
-            Gep::Log::Error("Cannot draw mesh: [", meshID, "] a mesh with that id has not been loaded");
+            Gep::Log::Error("Cannot draw mesh: [", modelID, "] a mesh with that id has not been loaded");
             return;
         }
 
-        const MeshData& md = mMeshDatas.at(meshID);
+        const ModelGPUHandle& modelHandle = mModelHandles.at(modelID);
 
         if (mNextMeshIsBackfaceCulling)
         {
@@ -437,24 +490,39 @@ namespace Gep
 
         if (mNextMeshIsHighlighted)
         {
-            mHighlightShader->Use([&]() 
+            mHighlightShader->Bind();
+
+            for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
             {
-                glBindVertexArray(md.mVertexArrayObject);
+                glBindVertexArray(meshHandle.mVertexArrayObject);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                glDrawElements(GL_TRIANGLES, md.mIndexCount, GL_UNSIGNED_INT, 0);
+                glDrawElements(GL_TRIANGLES, meshHandle.mIndexCount, GL_UNSIGNED_INT, 0);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
                 glBindVertexArray(0);
-            });
+            }
+
+            mHighlightShader->Unbind();
         }
 
-        mActiveShader->Use([&]() 
+        mActiveShader->Bind();
+
+        for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
         {
-            glBindVertexArray(md.mVertexArrayObject);
+            if (meshHandle.materialHandle.diffuseTexture != num_max<GLuint>())
+                glBindTexture(GL_TEXTURE_2D, meshHandle.materialHandle.diffuseTexture);
+
+            glBindVertexArray(meshHandle.mVertexArrayObject);
             if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            glDrawElements(GL_TRIANGLES, md.mIndexCount, GL_UNSIGNED_INT, 0);
+
+            glDrawElements(GL_TRIANGLES, meshHandle.mIndexCount, GL_UNSIGNED_INT, 0);
             if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             glBindVertexArray(0);
-        });
+
+            if (meshHandle.materialHandle.diffuseTexture != num_max<GLuint>())
+                glBindTexture(GL_TEXTURE_2D, 0);
+        }
+
+        mActiveShader->Unbind();
 
         mNextMeshIsWireframe = false;
         mNextMeshIsBackfaceCulling = true;
@@ -505,6 +573,11 @@ namespace Gep
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CameraUniforms) * 1, nullptr, GL_DYNAMIC_DRAW);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, mCameraUniformsSSBO);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    }
+
+    void OpenGLRenderer::DrawMesh(const MeshGPUHandle& meshHandle)
+    {
+
     }
 
     HICON GetIcon(const std::filesystem::path& iconPath)
@@ -566,23 +639,23 @@ namespace Gep
         return BitmapToTexture(iconInfo.hbmColor);
     }
 
-    void OpenGLRenderer::MeshData::GenVertexBuffer(const Mesh& mesh)
+    void OpenGLRenderer::MeshGPUHandle::GenVertexBuffer(const Mesh& mesh)
     {
         glGenBuffers(1, &mVertexBuffer);
         glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
         glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh.vertices.size(), mesh.vertices.data(), GL_STATIC_DRAW);
     }
 
-    void OpenGLRenderer::MeshData::GenFaceBuffer(const Mesh& mesh)
+    void OpenGLRenderer::MeshGPUHandle::GenIndexBuffer(const Mesh& mesh)
     {
-        glGenBuffers(1, &mFaceBuffer);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mFaceBuffer);
+        glGenBuffers(1, &mIndexBuffer);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * mesh.indices.size(), mesh.indices.data(), GL_STATIC_DRAW);
 
         mIndexCount = mesh.indices.size();
     }
 
-    void OpenGLRenderer::MeshData::BindBuffers()
+    void OpenGLRenderer::MeshGPUHandle::BindBuffers()
     {
         glGenVertexArrays(1, &mVertexArrayObject);
         glBindVertexArray(mVertexArrayObject);
@@ -597,21 +670,21 @@ namespace Gep
         glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
         glEnableVertexAttribArray(2);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mFaceBuffer);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer);
 
         glBindVertexArray(0);
     }
 
-    void OpenGLRenderer::MeshData::DeleteBuffers()
+    void OpenGLRenderer::MeshGPUHandle::DeleteBuffers()
     {
-        glDeleteBuffers(1, &mFaceBuffer);
+        glDeleteBuffers(1, &mIndexBuffer);
         glDeleteBuffers(1, &mVertexBuffer);
         glDeleteVertexArrays(1, &mVertexArrayObject);
 
 #ifdef _DEBUG
         mVertexArrayObject = num_max<GLuint>();
         mVertexBuffer = num_max<GLuint>();
-        mFaceBuffer = num_max<GLuint>();
+        mIndexBuffer = num_max<GLuint>();
 #endif // _DEBUG
     }
 }

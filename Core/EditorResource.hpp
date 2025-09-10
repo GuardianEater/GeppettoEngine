@@ -35,6 +35,10 @@ namespace Client
 		requires std::invocable<Func, const std::filesystem::path&>
 		void AssetBrowserDropTarget(const std::vector<std::string>& allowedExtension, Func&& onDrop) const;
 
+		template <typename Func>
+		requires std::invocable<Func, const std::filesystem::path&>
+		void AssetBrowserDropTarget(Func&& onDrop) const;
+
 	private:
 		std::vector<Gep::Entity> mHierarchyEntities; // the order of the entities in the hierarchy
 
@@ -78,6 +82,29 @@ namespace Client
 					Gep::Log::Warning("The drag drop destination only accepts files of type: ", lowercaseExtensions, " The given extension was: ", droppedPath.extension());
 				}
 
+			}
+
+			ImGui::EndDragDropTarget();
+		}
+	}
+
+	template<typename Func>
+		requires std::invocable<Func, const std::filesystem::path&>
+	inline void EditorResource::AssetBrowserDropTarget(Func&& onDrop) const
+	{
+		std::string payloadkey = "ASSET_BROWSER";
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadkey.c_str()))
+			{
+				IM_ASSERT(payload->DataSize == sizeof(char) * (strlen((const char*)payload->Data) + 1));
+				const char* path = (const char*)payload->Data;
+
+				// get the dropped filepath and get the lowercase extension out of it
+				std::filesystem::path droppedPath(path);
+
+				onDrop(droppedPath);
 			}
 
 			ImGui::EndDragDropTarget();

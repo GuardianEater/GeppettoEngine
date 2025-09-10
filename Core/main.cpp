@@ -48,7 +48,7 @@
 #include "OS.hpp"
 
 int main()  
-#ifndef _DEBUG
+#ifdef _DEBUG
 try
 #endif
 {
@@ -117,7 +117,7 @@ try
 
     em.Exit();
 }
-#ifndef _DEBUG
+#ifdef _DEBUG
 catch (const std::exception& e)
 {
     Gep::Log::Error("Caught exception: ", e.what());

@@ -138,14 +138,15 @@ vec3 CalculatePBRLightingTotal()
   {
     color += CalculatePBRLighting(lights[i], n, objectColor);
   }
-  vec3 ambient = vec3(0.03) * objectColor * objectUniforms[objectIndex].material.ao;
+
+  vec3 ambient = vec3(0.2) * objectColor * objectUniforms[objectIndex].material.ao;
   color += ambient;
 
   // HDR tone mapping
-  color /= (color + vec3(1.0));
+  //color /= (color + vec3(1.0));
 
-  // gamma correction
-  color = pow(color, vec3(1.0 / 2.2));
+  //gamma correction
+  //color = pow(color, vec3(1.0 / 2));
 
   return color;
 }

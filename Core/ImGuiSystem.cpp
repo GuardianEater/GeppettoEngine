@@ -442,7 +442,8 @@ namespace Client
 
         for (const auto& path : event.droppedFiles)
         {
-            std::filesystem::copy(path, mAssetBrowserPath, std::filesystem::copy_options::recursive);
+            const std::filesystem::path destination = mAssetBrowserPath / path.filename();
+            std::filesystem::copy(path, destination, std::filesystem::copy_options::recursive);
         }
 
         ReloadAssetBrowser();
@@ -719,7 +720,7 @@ namespace Client
             ImGui::PopID();
         }
     }
-
+#pragma optimize("", off)
     void ImGuiSystem::DrawAssetBrowser()
     {
         Gep::OpenGLRenderer& renderer = mManager.GetResource<Client::RenderResource>().mRenderer;
@@ -753,7 +754,7 @@ namespace Client
         {
             const auto& entry = mAssetBrowserEntries[i];
             const std::string filename = entry.path().filename().string();
-            const std::string hiddenFilename = "##" + filename;
+            const std::string filenameButHidden = "##" + filename;
             const ImVec2 cursorPos = ImGui::GetCursorScreenPos();
             const std::filesystem::path relativePath = entry.path().lexically_relative(workingDir);
             const GLuint texture = renderer.GetOrLoadIconTexture(relativePath);
@@ -782,7 +783,7 @@ namespace Client
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.3));
 
             ImGui::SetCursorScreenPos(cursorPos);
-            ImGui::Button(hiddenFilename.c_str(), ImVec2(imageSize, imageSize + imageToTextDistance + textSize.y));
+            ImGui::Button(filenameButHidden.c_str(), ImVec2(imageSize, imageSize + imageToTextDistance + textSize.y));
             ImGui::PopStyleColor(4);
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
             {
@@ -796,7 +797,18 @@ namespace Client
                 ImGui::EndDragDropSource();
             }
 
-            if (ImGui::IsItemClicked()) 
+            mEditorResource.AssetBrowserDropTarget([&](const std::filesystem::path& droppedPath)
+            {
+                if (entry.is_directory())
+                {
+                    std::filesystem::path target = std::filesystem::current_path() / droppedPath;
+                    std::filesystem::path destination = entry.path() / droppedPath.filename();
+                    std::filesystem::rename(target, destination);
+                    ReloadAssetBrowser();
+                }
+            });
+
+            if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_::ImGuiMouseButton_Left)) 
             {
                 if (entry.is_directory())
                 {
@@ -856,6 +868,7 @@ namespace Client
 
         ImGui::End();
     }
+#pragma optimize("", on)
 
 
     void ImGuiSystem::DrawToolbar()

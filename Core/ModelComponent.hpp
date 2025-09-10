@@ -18,7 +18,7 @@ namespace Client
 {
     struct ModelComponent
     {
-        std::string meshName{ "Cube" };
+        std::string modelName{ "Cube" };
         bool selected = false;
         bool ignoreLight = false;
 
@@ -30,5 +30,7 @@ namespace Client
         GLuint meshIndex = 0;
         GLuint materialIndex = 0;
         GLuint shaderIndex = 0;
+
+        Gep::Model internalModel;
     };
 }

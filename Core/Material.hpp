@@ -13,12 +13,16 @@
 namespace Gep
 {
     // contains material data for pbr rendering.
-    // std430 compliant.
-    struct alignas(16) Material
+    struct Material
     {
         float ao;        // ambient occlusion
         float roughness;
-        float metalness; float pad0;
-        glm::vec3 color; float pad1;
+        float metalness;
+        glm::vec3 color; // this is a uniform color across an entire mesh, use an image path for more detailed
+
+        std::filesystem::path aoTexturePath;
+        std::filesystem::path roughnessTexturePath;
+        std::filesystem::path metalnessTexturePath;
+        std::filesystem::path diffuseTexturePath;
     };
 }

@@ -39,7 +39,7 @@ namespace Client
     void RenderSystem::Initialize()
     {
         mManager.SubscribeToEvent<Gep::Event::ComponentAdded<ModelComponent>>(this, &RenderSystem::OnModelAdded);
-        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<ModelComponent>>(this, &RenderSystem::OnMeshEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<ModelComponent>>(this, &RenderSystem::OnModelEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Texture>>(this, &RenderSystem::OnTextureEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Light>>(this, &RenderSystem::OnLightEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Camera>>(this, &RenderSystem::OnCameraEditorRender);
@@ -55,7 +55,7 @@ namespace Client
 
         renderer.BackfaceCull();
 
-        renderer.LoadErrorTexture("assets\\textures\\Error.png");
+        renderer.LoadErrorTexture("assets\\textures\\Checker.jpg");
 
         // load all of the default meshes
         {
@@ -153,14 +153,14 @@ namespace Client
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrix = normal,
-                .isUsingTexture = mManager.HasComponent<Texture>(entity),
+                .isUsingTexture = true,
                 .isIgnoringLight = model.ignoreLight,
                 .isSolidColor = false,
                 .isHighlighted = model.selected,
                 .material = material
             };
 
-            uint64_t meshID = renderer.GetMesh(model.meshName);
+            uint64_t meshID = renderer.GetModel(model.modelName);
             uint64_t textureID = Gep::num_max<uint64_t>();
             if (mManager.HasComponent<Texture>(entity))
             {
@@ -179,24 +179,17 @@ namespace Client
             renderer.SetCameraIndex(cameraIndex++);
 
             cam.renderTarget->Bind();
-            cam.renderTarget->Clear({ 0.1f, 0.1f, 0.1f });
+            cam.renderTarget->Clear({ 0.0f, 0.0f, 0.0f });
 
             const glm::vec2 renderSize = cam.renderTarget->GetSize();
 
             size_t objectIndex = 0;
             mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
             {
-                if (mManager.HasComponent<Texture>(entity))
-                {
-                    const Texture& texture = mManager.GetComponent<Texture>(entity);
-                    GLuint textureid = renderer.GetOrLoadTexture(texture.texturePath);
-                    renderer.SetTexture(textureid);
-                }
-
                 renderer.SetHighlight(model.selected);
                 renderer.SetObjectIndex(objectIndex++);
-                uint64_t meshID = renderer.GetMesh(model.meshName);
-                renderer.DrawMesh(meshID);
+                uint64_t modelID = renderer.GetModel(model.modelName);
+                renderer.DrawModel(modelID);
             });
 
             //if (mDrawColliders)
@@ -212,8 +205,8 @@ namespace Client
             //        renderer.SetWireframe(true);
             //        renderer.SetSolidColor({ 1.0f, 0.0f, 0.0f });
             //
-            //        uint64_t meshID = renderer.GetMesh("Icosphere");
-            //        renderer.DrawMesh(meshID);
+            //        uint64_t modelID = renderer.GetModel("Icosphere");
+            //        renderer.DrawModel(modelID);
             //    });
             //
             //    mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity e, CubeCollider& collider, Transform& transform)
@@ -226,8 +219,8 @@ namespace Client
             //        renderer.SetWireframe(true);
             //        renderer.SetSolidColor({ 1.0f, 0.0f, 0.0f });
             //
-            //        uint64_t meshID = renderer.GetMesh("Cube");
-            //        renderer.DrawMesh(meshID);
+            //        uint64_t modelID = renderer.GetModel("Cube");
+            //        renderer.DrawModel(modelID);
             //    });
             //}
 
@@ -311,24 +304,24 @@ namespace Client
     {
         Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
 
-        ModelComponent& mesh = mManager.GetComponent<ModelComponent>(event.entity);
+        ModelComponent& model = mManager.GetComponent<ModelComponent>(event.entity);
 
-        if (!renderer.IsMeshLoaded(mesh.meshName))
+        if (!renderer.IsMeshLoaded(model.modelName))
         {
-            if (std::filesystem::exists(mesh.meshName))
+            if (std::filesystem::exists(model.modelName))
             {
-                renderer.AddModel(mesh.meshName, Gep::Model::FromFile(mesh.meshName));
+                renderer.AddModelFromFile(model.modelName);
             }
             else
             {
-                const std::string defaultName = ModelComponent{}.meshName; // re-initializes the meshname to the default value
-                Gep::Log::Warning("A model component was created with an invalid name/location: [", mesh.meshName, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
-                mesh.meshName = defaultName; 
+                const std::string defaultName = ModelComponent{}.modelName; // re-initializes the meshname to the default value
+                Gep::Log::Warning("A model component was created with an invalid name/location: [", model.modelName, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
+                model.modelName = defaultName; 
             }
         }
     }
 
-    void RenderSystem::OnMeshEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event)
+    void RenderSystem::OnModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event)
     {
         ModelComponent& mesh = event.component;
 
@@ -336,8 +329,8 @@ namespace Client
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
         std::vector<std::string> loadedMeshes = renderer.GetLoadedMeshes();
 
-        // drop down for selecting a mesh
-        bool meshesOpen = ImGui::BeginCombo("Meshs", mesh.meshName.c_str());
+        // drop down for selecting a model
+        bool meshesOpen = ImGui::BeginCombo("Models", mesh.modelName.c_str());
 
         const std::vector<std::string>& allowedExtensions = renderer.GetSupportedModelFormats();
 
@@ -345,20 +338,20 @@ namespace Client
         {
             if (!renderer.IsMeshLoaded(droppedPath.string()))
             {
-                renderer.AddModel(droppedPath.string(), Gep::Model::FromFile(droppedPath));
+                renderer.AddModelFromFile(droppedPath.string());
             }
 
-            mesh.meshName = droppedPath.string();
+            mesh.modelName = droppedPath.string();
         });
 
         if (meshesOpen)
         {
             for (const std::string& meshName : loadedMeshes)
             {
-                bool isSelected = (meshName == mesh.meshName);
+                bool isSelected = (meshName == mesh.modelName);
                 if (ImGui::Selectable(meshName.c_str(), isSelected))
                 {
-                    mesh.meshName = meshName;
+                    mesh.modelName = meshName;
                 }
                 if (isSelected)
                 {

@@ -70,10 +70,12 @@ namespace Gep
     class OpenGLRenderer
     {
     public:
+        // adds a model directly from a file using its path as its name. necessary textures
+        void AddModelFromFile(const std::string& path);
 
-        // loads resources into the renderer
+        // adds a prexisting model into the renderer. will not perform any loading from disk
         void AddModel(const std::string& name, const Gep::Model& model);
-        uint64_t GetMesh(const std::string& name) const;
+        uint64_t GetModel(const std::string& name) const;
 
         bool IsMeshLoaded(const std::string& name) const;
 
@@ -118,43 +120,60 @@ namespace Gep
         
 
         // completes the rendering of the object
-        void DrawMesh(uint64_t meshID);
+        void DrawModel(uint64_t meshID);
         void Draw(); // draws all of the submitted information
 
         void ToggleWireframes();
         void ToggleTextures();
 
-        void UnloadMesh(const std::string& name);
+        void UnloadModel(const std::string& name);
         void BackfaceCull(bool enabled = true);
 
         // Start must be called before rendering and End must be called after rendering
         void Start(const glm::vec3& color = { 0, 0, 0 });
         void End();
 
-
         void SetUpLightSSBO();
         void SetUpObjectUniformsSSBO();
         void SetUpCameraUniformsSSBO();
     private:
-        struct MeshData
+        struct MaterialGPUHandle
+        {
+            GLuint diffuseTexture = num_max<GLuint>();
+            GLuint aoTexture = num_max<GLuint>();
+        };
+
+        struct MeshGPUHandle
         {
             void GenVertexBuffer(const Mesh& mesh);
-            void GenFaceBuffer(const Mesh& mesh);
+            void GenIndexBuffer(const Mesh& mesh);
             void BindBuffers();
             void DeleteBuffers();
 
+            // handles used by opengl
             GLuint mVertexArrayObject = num_max<GLuint>();
             GLuint mVertexBuffer = num_max<GLuint>();
-            GLuint mFaceBuffer = num_max<GLuint>();
-            size_t mIndexCount{};
+            GLuint mIndexBuffer = num_max<GLuint>();
+            size_t mIndexCount{}; // the amount of indices in the index buffer
+
+            MaterialGPUHandle materialHandle{}; // handle to the material used by this mesh
         };
+
+        struct ModelGPUHandle
+        {
+            std::vector<MeshGPUHandle> meshHandles;
+
+        };
+
+    private:
+        void DrawMesh(const MeshGPUHandle& meshHandle);
 
     private:
 
         std::unique_ptr<Shader> mActiveShader;
         std::unique_ptr<Shader> mHighlightShader;
 
-        //keyed_vector<MeshData> mMeshDatas;
+        //keyed_vector<MeshGPUHandle> mModelHandles;
         bool mWireframeMode = false;
         bool mTexturesEnabled = true;
 
@@ -169,10 +188,10 @@ namespace Gep
         glm::mat4 mNextView{};
         glm::vec4 mNextEye{};
 
-        Gep::keyed_vector<MeshData> mMeshDatas;
-        std::unordered_map<std::string, uint64_t> mMeshNameToID;
+        Gep::keyed_vector<ModelGPUHandle> mModelHandles;
+        std::unordered_map<std::string, uint64_t> mModelNameToID;
 
-        //std::unordered_map<std::string, MeshData> mMeshDatas;
+        //std::unordered_map<std::string, MeshGPUHandle> mModelHandles;
         std::unordered_map<std::string, GLuint> mIconTextures;// icon extension -> texture id
         std::unordered_map<std::filesystem::path, GLuint> mTextures; // texture path -> texture id
         GLuint mErrorTexture{}; // always loaded, used when a texuture fails to load
