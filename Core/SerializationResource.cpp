@@ -104,6 +104,12 @@ namespace Client
 
     nlohmann::json SerializationResource::LoadPrefab(const std::filesystem::path& path) const
     {
+        if (!std::filesystem::exists(path))
+        {
+            Gep::Log::Error("Failed to load prefab: [", path.string(), "] doesn't exist");
+            return nlohmann::json();
+        }
+
         nlohmann::json prefab;
         std::ifstream inFile(path);
         inFile >> prefab;

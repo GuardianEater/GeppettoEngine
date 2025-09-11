@@ -813,6 +813,8 @@ namespace Client
                 if (entry.is_directory())
                 {
                     SetAssetBrowserPath(entry.path());
+                    ImGui::EndGroup();
+                    ImGui::PopID();
                     break;
                 }
 

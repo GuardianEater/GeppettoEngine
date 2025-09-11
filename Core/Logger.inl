@@ -53,9 +53,9 @@ namespace Gep
 
         FormatLog(LogLevel::error, callerInfo, std::forward<Args>(args)...);
 
-#ifdef _DEBUG
-        __debugbreak();
-#endif // _DEBUG
+//#ifdef _DEBUG
+//        __debugbreak();
+//#endif // _DEBUG
     }
 
     template <typename... Args>

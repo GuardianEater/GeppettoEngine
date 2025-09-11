@@ -63,11 +63,11 @@ namespace Client
         mIO->ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
         mIO->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
         mIO->ConfigWindowsMoveFromTitleBarOnly = true;
-        //mFont = mIO->Fonts->AddFontFromFileTTF("assets/fonts/arial.ttf", 16.0f);
+        mFont = mIO->Fonts->AddFontFromFileTTF("assets\\fonts\\RobotoMono-Regular.ttf", 16.0f);
 
         ImFontConfig fontConfig;
-        fontConfig.OversampleH = 2;
-        fontConfig.OversampleV = 2;
+        fontConfig.OversampleH = 3;
+        fontConfig.OversampleV = 3;
         fontConfig.RasterizerDensity = 10;
 
 

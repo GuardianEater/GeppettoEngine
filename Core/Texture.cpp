@@ -30,6 +30,8 @@ namespace Gep
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
+
+        return texture;
     }
 
     Texture Texture::FromFile(const std::filesystem::path& path)
