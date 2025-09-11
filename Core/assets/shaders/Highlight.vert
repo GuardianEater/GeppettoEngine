@@ -1,4 +1,4 @@
-#version 430
+#version 460
 
 #include "Common.glsl"
 
@@ -14,6 +14,7 @@ out vec2 uvOut;         // texture coordinates
 
 void main()
 {
+  int objectIndex = gl_InstanceID + gl_BaseInstance;
   worldPosition = objectUniforms[objectIndex].modelMatrix * position;
   gl_Position   = cameraUniforms[cameraIndex].perspectiveMatrix * cameraUniforms[cameraIndex].viewMatrix * worldPosition;
 }

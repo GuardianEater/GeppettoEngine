@@ -101,7 +101,6 @@ namespace Gep
 		glShaderSource(shaderID, 1, &c_source, 0);
 		glCompileShader(shaderID);
 
-#ifdef _DEBUG
 		GLint errorValue = 0;
 		glGetShaderiv(shaderID, GL_COMPILE_STATUS, &errorValue);
 		if (!errorValue)
@@ -110,9 +109,9 @@ namespace Gep
 			message.resize(1024);
 			glGetShaderInfoLog(shaderID, message.capacity(), 0, message.data());
 			std::cout << "Failed to Compile Shader " << '\n' << message << std::endl;
+			std::cout << source;
 			throw std::runtime_error("Failed to Compile Shader");
 		}
-#endif // _DEBUG
 
 		return shaderID;
     }
@@ -129,7 +128,6 @@ namespace Gep
 		glDeleteShader(vertShader);
 		glDeleteShader(fragShader);
 
-#ifdef _DEBUG
 		GLint errorValue = 0;
 		glGetProgramiv(program, GL_LINK_STATUS, &errorValue);
 		if (!errorValue)
@@ -153,7 +151,6 @@ namespace Gep
 			std::cout << "Failed to Validate OpenGL Program\n" << message << std::endl;
 			throw std::runtime_error("Failed to Validate OpenGL Program");
 		}
-#endif // _DEBUG
 
 		return program;
 	}

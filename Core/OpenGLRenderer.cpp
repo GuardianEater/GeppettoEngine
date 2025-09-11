@@ -54,7 +54,7 @@ namespace Gep
 
     void OpenGLRenderer::AddModelFromFile(const std::string& path)
     {
-        if (mModelNameToID.contains(path))
+        if (mModelHandles.contains(path))
         {
             Gep::Log::Error("Cannot load mesh: [", path, "] a mesh with that name has already been loaded");
             return;
@@ -62,9 +62,7 @@ namespace Gep
 
         Model model = Model::FromFile(path);
 
-        uint64_t id = mModelHandles.emplace();
-        mModelNameToID[path] = id;
-        ModelGPUHandle& modelHandle = mModelHandles.at(id); // create a handle for this model
+        ModelGPUHandle& modelHandle = mModelHandles[path]; // create a handle for this model, and sets its name to its path
 
         for (const auto& mesh : model.meshes)
         {
@@ -83,15 +81,13 @@ namespace Gep
 
     void OpenGLRenderer::AddModel(const std::string& name, const Gep::Model& model)
     {
-        if (mModelNameToID.contains(name))
+        if (mModelHandles.contains(name))
         {
             Gep::Log::Error("Cannot load mesh: [", name, "] a mesh with that name has already been loaded");
             return;
         }
 
-        uint64_t id = mModelHandles.emplace();
-        mModelNameToID[name] = id;
-        ModelGPUHandle& modelHandle = mModelHandles.at(id);
+        ModelGPUHandle& modelHandle = mModelHandles[name];
 
         for (const Mesh& mesh : model.meshes)
         {
@@ -104,20 +100,9 @@ namespace Gep
         }
     }
 
-    uint64_t OpenGLRenderer::GetModel(const std::string& name) const
-    {
-        if (!mModelNameToID.contains(name))
-        {
-            Gep::Log::Error("Cannot get mesh: [", name, "] a mesh with that name has not been loaded");
-            return 0;
-        }
-
-        return mModelNameToID.at(name);
-    }
-
     bool OpenGLRenderer::IsMeshLoaded(const std::string& name) const
     {
-        return mModelNameToID.contains(name);
+        return mModelHandles.contains(name);
     }
 
     void OpenGLRenderer::SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
@@ -130,47 +115,47 @@ namespace Gep
         mHighlightShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
     }
 
-    void OpenGLRenderer::AddObjectUniforms(const ObjectUniforms& uniforms, uint64_t meshID, uint64_t textureID)
+    void OpenGLRenderer::AddObject(const std::string& modelName, const ObjectGPUData& objectData)
     {
-        mObjectUniforms.push_back(uniforms);
-        mMeshesToDraw.push_back(meshID);
-        mTexturesToDraw.push_back(textureID);
+        mModelHandles.at(modelName).objectDatas.push_back(objectData);
     }
 
-    void OpenGLRenderer::AddCameraUniforms(const CameraUniforms& uniforms, std::shared_ptr<Gep::IRenderTarget>& renderTarget)
+    void OpenGLRenderer::AddCamera(const CameraGPUData& uniforms)
     {
         mCameraUniforms.push_back(uniforms);
-        mRenderTargets.push_back(renderTarget);
     }
 
-    void OpenGLRenderer::AddLightUniforms(const LightUniforms& uniforms)
+    void OpenGLRenderer::AddLight(const LightGPUData& uniforms)
     {
         mLightUniforms.push_back(uniforms);
     }
 
-    void OpenGLRenderer::CommitObjectUniforms()
+    void OpenGLRenderer::CommitObjects()
     {
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mObjectUniformsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, mObjectUniforms.size() * sizeof(ObjectUniforms), mObjectUniforms.data(), GL_DYNAMIC_DRAW);
+        for (auto& [modelName, modelHandle] : mModelHandles)
+        {
+            // append this model's data to global buffer
+            mObjectUniforms.insert(mObjectUniforms.end(),
+                modelHandle.objectDatas.begin(),
+                modelHandle.objectDatas.end()
+            );
+        }
+
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mObjectsSSBO);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, mObjectUniforms.size() * sizeof(ObjectGPUData), mObjectUniforms.data(), GL_DYNAMIC_DRAW);
     }
 
-    void OpenGLRenderer::CommitCameraUniforms()
+    void OpenGLRenderer::CommitCameras()
     {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, mCameraUniformsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, mCameraUniforms.size() * sizeof(CameraUniforms), mCameraUniforms.data(), GL_DYNAMIC_DRAW);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, mCameraUniforms.size() * sizeof(CameraGPUData), mCameraUniforms.data(), GL_DYNAMIC_DRAW);
     }
 
-    void OpenGLRenderer::CommitLightUniforms()
+    void OpenGLRenderer::CommitLights()
     {
         SetLightCount(mLightUniforms.size());
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, mLightUniformsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, mLightUniforms.size() * sizeof(LightUniforms), mLightUniforms.data(), GL_DYNAMIC_DRAW);
-    }
-
-    void OpenGLRenderer::SetObjectIndex(size_t index)
-    {
-        mActiveShader->SetUniform(1, static_cast<int>(index));
-        mHighlightShader->SetUniform(1, static_cast<int>(index));
+        glBufferData(GL_SHADER_STORAGE_BUFFER, mLightUniforms.size() * sizeof(LightGPUData), mLightUniforms.data(), GL_DYNAMIC_DRAW);
     }
 
     void OpenGLRenderer::SetCameraIndex(size_t index)
@@ -192,15 +177,14 @@ namespace Gep
 
     void OpenGLRenderer::UnloadModel(const std::string& name)
     {
-        if (!mModelNameToID.contains(name))
+        if (!mModelHandles.contains(name))
         {
             Gep::Log::Error("Cannot unload mesh: [", name, "] a mesh with that name has not been loaded");
             return;
         }
 
         // aquire the model id from the name
-        uint64_t id = mModelNameToID.at(name);
-        ModelGPUHandle& modelHandle = mModelHandles.at(id);
+        ModelGPUHandle& modelHandle = mModelHandles[name];
 
         // delete all meshes owned by the model
         for (MeshGPUHandle& meshHandle : modelHandle.meshHandles)
@@ -208,8 +192,7 @@ namespace Gep
             meshHandle.DeleteBuffers();
         }
 
-        mModelHandles.erase(id);
-        mModelNameToID.erase(name);
+        mModelHandles.erase(name);
     }
 
     void OpenGLRenderer::BackfaceCull(bool enabled)
@@ -229,14 +212,6 @@ namespace Gep
         //glClearColor(color.r, color.g, color.b, 1);
         //glClearDepth(1);
         //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
-
-    void OpenGLRenderer::SetTexture(GLuint texture)
-    {
-        mActiveShader->Use([&]()
-        {
-            glBindTexture(GL_TEXTURE_2D, texture);
-        });
     }
 
     void OpenGLRenderer::SetHighlight(bool highlight)
@@ -259,7 +234,7 @@ namespace Gep
     {
         std::vector<std::string> meshes;
 
-        for (const auto& [name, id] : mModelNameToID)
+        for (const auto& [name, modelHandle] : mModelHandles)
         {
             meshes.emplace_back(name);
         }
@@ -271,7 +246,7 @@ namespace Gep
     {
         std::vector<std::filesystem::path> textures;
 
-        for (const auto& [name, _] : mTextures)
+        for (const auto& [name, texture] : mTextures)
         {
             textures.push_back(name);
         }
@@ -470,15 +445,15 @@ namespace Gep
         return mErrorTexture;
     }
 
-    void OpenGLRenderer::DrawModel(uint64_t modelID)
+    void OpenGLRenderer::DrawModel(const std::string& modelName)
     {
-        if (!mModelHandles.contains(modelID))
+        if (!mModelHandles.contains(modelName))
         {
-            Gep::Log::Error("Cannot draw mesh: [", modelID, "] a mesh with that id has not been loaded");
+            Gep::Log::Error("Cannot draw: [", modelName, "] has not been loaded");
             return;
         }
 
-        const ModelGPUHandle& modelHandle = mModelHandles.at(modelID);
+        const ModelGPUHandle& modelHandle = mModelHandles.at(modelName);
 
         if (mNextMeshIsBackfaceCulling)
         {
@@ -508,18 +483,22 @@ namespace Gep
 
         for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
         {
+            // binds the texture if the mesh handle has one
             if (meshHandle.materialHandle.diffuseTexture != num_max<GLuint>())
                 glBindTexture(GL_TEXTURE_2D, meshHandle.materialHandle.diffuseTexture);
 
+            // binds the meshes vao setting the vertices to be drawn
             glBindVertexArray(meshHandle.mVertexArrayObject);
-            if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+            // draws
+            if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             glDrawElements(GL_TRIANGLES, meshHandle.mIndexCount, GL_UNSIGNED_INT, 0);
             if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+            // unbinds the vertex array
             glBindVertexArray(0);
 
-            if (meshHandle.materialHandle.diffuseTexture != num_max<GLuint>())
-                glBindTexture(GL_TEXTURE_2D, 0);
+            glBindTexture(GL_TEXTURE_2D, 0);
         }
 
         mActiveShader->Unbind();
@@ -536,33 +515,61 @@ namespace Gep
         }
     }
 
+    void OpenGLRenderer::DrawInstanced()
+    {
+        mActiveShader->Bind();
+
+        size_t baseInstance = 0;
+        for (auto& [modelName, modelHandle] : mModelHandles)
+        {
+            for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
+            {
+                glBindVertexArray(meshHandle.mVertexArrayObject);
+
+                if (meshHandle.materialHandle.diffuseTexture != num_max<GLuint>())
+                    glBindTexture(GL_TEXTURE_2D, meshHandle.materialHandle.diffuseTexture);
+
+                glDrawElementsInstancedBaseInstance(
+                    GL_TRIANGLES,
+                    meshHandle.mIndexCount,
+                    GL_UNSIGNED_INT,
+                    0,
+                    modelHandle.objectDatas.size(), // note: the amount of meshes will be the same as the model
+                    baseInstance
+                );
+
+                glBindTexture(GL_TEXTURE_2D, 0);
+            }
+
+            baseInstance += modelHandle.objectDatas.size();
+            modelHandle.objectDatas.clear();
+        }
+
+        mActiveShader->Unbind();
+    }
+
     void OpenGLRenderer::End()
     {
         mLightUniforms.clear();
-
         mObjectUniforms.clear();
-        mMeshesToDraw.clear();
-        mTexturesToDraw.clear();
-
         mCameraUniforms.clear();
-        mRenderTargets.clear();
     }
 
     void OpenGLRenderer::SetUpLightSSBO()
     {
         glGenBuffers(1, &mLightUniformsSSBO);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, mLightUniformsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LightUniforms) * 1, nullptr, GL_DYNAMIC_DRAW);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LightGPUData) * 1, nullptr, GL_DYNAMIC_DRAW);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mLightUniformsSSBO); // the number is the binding value of the buffer declared in the shader
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }
 
     void OpenGLRenderer::SetUpObjectUniformsSSBO()
     {
-        glGenBuffers(1, &mObjectUniformsSSBO);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mObjectUniformsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ObjectUniforms) * 1, nullptr, GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mObjectUniformsSSBO);
+        glGenBuffers(1, &mObjectsSSBO);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mObjectsSSBO);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ObjectGPUData) * 1, nullptr, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mObjectsSSBO);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }
 
@@ -570,7 +577,7 @@ namespace Gep
     {
         glGenBuffers(1, &mCameraUniformsSSBO);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, mCameraUniformsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CameraUniforms) * 1, nullptr, GL_DYNAMIC_DRAW);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CameraGPUData) * 1, nullptr, GL_DYNAMIC_DRAW);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, mCameraUniformsSSBO);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }

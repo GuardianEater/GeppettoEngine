@@ -27,7 +27,7 @@
 
 namespace Gep
 {
-    struct alignas(16) PBRMaterial
+    struct alignas(16) MaterialGPUData
     {
         float ao;        // ambient occlusion
         float roughness; 
@@ -35,7 +35,7 @@ namespace Gep
         glm::vec3 color; float pad1;
     };
 
-    struct alignas(16) ObjectUniforms
+    struct alignas(16) ObjectGPUData
     {
         glm::mat4 modelMatrix;
         glm::mat4 normalMatrix;
@@ -44,10 +44,10 @@ namespace Gep
         int isIgnoringLight; 
         int isSolidColor;    
         int isHighlighted;   
-        PBRMaterial material;
+        MaterialGPUData material;
     };
 
-    struct alignas(16) CameraUniforms
+    struct alignas(16) CameraGPUData
     {
         glm::mat4 perspectiveMatrix;
         glm::mat4 viewMatrix;
@@ -55,16 +55,18 @@ namespace Gep
         glm::vec4 camPosition;
     };
 
-    struct LightUniforms
+    struct LightGPUData
     {
         glm::vec3 position; float pad;
         glm::vec3 color;   
         float intensity;
     };
 
-    struct ObjectRenderInfo
+    struct DrawCommand
     {
-        GLuint texture;
+        std::string meshName;
+        uint32_t instanceCount;
+        uint32_t baseInstance;
     };
 
     class OpenGLRenderer
@@ -75,27 +77,25 @@ namespace Gep
 
         // adds a prexisting model into the renderer. will not perform any loading from disk
         void AddModel(const std::string& name, const Gep::Model& model);
-        uint64_t GetModel(const std::string& name) const;
 
         bool IsMeshLoaded(const std::string& name) const;
 
         void SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
         void SetHighlightShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
 
-        void AddObjectUniforms(const ObjectUniforms& uniforms, uint64_t meshID, uint64_t textureID);
-        void AddCameraUniforms(const CameraUniforms& uniforms, std::shared_ptr<Gep::IRenderTarget>& renderTarget);
-        void AddLightUniforms(const LightUniforms& uniforms); // adds a light to the renderered, will be sent to the shader when DrawLights is called
+        // adds an object to be drawn by 
+        void AddObject(const std::string& modelName, const ObjectGPUData& objectData);
+        void AddCamera(const CameraGPUData& cameraData);
+        void AddLight(const LightGPUData& lightData); // adds a light to the renderered, will be sent to the shader when DrawLights is called
 
-        void CommitObjectUniforms(); // moves all of the data from the cpu to the gpu
-        void CommitCameraUniforms(); // moves all of the data from the cpu to the gpu
-        void CommitLightUniforms(); // will send all added lights to the shader
+        void CommitObjects(); // moves all of the added object data from the cpu to the gpu
+        void CommitCameras(); // moves all of the added camera data from the cpu to the gpu
+        void CommitLights();  // moves all of the added light data from the cpu to the gpu
 
-        void SetObjectIndex(size_t index);
         void SetCameraIndex(size_t index);
         void SetLightCount(size_t count); 
 
         // changes how the renderer will draw the next object
-        void SetTexture(GLuint texture);
         void SetHighlight(bool highlight);
         void SetWireframe(bool wireframe);
 
@@ -120,8 +120,9 @@ namespace Gep
         
 
         // completes the rendering of the object
-        void DrawModel(uint64_t meshID);
+        void DrawModel(const std::string& modelName);
         void Draw(); // draws all of the submitted information
+        void DrawInstanced();
 
         void ToggleWireframes();
         void ToggleTextures();
@@ -162,7 +163,7 @@ namespace Gep
         struct ModelGPUHandle
         {
             std::vector<MeshGPUHandle> meshHandles;
-
+            std::vector<ObjectGPUData> objectDatas;
         };
 
     private:
@@ -188,8 +189,8 @@ namespace Gep
         glm::mat4 mNextView{};
         glm::vec4 mNextEye{};
 
-        Gep::keyed_vector<ModelGPUHandle> mModelHandles;
-        std::unordered_map<std::string, uint64_t> mModelNameToID;
+        std::unordered_map<std::string, ModelGPUHandle> mModelHandles; // model name -> its handle
+        size_t mTotalDrawCount;
 
         //std::unordered_map<std::string, MeshGPUHandle> mModelHandles;
         std::unordered_map<std::string, GLuint> mIconTextures;// icon extension -> texture id
@@ -199,16 +200,14 @@ namespace Gep
         std::mutex mTextureLoadingMutex{};
 
         GLuint mLightUniformsSSBO{};
-        std::vector<LightUniforms> mLightUniforms;
+        std::vector<LightGPUData> mLightUniforms;
 
-        GLuint mObjectUniformsSSBO{};
-        std::vector<ObjectUniforms> mObjectUniforms;
-        std::vector<uint64_t> mMeshesToDraw;
-        std::vector<uint64_t> mTexturesToDraw;
+        GLuint mObjectsSSBO{};
+        std::vector<ObjectGPUData> mObjectUniforms;
+        std::vector<DrawCommand> mDrawCommands;
 
         GLuint mCameraUniformsSSBO{};
-        std::vector<CameraUniforms> mCameraUniforms;
-        std::vector<std::shared_ptr<Gep::IRenderTarget>> mRenderTargets;
+        std::vector<CameraGPUData> mCameraUniforms;
 
     public:
         Gep::bvh_tree<uint64_t, Gep::Entity> mBVHTree;

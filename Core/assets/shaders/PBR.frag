@@ -1,4 +1,4 @@
-#version 440
+#version 460
 #extension GL_ARB_bindless_texture : require
 
 #include "Common.glsl"
@@ -7,6 +7,7 @@
 in vec4 worldNormal;   // the normal vector of the surface hit
 in vec4 worldPosition; // the point that the light hits
 in vec2 uvOut;       // the uv coordinates of the surface hit
+flat in int vObjectIndex;
 
 // out /////////////////////////////////////////////////////////////////////////
 out vec4 frag_color; // the resulting pixel color
@@ -16,7 +17,7 @@ vec3 CalculatePBRLightingTotal();
 
 void main(void)
 {
-  const ObjectUniforms object = objectUniforms[objectIndex];
+  const ObjectUniforms object = objectUniforms[vObjectIndex];
 
   // Normalize surface normal and compute view vector.
   vec3 N = normalize(worldNormal.xyz);
@@ -51,7 +52,7 @@ vec3 SchlickFresnel(float vDotH)
 {
   const float dielectricDefault = 0.04;
   vec3 F0 = vec3(dielectricDefault);
-  F0 = mix(F0, objectUniforms[objectIndex].material.color, objectUniforms[objectIndex].material.metallic);
+  F0 = mix(F0, objectUniforms[vObjectIndex].material.color, objectUniforms[vObjectIndex].material.metallic);
 
   const float clamped = clamp(1.0 - vDotH, 0.0, 1.0);
   const vec3 result = F0 + (1.0 - F0) * pow(clamped, 5);
@@ -61,7 +62,7 @@ vec3 SchlickFresnel(float vDotH)
 
 float GeometrySchlickGGX(float dp)
 {
-  float k = (objectUniforms[objectIndex].material.roughness + 1.0) * (objectUniforms[objectIndex].material.roughness + 1.0) / 8.0;
+  float k = (objectUniforms[vObjectIndex].material.roughness + 1.0) * (objectUniforms[vObjectIndex].material.roughness + 1.0) / 8.0;
   float denom = dp * (1.0 - k) + k;
   
   return dp / denom;
@@ -76,7 +77,7 @@ float GeometrySmith(float nDotV, float nDotL)
 // calculates D in the pbr equation
 float GGXDistribution(float nDotH)
 {
-  float alpha2 = pow(objectUniforms[objectIndex].material.roughness, 4);
+  float alpha2 = pow(objectUniforms[vObjectIndex].material.roughness, 4);
   float d = nDotH * nDotH * (alpha2 - 1.0) + 1.0;
   float ggx = alpha2 / (PI * d * d);
 
@@ -109,7 +110,7 @@ vec3 CalculatePBRLighting(LightUniforms light, vec3 n, vec3 objectColor)
 
   vec3 ks = F; // specular coefficient
   vec3 kd = vec3(1.0) - ks; // diffuse coefficient
-  kd *= 1.0 - objectUniforms[objectIndex].material.metallic;
+  kd *= 1.0 - objectUniforms[vObjectIndex].material.metallic;
 
   vec3 numerator = D * G * F;
   float denominator = 4.0 * nDotL * nDotV + 0.0001; // prevents division by 0
@@ -123,13 +124,13 @@ vec3 CalculatePBRLighting(LightUniforms light, vec3 n, vec3 objectColor)
 }
 
 vec3 CalculatePBRLightingTotal()
-{
+{    
   vec3 n = normalize(worldNormal.xyz);
   vec3 color = vec3(0.0); // the final color of the fragment
 
   // loop over each light.
-  vec3 objectColor = objectUniforms[objectIndex].material.color;
-  if (objectUniforms[objectIndex].isUsingTexture == 1) 
+  vec3 objectColor = objectUniforms[vObjectIndex].material.color;
+  if (objectUniforms[vObjectIndex].isUsingTexture == 1) 
   {
     objectColor *= texture(textureSampler, uvOut).rgb;
   }
@@ -139,7 +140,7 @@ vec3 CalculatePBRLightingTotal()
     color += CalculatePBRLighting(lights[i], n, objectColor);
   }
 
-  vec3 ambient = vec3(0.2) * objectColor * objectUniforms[objectIndex].material.ao;
+  vec3 ambient = vec3(0.8) * objectColor * objectUniforms[vObjectIndex].material.ao;
   color += ambient;
 
   // HDR tone mapping

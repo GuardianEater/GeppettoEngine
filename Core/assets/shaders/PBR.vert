@@ -1,4 +1,4 @@
-#version 440
+#version 460
 #extension GL_ARB_bindless_texture : require
 
 #include "Common.glsl"
@@ -11,13 +11,16 @@ in vec2 uv;       // texture coordinates
 // out to fragment shader //////////////////////////////////////////////////////
 out vec4 worldPosition; // surface point
 out vec4 worldNormal;   // normal at position
-out vec2 uvOut;         // texture coordinates
+out vec2 uvOut;        // texture coordinates
+flat out int vObjectIndex;
 
 void main(void)
 {
-  worldPosition = objectUniforms[objectIndex].modelMatrix * position;
+  vObjectIndex = gl_InstanceID + gl_BaseInstance;
 
-  worldNormal = vec4(normalize(transpose(inverse(mat3(objectUniforms[objectIndex].modelMatrix))) * vec3(normal)), 1.0);
+  worldPosition = objectUniforms[vObjectIndex].modelMatrix * position;
+
+  worldNormal = vec4(normalize(transpose(inverse(mat3(objectUniforms[vObjectIndex].modelMatrix))) * vec3(normal)), 1.0);
 
   uvOut = uv;
 

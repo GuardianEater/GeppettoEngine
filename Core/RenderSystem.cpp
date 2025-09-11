@@ -96,21 +96,21 @@ namespace Client
         // prepares all of the light uniform values
         mManager.ForEachArchetype<Light, Transform>([&](Gep::Entity e, Light& l, Transform& t)
         {
-            Gep::LightUniforms uniforms
+            Gep::LightGPUData uniforms
             {
                 .position = t.position,
                 .color = l.color,
                 .intensity = l.intensity
             };
 
-            renderer.AddLightUniforms(uniforms);
+            renderer.AddLight(uniforms);
         });
-        renderer.CommitLightUniforms();
+        renderer.CommitLights();
 
         // prepares the camera uniforms
         mManager.ForEachArchetype<Transform, Camera>([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
         {
-            Gep::CameraUniforms uniforms
+            Gep::CameraGPUData uniforms
             {
                 .perspectiveMatrix = cam.GetProjectionMatrix(),
                 .viewMatrix = cam.GetViewMatrix(camTransform.position),
@@ -125,9 +125,9 @@ namespace Client
             cam.up = { sin(camRotation.x) * sin(camRotation.y), cos(camRotation.x), -sin(camRotation.x) * cos(camRotation.y) };
             cam.back = glm::normalize(glm::cross(cam.right, cam.up));
 
-            renderer.AddCameraUniforms(uniforms, cam.renderTarget);
+            renderer.AddCamera(uniforms);
         });
-        renderer.CommitCameraUniforms();
+        renderer.CommitCameras();
 
         // prepare the object uniforms
         mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
@@ -135,7 +135,7 @@ namespace Client
             glm::mat4 modelMatrix = transform.GetModelMatrix();
             glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
 
-            Gep::PBRMaterial material
+            Gep::MaterialGPUData material
             {
                 .ao = model.ao, // ambient occlusion
                 .roughness = model.roughness,
@@ -149,7 +149,7 @@ namespace Client
                 model.ignoreLight = true;
             }
 
-            Gep::ObjectUniforms uniforms
+            Gep::ObjectGPUData uniforms
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrix = normal,
@@ -160,17 +160,10 @@ namespace Client
                 .material = material
             };
 
-            uint64_t meshID = renderer.GetModel(model.modelName);
-            uint64_t textureID = Gep::num_max<uint64_t>();
-            if (mManager.HasComponent<Texture>(entity))
-            {
-                const Texture& texture = mManager.GetComponent<Texture>(entity);
-                textureID = renderer.GetOrLoadTexture(texture.texturePath);
-            }
-
-            renderer.AddObjectUniforms(uniforms, meshID, textureID);
+            renderer.AddObject(model.modelName, uniforms);
         });
-        renderer.CommitObjectUniforms();
+        renderer.CommitObjects();
+
 
         // main render passes
         size_t cameraIndex = 0;
@@ -183,46 +176,7 @@ namespace Client
 
             const glm::vec2 renderSize = cam.renderTarget->GetSize();
 
-            size_t objectIndex = 0;
-            mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
-            {
-                renderer.SetHighlight(model.selected);
-                renderer.SetObjectIndex(objectIndex++);
-                uint64_t modelID = renderer.GetModel(model.modelName);
-                renderer.DrawModel(modelID);
-            });
-
-            //if (mDrawColliders)
-            //{
-            //
-            //    mManager.ForEachArchetype<SphereCollider, Transform>([&](Gep::Entity e, SphereCollider& collider, Transform& transform)
-            //    {
-            //        glm::mat4 model = Gep::translation_matrix(transform.position)
-            //            * Gep::rotation(transform.rotation)
-            //            * Gep::scale_matrix(std::max({ transform.scale.x, transform.scale.y, transform.scale.z }));
-            //
-            //        renderer.SetModel(model);
-            //        renderer.SetWireframe(true);
-            //        renderer.SetSolidColor({ 1.0f, 0.0f, 0.0f });
-            //
-            //        uint64_t modelID = renderer.GetModel("Icosphere");
-            //        renderer.DrawModel(modelID);
-            //    });
-            //
-            //    mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity e, CubeCollider& collider, Transform& transform)
-            //    {
-            //        glm::mat4 model = Gep::translation_matrix(transform.position)
-            //            * Gep::rotation(transform.rotation)
-            //            * Gep::scale_matrix(transform.scale);
-            //
-            //        renderer.SetModel(model);
-            //        renderer.SetWireframe(true);
-            //        renderer.SetSolidColor({ 1.0f, 0.0f, 0.0f });
-            //
-            //        uint64_t modelID = renderer.GetModel("Cube");
-            //        renderer.DrawModel(modelID);
-            //    });
-            //}
+            renderer.DrawInstanced();
 
             cam.renderTarget->Draw(mManager, camEntity);
             cam.Resize(renderSize);
@@ -231,7 +185,7 @@ namespace Client
 
         mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
         {
-                model.selected = false;
+            model.selected = false;
         });
 
         renderer.End();

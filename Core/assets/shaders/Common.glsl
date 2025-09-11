@@ -63,7 +63,7 @@ layout(std430, binding=2) buffer CameraUniformsBuffer
 
 // uniforms ////////////////////////////////////////////////////////////////////
 layout(location=0) uniform int cameraIndex; // the currently active camera in the cameraUniforms array
-layout(location=1) uniform int objectIndex; // the current object in the objectUniforms array
+//layout(location=1) uniform int objectIndex; // the current object in the objectUniforms array
 layout(location=2) uniform int lightCount;  // the total amount of lights in the lights array
 
 uniform sampler2D textureSampler;
