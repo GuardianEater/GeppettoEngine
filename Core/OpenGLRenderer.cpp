@@ -107,12 +107,17 @@ namespace Gep
 
     void OpenGLRenderer::SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
     {
-        mActiveShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
+        mPBRShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
     }
 
     void OpenGLRenderer::SetHighlightShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
     {
         mHighlightShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
+    }
+
+    void OpenGLRenderer::SetColorShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
+    {
+        mColorShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
     }
 
     void OpenGLRenderer::AddObject(const std::string& modelName, const ObjectGPUData& objectData)
@@ -134,10 +139,22 @@ namespace Gep
     {
         for (auto& [modelName, modelHandle] : mModelHandles)
         {
-            // append this model's data to global buffer
+            for (auto& obj : modelHandle.objectDatas)
+            {
+                if (obj.isWireframe)
+                    modelHandle.wireframeObjectDatas.push_back(obj);
+                else
+                    modelHandle.regularObjectDatas.push_back(obj);
+            }
+
             mObjectUniforms.insert(mObjectUniforms.end(),
-                modelHandle.objectDatas.begin(),
-                modelHandle.objectDatas.end()
+                modelHandle.regularObjectDatas.begin(),
+                modelHandle.regularObjectDatas.end()
+            );
+
+            mObjectUniforms.insert(mObjectUniforms.end(),
+                modelHandle.wireframeObjectDatas.begin(),
+                modelHandle.wireframeObjectDatas.end()
             );
         }
 
@@ -160,13 +177,13 @@ namespace Gep
 
     void OpenGLRenderer::SetCameraIndex(size_t index)
     {
-        mActiveShader->SetUniform(0, static_cast<int>(index));
+        mPBRShader->SetUniform(0, static_cast<int>(index));
         mHighlightShader->SetUniform(0, static_cast<int>(index));
     }
 
     void OpenGLRenderer::SetLightCount(size_t count)
     {
-        mActiveShader->SetUniform(2, static_cast<int>(count));
+        mPBRShader->SetUniform(2, static_cast<int>(count));
         mHighlightShader->SetUniform(2, static_cast<int>(count));
     }
 
@@ -214,16 +231,6 @@ namespace Gep
         //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void OpenGLRenderer::SetHighlight(bool highlight)
-    {
-        mNextMeshIsHighlighted = highlight;
-    }
-
-    void OpenGLRenderer::SetWireframe(bool wireframe)
-    {
-        mNextMeshIsWireframe = wireframe;
-    }
-
     // toggle textures
     void OpenGLRenderer::ToggleTextures()
     {
@@ -257,28 +264,28 @@ namespace Gep
     const std::vector<std::string>& OpenGLRenderer::GetSupportedModelFormats() const
     {
         static std::vector<std::string> allowedExtensions = []() // initializes this vector with the extensions that work with assimp
-        {
-            std::string s;
-            Assimp::Importer importer;
-            importer.GetExtensionList(s);
+            {
+                std::string s;
+                Assimp::Importer importer;
+                importer.GetExtensionList(s);
 
-            s.erase(std::remove(s.begin(), s.end(), '*'), s.end());
+                s.erase(std::remove(s.begin(), s.end(), '*'), s.end());
 
-            std::vector<std::string> out;
-            std::istringstream ss(s);
-            std::string token;
-            while (std::getline(ss, token, ';'))
-                if (!token.empty())
-                    out.emplace_back(std::move(token));
-            return out;
-        }();
+                std::vector<std::string> out;
+                std::istringstream ss(s);
+                std::string token;
+                while (std::getline(ss, token, ';'))
+                    if (!token.empty())
+                        out.emplace_back(std::move(token));
+                return out;
+            }();
 
         return allowedExtensions;
     }
 
     const std::vector<std::string>& OpenGLRenderer::GetSupportedTextureFormats() const
     {
-        static std::vector<std::string> allowedExtensions = { ".jpg", ".jpeg", ".png", ".bmp"};
+        static std::vector<std::string> allowedExtensions = { ".jpg", ".jpeg", ".png", ".bmp" };
 
         return allowedExtensions;
     }
@@ -354,9 +361,9 @@ namespace Gep
         mTextures[texturePath] = GetErrorTexture();
 
         std::thread([&]()
-        {
-            LoadTexture(texturePath); 
-        }).detach();
+            {
+                LoadTexture(texturePath);
+            }).detach();
     }
 
     void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)
@@ -367,7 +374,7 @@ namespace Gep
             return;
         }
 
-        if (!std::filesystem::exists(texturePath)) 
+        if (!std::filesystem::exists(texturePath))
         {
             Gep::Log::Error("Cannot load texture: [", texturePath.string(), "] does not exist");
             return;
@@ -381,7 +388,7 @@ namespace Gep
 
         int required_channels = 4; // Force RGBA
         unsigned char* image = stbi_load(texturePath.string().c_str(), &width, &height, &channels, required_channels);
-        if (!image) 
+        if (!image)
         {
             Gep::Log::Error("Failed to load texture: [", texturePath.string(), "]");
             return;
@@ -445,107 +452,9 @@ namespace Gep
         return mErrorTexture;
     }
 
-    void OpenGLRenderer::DrawModel(const std::string& modelName)
-    {
-        if (!mModelHandles.contains(modelName))
-        {
-            Gep::Log::Error("Cannot draw: [", modelName, "] has not been loaded");
-            return;
-        }
-
-        const ModelGPUHandle& modelHandle = mModelHandles.at(modelName);
-
-        if (mNextMeshIsBackfaceCulling)
-        {
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_BACK);
-        }
-        else
-            glDisable(GL_CULL_FACE);
-
-        if (mNextMeshIsHighlighted)
-        {
-            mHighlightShader->Bind();
-
-            for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
-            {
-                glBindVertexArray(meshHandle.mVertexArrayObject);
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                glDrawElements(GL_TRIANGLES, meshHandle.mIndexCount, GL_UNSIGNED_INT, 0);
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                glBindVertexArray(0);
-            }
-
-            mHighlightShader->Unbind();
-        }
-
-        mActiveShader->Bind();
-
-        for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
-        {
-            // binds the texture if the mesh handle has one
-            if (meshHandle.materialHandle.diffuseTexture != num_max<GLuint>())
-                glBindTexture(GL_TEXTURE_2D, meshHandle.materialHandle.diffuseTexture);
-
-            // binds the meshes vao setting the vertices to be drawn
-            glBindVertexArray(meshHandle.mVertexArrayObject);
-
-            // draws
-            if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            glDrawElements(GL_TRIANGLES, meshHandle.mIndexCount, GL_UNSIGNED_INT, 0);
-            if (mWireframeMode || mNextMeshIsWireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-            // unbinds the vertex array
-            glBindVertexArray(0);
-
-            glBindTexture(GL_TEXTURE_2D, 0);
-        }
-
-        mActiveShader->Unbind();
-
-        mNextMeshIsWireframe = false;
-        mNextMeshIsBackfaceCulling = true;
-    }
-
     void OpenGLRenderer::Draw()
     {
-        for (uint64_t i = 0; i < mCameraUniforms.size(); ++i)
-        {
-            SetCameraIndex(i);
-        }
-    }
-
-    void OpenGLRenderer::DrawInstanced()
-    {
-        mActiveShader->Bind();
-
-        size_t baseInstance = 0;
-        for (auto& [modelName, modelHandle] : mModelHandles)
-        {
-            for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
-            {
-                glBindVertexArray(meshHandle.mVertexArrayObject);
-
-                if (meshHandle.materialHandle.diffuseTexture != num_max<GLuint>())
-                    glBindTexture(GL_TEXTURE_2D, meshHandle.materialHandle.diffuseTexture);
-
-                glDrawElementsInstancedBaseInstance(
-                    GL_TRIANGLES,
-                    meshHandle.mIndexCount,
-                    GL_UNSIGNED_INT,
-                    0,
-                    modelHandle.objectDatas.size(), // note: the amount of meshes will be the same as the model
-                    baseInstance
-                );
-
-                glBindTexture(GL_TEXTURE_2D, 0);
-            }
-
-            baseInstance += modelHandle.objectDatas.size();
-            modelHandle.objectDatas.clear();
-        }
-
-        mActiveShader->Unbind();
+        DrawRegular();
     }
 
     void OpenGLRenderer::End()
@@ -582,9 +491,62 @@ namespace Gep
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }
 
-    void OpenGLRenderer::DrawMesh(const MeshGPUHandle& meshHandle)
+    void OpenGLRenderer::DrawRegular()
     {
+        mPBRShader->Bind();
 
+        size_t baseInstance = 0;
+        for (auto& [modelName, modelHandle] : mModelHandles)
+        {
+            // normal draw
+            for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
+            {
+                glBindVertexArray(meshHandle.mVertexArrayObject);
+
+                if (meshHandle.materialHandle.diffuseTexture != num_max<GLuint>())
+                    glBindTexture(GL_TEXTURE_2D, meshHandle.materialHandle.diffuseTexture);
+
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                glDrawElementsInstancedBaseInstance(
+                    GL_TRIANGLES,
+                    meshHandle.mIndexCount,
+                    GL_UNSIGNED_INT,
+                    0,
+                    modelHandle.regularObjectDatas.size(),
+                    baseInstance
+                );
+
+                glBindTexture(GL_TEXTURE_2D, 0);
+            }
+            baseInstance += modelHandle.regularObjectDatas.size();
+
+            // --- Wireframe draw ---
+            for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
+            {
+                glBindVertexArray(meshHandle.mVertexArrayObject);
+
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                glDrawElementsInstancedBaseInstance(
+                    GL_TRIANGLES,
+                    meshHandle.mIndexCount,
+                    GL_UNSIGNED_INT,
+                    0,
+                    modelHandle.wireframeObjectDatas.size(),
+                    baseInstance
+                );
+            }
+            baseInstance += modelHandle.wireframeObjectDatas.size();
+
+            modelHandle.objectDatas.clear();
+            modelHandle.regularObjectDatas.clear();
+            modelHandle.wireframeObjectDatas.clear();
+        }
+
+        mPBRShader->Unbind();
+    }
+
+    void OpenGLRenderer::AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData)
+    {
     }
 
     HICON GetIcon(const std::filesystem::path& iconPath)

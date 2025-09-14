@@ -105,7 +105,6 @@ namespace Client
 
             renderer.AddLight(uniforms);
         });
-        renderer.CommitLights();
 
         // prepares the camera uniforms
         mManager.ForEachArchetype<Transform, Camera>([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
@@ -127,7 +126,6 @@ namespace Client
 
             renderer.AddCamera(uniforms);
         });
-        renderer.CommitCameras();
 
         // prepare the object uniforms
         mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
@@ -156,12 +154,53 @@ namespace Client
                 .isUsingTexture = true,
                 .isIgnoringLight = model.ignoreLight,
                 .isSolidColor = false,
-                .isHighlighted = model.selected,
+                .isWireframe = false,
                 .material = material
             };
 
+            if (model.selected)
+            {
+                Gep::ObjectGPUData wireframeUniforms = uniforms;
+                wireframeUniforms.isWireframe = true;
+
+                renderer.AddObject(model.modelName, wireframeUniforms);
+            }
+
             renderer.AddObject(model.modelName, uniforms);
         });
+
+        // prepare the object uniforms
+        //mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity entity, CubeCollider& collider, Transform& transform)
+        //    {
+        //        glm::mat4 modelMatrix = transform.GetModelMatrix();
+        //        glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
+
+        //        Gep::MaterialGPUData material
+        //        {
+        //            .ao = 1.0f, // ambient occlusion
+        //            .roughness = 1.0f,
+        //            .metalness = 1.0f,
+        //            .color = {1.0f, 0.0f, 0.0f}
+        //        };
+
+        //        Gep::ObjectGPUData uniforms
+        //        {
+        //            .modelMatrix = modelMatrix,
+        //            .normalMatrix = normal,
+        //            .isUsingTexture = true,
+        //            .isIgnoringLight = true,
+        //            .isSolidColor = false,
+        //            .isWireframe = true,
+        //            .material = material
+        //        };
+
+        //        renderer.AddObject("Cube", uniforms);
+        //    });
+
+
+        // send all things added to the gpu
+        renderer.CommitLights();
+        renderer.CommitCameras();
         renderer.CommitObjects();
 
 
@@ -174,12 +213,11 @@ namespace Client
             cam.renderTarget->Bind();
             cam.renderTarget->Clear({ 0.0f, 0.0f, 0.0f });
 
-            const glm::vec2 renderSize = cam.renderTarget->GetSize();
-
-            renderer.DrawInstanced();
+            // draw the scene once for every camera
+            renderer.Draw();
 
             cam.renderTarget->Draw(mManager, camEntity);
-            cam.Resize(renderSize);
+            cam.Resize(cam.renderTarget->GetSize());
             cam.renderTarget->Unbind();
         });
 

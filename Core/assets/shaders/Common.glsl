@@ -41,7 +41,7 @@ struct ObjectUniforms
   int isUsingTexture;  
   int isIgnoringLight; 
   int isSolidColor;    
-  int isHighlighted;   
+  int isWireframe;   
   PBRMaterial material;  
 };
 

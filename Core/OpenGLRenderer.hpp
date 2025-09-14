@@ -43,7 +43,7 @@ namespace Gep
         int isUsingTexture;
         int isIgnoringLight; 
         int isSolidColor;    
-        int isHighlighted;   
+        int isWireframe;   
         MaterialGPUData material;
     };
 
@@ -82,6 +82,7 @@ namespace Gep
 
         void SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
         void SetHighlightShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
+        void SetColorShader(const std::filesystem::path& vert, const std::filesystem::path& frag);
 
         // adds an object to be drawn by 
         void AddObject(const std::string& modelName, const ObjectGPUData& objectData);
@@ -94,10 +95,6 @@ namespace Gep
 
         void SetCameraIndex(size_t index);
         void SetLightCount(size_t count); 
-
-        // changes how the renderer will draw the next object
-        void SetHighlight(bool highlight);
-        void SetWireframe(bool wireframe);
 
         std::vector<std::string> GetLoadedMeshes() const;
         std::vector<std::filesystem::path> GetLoadedTextures() const;
@@ -117,12 +114,7 @@ namespace Gep
         void LoadErrorTexture(const std::filesystem::path& texturePath);
         GLuint GetErrorTexture() const;
 
-        
-
-        // completes the rendering of the object
-        void DrawModel(const std::string& modelName);
-        void Draw(); // draws all of the submitted information
-        void DrawInstanced();
+        void Draw();
 
         void ToggleWireframes();
         void ToggleTextures();
@@ -164,24 +156,25 @@ namespace Gep
         {
             std::vector<MeshGPUHandle> meshHandles;
             std::vector<ObjectGPUData> objectDatas;
+
+            std::vector<ObjectGPUData> regularObjectDatas;
+            std::vector<ObjectGPUData> wireframeObjectDatas;
         };
 
     private:
-        void DrawMesh(const MeshGPUHandle& meshHandle);
+        void DrawRegular();
+        void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
 
     private:
 
-        std::unique_ptr<Shader> mActiveShader;
+        std::unique_ptr<Shader> mPBRShader;
         std::unique_ptr<Shader> mHighlightShader;
+        std::unique_ptr<Shader> mColorShader;
 
         //keyed_vector<MeshGPUHandle> mModelHandles;
         bool mWireframeMode = false;
         bool mTexturesEnabled = true;
 
-        bool mNextMeshIsBackfaceCulling = true; // if false, back faces will be drawn
-        bool mNextMeshIsWireframe = false;
-        bool mNextMeshIsHighlighted = false;
-        bool mNextMeshIsSolidColor = false;
         glm::vec3 mSolidColor{};
 
         // camera
@@ -204,7 +197,6 @@ namespace Gep
 
         GLuint mObjectsSSBO{};
         std::vector<ObjectGPUData> mObjectUniforms;
-        std::vector<DrawCommand> mDrawCommands;
 
         GLuint mCameraUniformsSSBO{};
         std::vector<CameraGPUData> mCameraUniforms;

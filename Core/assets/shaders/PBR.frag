@@ -29,6 +29,12 @@ void main(void)
     return;
   } 
 
+  if (object.isWireframe == 1)
+  {
+    frag_color = vec4(1.0, 0.0, 0.0, 1.0);
+    return;
+  }
+
   if (object.isIgnoringLight == 1)
   {
     if (object.isUsingTexture == 1) 
