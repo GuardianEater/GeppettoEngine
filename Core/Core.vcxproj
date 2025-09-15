@@ -115,9 +115,11 @@
     <ClCompile Include="CollisionChecking.cpp" />
     <ClCompile Include="CollisionResource.cpp" />
     <ClCompile Include="CollisionSystem.cpp" />
+    <ClCompile Include="Conversion.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClInclude Include="BVHTree.hpp" />
     <ClInclude Include="CollisionResource.hpp" />
+    <ClInclude Include="Conversion.h" />
     <ClInclude Include="CubeCollider.hpp" />
     <ClCompile Include="CubeMesh.cpp" />
     <ClCompile Include="dependencies\ImGuizmo\GraphEditor.cpp">

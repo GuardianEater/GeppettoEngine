@@ -49,9 +49,12 @@ namespace Client
         renderer.SetShader("assets\\shaders\\PBR.vert", "assets\\shaders\\PBR.frag");
         renderer.SetHighlightShader("assets\\shaders\\Highlight.vert", "assets\\shaders\\Highlight.frag");
 
+        renderer.SetLineShader("assets\\shaders\\Line.vert", "assets\\shaders\\Line.frag");
+
         renderer.SetUpLightSSBO();
         renderer.SetUpObjectUniformsSSBO();
         renderer.SetUpCameraUniformsSSBO();
+        renderer.SetUpLineDrawing();
 
         renderer.BackfaceCull();
 
@@ -151,10 +154,10 @@ namespace Client
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrix = normal,
-                .isUsingTexture = true,
+                .isUsingTexture = !mNoTextureMode,
                 .isIgnoringLight = model.ignoreLight,
                 .isSolidColor = false,
-                .isWireframe = false,
+                .isWireframe = mWireframeMode,
                 .material = material
             };
 
@@ -162,40 +165,89 @@ namespace Client
             {
                 Gep::ObjectGPUData wireframeUniforms = uniforms;
                 wireframeUniforms.isWireframe = true;
+                wireframeUniforms.material.color = { 1.0f, 1.0f, 0.0f };
 
                 renderer.AddObject(model.modelName, wireframeUniforms);
             }
 
+            const Gep::Model& internalModel = renderer.GetModel(model.modelName);
+
+            for (const Gep::Bone& bone : internalModel.skeleton.bones)
+            {
+            }
+            
             renderer.AddObject(model.modelName, uniforms);
         });
 
-        // prepare the object uniforms
-        //mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity entity, CubeCollider& collider, Transform& transform)
-        //    {
-        //        glm::mat4 modelMatrix = transform.GetModelMatrix();
-        //        glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
+        // draws colliders if on
 
-        //        Gep::MaterialGPUData material
-        //        {
-        //            .ao = 1.0f, // ambient occlusion
-        //            .roughness = 1.0f,
-        //            .metalness = 1.0f,
-        //            .color = {1.0f, 0.0f, 0.0f}
-        //        };
+        if (mDrawColliders)
+        {
+            Gep::MaterialGPUData material
+            {
+                .ao = 1.0f, // ambient occlusion
+                .roughness = 1.0f,
+                .metalness = 1.0f,
+                .color = {1.0f, 0.0f, 0.0f}
+            };
 
-        //        Gep::ObjectGPUData uniforms
-        //        {
-        //            .modelMatrix = modelMatrix,
-        //            .normalMatrix = normal,
-        //            .isUsingTexture = true,
-        //            .isIgnoringLight = true,
-        //            .isSolidColor = false,
-        //            .isWireframe = true,
-        //            .material = material
-        //        };
+            mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity entity, CubeCollider& collider, Transform& transform)
+            {
+                glm::mat4 modelMatrix = transform.GetModelMatrix();
+                glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
 
-        //        renderer.AddObject("Cube", uniforms);
-        //    });
+                Gep::ObjectGPUData uniforms
+                {
+                    .modelMatrix = modelMatrix,
+                    .normalMatrix = normal,
+                    .isUsingTexture = false,
+                    .isIgnoringLight = true,
+                    .isSolidColor = true,
+                    .isWireframe = true,
+                    .material = material
+                };
+
+                renderer.AddObject("Cube", uniforms);
+            });
+
+            mManager.ForEachArchetype<SphereCollider, Transform>([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
+            {
+                glm::mat4 modelMatrix = transform.GetModelMatrix();
+                glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
+
+                Gep::ObjectGPUData uniforms
+                {
+                    .modelMatrix = modelMatrix,
+                    .normalMatrix = normal,
+                    .isUsingTexture = false,
+                    .isIgnoringLight = true,
+                    .isSolidColor = true,
+                    .isWireframe = true,
+                    .material = material
+                };
+
+                renderer.AddObject("Sphere", uniforms);
+            });
+
+        }
+
+        Gep::LineGPUData line{};
+        line.color = { 1.0f, 0.0f, 0.0f };
+        line.points.push_back({ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } });
+        line.points.push_back({ { 1.0f, 0.0f, 0.0f, 1.0f }, { 2.0f, 1.0f, 0.0f, 1.0f } });
+        line.points.push_back({ { 2.0f, 1.0f, 0.0f, 1.0f }, { 4.0f, 2.0f, 0.0f, 1.0f } });
+        line.points.push_back({ { 4.0f, 2.0f, 0.0f, 1.0f }, { 8.0f, 3.0f, 0.0f, 1.0f } });
+        line.points.push_back({ { 8.0f, 3.0f, 0.0f, 1.0f }, { 16.0f, 4.0f, 0.0f, 1.0f } });
+        renderer.AddLine(line);
+
+        Gep::LineGPUData lineBlue{};
+        lineBlue.color = { 0.0f, 0.0f, 1.0f };
+        lineBlue.points.push_back({ { 0.0f, 1.0f, 0.0f, 1.0f }, { 2.0f, 1.0f, 1.0f, 1.0f } });
+        lineBlue.points.push_back({ { 2.0f, 1.0f, 1.0f, 1.0f }, { 2.0f, 1.0f, 2.0f, 1.0f } });
+        lineBlue.points.push_back({ { 2.0f, 1.0f, 2.0f, 1.0f }, { 4.0f, 2.0f, 5.0f, 1.0f } });
+        lineBlue.points.push_back({ { 4.0f, 2.0f, 5.0f, 1.0f }, { 8.0f, 3.0f, 3.0f, 1.0f } });
+        lineBlue.points.push_back({ { 8.0f, 3.0f, 3.0f, 1.0f }, { 16.0f, 4.0f, 6.0f, 1.0f } });
+        renderer.AddLine(lineBlue);
 
 
         // send all things added to the gpu
@@ -254,7 +306,7 @@ namespace Client
         {
             if (!isTKeyPressed)
             {
-                renderer.ToggleTextures();
+                mNoTextureMode = !mNoTextureMode;
                 isTKeyPressed = true;
             }
         }
@@ -266,7 +318,7 @@ namespace Client
         {
             if (!isYKeyPressed)
             {
-                renderer.ToggleWireframes();
+                mWireframeMode = !mWireframeMode;
                 isYKeyPressed = true;
             }
         }

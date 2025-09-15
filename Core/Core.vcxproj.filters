@@ -294,6 +294,9 @@
     <ClCompile Include="Quaternion.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="Conversion.cpp">
+      <Filter>Backend\Tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -598,6 +601,9 @@
     </ClInclude>
     <ClInclude Include="TextureLibrary.hpp">
       <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="Conversion.h">
+      <Filter>Backend\Tools</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

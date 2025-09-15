@@ -30,7 +30,7 @@ namespace Gep
         glm::vec3 position{};
         glm::vec3 normal{};
         glm::vec2 texCoord{};
-        std::array<uint8_t, 4> boneIndices;
+        std::array<uint64_t, 4> boneIndices;
         std::array<float, 4> boneWeights;
     };
 
@@ -75,8 +75,9 @@ namespace Gep
     {
         std::string name = "Unnamed";
 
-        uint32_t parentIndex;
+        uint64_t parentIndex;
         VQS toModelFromBone; // from the bind pose
+        glm::mat4 toModelFromBoneM;
         VQS toBoneFromModel; // inverse of the previous
     };
 

@@ -54,15 +54,15 @@ namespace Gep
 
     void OpenGLRenderer::AddModelFromFile(const std::string& path)
     {
-        if (mModelHandles.contains(path))
+        if (mModels.contains(path))
         {
             Gep::Log::Error("Cannot load mesh: [", path, "] a mesh with that name has already been loaded");
             return;
         }
 
-        Model model = Model::FromFile(path);
+        auto& [modelHandle, model] = mModels[path];
 
-        ModelGPUHandle& modelHandle = mModelHandles[path]; // create a handle for this model, and sets its name to its path
+        model = Model::FromFile(path);
 
         for (const auto& mesh : model.meshes)
         {
@@ -79,15 +79,17 @@ namespace Gep
         }
     }
 
-    void OpenGLRenderer::AddModel(const std::string& name, const Gep::Model& model)
+    void OpenGLRenderer::AddModel(const std::string& name, const Gep::Model& newModel)
     {
-        if (mModelHandles.contains(name))
+        if (mModels.contains(name))
         {
             Gep::Log::Error("Cannot load mesh: [", name, "] a mesh with that name has already been loaded");
             return;
         }
 
-        ModelGPUHandle& modelHandle = mModelHandles[name];
+        auto& [modelHandle, model] = mModels[name];
+
+        model = newModel;
 
         for (const Mesh& mesh : model.meshes)
         {
@@ -100,9 +102,14 @@ namespace Gep
         }
     }
 
+    const Gep::Model& OpenGLRenderer::GetModel(const std::string& name)
+    {
+        return mModels.at(name).second;
+    }
+
     bool OpenGLRenderer::IsMeshLoaded(const std::string& name) const
     {
-        return mModelHandles.contains(name);
+        return mModels.contains(name);
     }
 
     void OpenGLRenderer::SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
@@ -120,9 +127,14 @@ namespace Gep
         mColorShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
     }
 
+    void OpenGLRenderer::SetLineShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
+    {
+        mLineShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
+    }
+
     void OpenGLRenderer::AddObject(const std::string& modelName, const ObjectGPUData& objectData)
     {
-        mModelHandles.at(modelName).objectDatas.push_back(objectData);
+        mModels.at(modelName).first.objectDatas.push_back(objectData);
     }
 
     void OpenGLRenderer::AddCamera(const CameraGPUData& uniforms)
@@ -135,10 +147,17 @@ namespace Gep
         mLightUniforms.push_back(uniforms);
     }
 
+    void OpenGLRenderer::AddLine(const LineGPUData& lines)
+    {
+        mLineUniforms.push_back(lines);
+    }
+
     void OpenGLRenderer::CommitObjects()
     {
-        for (auto& [modelName, modelHandle] : mModelHandles)
+        for (auto& [modelName, modelPair] : mModels)
         {
+            auto& [modelHandle, model] = modelPair;
+
             for (auto& obj : modelHandle.objectDatas)
             {
                 if (obj.isWireframe)
@@ -179,6 +198,7 @@ namespace Gep
     {
         mPBRShader->SetUniform(0, static_cast<int>(index));
         mHighlightShader->SetUniform(0, static_cast<int>(index));
+        mLineShader->SetUniform(0, static_cast<int>(index));
     }
 
     void OpenGLRenderer::SetLightCount(size_t count)
@@ -187,21 +207,16 @@ namespace Gep
         mHighlightShader->SetUniform(2, static_cast<int>(count));
     }
 
-    void OpenGLRenderer::ToggleWireframes()
-    {
-        mWireframeMode = !mWireframeMode;
-    }
-
     void OpenGLRenderer::UnloadModel(const std::string& name)
     {
-        if (!mModelHandles.contains(name))
+        if (!mModels.contains(name))
         {
             Gep::Log::Error("Cannot unload mesh: [", name, "] a mesh with that name has not been loaded");
             return;
         }
 
         // aquire the model id from the name
-        ModelGPUHandle& modelHandle = mModelHandles[name];
+        auto& [modelHandle, model] = mModels[name];
 
         // delete all meshes owned by the model
         for (MeshGPUHandle& meshHandle : modelHandle.meshHandles)
@@ -209,7 +224,7 @@ namespace Gep
             meshHandle.DeleteBuffers();
         }
 
-        mModelHandles.erase(name);
+        mModels.erase(name);
     }
 
     void OpenGLRenderer::BackfaceCull(bool enabled)
@@ -231,17 +246,11 @@ namespace Gep
         //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    // toggle textures
-    void OpenGLRenderer::ToggleTextures()
-    {
-        mTexturesEnabled = !mTexturesEnabled;
-    }
-
     std::vector<std::string> OpenGLRenderer::GetLoadedMeshes() const
     {
         std::vector<std::string> meshes;
 
-        for (const auto& [name, modelHandle] : mModelHandles)
+        for (const auto& [name, modelHandle] : mModels)
         {
             meshes.emplace_back(name);
         }
@@ -455,6 +464,7 @@ namespace Gep
     void OpenGLRenderer::Draw()
     {
         DrawRegular();
+        DrawLines();
     }
 
     void OpenGLRenderer::End()
@@ -491,13 +501,28 @@ namespace Gep
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }
 
+    void OpenGLRenderer::SetUpLineDrawing()
+    {
+        glGenVertexArrays(1, &mLineVAO);
+        glGenBuffers(1, &mLineVBO);
+
+        glBindVertexArray(mLineVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, mLineVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * 1000, nullptr, GL_DYNAMIC_DRAW);
+
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (void*)0);
+        glEnableVertexAttribArray(0);
+    }
+
     void OpenGLRenderer::DrawRegular()
     {
         mPBRShader->Bind();
 
         size_t baseInstance = 0;
-        for (auto& [modelName, modelHandle] : mModelHandles)
+        for (auto& [modelName, modelPair] : mModels)
         {
+            auto& [modelHandle, model] = modelPair;
+
             // normal draw
             for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
             {
@@ -521,11 +546,11 @@ namespace Gep
             baseInstance += modelHandle.regularObjectDatas.size();
 
             // --- Wireframe draw ---
+            glDisable(GL_DEPTH_TEST);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
             {
                 glBindVertexArray(meshHandle.mVertexArrayObject);
-
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
                 glDrawElementsInstancedBaseInstance(
                     GL_TRIANGLES,
                     meshHandle.mIndexCount,
@@ -535,6 +560,7 @@ namespace Gep
                     baseInstance
                 );
             }
+            glEnable(GL_DEPTH_TEST);
             baseInstance += modelHandle.wireframeObjectDatas.size();
 
             modelHandle.objectDatas.clear();
@@ -543,6 +569,32 @@ namespace Gep
         }
 
         mPBRShader->Unbind();
+    }
+
+    void OpenGLRenderer::DrawLines()
+    {
+        glDisable(GL_DEPTH_TEST);
+        mLineShader->Bind();
+        glBindVertexArray(mLineVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, mLineVBO);
+
+        for (const LineGPUData& lineData : mLineUniforms)
+        {
+            // one color per set
+            mLineShader->SetUniform(1, glm::vec4(lineData.color, 1.0f));
+
+            glBufferSubData(GL_ARRAY_BUFFER, 0,
+                lineData.points.size() * sizeof(glm::vec4) * 2,
+                lineData.points.data()
+            );
+
+            // draw all line segments in this set
+            glDrawArrays(GL_LINES, 0, lineData.points.size() * 2);
+        }
+
+        mLineShader->Unbind();
+        mLineUniforms.clear();
+        glEnable(GL_DEPTH_TEST);
     }
 
     void OpenGLRenderer::AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData)

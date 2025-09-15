@@ -62,11 +62,16 @@ namespace Gep
         float intensity;
     };
 
-    struct DrawCommand
+    struct LineGPUData
     {
-        std::string meshName;
-        uint32_t instanceCount;
-        uint32_t baseInstance;
+        struct LineSegment
+        {
+            glm::vec4 start, end;
+        };
+
+        glm::vec3 color;
+        std::vector<LineSegment> points;
+        // formula??
     };
 
     class OpenGLRenderer
@@ -78,16 +83,20 @@ namespace Gep
         // adds a prexisting model into the renderer. will not perform any loading from disk
         void AddModel(const std::string& name, const Gep::Model& model);
 
+        const Gep::Model& GetModel(const std::string& name);
+
         bool IsMeshLoaded(const std::string& name) const;
 
         void SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
         void SetHighlightShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
         void SetColorShader(const std::filesystem::path& vert, const std::filesystem::path& frag);
+        void SetLineShader(const std::filesystem::path& vert, const std::filesystem::path& frag);
 
         // adds an object to be drawn by 
         void AddObject(const std::string& modelName, const ObjectGPUData& objectData);
         void AddCamera(const CameraGPUData& cameraData);
         void AddLight(const LightGPUData& lightData); // adds a light to the renderered, will be sent to the shader when DrawLights is called
+        void AddLine(const LineGPUData& lines); // adds a line set, each point will be connected in this set
 
         void CommitObjects(); // moves all of the added object data from the cpu to the gpu
         void CommitCameras(); // moves all of the added camera data from the cpu to the gpu
@@ -116,9 +125,6 @@ namespace Gep
 
         void Draw();
 
-        void ToggleWireframes();
-        void ToggleTextures();
-
         void UnloadModel(const std::string& name);
         void BackfaceCull(bool enabled = true);
 
@@ -129,6 +135,7 @@ namespace Gep
         void SetUpLightSSBO();
         void SetUpObjectUniformsSSBO();
         void SetUpCameraUniformsSSBO();
+        void SetUpLineDrawing();
     private:
         struct MaterialGPUHandle
         {
@@ -163,6 +170,7 @@ namespace Gep
 
     private:
         void DrawRegular();
+        void DrawLines();
         void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
 
     private:
@@ -170,10 +178,7 @@ namespace Gep
         std::unique_ptr<Shader> mPBRShader;
         std::unique_ptr<Shader> mHighlightShader;
         std::unique_ptr<Shader> mColorShader;
-
-        //keyed_vector<MeshGPUHandle> mModelHandles;
-        bool mWireframeMode = false;
-        bool mTexturesEnabled = true;
+        std::unique_ptr<Shader> mLineShader; // used to draw lines in 3d space
 
         glm::vec3 mSolidColor{};
 
@@ -182,10 +187,10 @@ namespace Gep
         glm::mat4 mNextView{};
         glm::vec4 mNextEye{};
 
-        std::unordered_map<std::string, ModelGPUHandle> mModelHandles; // model name -> its handle
+        std::unordered_map<std::string, std::pair<ModelGPUHandle, Gep::Model>> mModels; // model name -> its handle and data
         size_t mTotalDrawCount;
 
-        //std::unordered_map<std::string, MeshGPUHandle> mModelHandles;
+        //std::unordered_map<std::string, MeshGPUHandle> mModels;
         std::unordered_map<std::string, GLuint> mIconTextures;// icon extension -> texture id
         std::unordered_map<std::filesystem::path, GLuint> mTextures; // texture path -> texture id
         GLuint mErrorTexture{}; // always loaded, used when a texuture fails to load
@@ -200,6 +205,11 @@ namespace Gep
 
         GLuint mCameraUniformsSSBO{};
         std::vector<CameraGPUData> mCameraUniforms;
+
+        // used to store vertices for drawing lines
+        GLuint mLineVBO;
+        GLuint mLineVAO;
+        std::vector<LineGPUData> mLineUniforms;
 
     public:
         Gep::bvh_tree<uint64_t, Gep::Entity> mBVHTree;

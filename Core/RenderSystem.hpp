@@ -44,6 +44,9 @@ namespace Client
 
     private:
         bool mDrawColliders = false;
+        bool mWireframeMode = false;
+        bool mNoTextureMode = false;
+
         void OnModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event);
         void OnModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event);
         void OnTextureEditorRender(const Gep::Event::ComponentEditorRender<Texture>& event);

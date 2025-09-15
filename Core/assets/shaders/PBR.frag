@@ -23,17 +23,11 @@ void main(void)
   vec3 N = normalize(worldNormal.xyz);
   
   // Determine the base color from texture or solid color.
-  if (object.isSolidColor == 1) 
+  if (object.isSolidColor == 1 || object.isWireframe == 1) 
   {
     frag_color = vec4(object.material.color, 1.0);
     return;
   } 
-
-  if (object.isWireframe == 1)
-  {
-    frag_color = vec4(1.0, 0.0, 0.0, 1.0);
-    return;
-  }
 
   if (object.isIgnoringLight == 1)
   {
