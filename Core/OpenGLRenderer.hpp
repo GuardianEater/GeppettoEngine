@@ -117,6 +117,8 @@ namespace Gep
 
         void LoadTextureAsync(const std::filesystem::path& texturePath);
         void LoadTexture(const std::filesystem::path& texturePath);
+        void LoadTexture(const std::string& name, const uint8_t* imageFileData, size_t size); // note destroys 
+
         GLuint GetTexture(const std::filesystem::path& texturePath);
         GLuint GetOrLoadTexture(const std::filesystem::path& texturePath);
 
@@ -172,6 +174,7 @@ namespace Gep
         void DrawRegular();
         void DrawLines();
         void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
+        void LoadTextureFromPixelData(const std::string& name, uint8_t* pixelData, size_t width, size_t height, int requiredChannels); // pixel data loaded from stbimage, note it is freed after use
 
     private:
 
@@ -192,7 +195,7 @@ namespace Gep
 
         //std::unordered_map<std::string, MeshGPUHandle> mModels;
         std::unordered_map<std::string, GLuint> mIconTextures;// icon extension -> texture id
-        std::unordered_map<std::filesystem::path, GLuint> mTextures; // texture path -> texture id
+        std::unordered_map<std::string, GLuint> mTextures; // texture path -> texture id
         GLuint mErrorTexture{}; // always loaded, used when a texuture fails to load
 
         std::mutex mTextureLoadingMutex{};

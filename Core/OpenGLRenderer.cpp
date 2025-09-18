@@ -73,6 +73,7 @@ namespace Gep
             root = root.parent_path();
 
             meshHandle.materialHandle.diffuseTexture = GetOrLoadTexture(root / diffuseTexturePath);
+            
             meshHandle.GenVertexBuffer(mesh);
             meshHandle.GenIndexBuffer(mesh);
             meshHandle.BindBuffers();
@@ -357,7 +358,7 @@ namespace Gep
     {
         std::lock_guard<std::mutex> lock(mTextureLoadingMutex);
 
-        if (mTextures.contains(texturePath)) {
+        if (mTextures.contains(texturePath.string())) {
             Gep::Log::Error("Cannot load texture: [", texturePath, "] has already been loaded");
             return;
         }
@@ -367,7 +368,7 @@ namespace Gep
             return;
         }
 
-        mTextures[texturePath] = GetErrorTexture();
+        mTextures[texturePath.string()] = GetErrorTexture();
 
         std::thread([&]()
             {
@@ -377,7 +378,7 @@ namespace Gep
 
     void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)
     {
-        if (mTextures.contains(texturePath))
+        if (mTextures.contains(texturePath.string()))
         {
             Gep::Log::Error("Failed to load texture: [", texturePath.string(), "] a texture with that name is already loaded.");
             return;
@@ -403,14 +404,32 @@ namespace Gep
             return;
         }
 
+        LoadTextureFromPixelData(texturePath.string(), image, width, height, required_channels);
+    }
 
-        GLuint& texture = mTextures[texturePath];
+    void OpenGLRenderer::LoadTexture(const std::string& name, const uint8_t* imageFileData, size_t size)
+    {
+        int requiredChannels = 4; // Force RGBA
+        int width, height, channels;
+        unsigned char* image = stbi_load_from_memory(imageFileData, size, &width, & height, & channels, requiredChannels);
+        if (!image)
+        {
+            Gep::Log::Error("Failed to load texture from raw data");
+            return;
+        }
+
+        LoadTextureFromPixelData(name, image, width, height, requiredChannels);
+    }
+
+    void OpenGLRenderer::LoadTextureFromPixelData(const std::string& name, uint8_t* pixelData, size_t width, size_t height, int requiredChannels)
+    {
+        GLuint& texture = mTextures[name];
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
 
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Ensure proper alignment
-        GLenum format = (required_channels == 4) ? GL_RGBA : GL_RGB;
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, image);
+        GLenum format = (requiredChannels == 4) ? GL_RGBA : GL_RGB;
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, pixelData);
 
         glGenerateMipmap(GL_TEXTURE_2D);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -419,29 +438,29 @@ namespace Gep
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
-        stbi_image_free(image);
+        stbi_image_free(pixelData);
     }
 
     GLuint OpenGLRenderer::GetTexture(const std::filesystem::path& texturePath)
     {
-        if (!mTextures.contains(texturePath))
+        if (!mTextures.contains(texturePath.string()))
         {
             Gep::Log::Error("Cannot get texture: [", texturePath, "] a texture with that name has not been loaded");
             return GetErrorTexture();
         }
 
-        return mTextures.at(texturePath);
+        return mTextures.at(texturePath.string());
     }
 
     GLuint OpenGLRenderer::GetOrLoadTexture(const std::filesystem::path& texturePath)
     {
-        if (!mTextures.contains(texturePath))
+        if (!mTextures.contains(texturePath.string()))
             LoadTexture(texturePath);
 
-        if (!mTextures.contains(texturePath))
+        if (!mTextures.contains(texturePath.string()))
             return GetErrorTexture();
 
-        return mTextures.at(texturePath);
+        return mTextures.at(texturePath.string());
     }
 
     void OpenGLRenderer::LoadErrorTexture(const std::filesystem::path& texturePath)

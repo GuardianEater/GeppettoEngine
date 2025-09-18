@@ -49,7 +49,8 @@
 
 struct AdiCOmponent
 {
-    int hello;
+    std::string descrition{"!Cringe"};
+    float adiness{ 0.1f };
 };
 
 int main()  
