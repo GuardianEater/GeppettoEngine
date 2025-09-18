@@ -47,6 +47,11 @@
 
 #include "OS.hpp"
 
+struct AdiCOmponent
+{
+    int hello;
+};
+
 int main()  
 #ifdef _DEBUG
 try
@@ -82,7 +87,8 @@ try
         Client::Light,
         Client::SpatialSoundEmitter,
         Client::SphereCollider,
-        Client::CubeCollider
+        Client::CubeCollider,
+        AdiCOmponent
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////

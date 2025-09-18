@@ -490,9 +490,9 @@ namespace Gep
 
         // this writes each type inside of the component
         view.apply([&](const auto& f)
-            {
-                Json::WriteType(componentDataJson, f.name(), *f.value());
-            });
+        {
+            Json::WriteType(componentDataJson, f.name(), *f.value());
+        });
 
         nlohmann::json componentJson = nlohmann::json::object();
         componentJson["data"] = componentDataJson;

@@ -13,6 +13,15 @@
 
 namespace Gep
 {
+    struct BoneInfo
+    {
+        int id;
+        glm::mat4 offset;
+    };
+
+    static std::map<std::string, BoneInfo> gBoneInfoMap; //
+    int gBoneCounter = 0;
+
     // moves all data from the aiScene into the internal model format
     static void LoadMaterials(Gep::Model& model, const aiScene* scene)
     {
@@ -39,6 +48,63 @@ namespace Gep
 
     }
 
+    static void SetVertexBoneDataToDefault(Vertex& vertex)
+    {
+        for (int i = 0; i < vertex.boneWeights.size(); i++)
+        {
+            vertex.boneIndices[i] = -1;
+            vertex.boneWeights[i] = 0.0f;
+        }
+    }
+
+    static void SetVertexBoneData(Vertex& vertex, int boneID, float weight)
+    {
+        for (int i = 0; i < vertex.boneWeights.size(); ++i)
+        {
+            if (vertex.boneIndices[i] < 0)
+            {
+                vertex.boneWeights[i] = weight;
+                vertex.boneIndices[i] = boneID;
+                break;
+            }
+        }
+    }
+
+    static void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, const aiMesh* assimpMesh)
+    {
+        for (int boneIndex = 0; boneIndex < assimpMesh->mNumBones; ++boneIndex)
+        {
+            int boneID = -1;
+            std::string boneName = assimpMesh->mBones[boneIndex]->mName.C_Str();
+            if (gBoneInfoMap.find(boneName) == gBoneInfoMap.end())
+            {
+                BoneInfo newBoneInfo{};
+                newBoneInfo.id = gBoneCounter;
+                newBoneInfo.offset = ToMat4(assimpMesh->mBones[boneIndex]->mOffsetMatrix);
+                gBoneInfoMap[boneName] = newBoneInfo;
+                boneID = gBoneCounter;
+                ++gBoneCounter;
+            }
+            else
+            {
+                boneID = gBoneInfoMap[boneName].id;
+            }
+
+            assert(boneID != -1);
+            auto weights = assimpMesh->mBones[boneIndex]->mWeights;
+            int numWeights = assimpMesh->mBones[boneIndex]->mNumWeights;
+
+            for (int weightIndex = 0; weightIndex < numWeights; ++weightIndex)
+            {
+                int vertexId = weights[weightIndex].mVertexId;
+                float weight = weights[weightIndex].mWeight;
+                assert(vertexId <= vertices.size());
+
+                SetVertexBoneData(vertices[vertexId], boneID, weight);
+            }
+        }
+    }
+
     static void LoadVertices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
     {
         mesh.vertices.reserve(assimpMesh->mNumVertices);
@@ -54,6 +120,8 @@ namespace Gep
             if (assimpMesh->HasTextureCoords(0))
                 v.texCoord = { assimpMesh->mTextureCoords[0][i].x, assimpMesh->mTextureCoords[0][i].y };
         }
+
+        ExtractBoneWeightForVertices(mesh.vertices, assimpMesh);
     }
 
     static void LoadIndices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
