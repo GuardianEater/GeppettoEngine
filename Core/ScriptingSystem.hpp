@@ -13,16 +13,8 @@
 #include "EngineManager.hpp"
 #include "ScriptingResource.hpp"
 
-#include <sol/sol.hpp>
-
 namespace Client
 {
-    template <typename ComponentType>
-    concept HasOnScriptAccess = requires(ComponentType component, sol::usertype<ComponentType>& type)
-    {
-        { component.OnScriptAccess(type) } -> std::same_as<void>;
-    };
-
     class ScriptingSystem : public Gep::ISystem
     {
     public:
@@ -39,26 +31,22 @@ namespace Client
         void OnScriptAdded(const Gep::Event::ComponentAdded<Script>& event);
         void OnScriptEditorRender(const Gep::Event::ComponentEditorRender<Script>& event);
         void OnEntityCreated(const Gep::Event::EntityCreated& event);
-
-        // given a componentIndex, sets up the lua fields for that compoennt
-        std::vector<std::function<void(Gep::Entity, sol::table&)>> mSetComponentMemberReferences;
     };
 
     template<typename ...ComponentTypes>
     inline void ScriptingSystem::OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes)
     {
         ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
-        sol::state& lua = sr.GetLua();
 
         componentTypes.for_each([&]<typename ComponentType>()
         {
             std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
             ComponentType component{};
 
-            sol::usertype<ComponentType> luaComponentType = lua.new_usertype<ComponentType>(typeName);
+            //sol::usertype<ComponentType> luaComponentType = lua.new_usertype<ComponentType>(typeName);
 
-            if constexpr (HasOnScriptAccess<ComponentType>)
-                component.OnScriptAccess(luaComponentType);
+            //if constexpr (HasOnScriptAccess<ComponentType>)
+            //    component.OnScriptAccess(luaComponentType);
 
             //tempView.apply([&](const auto& field)
             //{
@@ -82,16 +70,16 @@ namespace Client
             //    });
             //});
 
-            mSetComponentMemberReferences.push_back([&](Gep::Entity entity, sol::table& self)
-            {
-                if constexpr (HasOnScriptAccess<ComponentType>)
-                {
-                    ComponentType& component = mManager.GetComponent<ComponentType>(entity);
-                    std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
+            //mSetComponentMemberReferences.push_back([&](Gep::Entity entity, sol::table& self)
+            //{
+            //    if constexpr (HasOnScriptAccess<ComponentType>)
+            //    {
+            //        ComponentType& component = mManager.GetComponent<ComponentType>(entity);
+            //        std::string typeName = Gep::GetTypeInfo<ComponentType>().PrettyName();
 
-                    self[typeName] = &component;
-                }
-            });
+            //        self[typeName] = &component;
+            //    }
+            //});
         });
     }
 }

@@ -35,13 +35,6 @@ namespace Client
             return model;
         }
 
-        void OnScriptAccess(sol::usertype<Transform>& luaType)
-        {
-            luaType["position"] = &Transform::position;
-            luaType["scale"]    = &Transform::scale;
-            luaType["rotation"] = &Transform::rotation;
-        }
-
         void SetModelMatrix(const glm::mat4& modelMatrix)
         {
             glm::vec3 skew;

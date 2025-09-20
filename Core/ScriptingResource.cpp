@@ -14,65 +14,28 @@ namespace Client
 {
     ScriptingResource::ScriptingResource()
     {
-        mLua.open_libraries();
-        mLua.new_usertype<glm::vec3>("vec3",
-            sol::constructors<glm::vec3(), glm::vec3(float, float, float)>(),
-            "x", &glm::vec3::x,
-            "y", &glm::vec3::y,
-            "z", &glm::vec3::z
-        );
+        // if the user has python installed access their packages
+        py::module sys = py::module::import("sys");
+        auto path = sys.attr("path").cast<py::list>();
+        path.append("C:/Users/2018t/AppData/Local/Programs/Python/Python313/Lib/site-packages");
 
-        // TODO: need to make this readonly on the lua side
-        const sol::table log = mLua.create_table("Log");
+        // vec3 class
+        py::class_<glm::vec3>(mMain, "Vec3")
+            .def(py::init<float, float, float>(), py::arg("x") = 0, py::arg("y") = 0, py::arg("z") = 0)
+            .def_readwrite("x", &glm::vec3::x)
+            .def_readwrite("y", &glm::vec3::y)
+            .def_readwrite("z", &glm::vec3::z);
 
-        mLua["Log"]["Trace"] = [](const sol::variadic_args& args)
-        {
-            std::string message;
-            for (auto arg : args)
-                message += arg.get<std::string>();
-
-            Gep::Log::Trace(message);
-        };
-
-        mLua["Log"]["Info"] = [](const sol::variadic_args& args)
-        {
-            std::string message;
-            for (auto arg : args)
-                message += arg.get<std::string>();
-            Gep::Log::Info(message);
-        };
-
-        mLua["Log"]["Warning"] = [](const sol::variadic_args& args)
-        {
-            std::string message;
-            for (auto arg : args)
-                message += arg.get<std::string>();
-            Gep::Log::Warning(message);
-        };
-
-        mLua["Log"]["Error"] = [](const sol::variadic_args& args)
-        {
-            std::stringstream ss;
-            for (auto&& arg : args)
-            {
-                if (arg.is<std::string>()) ss << arg.as<std::string>();
-                else if (arg.is<int>())    ss << arg.as<int>();
-                else if (arg.is<float>())  ss << arg.as<float>();
-                else if (arg.is<double>()) ss << arg.as<double>();
-                else if (arg.is<bool>())   ss << arg.as<bool>();
-                else if (arg.is<glm::vec3>())
-                {
-                    glm::vec3 vec = arg.as<glm::vec3>();
-                    ss << "(" << vec.x << ", " << vec.y << ", " << vec.z << ")";
-                }
-                else
-                {
-                    ss << "???";
-                }
+        // override print so it outputs to the logger
+        py::module builtins = py::module::import("builtins");
+        builtins.attr("print") = py::cpp_function([](py::args args, py::kwargs kwargs) {
+            std::string msg;
+            for (auto& arg : args) {
+                msg += py::str(arg).cast<std::string>() + " ";
             }
 
-            Gep::Log::Error(ss.str());
-        };
+            Gep::Log::Info(msg);
+        });
     }
 
     void ScriptingResource::LocateScripts()
@@ -89,10 +52,7 @@ namespace Client
             }
         }
     }
-    sol::state& ScriptingResource::GetLua()
-    {
-        return mLua;
-    }
+
     const std::set<std::filesystem::path>& ScriptingResource::GetKnownScripts() const
     {
         return mKnownScripts;

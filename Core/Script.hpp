@@ -17,36 +17,20 @@ namespace Client
 {
     struct Script
     {
-        std::filesystem::path path = "assets\\scripts\\example.lua";
-        sol::environment env;
+        std::filesystem::path path = "assets\\scripts\\example.py";
 
-        sol::protected_function init;
-        sol::protected_function update;
-        sol::protected_function exit;
+        py::object module;
+        py::function init;
+        py::function update;
+        py::function exit;
 
-        void LoadScript(sol::state& lua, const std::filesystem::path& newPath)
+        void LoadScript(const std::filesystem::path& newPath)
         {
             if (!std::filesystem::exists(newPath))
             {
                 Gep::Log::Error("Failed to load script the given path doesn't exist: [", newPath.string(), "]");
                 return;
             }
-
-            path = newPath;
-
-            env = sol::environment(lua, sol::create, lua.globals());
-            sol::protected_function_result result = lua.safe_script_file(path.string(), env, sol::script_pass_on_error);
-
-            if (!result.valid())
-            {
-                sol::error err = result;
-                Gep::Log::Error("Error loading script: ", err.what());
-                return;
-            }
-
-            init   = env["Initialize"];
-            update = env["Update"];
-            exit   = env["Exit"];
         }
     };
 }

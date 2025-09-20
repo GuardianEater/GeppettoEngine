@@ -9,7 +9,6 @@
 #pragma once
 
 #include "Core.hpp"
-#include <sol/sol.hpp>
 
 namespace Client
 {
@@ -19,11 +18,12 @@ namespace Client
         ScriptingResource();
 
         void LocateScripts();
-        sol::state& GetLua();
         const std::set<std::filesystem::path>& GetKnownScripts() const;
 
     private:
         std::set<std::filesystem::path> mKnownScripts;
-        sol::state mLua;
+        py::scoped_interpreter mGuard; // starts the python interpretter and closes it when the resource dies
+        py::module_ mMain = py::module_::import("__main__");
+        py::object mGlobals = mMain.attr("__dict__");
     };
 }

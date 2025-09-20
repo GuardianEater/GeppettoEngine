@@ -71,9 +71,6 @@
 #include <glew.h>
 #include <glfw/glfw3.h>
 
-// sol
-#include <sol/sol.hpp>
-
 // log
 #include <Logger.hpp>
 
@@ -83,3 +80,6 @@
 
 // Gep
 #include "FileHelp.hpp"
+
+#include <pybind11/embed.h>
+namespace py = pybind11;

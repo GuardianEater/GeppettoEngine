@@ -47,12 +47,6 @@
 
 #include "OS.hpp"
 
-struct AdiCOmponent
-{
-    std::string descrition{"!Cringe"};
-    float adiness{ 0.1f };
-};
-
 int main()  
 #ifdef _DEBUG
 try
@@ -88,8 +82,7 @@ try
         Client::Light,
         Client::SpatialSoundEmitter,
         Client::SphereCollider,
-        Client::CubeCollider,
-        AdiCOmponent
+        Client::CubeCollider
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////
