@@ -107,26 +107,52 @@ namespace Gep
         std::function<void(Gep::Entity, const nlohmann::json&)> load{}; // adds the given component to the entity from json
     };
 
+    enum class EngineState : uint8_t
+    {
+        None = 0, // not running
+
+        Game = 1 << 0, // if the game is running
+        Editor = 1 << 1, // if the editor is running
+        Paused = 1 << 2, // if the game is paused
+    };
+
+    inline EngineState operator|(EngineState lhs, EngineState rhs)
+    {
+        return static_cast<EngineState>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
+    }
+
+    inline EngineState operator&(EngineState lhs, EngineState rhs)
+    {
+        return static_cast<EngineState>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
+    }
+
     struct SystemData
     {
+        // the name of the system human readable
         std::string name{};
+
+        // the amount of memory this system takes up
         size_t size{};
+
+        // the index of this system into mSystems
         uint64_t index{};
 
-        float timeInFrameStart{};
-        float timeInFrameEnd{};
-        float timeInUpdate{};
-        float timeInInitialize{};
-        float timeInExit{};
+        float timeInFrameStart = 0.0f; // determines time spent in frame start call
+        float timeInFrameEnd   = 0.0f; // determines time spent in frame end call
+        float timeInUpdate     = 0.0f; // determines time spent in update call
+        float timeInInitialize = 0.0f; // determines time spent in init call
+        float timeInExit       = 0.0f; // determines time spent in exit call
+        
+        EngineState executionPolicy = EngineState::Editor | EngineState::Game | EngineState::Paused; // when the system should be executed. always runs by default
 
-        std::shared_ptr<ISystem> system;
+        std::shared_ptr<ISystem> system; // point to the actual system
     };
 
     // static event data. data that is per event type
     struct EventData
     {
         uint8_t index{};
-        std::deque<std::function<void(const void*)>> subscribers{};
+        std::deque<std::function<void(const void*)>> subscribers{}; // a list of all of the subscribers that will be called when this event happens
     };
 
     class EngineManager
@@ -154,8 +180,14 @@ namespace Gep
 
         float GetDeltaTime() const;
 
+        // begins the shutdown process of the engine
         void Shutdown();
 
+        // sets the engine state to exactly the passed state
+        void SetState(EngineState state);
+
+        // checks if a certain state bit is set
+        bool IsState(EngineState state) const;
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // entity functions /////////////////////////////////////////////////////////////////////////////
@@ -300,13 +332,17 @@ namespace Gep
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // system functions /////////////////////////////////////////////////////////////////////////////
 
+        // registers a system individualy, bypasses the on component registered call
         template <typename SystemType>
         void RegisterSystem();
 
-        template <typename SystemType>
-        void SetSystemSignature(Signature signature);
-
+        // gets all of the system data stored internally
         const Gep::keyed_vector<SystemData>& GetSystemDatas() const;
+
+        // given a system as a template parameter, sets when that system should be ran, note system default to always running
+        // must be called after a system is registered
+        template <typename SystemType>
+        void SetSystemExecutionPolicy(EngineState state);
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // event functions //////////////////////////////////////////////////////////////////////////////
@@ -398,7 +434,7 @@ namespace Gep
         // dt
         float mDeltaTime = 0.016f;
         std::chrono::high_resolution_clock::time_point mFrameStartTime{};
-
+        EngineState mState = EngineState::None;
         bool mIsRunning = true;
     };
 }

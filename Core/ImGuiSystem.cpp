@@ -972,33 +972,68 @@ namespace Client
                 ImGui::EndMenu();
             }
 
-            float windowWidth = ImGui::GetWindowWidth();
-            static std::string sceneName = "MySceneName";
+            // Size for buttons
+            ImVec2 buttonSize(60, 0); // fixed width, auto height
+            float spacing = ImGui::GetStyle().ItemSpacing.x;
 
-            // Calculate text size and center position
-            ImVec2 textSize = ImGui::CalcTextSize(sceneName.c_str());
-            float textX = (windowWidth - textSize.x) * 0.5f;
-            float padding = ImGui::GetStyle().FramePadding.x * 2.0f;
-            float inputWidth = textSize.x + padding;
-            ImGui::SetCursorPosX(textX);
+            // Calculate how much space the two buttons will take
+            float totalWidth = (buttonSize.x * 2) + spacing;
 
-            ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, { 0, 0, 0, 0 });
-            ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, { 0, 0, 0, 0 });
+            // Get menu bar width
+            float menuBarWidth = ImGui::GetWindowWidth();
 
-            ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputText("##SceneName", &sceneName, ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_AutoSelectAll);
-            if (ImGui::IsItemHovered())
+            // Centering math
+            float offsetX = (menuBarWidth - totalWidth) * 0.5f;
+
+            // Move cursor to centered position
+            ImGui::SetCursorPosX(offsetX);
+
+            // Toggle play/pause
+            bool isPlaying = mManager.IsState(Gep::EngineState::Game);
+            if (ImGui::Button(isPlaying ? "Pause" : "Play", buttonSize)) 
             {
-                ImGui::BeginTooltip();
-                ImGui::Text("Rename Scene");
-                ImGui::EndTooltip();
+                if (isPlaying)
+                    mManager.SetState(Gep::EngineState::Editor);
+                else
+                    mManager.SetState(Gep::EngineState::Editor | Gep::EngineState::Game);
             }
 
-            ImGui::PopStyleColor(2);
+            ImGui::SameLine();
 
+            if (ImGui::Button("Stop", buttonSize)) 
+            {
+                mManager.SetState(Gep::EngineState::Editor);
+
+                // TODO: signal an event to reload the scene
+            }
             ImGui::EndMainMenuBar();
         }
     }
+
+    //float windowWidth = ImGui::GetWindowWidth();
+    //static std::string sceneName = "MySceneName";
+
+    //// Calculate text size and center position
+    //ImVec2 textSize = ImGui::CalcTextSize(sceneName.c_str());
+    //float textX = (windowWidth - textSize.x) * 0.5f;
+    //float padding = ImGui::GetStyle().FramePadding.x * 2.0f;
+    //float inputWidth = textSize.x + padding;
+    //ImGui::SetCursorPosX(textX);
+
+    //ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, { 0, 0, 0, 0 });
+    //ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, { 0, 0, 0, 0 });
+
+    //ImGui::SetNextItemWidth(inputWidth);
+    //ImGui::InputText("##SceneName", &sceneName, ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_AutoSelectAll);
+    //if (ImGui::IsItemHovered())
+    //{
+    //    ImGui::BeginTooltip();
+    //    ImGui::Text("Rename Scene");
+    //    ImGui::EndTooltip();
+    //}
+
+    //ImGui::PopStyleColor(2);
+
 
     template <>
     void ImGuiSystem::DrawType<float>(const std::string_view name, float& t)

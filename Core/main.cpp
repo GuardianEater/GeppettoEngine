@@ -101,8 +101,12 @@ try
     // register all types ////////////////////////////////////////////////////////////////////////////
     em.RegisterTypes(componentTypes, systemTypes);
 
+    em.SetSystemExecutionPolicy<Client::PhysicsSystem>(Gep::EngineState::Game);
+    em.SetSystemExecutionPolicy<Client::ScriptingSystem>(Gep::EngineState::Game);
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
+
+    em.SetState(Gep::EngineState::Editor);
     em.Initialize();
 
     while (em.Running())

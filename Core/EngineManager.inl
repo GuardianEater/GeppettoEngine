@@ -551,13 +551,29 @@ namespace Gep
         sd.name   = GetTypeInfo<SystemType>().PrettyName();
         sd.size   = sizeof(SystemType);
         sd.index  = systemIndex;
-
+        
         mSystemTypeToIndex[typeID] = systemIndex;
         uint64_t cached = GetSystemIndex<SystemType>(); // cache the index
 
         mSystemsToUpdate.push_back(systemIndex);
 
         Log::Info("Registered System: [", sd.name, "]");
+    }
+
+    template<typename SystemType>
+    inline void EngineManager::SetSystemExecutionPolicy(EngineState state)
+    {
+        const std::type_index typeID = typeid(SystemType);
+
+        if (!mSystemTypeToIndex.contains(typeID))
+        {
+            Gep::Log::Error("System Execution Policy could not be set because the system: [", GetTypeInfo<SystemType>().PrettyName(), "], was not registered");
+            return;
+        }
+
+        SystemData& sd = mSystems.at(mSystemTypeToIndex.at(typeID));
+
+        sd.executionPolicy = state;
     }
 
     template<typename EventType, typename FunctionType>

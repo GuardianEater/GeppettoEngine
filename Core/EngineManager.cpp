@@ -39,8 +39,15 @@ namespace Gep
         for (const auto index : mSystemsToUpdate)
         {
             SystemData& sd = mSystems.at(index);
+
+            // start system timer
             auto systemStartTime = std::chrono::high_resolution_clock::now();
-            sd.system->FrameStart();
+
+            // if the system matches the policy run the system
+            if (static_cast<uint8_t>(sd.executionPolicy & mState) != 0)
+                sd.system->FrameStart();
+
+            // computer time spent in frame start
             auto systemEndTime = std::chrono::high_resolution_clock::now();
             sd.timeInFrameStart = std::chrono::duration<float>(systemEndTime - systemStartTime).count();
         }
@@ -52,8 +59,15 @@ namespace Gep
         for (auto indexIt = mSystemsToUpdate.rbegin(); indexIt != mSystemsToUpdate.rend(); ++indexIt)
         {
             SystemData& sd = mSystems.at(*indexIt);
+
+            // start system timer
             auto systemStartTime = std::chrono::high_resolution_clock::now();
-            sd.system->FrameEnd();
+
+            // if the system matches the policy run the system
+            if (static_cast<uint8_t>(sd.executionPolicy & mState) != 0)
+                sd.system->FrameEnd();
+
+            // computer time spent in frame end
             auto systemEndTime = std::chrono::high_resolution_clock::now();
             sd.timeInFrameEnd = std::chrono::duration<float>(systemEndTime - systemStartTime).count();
         }
@@ -75,6 +89,16 @@ namespace Gep
     void EngineManager::Shutdown()
     {
         mIsRunning = false;
+    }
+
+    void EngineManager::SetState(EngineState state)
+    {
+        mState = state;
+    }
+
+    bool EngineManager::IsState(EngineState state) const
+    {
+        return static_cast<uint8_t>(mState & state) != 0;
     }
 
     void EngineManager::SetSignature(Entity entity, Signature signature)
@@ -582,8 +606,13 @@ namespace Gep
         for (const auto& index : mSystemsToUpdate)
         {
             SystemData& sd = mSystems.at(index);
+
+            // start system timer
             auto systemStartTime = std::chrono::high_resolution_clock::now();
+
             sd.system->Initialize();
+
+            // compute time spent in init
             auto systemEndTime = std::chrono::high_resolution_clock::now();
             sd.timeInInitialize = std::chrono::duration<float>(systemEndTime - systemStartTime).count();
         }
@@ -595,8 +624,15 @@ namespace Gep
         for (const auto& index : mSystemsToUpdate)
         {
             SystemData& sd = mSystems.at(index);
+
+            // start system timer
             auto systemStartTime = std::chrono::high_resolution_clock::now();
-            sd.system->Update(mDeltaTime);
+            
+            // if the system matches the policy run the system
+            if (static_cast<uint8_t>(sd.executionPolicy & mState) != 0)
+                sd.system->Update(mDeltaTime);
+
+            // compute time spent in update
             auto systemEndTime = std::chrono::high_resolution_clock::now();
             sd.timeInUpdate = std::chrono::duration<float>(systemEndTime - systemStartTime).count();
         }
@@ -608,8 +644,13 @@ namespace Gep
         for (auto systemIt = mSystemsToUpdate.rbegin(); systemIt != mSystemsToUpdate.rend(); ++systemIt)
         {
             SystemData& sd = mSystems.at(*systemIt);
+
+            // start system timer
             auto systemStartTime = std::chrono::high_resolution_clock::now();
+
             sd.system->Exit();
+
+            // compute time spent in exit
             auto systemEndTime = std::chrono::high_resolution_clock::now();
             sd.timeInExit = std::chrono::duration<float>(systemEndTime - systemStartTime).count();
         }
