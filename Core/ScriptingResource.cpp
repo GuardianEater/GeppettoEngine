@@ -28,11 +28,11 @@ namespace Client
 
         // override print so it outputs to the logger
         py::module builtins = py::module::import("builtins");
-        builtins.attr("print") = py::cpp_function([](py::args args, py::kwargs kwargs) {
+        builtins.attr("print") = py::cpp_function([](py::args args, py::kwargs kwargs) 
+        {
             std::string msg;
-            for (auto& arg : args) {
+            for (auto& arg : args)
                 msg += py::str(arg).cast<std::string>() + " ";
-            }
 
             Gep::Log::Info(msg);
         });

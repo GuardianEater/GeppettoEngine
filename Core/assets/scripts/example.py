@@ -1,12 +1,8 @@
-import numpy as np
+def EpicPrint():
+  print('Hello, Epic World!')
 
-print('Hello')
-
-myArray = np.array([1, 2, 3])
-
-print(myArray)
+counter = 1
 
 def update():
-  print('Update function called')
-
-update()
+  global counter
+  counter += 1

@@ -32,6 +32,8 @@ namespace Client
     {
         mManager.ForEachArchetype<Script>([&](Gep::Entity entity, Script& script)
         {
+            if (script.update)
+                script.update();
         });
     }
 
