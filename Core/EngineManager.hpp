@@ -107,25 +107,6 @@ namespace Gep
         std::function<void(Gep::Entity, const nlohmann::json&)> load{}; // adds the given component to the entity from json
     };
 
-    enum class EngineState : uint8_t
-    {
-        None = 0, // not running
-
-        Game = 1 << 0, // if the game is running
-        Editor = 1 << 1, // if the editor is running
-        Paused = 1 << 2, // if the game is paused
-    };
-
-    inline EngineState operator|(EngineState lhs, EngineState rhs)
-    {
-        return static_cast<EngineState>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
-    }
-
-    inline EngineState operator&(EngineState lhs, EngineState rhs)
-    {
-        return static_cast<EngineState>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
-    }
-
     struct SystemData
     {
         // the name of the system human readable
@@ -143,7 +124,7 @@ namespace Gep
         float timeInInitialize = 0.0f; // determines time spent in init call
         float timeInExit       = 0.0f; // determines time spent in exit call
         
-        EngineState executionPolicy = EngineState::Editor | EngineState::Game | EngineState::Paused; // when the system should be executed. always runs by default
+        EngineState executionPolicy = EngineState::Core | EngineState::Game | EngineState::Paused; // when the system should be executed. always runs by default
 
         std::shared_ptr<ISystem> system; // point to the actual system
     };
@@ -188,6 +169,8 @@ namespace Gep
 
         // checks if a certain state bit is set
         bool IsState(EngineState state) const;
+
+        EngineState GetCurrentState() const;
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // entity functions /////////////////////////////////////////////////////////////////////////////

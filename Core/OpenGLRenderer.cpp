@@ -566,6 +566,8 @@ namespace Gep
 
             // --- Wireframe draw ---
             glDisable(GL_DEPTH_TEST);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
             {
@@ -579,6 +581,7 @@ namespace Gep
                     baseInstance
                 );
             }
+            glDisable(GL_BLEND);
             glEnable(GL_DEPTH_TEST);
             baseInstance += modelHandle.wireframeObjectDatas.size();
 

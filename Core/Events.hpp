@@ -19,11 +19,11 @@ namespace Gep
 
     namespace Event
     {
-        struct IEvent{};
+        struct IEvent {};
 
         // signalled immediately before an entity is about to be destroyed
         struct EntityDestroyed
-        { 
+        {
             Entity entity;
         };
 
@@ -162,6 +162,12 @@ namespace Gep
             const nlohmann::json& componentJson; // contains the original json data as read in from the file
 
             Entity entity; // parent
+        };
+
+        struct StateChanged
+        {
+            EngineState previousState;
+            EngineState newState;
         };
     }
 }

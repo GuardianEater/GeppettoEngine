@@ -106,7 +106,7 @@ try
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
 
-    em.SetState(Gep::EngineState::Editor);
+    em.SetState(Gep::EngineState::Core);
     em.Initialize();
 
     while (em.Running())

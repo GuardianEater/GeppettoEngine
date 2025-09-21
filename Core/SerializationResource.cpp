@@ -76,9 +76,10 @@ namespace Client
         outFile << sceneJson.dump();
     }
 
-    void SerializationResource::ReloadScene(Gep::EngineManager& em)
+    void SerializationResource::ReloadScene(Gep::EngineManager& em) const
     {
-        ChangeScene(em, currentScenePath);
+        em.DestroyAllEntities();
+        LoadScene(em, currentScenePath);
     }
 
     void SerializationResource::ChangeScene(Gep::EngineManager& em, const std::filesystem::path& path)

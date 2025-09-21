@@ -972,17 +972,21 @@ namespace Client
                 ImGui::EndMenu();
             }
 
+            static std::string label = "Play";
+
             // Size for buttons
-            ImVec2 buttonSize(60, 0); // fixed width, auto height
-            float spacing = ImGui::GetStyle().ItemSpacing.x;
+            // This matches what ImGui::Button does internally
+            ImGuiStyle& style = ImGui::GetStyle();
+            ImVec2 text_size = ImGui::CalcTextSize(label.c_str(), nullptr, true);
+            ImVec2 buttonSize = ImVec2(
+                text_size.x + style.FramePadding.x * 2.0f,
+                text_size.y + style.FramePadding.y * 2.0f
+            );            
 
             // Calculate how much space the two buttons will take
+            float spacing = ImGui::GetStyle().ItemSpacing.x;
             float totalWidth = (buttonSize.x * 2) + spacing;
-
-            // Get menu bar width
             float menuBarWidth = ImGui::GetWindowWidth();
-
-            // Centering math
             float offsetX = (menuBarWidth - totalWidth) * 0.5f;
 
             // Move cursor to centered position
@@ -990,49 +994,31 @@ namespace Client
 
             // Toggle play/pause
             bool isPlaying = mManager.IsState(Gep::EngineState::Game);
-            if (ImGui::Button(isPlaying ? "Pause" : "Play", buttonSize)) 
+            label = isPlaying ? "Pause" : "Play";
+            if (ImGui::Button(label.c_str(), buttonSize))
             {
                 if (isPlaying)
-                    mManager.SetState(Gep::EngineState::Editor);
+                    mManager.SetState(Gep::EngineState::Core | Gep::EngineState::Paused);
                 else
-                    mManager.SetState(Gep::EngineState::Editor | Gep::EngineState::Game);
+                {
+                    mManager.GetResource<Client::SerializationResource>().SaveScene(mManager);
+                    mManager.SetState(Gep::EngineState::Core | Gep::EngineState::Game);
+                }
             }
 
             ImGui::SameLine();
 
-            if (ImGui::Button("Stop", buttonSize)) 
+            if (ImGui::Button("Stop")) 
             {
-                mManager.SetState(Gep::EngineState::Editor);
+                Gep::EngineState currentState = mManager.GetCurrentState();
+                if (static_cast<uint8_t>(currentState & Gep::EngineState::Game))
+                    mManager.SetState(Gep::EngineState::Core);
 
                 // TODO: signal an event to reload the scene
             }
             ImGui::EndMainMenuBar();
         }
     }
-
-    //float windowWidth = ImGui::GetWindowWidth();
-    //static std::string sceneName = "MySceneName";
-
-    //// Calculate text size and center position
-    //ImVec2 textSize = ImGui::CalcTextSize(sceneName.c_str());
-    //float textX = (windowWidth - textSize.x) * 0.5f;
-    //float padding = ImGui::GetStyle().FramePadding.x * 2.0f;
-    //float inputWidth = textSize.x + padding;
-    //ImGui::SetCursorPosX(textX);
-
-    //ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, { 0, 0, 0, 0 });
-    //ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, { 0, 0, 0, 0 });
-
-    //ImGui::SetNextItemWidth(inputWidth);
-    //ImGui::InputText("##SceneName", &sceneName, ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_AutoSelectAll);
-    //if (ImGui::IsItemHovered())
-    //{
-    //    ImGui::BeginTooltip();
-    //    ImGui::Text("Rename Scene");
-    //    ImGui::EndTooltip();
-    //}
-
-    //ImGui::PopStyleColor(2);
 
 
     template <>

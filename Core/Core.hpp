@@ -85,4 +85,23 @@ namespace Gep
         friend std::ostream& operator<<(std::ostream& os, const UUID& uuid);
         friend auto operator<=>(const UUID&, const UUID&) = default;
     };
+
+    enum class EngineState
+    {
+        None = 0, // not running
+
+        Game = 1 << 0, // if the game is running
+        Core = 1 << 1, // if the editor is running
+        Paused = 1 << 2, // if the game is paused
+    };
+
+    inline EngineState operator|(EngineState lhs, EngineState rhs)
+    {
+        return static_cast<EngineState>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
+    }
+
+    inline EngineState operator&(EngineState lhs, EngineState rhs)
+    {
+        return static_cast<EngineState>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
+    }
 }

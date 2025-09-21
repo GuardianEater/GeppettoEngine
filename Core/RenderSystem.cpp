@@ -141,12 +141,12 @@ namespace Client
                 .ao = model.ao, // ambient occlusion
                 .roughness = model.roughness,
                 .metalness = model.metalness,
-                .color = model.color
+                .color = glm::vec4(model.color, 1.0f)
             };
 
             if (mManager.HasComponent<Light>(entity))
             {
-                material.color = mManager.GetComponent<Light>(entity).color;
+                material.color = glm::vec4(mManager.GetComponent<Light>(entity).color, 1.0f);
                 model.ignoreLight = true;
             }
 
@@ -165,7 +165,7 @@ namespace Client
             {
                 Gep::ObjectGPUData wireframeUniforms = uniforms;
                 wireframeUniforms.isWireframe = true;
-                wireframeUniforms.material.color = { 1.0f, 1.0f, 0.0f };
+                wireframeUniforms.material.color = { 1.0f, 1.0f, 0.0f, 0.2f };
 
                 renderer.AddObject(model.modelName, wireframeUniforms);
             }
@@ -188,7 +188,7 @@ namespace Client
                 .ao = 1.0f, // ambient occlusion
                 .roughness = 1.0f,
                 .metalness = 1.0f,
-                .color = {1.0f, 0.0f, 0.0f}
+                .color = {1.0f, 0.0f, 0.0f, 0.5f}
             };
 
             mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity entity, CubeCollider& collider, Transform& transform)

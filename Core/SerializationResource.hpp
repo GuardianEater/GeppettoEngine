@@ -28,7 +28,7 @@ namespace Client
         void SaveScene(Gep::EngineManager& em) const; // saves the current scene to the currentScenePath
         void NewScene(const std::filesystem::path& path) const; // creates a loadable empty scene file
 
-        void ReloadScene(Gep::EngineManager& em); // reloads the current scene from the currentScenePath
+        void ReloadScene(Gep::EngineManager& em) const; // reloads the current scene from the currentScenePath, doesnt save
         void ChangeScene(Gep::EngineManager& em, const std::filesystem::path& path); // saves the current scene, clears all entities, then loads a new scene
 
         void SavePrefab(const nlohmann::json& entityJson, const std::filesystem::path& path) const; // writes this individual entity to its own .prefab file

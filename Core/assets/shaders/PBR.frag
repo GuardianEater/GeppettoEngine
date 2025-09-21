@@ -25,7 +25,7 @@ void main(void)
   // Determine the base color from texture or solid color.
   if (object.isSolidColor == 1 || object.isWireframe == 1) 
   {
-    frag_color = vec4(object.material.color, 1.0);
+    frag_color = object.material.color;
     return;
   } 
 
@@ -37,7 +37,7 @@ void main(void)
     }
     else
     {
-      frag_color = vec4(object.material.color, 1.0);
+      frag_color = object.material.color;
     }
     return;
   }
@@ -52,7 +52,7 @@ vec3 SchlickFresnel(float vDotH)
 {
   const float dielectricDefault = 0.04;
   vec3 F0 = vec3(dielectricDefault);
-  F0 = mix(F0, objectUniforms[vObjectIndex].material.color, objectUniforms[vObjectIndex].material.metallic);
+  F0 = mix(F0, vec3(objectUniforms[vObjectIndex].material.color), objectUniforms[vObjectIndex].material.metallic);
 
   const float clamped = clamp(1.0 - vDotH, 0.0, 1.0);
   const vec3 result = F0 + (1.0 - F0) * pow(clamped, 5);
@@ -129,7 +129,7 @@ vec3 CalculatePBRLightingTotal()
   vec3 color = vec3(0.0); // the final color of the fragment
 
   // loop over each light.
-  vec3 objectColor = objectUniforms[vObjectIndex].material.color;
+  vec3 objectColor = vec3(objectUniforms[vObjectIndex].material.color);
   if (objectUniforms[vObjectIndex].isUsingTexture == 1) 
   {
     objectColor *= texture(textureSampler, uvOut).rgb;

@@ -32,7 +32,7 @@ namespace Gep
         float ao;        // ambient occlusion
         float roughness; 
         float metalness; float pad0;
-        glm::vec3 color; float pad1;
+        glm::vec4 color;
     };
 
     struct alignas(16) ObjectGPUData

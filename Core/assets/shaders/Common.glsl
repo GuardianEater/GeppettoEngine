@@ -20,7 +20,7 @@ struct PBRMaterial
   float ao;       // ambientOcclusion
   float roughness;
   float metallic; 
-  vec3 color;     // albedo 
+  vec4 color;     // albedo 
 };
 
 // stores all per camera data

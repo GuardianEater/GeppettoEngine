@@ -93,12 +93,18 @@ namespace Gep
 
     void EngineManager::SetState(EngineState state)
     {
+        SignalEvent(Gep::Event::StateChanged{ mState, state });
         mState = state;
     }
 
     bool EngineManager::IsState(EngineState state) const
     {
         return static_cast<uint8_t>(mState & state) != 0;
+    }
+
+    EngineState EngineManager::GetCurrentState() const
+    {
+        return mState;
     }
 
     void EngineManager::SetSignature(Entity entity, Signature signature)
