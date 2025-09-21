@@ -25,6 +25,6 @@ namespace Client
         float ao = 0.8f;
         float roughness = 0.8f;
         float metalness = 0.8f;
-        glm::vec3 color = { 0.5f, 1.0f, 1.0f }; // color; both diffuse and specular coefficient in phong
+        glm::vec3 color = { 1.0f, 1.0f, 1.0f }; // color; both diffuse and specular coefficient in phong
     };
 }
