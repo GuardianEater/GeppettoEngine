@@ -1,8 +1,4 @@
-def EpicPrint():
-  print('Hello, Epic World!')
-
 counter = 0
-
 
 def update():
   global counter

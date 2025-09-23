@@ -1012,11 +1012,17 @@ namespace Client
 
             ImGui::SameLine();
 
+            // stop only works if in game
             if (ImGui::Button("Stop")) 
             {
-                mManager.SetState(Gep::EngineState::Edit);
+                if (!mManager.IsState(Gep::EngineState::Edit))
+                {
+                    auto& scr = mManager.GetResource<SerializationResource>();
 
-                mManager.GetResource<SerializationResource>().ReloadScene(mManager);
+                    mManager.DestroyAllEntities();
+                    mManager.SetState(Gep::EngineState::Edit);
+                    scr.LoadScene(mManager, scr.currentScenePath);
+                }
             }
             ImGui::EndMainMenuBar();
         }

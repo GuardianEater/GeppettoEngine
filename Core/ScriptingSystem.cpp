@@ -23,6 +23,7 @@ namespace Client
     void ScriptingSystem::Initialize()
     {
         mManager.SubscribeToEvent<Gep::Event::ComponentAdded<Script>>(this, &ScriptingSystem::OnScriptAdded);
+        mManager.SubscribeToEvent<Gep::Event::ComponentRemoved<Script>>(this, &ScriptingSystem::OnScriptRemoved);
         mManager.SubscribeToEvent<Gep::Event::EntityCreated>(this, &ScriptingSystem::OnEntityCreated);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Script>>(this, &ScriptingSystem::OnScriptEditorRender);
         mManager.SubscribeToEvent<Gep::Event::EngineStateChanged>(this, &ScriptingSystem::OnEngineStateChanged);
@@ -53,6 +54,19 @@ namespace Client
         
         py::module module = sr.GetOrLoadModule(script.path);
         sr.BindScriptToModule(script, module);
+    }
+
+    void ScriptingSystem::OnScriptRemoved(const Gep::Event::ComponentRemoved<Script>& event)
+    {
+        if (mManager.IsState(Gep::EngineState::Play))
+        {
+            // if the entity is enabled disable it first
+            if (mManager.IsEnabled(event.entity))
+                mScriptingResource.PyCall(event.component.on_disable);
+
+            // call destroy on the entity
+            mScriptingResource.PyCall(event.component.on_destroy);
+        }
     }
 
     void ScriptingSystem::OnScriptEditorRender(const Gep::Event::ComponentEditorRender<Script>& event)
