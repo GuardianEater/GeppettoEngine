@@ -164,7 +164,7 @@ namespace Gep
             Entity entity; // parent
         };
 
-        struct StateChanged
+        struct EngineStateChanged
         {
             EngineState previousState;
             EngineState newState;

@@ -185,8 +185,8 @@ namespace Gep
         return totalCount;
     }
 
-    template<typename ResourceType>
-    inline void EngineManager::RegisterResource()
+    template<typename ResourceType, typename... ContructionTypes>
+    inline void EngineManager::RegisterResource(ContructionTypes&&... pararms)
     {
         if (ResourceIsRegistered<ResourceType>())
         {
@@ -197,7 +197,7 @@ namespace Gep
         Log::Info("Registering Resource: [", GetTypeInfo<ResourceType>().PrettyName(), "]...");
 
         std::type_index typeIndex = typeid(ResourceType);
-        mResources.emplace(typeIndex, Gep::make_unique_void_ptr<ResourceType>());
+        mResources.emplace(typeIndex, Gep::make_unique_void_ptr<ResourceType>(std::forward<ContructionTypes>(pararms)...));
 
         Log::Info("Registered Resource: [", GetTypeInfo<ResourceType>().PrettyName(), "]");
     }
@@ -567,7 +567,7 @@ namespace Gep
 
         if (!mSystemTypeToIndex.contains(typeID))
         {
-            Gep::Log::Error("System Execution Policy could not be set because the system: [", GetTypeInfo<SystemType>().PrettyName(), "], was not registered");
+            Gep::Log::Error("Attempted to set the execution policy of a system the doesnt exist");
             return;
         }
 

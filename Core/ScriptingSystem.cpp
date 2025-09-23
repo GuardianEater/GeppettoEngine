@@ -24,6 +24,8 @@ namespace Client
         mManager.SubscribeToEvent<Gep::Event::ComponentAdded<Script>>(this, &ScriptingSystem::OnScriptAdded);
         mManager.SubscribeToEvent<Gep::Event::EntityCreated>(this, &ScriptingSystem::OnEntityCreated);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Script>>(this, &ScriptingSystem::OnScriptEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::EngineStateChanged>(this, &ScriptingSystem::OnEngineStateChanged);
+        
 
         mManager.GetResource<ScriptingResource>().LocateScripts();
     }
@@ -69,9 +71,9 @@ namespace Client
         bool scriptsOpen = ImGui::BeginCombo("Scripts", script.path.filename().string().c_str());
 
         er.AssetBrowserDropTarget({ ".py" }, [&](const std::filesystem::path& droppedPath)
-            {
-                script.LoadScript(droppedPath);
-            });
+        {
+            script.LoadScript(droppedPath);
+        });
 
         if (scriptsOpen)
         {
@@ -93,6 +95,18 @@ namespace Client
 
     void ScriptingSystem::OnEntityCreated(const Gep::Event::EntityCreated& event)
     {
+    }
+
+    void ScriptingSystem::OnEngineStateChanged(const Gep::Event::EngineStateChanged& event)
+    {
+        if (event.newState == Gep::EngineState::Play)
+        {
+            mManager.ForEachArchetype<Script>([](Gep::Entity entity, Script& script) 
+            {
+                if (script.on_enabled);
+                    //script.init();
+            });
+        }
     }
 }
 

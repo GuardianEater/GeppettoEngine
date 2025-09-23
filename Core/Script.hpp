@@ -19,10 +19,18 @@ namespace Client
     {
         std::filesystem::path path = "assets\\scripts\\example.py";
 
-        py::module module;
-        py::function init;
-        py::function update;
-        py::function exit;
+        py::module module{};
+
+        py::function on_enabled{};
+        py::function on_start{};
+        py::function update{};
+        //py::function fixedUpdate; maybe useful?
+        py::function late_update{};
+        py::function on_disable{};
+        py::function on_destroy{};
+
+        // on start   -> when the object is created
+        // on destroy -> when the object is destroyed
 
         void LoadScript(const std::filesystem::path& newPath)
         {
@@ -32,10 +40,6 @@ namespace Client
                 return;
             }
 
-            //std::string out = (newPath.parent_path() / newPath.stem()).string();
-
-            //Gep::Log::Important(out);
-
             py::module sys = py::module::import("sys");
             auto path = sys.attr("path").cast<py::list>();
             path.append(newPath.parent_path().string().c_str());
@@ -43,25 +47,35 @@ namespace Client
             module = py::module::import(newPath.stem().string().c_str());
 
             // binds init function if it has one
-            if (py::hasattr(module, "init"))
+            if (py::hasattr(module, "on_enabled"))
             { 
-                init = module.attr("init");
-                init();
+                on_enabled = module.attr("on_enabled");
             }
-            else
-                init = py::function();
 
-            // binds update function if it has one
+            if (py::hasattr(module, "on_start"))
+            {
+                on_start = module.attr("on_start");
+            }
+
             if (py::hasattr(module, "update"))
+            {
                 update = module.attr("update");
-            else
-                update = py::function();
+            }
 
-            // binds exit function if it has one
-            if (py::hasattr(module, "exit"))
-                exit = module.attr("exit");
-            else
-                exit = py::function();
+            if (py::hasattr(module, "late_update"))
+            {
+                late_update = module.attr("late_update");
+            }
+
+            if (py::hasattr(module, "on_disable"))
+            {
+                late_update = module.attr("on_disable");
+            }
+            
+            if (py::hasattr(module, "on_destroy"))
+            {
+                late_update = module.attr("on_destroy");
+            }
         }
     };
 }

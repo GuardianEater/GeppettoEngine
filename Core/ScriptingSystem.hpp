@@ -31,6 +31,7 @@ namespace Client
         void OnScriptAdded(const Gep::Event::ComponentAdded<Script>& event);
         void OnScriptEditorRender(const Gep::Event::ComponentEditorRender<Script>& event);
         void OnEntityCreated(const Gep::Event::EntityCreated& event);
+        void OnEngineStateChanged(const Gep::Event::EngineStateChanged& event);
     };
 
     template<typename ...ComponentTypes>

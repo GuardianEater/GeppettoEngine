@@ -992,29 +992,28 @@ namespace Client
             // Move cursor to centered position
             ImGui::SetCursorPosX(offsetX);
 
+            bool wasEditing = mManager.IsState(Gep::EngineState::Edit);
             // Toggle play/pause
-            bool isPlaying = mManager.IsState(Gep::EngineState::Game);
+            bool isPlaying = mManager.IsState(Gep::EngineState::Play);
             label = isPlaying ? "Pause" : "Play";
             if (ImGui::Button(label.c_str(), buttonSize))
             {
                 if (isPlaying)
-                    mManager.SetState(Gep::EngineState::Core | Gep::EngineState::Paused);
+                    mManager.SetState(Gep::EngineState::Pause);
                 else
-                {
-                    mManager.GetResource<Client::SerializationResource>().SaveScene(mManager);
-                    mManager.SetState(Gep::EngineState::Core | Gep::EngineState::Game);
-                }
+                    mManager.SetState(Gep::EngineState::Play);
+
+                if (wasEditing)
+                    mManager.GetResource<SerializationResource>().SaveScene(mManager);
             }
 
             ImGui::SameLine();
 
             if (ImGui::Button("Stop")) 
             {
-                Gep::EngineState currentState = mManager.GetCurrentState();
-                if (static_cast<uint8_t>(currentState & Gep::EngineState::Game))
-                    mManager.SetState(Gep::EngineState::Core);
+                mManager.SetState(Gep::EngineState::Edit);
 
-                // TODO: signal an event to reload the scene
+                mManager.GetResource<SerializationResource>().ReloadScene(mManager);
             }
             ImGui::EndMainMenuBar();
         }

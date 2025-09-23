@@ -44,7 +44,7 @@ namespace Gep
             auto systemStartTime = std::chrono::high_resolution_clock::now();
 
             // if the system matches the policy run the system
-            if (static_cast<uint8_t>(sd.executionPolicy & mState) != 0)
+            if (sd.executionPolicy >= mState)
                 sd.system->FrameStart();
 
             // computer time spent in frame start
@@ -64,7 +64,7 @@ namespace Gep
             auto systemStartTime = std::chrono::high_resolution_clock::now();
 
             // if the system matches the policy run the system
-            if (static_cast<uint8_t>(sd.executionPolicy & mState) != 0)
+            if (sd.executionPolicy >= mState)
                 sd.system->FrameEnd();
 
             // computer time spent in frame end
@@ -93,13 +93,13 @@ namespace Gep
 
     void EngineManager::SetState(EngineState state)
     {
-        SignalEvent(Gep::Event::StateChanged{ mState, state });
+        SignalEvent(Gep::Event::EngineStateChanged{ mState, state });
         mState = state;
     }
 
     bool EngineManager::IsState(EngineState state) const
     {
-        return static_cast<uint8_t>(mState & state) != 0;
+        return mState == state;
     }
 
     EngineState EngineManager::GetCurrentState() const
@@ -451,6 +451,11 @@ namespace Gep
         return rootEntities;
     }
 
+    bool EngineManager::IsEnabled(Gep::Entity entity) const
+    {
+        return mEntityDatas.at(entity).active;
+    }
+
     bool EngineManager::EntityExists(Entity entity) const
     {
         if (entity == INVALID_ENTITY)
@@ -635,7 +640,7 @@ namespace Gep
             auto systemStartTime = std::chrono::high_resolution_clock::now();
             
             // if the system matches the policy run the system
-            if (static_cast<uint8_t>(sd.executionPolicy & mState) != 0)
+            if (sd.executionPolicy >= mState)
                 sd.system->Update(mDeltaTime);
 
             // compute time spent in update

@@ -101,12 +101,12 @@ try
     // register all types ////////////////////////////////////////////////////////////////////////////
     em.RegisterTypes(componentTypes, systemTypes);
 
-    em.SetSystemExecutionPolicy<Client::PhysicsSystem>(Gep::EngineState::Game);
-    em.SetSystemExecutionPolicy<Client::ScriptingSystem>(Gep::EngineState::Game);
+    em.SetSystemExecutionPolicy<Client::PhysicsSystem>(Gep::EngineState::Play);
+    em.SetSystemExecutionPolicy<Client::ScriptingSystem>(Gep::EngineState::Play);
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
 
-    em.SetState(Gep::EngineState::Core);
+    em.SetState(Gep::EngineState::Edit);
     em.Initialize();
 
     while (em.Running())

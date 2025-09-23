@@ -78,6 +78,7 @@ namespace Gep
         Entity parent{ INVALID_ENTITY }; // the parent of the entity, if it doesnt have a parent it is INVALID_ENTITY
         std::vector<Entity> children{}; // any children of the entity
 
+        bool active = true; // TODO: whether or not this entity is aquired from a regular query
         std::string name = ""; // allows for user identification
         UUID uuid{}; // a way to allways identify this specific entity
     };
@@ -124,7 +125,7 @@ namespace Gep
         float timeInInitialize = 0.0f; // determines time spent in init call
         float timeInExit       = 0.0f; // determines time spent in exit call
         
-        EngineState executionPolicy = EngineState::Core | EngineState::Game | EngineState::Paused; // when the system should be executed. always runs by default
+        EngineState executionPolicy = EngineState::Edit; // when the system should be executed. always runs by default
 
         std::shared_ptr<ISystem> system; // point to the actual system
     };
@@ -164,12 +165,13 @@ namespace Gep
         // begins the shutdown process of the engine
         void Shutdown();
 
-        // sets the engine state to exactly the passed state
+        // changes the engine state to the passed state
         void SetState(EngineState state);
 
-        // checks if a certain state bit is set
+        // checks if the engine is a current state
         bool IsState(EngineState state) const;
 
+        // returns the state of the engine
         EngineState GetCurrentState() const;
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -230,12 +232,14 @@ namespace Gep
         template<typename... ComponentTypes>
         inline size_t CountEntities() const;
 
+        // checks if the given entity is enabled
+        bool IsEnabled(Gep::Entity entity) const;
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // resource functions ///////////////////////////////////////////////////////////////////////////
 
-        template <typename ResourceType>
-        void RegisterResource();
+        template<typename ResourceType, typename... ContructionTypes>
+        void RegisterResource(ContructionTypes&&... pararms);
 
         template <typename ResourceType>
         ResourceType& GetResource();
@@ -408,17 +412,17 @@ namespace Gep
 
         // systems
         std::unordered_map<std::type_index, uint64_t> mSystemTypeToIndex; // given the type of the system finds the index; always prefer GetSystemIndex()
-        Gep::keyed_vector<SystemData> mSystems;
-        std::vector <uint64_t> mSystemsToUpdate; // the list of systems that need to be updated, registration determines order
+        Gep::keyed_vector<SystemData> mSystems; // all of the systems running and the associated data
+        std::vector<uint64_t> mSystemsToUpdate; // the list of systems that need to be updated, registration determines order
 
         // resources
         std::unordered_map<std::type_index, Gep::void_unique_ptr> mResources; // maps the type of a resource to the resource itself
 
         // dt
-        float mDeltaTime = 0.016f;
-        std::chrono::high_resolution_clock::time_point mFrameStartTime{};
-        EngineState mState = EngineState::None;
-        bool mIsRunning = true;
+        float mDeltaTime = 0.016f; // the amount of time that passed over the course of the last frame
+        std::chrono::high_resolution_clock::time_point mFrameStartTime{}; // the time when this frame started
+        EngineState mState = EngineState::None; // the current state of the engine
+        bool mIsRunning = true; // whether or not the engine is currently running. Is checked first thing at the beggining of every frame
     };
 }
 

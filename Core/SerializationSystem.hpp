@@ -34,7 +34,7 @@ namespace Client
         void OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes);
 
         void OnAssetBrowserItemClicked(const Gep::Event::AssetBrowserItemClicked& event);
-        void OnEngineStateChanged(const Gep::Event::StateChanged& event);
+        void OnEngineStateChanged(const Gep::Event::EngineStateChanged& event);
 
         void Initialize() override;
         void Exit() override;

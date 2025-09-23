@@ -32,18 +32,13 @@ namespace Client
             mManager.GetResource<Client::EditorResource>().SelectEntity(prefabEntity);
         }
     }
-    void SerializationSystem::OnEngineStateChanged(const Gep::Event::StateChanged& event)
+    void SerializationSystem::OnEngineStateChanged(const Gep::Event::EngineStateChanged& event)
     {
-        // if the new state is not game or paused
-        if (!static_cast<uint8_t>(event.newState & Gep::EngineState::Game) && !static_cast<uint8_t>(event.newState & Gep::EngineState::Paused))
-        {
-            mManager.GetResource<Client::SerializationResource>().ReloadScene(mManager);
-        }
     }
     void SerializationSystem::Initialize()
     {
         mManager.SubscribeToEvent<Gep::Event::AssetBrowserItemClicked>(this, &SerializationSystem::OnAssetBrowserItemClicked);
-        mManager.SubscribeToEvent<Gep::Event::StateChanged>(this, &SerializationSystem::OnEngineStateChanged);
+        mManager.SubscribeToEvent<Gep::Event::EngineStateChanged>(this, &SerializationSystem::OnEngineStateChanged);
 
         mManager.GetResource<SerializationResource>().LoadScene(mManager, "assets\\scenes\\default.scene");
     }

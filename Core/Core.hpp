@@ -88,20 +88,9 @@ namespace Gep
 
     enum class EngineState
     {
-        None = 0, // not running
-
-        Game = 1 << 0, // if the game is running
-        Core = 1 << 1, // if the editor is running
-        Paused = 1 << 2, // if the game is paused
+        Play,  // the state when the game is playing
+        Pause, // the state when the game is paused
+        Edit,  // the state when in edit mode
+        None,  // it is only this state when the engine is starting and when the engine is endings
     };
-
-    inline EngineState operator|(EngineState lhs, EngineState rhs)
-    {
-        return static_cast<EngineState>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
-    }
-
-    inline EngineState operator&(EngineState lhs, EngineState rhs)
-    {
-        return static_cast<EngineState>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
-    }
 }
