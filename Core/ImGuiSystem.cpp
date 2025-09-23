@@ -1004,7 +1004,10 @@ namespace Client
                     mManager.SetState(Gep::EngineState::Play);
 
                 if (wasEditing)
+                {
                     mManager.GetResource<SerializationResource>().SaveScene(mManager);
+                    mManager.GetResource<SerializationResource>().ReloadScene(mManager);
+                }
             }
 
             ImGui::SameLine();

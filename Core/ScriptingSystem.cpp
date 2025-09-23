@@ -16,6 +16,7 @@ namespace Client
 {
     ScriptingSystem::ScriptingSystem(Gep::EngineManager& em)
         : ISystem(em)
+        , mScriptingResource(em.GetResource<ScriptingResource>())
     {
     }
 
@@ -32,10 +33,16 @@ namespace Client
 
     void ScriptingSystem::Update(float dt)
     {
+        // on update
         mManager.ForEachArchetype<Script>([&](Gep::Entity entity, Script& script)
         {
-            if (script.update)
-                script.update();
+            mScriptingResource.PyCall(script.update);
+        });
+
+        // on late update
+        mManager.ForEachArchetype<Script>([&](Gep::Entity entity, Script& script)
+        {
+            mScriptingResource.PyCall(script.late_update);
         });
     }
 
@@ -44,26 +51,21 @@ namespace Client
         Script& script = mManager.GetComponent<Client::Script>(event.entity);
         ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
         
-        script.LoadScript(script.path);
+        py::module module = sr.GetOrLoadModule(script.path);
+        sr.BindScriptToModule(script, module);
     }
 
     void ScriptingSystem::OnScriptEditorRender(const Gep::Event::ComponentEditorRender<Script>& event)
     {
         Script& script = event.component;
 
-        ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
         EditorResource& er = mManager.GetResource<EditorResource>();
-        const std::set<std::filesystem::path>& knownScripts = sr.GetKnownScripts();
+        const std::set<std::filesystem::path>& knownScripts = mScriptingResource.GetKnownScripts();
 
         ImGui::Text("Script Path: %s", script.path.string().c_str());
         if (ImGui::Button("Locate new scripts", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
         {
-            sr.LocateScripts();
-        }
-
-        if (ImGui::Button("Reload script", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
-        {
-            script.LoadScript(script.path);
+            mScriptingResource.LocateScripts();
         }
 
         // drop down for selecting a script
@@ -72,7 +74,7 @@ namespace Client
 
         er.AssetBrowserDropTarget({ ".py" }, [&](const std::filesystem::path& droppedPath)
         {
-            script.LoadScript(droppedPath);
+            script.path = droppedPath;
         });
 
         if (scriptsOpen)
@@ -82,7 +84,7 @@ namespace Client
                 bool isSelected = script.path == loadedScript;
                 if (ImGui::Selectable(loadedScript.filename().string().c_str(), isSelected))
                 {
-                    script.LoadScript(loadedScript);
+                    script.path = loadedScript;
                 }
                 if (isSelected)
                 {
@@ -101,10 +103,23 @@ namespace Client
     {
         if (event.newState == Gep::EngineState::Play)
         {
-            mManager.ForEachArchetype<Script>([](Gep::Entity entity, Script& script) 
+            mScriptingResource.ReloadAllModules();
+
+            mManager.ForEachArchetype<Script>([&](Gep::Entity entity, Script& script)
             {
-                if (script.on_enabled);
-                    //script.init();
+                py::module module = mScriptingResource.GetOrLoadModule(script.path.string());
+                mScriptingResource.BindScriptToModule(script, module);
+            });
+            
+            mManager.ForEachArchetype<Script>([&](Gep::Entity entity, Script& script) 
+            {
+                if (mManager.IsEnabled(entity))
+                    mScriptingResource.PyCall(script.on_enabled);
+            });
+
+            mManager.ForEachArchetype<Script>([&](Gep::Entity entity, Script& script)
+            {
+                mScriptingResource.PyCall(script.on_start);
             });
         }
     }
