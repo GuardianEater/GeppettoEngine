@@ -48,9 +48,6 @@
 #include "OS.hpp"
 
 int main()  
-#ifdef _DEBUG
-try
-#endif
 {
     Gep::SetDynamicLibraryDirectory("lib");
 
@@ -121,14 +118,3 @@ try
 
     em.Exit();
 }
-#ifdef _DEBUG
-catch (const std::exception& e)
-{
-    Gep::Log::Error("Caught exception: ", e.what());
-    return 1;
-}
-catch (...)
-{
-    return 1;
-}
-#endif // !_DEBUG

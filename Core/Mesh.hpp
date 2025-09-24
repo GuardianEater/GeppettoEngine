@@ -20,9 +20,22 @@ namespace Gep
     // translates the latter by v.
     struct VQS // VQM
     {
-        glm::vec4 position; // translation
-        glm::quat rotation; // rotation
-        float scale; // uniform scaling factor
+        glm::vec3 position{0,0,0}; // translation
+        glm::quat rotation{1,0,0,0}; // rotation
+        float scale{1.0f}; // uniform scaling factor
+
+        VQS operator*(const VQS& local) const 
+        {
+            VQS result{};
+            result.scale = scale * local.scale;
+            result.rotation = rotation * local.rotation;
+
+            glm::vec3 scaledLocalTrans = scale * local.position;
+            glm::vec3 rotatedLocalTrans = rotation * scaledLocalTrans;
+            result.position = position + rotatedLocalTrans;
+
+            return result;
+        }
     };
 
     struct Vertex
@@ -30,8 +43,8 @@ namespace Gep
         glm::vec3 position{};
         glm::vec3 normal{};
         glm::vec2 texCoord{};
-        std::array<uint64_t, 4> boneIndices;
-        std::array<float, 4> boneWeights;
+        std::array<uint64_t, 4> boneIndices{};
+        std::array<float, 4> boneWeights{};
     };
 
     struct Mesh
@@ -41,7 +54,7 @@ namespace Gep
         std::vector<Vertex> vertices{};
         std::vector<uint32_t> indices{};
         uint32_t materialIndex{}; // the material inside of model that this 
-
+        std::vector<uint32_t> boneIndices{}; // all of the bones that this mesh impacts in the model struct
         AABB boundingBox{};
 
         void CalculateBoundingBox()
@@ -77,7 +90,7 @@ namespace Gep
 
         uint64_t parentIndex;
         VQS toModelFromBone; // from the bind pose
-        glm::mat4 toModelFromBoneM;
+        glm::mat4  toModelFromBoneM;
         VQS toBoneFromModel; // inverse of the previous
     };
 

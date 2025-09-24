@@ -109,7 +109,8 @@ namespace Gep
     {
         mesh.vertices.reserve(assimpMesh->mNumVertices);
 
-        for (unsigned int i = 0; i < assimpMesh->mNumVertices; ++i) {
+        for (unsigned int i = 0; i < assimpMesh->mNumVertices; ++i) 
+        {
             Vertex& v = mesh.vertices.emplace_back();
 
             v.position = { assimpMesh->mVertices[i].x, assimpMesh->mVertices[i].y, assimpMesh->mVertices[i].z };
@@ -133,6 +134,37 @@ namespace Gep
             for (unsigned int j = 0; j < face.mNumIndices; ++j)
                 mesh.indices.push_back(face.mIndices[j]);
         }
+    }
+
+    // returns the index of the node just created
+    static size_t LoadHierarchyStep(Gep::Model& model, size_t parentIndex, const aiNode* node)
+    {
+        if (node)
+        {
+            size_t index = model.hierarchy.size();
+
+            // note cannot get reference here because the reference will be stale by the time it is used
+            model.hierarchy.emplace_back();
+            model.hierarchy.at(index).parentIndex = parentIndex;
+            model.hierarchy.at(index).transformation = ToVQS(node->mTransformation);
+
+            for (size_t i = 0; i < node->mNumChildren; ++i)
+            {
+                size_t childIndex = LoadHierarchyStep(model, index, node->mChildren[i]);
+
+                if (childIndex != num_max<size_t>()) // check if valid
+                    model.hierarchy.at(index).childrenIndices.push_back(childIndex);
+            }
+
+            return index;
+        }
+
+        return num_max<size_t>();
+    }
+
+    static void LoadHierarchy(Gep::Model& model, const aiScene* scene)
+    {
+        LoadHierarchyStep(model, num_max<size_t>(), scene->mRootNode);
     }
 
     static void LoadMeshes(Gep::Model& model, const aiScene* scene)
@@ -174,6 +206,7 @@ namespace Gep
 
         LoadMeshes(model, scene);
         LoadMaterials(model, scene);
+        LoadHierarchy(model, scene);
 
         return model;
     }

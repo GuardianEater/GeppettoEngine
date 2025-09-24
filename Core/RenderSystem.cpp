@@ -20,6 +20,8 @@
 #include "LightComponent.hpp"
 #include "SkyboxMesh.hpp"
 
+#include "Conversion.h"
+
 #include "RenderResource.hpp"
 
 
@@ -89,6 +91,44 @@ namespace Client
 
         glEnable(GL_DEPTH_TEST);
     }
+
+#pragma optimize("",off)
+    static void DrawSkeletonRecursive(
+        const Gep::Model& model,
+        uint16_t nodeIndex,
+        const Gep::VQS& parentTransform,
+        Gep::OpenGLRenderer& renderer)
+    {
+        if (nodeIndex == Gep::num_max<uint16_t>())
+            return;
+        if (model.hierarchy.empty())
+            return;
+
+        const Gep::ModelNode& node = model.hierarchy.at(nodeIndex);
+
+        Gep::VQS worldTransform = parentTransform * node.transformation;
+        glm::vec3 nodePos = worldTransform.position;
+
+        // Draw lines to children
+        for (uint16_t childIndex : node.childrenIndices)
+        {
+            const Gep::ModelNode& child = model.hierarchy.at(childIndex);
+
+            Gep::VQS childWorld = worldTransform * child.transformation;
+            glm::vec3 childPos = childWorld.position;
+
+            // Draw the bone (parent to child)
+            Gep::LineGPUData boneLine;
+            boneLine.color = { 1.0f,1.0f,1.0f };
+            boneLine.points.push_back({ glm::vec4(nodePos, 1.0f), glm::vec4(childPos, 1.0f) });
+
+            renderer.AddLine(boneLine);
+
+            // Recurse
+            DrawSkeletonRecursive(model, childIndex, worldTransform, renderer);
+        }
+    }
+#pragma optimize("", on)
 
     void RenderSystem::Update(float dt)
     {
@@ -171,11 +211,8 @@ namespace Client
             }
 
             const Gep::Model& internalModel = renderer.GetModel(model.modelName);
+            DrawSkeletonRecursive(internalModel, 0, Gep::ToVQS(modelMatrix), renderer);
 
-            for (const Gep::Bone& bone : internalModel.skeleton.bones)
-            {
-            }
-            
             renderer.AddObject(model.modelName, uniforms);
         });
 
