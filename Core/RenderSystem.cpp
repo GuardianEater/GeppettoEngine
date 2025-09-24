@@ -92,7 +92,6 @@ namespace Client
         glEnable(GL_DEPTH_TEST);
     }
 
-#pragma optimize("",off)
     static void DrawSkeletonRecursive(
         const Gep::Model& model,
         uint16_t nodeIndex,
@@ -128,8 +127,7 @@ namespace Client
             DrawSkeletonRecursive(model, childIndex, worldTransform, renderer);
         }
     }
-#pragma optimize("", on)
-
+    
     void RenderSystem::Update(float dt)
     {
         Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;

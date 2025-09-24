@@ -720,7 +720,6 @@ namespace Client
             ImGui::PopID();
         }
     }
-#pragma optimize("", off)
     void ImGuiSystem::DrawAssetBrowser()
     {
         Gep::OpenGLRenderer& renderer = mManager.GetResource<Client::RenderResource>().mRenderer;
@@ -870,8 +869,6 @@ namespace Client
 
         ImGui::End();
     }
-#pragma optimize("", on)
-
 
     void ImGuiSystem::DrawToolbar()
     {
