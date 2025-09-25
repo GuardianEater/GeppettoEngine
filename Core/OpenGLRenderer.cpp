@@ -69,6 +69,9 @@ namespace Gep
             MeshGPUHandle& meshHandle = modelHandle.meshHandles.emplace_back(); // create a handle for this mesh
 
             const std::filesystem::path& diffuseTexturePath = model.materials.at(mesh.materialIndex).diffuseTexturePath;
+
+            // TODO: load the texture at this point and assign an index instead of a filepath
+
             std::filesystem::path root(path);
             root = root.parent_path();
 
@@ -103,8 +106,24 @@ namespace Gep
         }
     }
 
+    void OpenGLRenderer::AddAnimation(const std::string& name, const Gep::Animation& animation)
+    {
+        if (mAnimations.contains(name))
+        {
+            Gep::Log::Error("Adding animation failed, animation with the name: [", name, "] was already loaded");
+            return;
+        }
+
+        mAnimations[name] = std::make_pair(AnimationGPUHandle{}, animation);
+    }
+
     const Gep::Model& OpenGLRenderer::GetModel(const std::string& name)
     {
+        if (!mModels.contains(name))
+        {
+            Gep::Log::Critical("Attempting to get a model with name: [", name, "] that doesn't exist");
+        }
+
         return mModels.at(name).second;
     }
 

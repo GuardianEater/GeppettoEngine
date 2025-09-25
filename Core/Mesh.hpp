@@ -88,10 +88,10 @@ namespace Gep
     {
         std::string name = "Unnamed";
 
-        uint64_t parentIndex;
-        VQS toModelFromBone; // from the bind pose
-        glm::mat4  toModelFromBoneM;
-        VQS toBoneFromModel; // inverse of the previous
+        std::vector<uint16_t> childrenIndices;
+        VQS transformation;
+        VQS inverseBind;
+        uint16_t parentIndex;
     };
 
     struct Skeleton
@@ -113,7 +113,7 @@ namespace Gep
     struct Animation
     {
         float duration; // total duration of the animations
-        std::vector<Track> tracks;
+        std::vector<Track> tracks; // one track per bone
     };
 }
 

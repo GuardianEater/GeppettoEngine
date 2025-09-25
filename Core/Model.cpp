@@ -141,19 +141,19 @@ namespace Gep
     {
         if (node)
         {
-            size_t index = model.hierarchy.size();
+            size_t index = model.skeleton.bones.size();
 
             // note cannot get reference here because the reference will be stale by the time it is used
-            model.hierarchy.emplace_back();
-            model.hierarchy.at(index).parentIndex = parentIndex;
-            model.hierarchy.at(index).transformation = ToVQS(node->mTransformation);
+            model.skeleton.bones.emplace_back();
+            model.skeleton.bones.at(index).parentIndex = parentIndex;
+            model.skeleton.bones.at(index).transformation = ToVQS(node->mTransformation);
 
             for (size_t i = 0; i < node->mNumChildren; ++i)
             {
                 size_t childIndex = LoadHierarchyStep(model, index, node->mChildren[i]);
 
                 if (childIndex != num_max<size_t>()) // check if valid
-                    model.hierarchy.at(index).childrenIndices.push_back(childIndex);
+                    model.skeleton.bones.at(index).childrenIndices.push_back(childIndex);
             }
 
             return index;

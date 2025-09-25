@@ -15,14 +15,6 @@
 
 namespace Gep
 {
-    struct ModelNode
-    {
-        // the indices into the hierarchy on a model to this nodes children. only supports uint16_t max nodes
-        std::vector<uint16_t> childrenIndices;
-        VQS transformation;
-        uint16_t parentIndex;
-    };
-
     struct Model
     {
         // contructs a model struct with data in a file, will not load images
@@ -33,7 +25,6 @@ namespace Gep
 
         std::vector<Mesh> meshes;
         std::vector<Material> materials;
-        std::vector<ModelNode> hierarchy; // flat tree. the first item is always the root. iterate each nodes children for tree descent.
         Skeleton skeleton;
         Animation animation;
     };

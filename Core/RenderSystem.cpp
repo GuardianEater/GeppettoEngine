@@ -92,40 +92,39 @@ namespace Client
         glEnable(GL_DEPTH_TEST);
     }
 
-    static void DrawSkeletonRecursive(
-        const Gep::Model& model,
-        uint16_t nodeIndex,
-        const Gep::VQS& parentTransform,
-        Gep::OpenGLRenderer& renderer)
+    void RenderSystem::DrawSkeletonRecursive(const Gep::Skeleton& skeleton, const Gep::VQS& parentTransform, uint16_t nodeIndex)
     {
-        if (nodeIndex == Gep::num_max<uint16_t>())
+        if (nodeIndex == Gep::num_max<uint16_t>()) // if the node is null
             return;
-        if (model.hierarchy.empty())
+        if (skeleton.bones.empty()) // if no bones
             return;
 
-        const Gep::ModelNode& node = model.hierarchy.at(nodeIndex);
+        const Gep::Bone& bone = skeleton.bones.at(nodeIndex);
 
-        Gep::VQS worldTransform = parentTransform * node.transformation;
-        glm::vec3 nodePos = worldTransform.position;
+        Gep::VQS boneTransform = parentTransform * bone.transformation;
 
         // Draw lines to children
-        for (uint16_t childIndex : node.childrenIndices)
+        for (uint16_t childIndex : bone.childrenIndices)
         {
-            const Gep::ModelNode& child = model.hierarchy.at(childIndex);
+            const Gep::Bone& child = skeleton.bones.at(childIndex);
 
-            Gep::VQS childWorld = worldTransform * child.transformation;
-            glm::vec3 childPos = childWorld.position;
+            Gep::VQS childTransform = boneTransform * child.transformation;
 
             // Draw the bone (parent to child)
             Gep::LineGPUData boneLine;
-            boneLine.color = { 1.0f,1.0f,1.0f };
-            boneLine.points.push_back({ glm::vec4(nodePos, 1.0f), glm::vec4(childPos, 1.0f) });
+            boneLine.color = { 1.0f, 1.0f, 1.0f };
+            boneLine.points.push_back({ glm::vec4(boneTransform.position, 1.0f), glm::vec4(childTransform.position, 1.0f) });
 
-            renderer.AddLine(boneLine);
+            mRenderResource.mRenderer.AddLine(boneLine);
 
             // Recurse
-            DrawSkeletonRecursive(model, childIndex, worldTransform, renderer);
+            DrawSkeletonRecursive(skeleton, boneTransform, childIndex);
         }
+    }
+
+    void RenderSystem::DrawSkeleton(const Gep::Skeleton& skeleton, const Gep::VQS& transform)
+    {
+        DrawSkeletonRecursive(skeleton, transform, 0); // 0 is the root node of a skeleton
     }
     
     void RenderSystem::Update(float dt)
@@ -208,9 +207,12 @@ namespace Client
                 renderer.AddObject(model.modelName, wireframeUniforms);
             }
 
-            const Gep::Model& internalModel = renderer.GetModel(model.modelName);
-            DrawSkeletonRecursive(internalModel, 0, Gep::ToVQS(modelMatrix), renderer);
-
+            if (mDrawBones)
+            {
+                const Gep::Model& internalModel = renderer.GetModel(model.modelName);
+                DrawSkeleton(internalModel.skeleton, Gep::ToVQS(modelMatrix));
+            }
+            
             renderer.AddObject(model.modelName, uniforms);
         });
 
@@ -266,25 +268,6 @@ namespace Client
 
         }
 
-        Gep::LineGPUData line{};
-        line.color = { 1.0f, 0.0f, 0.0f };
-        line.points.push_back({ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } });
-        line.points.push_back({ { 1.0f, 0.0f, 0.0f, 1.0f }, { 2.0f, 1.0f, 0.0f, 1.0f } });
-        line.points.push_back({ { 2.0f, 1.0f, 0.0f, 1.0f }, { 4.0f, 2.0f, 0.0f, 1.0f } });
-        line.points.push_back({ { 4.0f, 2.0f, 0.0f, 1.0f }, { 8.0f, 3.0f, 0.0f, 1.0f } });
-        line.points.push_back({ { 8.0f, 3.0f, 0.0f, 1.0f }, { 16.0f, 4.0f, 0.0f, 1.0f } });
-        renderer.AddLine(line);
-
-        Gep::LineGPUData lineBlue{};
-        lineBlue.color = { 0.0f, 0.0f, 1.0f };
-        lineBlue.points.push_back({ { 0.0f, 1.0f, 0.0f, 1.0f }, { 2.0f, 1.0f, 1.0f, 1.0f } });
-        lineBlue.points.push_back({ { 2.0f, 1.0f, 1.0f, 1.0f }, { 2.0f, 1.0f, 2.0f, 1.0f } });
-        lineBlue.points.push_back({ { 2.0f, 1.0f, 2.0f, 1.0f }, { 4.0f, 2.0f, 5.0f, 1.0f } });
-        lineBlue.points.push_back({ { 4.0f, 2.0f, 5.0f, 1.0f }, { 8.0f, 3.0f, 3.0f, 1.0f } });
-        lineBlue.points.push_back({ { 8.0f, 3.0f, 3.0f, 1.0f }, { 16.0f, 4.0f, 6.0f, 1.0f } });
-        renderer.AddLine(lineBlue);
-
-
         // send all things added to the gpu
         renderer.CommitLights();
         renderer.CommitCameras();
@@ -335,6 +318,7 @@ namespace Client
         static bool isTKeyPressed = false;
         static bool isYKeyPressed = false;
         static bool isUKeyPressed = false;
+        static bool isFKeyPressed = false;
 
         // Handle T key for textures
         if (glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS)
@@ -371,6 +355,18 @@ namespace Client
         }
         else
             isUKeyPressed = false; // Reset when key is released
+
+        if (glfwGetKey(window, GLFW_KEY_F4) == GLFW_PRESS)
+        {
+            if (!isFKeyPressed)
+            {
+                mDrawBones = !mDrawBones;
+                isFKeyPressed = true;
+            }
+        }
+        else
+            isFKeyPressed = false; // Reset when key is released
+
     }
 
     void RenderSystem::RenderImGui(float dt)

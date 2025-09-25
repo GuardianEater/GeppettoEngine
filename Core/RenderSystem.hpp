@@ -46,12 +46,16 @@ namespace Client
         bool mDrawColliders = false;
         bool mWireframeMode = false;
         bool mNoTextureMode = false;
+        bool mDrawBones     = false;
 
         void OnModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event);
         void OnModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event);
         void OnTextureEditorRender(const Gep::Event::ComponentEditorRender<Texture>& event);
         void OnLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event);
         void OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event);
+
+        void DrawSkeleton(const Gep::Skeleton& skeleton, const Gep::VQS& transform);
+        void DrawSkeletonRecursive(const Gep::Skeleton& skeleton, const Gep::VQS& parentTransform, uint16_t nodeIndex);
 
         Client::RenderResource& mRenderResource;
     };

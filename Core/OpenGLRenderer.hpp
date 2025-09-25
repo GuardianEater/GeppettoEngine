@@ -83,6 +83,8 @@ namespace Gep
         // adds a prexisting model into the renderer. will not perform any loading from disk
         void AddModel(const std::string& name, const Gep::Model& model);
 
+        void AddAnimation(const std::string& name, const Gep::Animation& animation);
+
         const Gep::Model& GetModel(const std::string& name);
 
         bool IsMeshLoaded(const std::string& name) const;
@@ -170,6 +172,11 @@ namespace Gep
             std::vector<ObjectGPUData> wireframeObjectDatas;
         };
 
+        struct AnimationGPUHandle
+        {
+            
+        };
+
     private:
         void DrawRegular();
         void DrawLines();
@@ -191,7 +198,7 @@ namespace Gep
         glm::vec4 mNextEye{};
 
         std::unordered_map<std::string, std::pair<ModelGPUHandle, Gep::Model>> mModels; // model name -> its handle and data
-        size_t mTotalDrawCount;
+        std::unordered_map<std::string, std::pair<AnimationGPUHandle, Gep::Animation>> mAnimations;
 
         //std::unordered_map<std::string, MeshGPUHandle> mModels;
         std::unordered_map<std::string, GLuint> mIconTextures;// icon extension -> texture id
