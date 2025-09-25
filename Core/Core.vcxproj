@@ -117,6 +117,7 @@
     <ClCompile Include="CollisionSystem.cpp" />
     <ClCompile Include="Conversion.cpp" />
     <ClCompile Include="Core.cpp" />
+    <ClInclude Include="AnimationComponent.hpp" />
     <ClInclude Include="BVHTree.hpp" />
     <ClInclude Include="CollisionResource.hpp" />
     <ClInclude Include="Conversion.h" />

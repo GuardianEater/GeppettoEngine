@@ -19,8 +19,9 @@ namespace Gep
         glm::mat4 offset;
     };
 
-    static std::map<std::string, BoneInfo> gBoneInfoMap; //
-    int gBoneCounter = 0;
+    static std::unordered_map<std::string, BoneInfo> gBoneInfoMap; //
+    static std::unordered_map<std::string, VQS> gBoneData;
+    static int gBoneCounter = 0;
 
     // moves all data from the aiScene into the internal model format
     static void LoadMaterials(Gep::Model& model, const aiScene* scene)
@@ -33,7 +34,7 @@ namespace Gep
             aiMaterial* assimpMaterial = scene->mMaterials[i];
 
             aiColor3D diffuseColor(1.f, 1.f, 1.f);
-            if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor))
+            if (aiReturn_SUCCESS == assimpMaterial->Get("$clr.diffuse", 0, 0, diffuseColor))
                 material.color = { diffuseColor.r, diffuseColor.g, diffuseColor.b };
 
             aiString texPath;
@@ -139,27 +140,41 @@ namespace Gep
     // returns the index of the node just created
     static size_t LoadHierarchyStep(Gep::Model& model, size_t parentIndex, const aiNode* node)
     {
-        if (node)
+        if (!node)
+            return num_max<size_t>();
+
+        auto it = gBoneData.find(node->mName.C_Str());
+
+        // if node is not a bone, skip adding it
+        if (it == gBoneData.end())
         {
-            size_t index = model.skeleton.bones.size();
-
-            // note cannot get reference here because the reference will be stale by the time it is used
-            model.skeleton.bones.emplace_back();
-            model.skeleton.bones.at(index).parentIndex = parentIndex;
-            model.skeleton.bones.at(index).transformation = ToVQS(node->mTransformation);
-
+            // but still traverse children, since bones might be deeper
+            size_t lastValid = num_max<size_t>();
             for (size_t i = 0; i < node->mNumChildren; ++i)
             {
-                size_t childIndex = LoadHierarchyStep(model, index, node->mChildren[i]);
-
-                if (childIndex != num_max<size_t>()) // check if valid
-                    model.skeleton.bones.at(index).childrenIndices.push_back(childIndex);
+                lastValid = LoadHierarchyStep(model, parentIndex, node->mChildren[i]);
             }
-
-            return index;
+            return lastValid;
         }
 
-        return num_max<size_t>();
+        const auto& [boneName, inverseBind] = *it;
+
+        // this is a bone, so add it, note cannot get a reference here because it could be stale
+        size_t index = model.skeleton.bones.size();
+        model.skeleton.bones.emplace_back();
+        model.skeleton.bones.at(index).name = boneName;
+        model.skeleton.bones.at(index).parentIndex = parentIndex;
+        model.skeleton.bones.at(index).transformation = ToVQS(node->mTransformation);
+        model.skeleton.bones.at(index).inverseBind = inverseBind; // use oinverse bind
+
+        for (size_t i = 0; i < node->mNumChildren; ++i)
+        {
+            size_t childIndex = LoadHierarchyStep(model, index, node->mChildren[i]);
+            if (childIndex != num_max<size_t>())
+                model.skeleton.bones.at(index).childrenIndices.push_back(childIndex);
+        }
+
+        return index;
     }
 
     static void LoadHierarchy(Gep::Model& model, const aiScene* scene)
@@ -179,6 +194,19 @@ namespace Gep
             LoadIndices(mesh, scene->mMeshes[i]);
 
             mesh.materialIndex = scene->mMeshes[i]->mMaterialIndex;
+        }
+    }
+    
+    static void LoadBoneData(const aiScene* scene)
+    {
+        for (unsigned int m = 0; m < scene->mNumMeshes; ++m) 
+        {
+            aiMesh* mesh = scene->mMeshes[m];
+            for (unsigned int b = 0; b < mesh->mNumBones; ++b) 
+            {
+                aiBone* bone = mesh->mBones[b];
+                gBoneData[bone->mName.C_Str()] = ToVQS(bone->mOffsetMatrix);
+            }
         }
     }
 
@@ -204,6 +232,7 @@ namespace Gep
 
         Gep::Model model;
 
+        LoadBoneData(scene);
         LoadMeshes(model, scene);
         LoadMaterials(model, scene);
         LoadHierarchy(model, scene);
