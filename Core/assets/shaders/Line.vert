@@ -16,9 +16,9 @@ layout(std430, binding=2) buffer CameraUniformsBuffer
 
 layout(location=0) uniform int cameraIndex; // the currently active camera in the cameraUniforms array
 
-layout(location=0) in vec4 inPosition;
+layout(location=0) in vec3 inPosition;
 
 void main()
 {
-  gl_Position = cameraUniforms[cameraIndex].perspectiveMatrix * cameraUniforms[cameraIndex].viewMatrix * inPosition;
+  gl_Position = cameraUniforms[cameraIndex].perspectiveMatrix * cameraUniforms[cameraIndex].viewMatrix * vec4(inPosition, 1.0);
 }

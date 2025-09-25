@@ -92,7 +92,7 @@ namespace Client
         glEnable(GL_DEPTH_TEST);
     }
 
-    void RenderSystem::DrawSkeletonRecursive(const Gep::Skeleton& skeleton, const Gep::VQS& parentTransform, uint16_t nodeIndex)
+    void RenderSystem::DrawSkeletonRecursive(const Gep::Skeleton& skeleton, const Gep::VQS& parentTransform, Gep::LineGPUData& line, uint16_t nodeIndex)
     {
         if (nodeIndex == Gep::num_max<uint16_t>()) // if the node is null
             return;
@@ -111,20 +111,19 @@ namespace Client
             Gep::VQS childTransform = boneTransform * child.transformation;
 
             // Draw the bone (parent to child)
-            Gep::LineGPUData boneLine;
-            boneLine.color = { 1.0f, 1.0f, 1.0f };
-            boneLine.points.push_back({ glm::vec4(boneTransform.position, 1.0f), glm::vec4(childTransform.position, 1.0f) });
-
-            mRenderResource.mRenderer.AddLine(boneLine);
+            line.points.push_back({ glm::vec4(boneTransform.position, 1.0f), glm::vec4(childTransform.position, 1.0f) });
 
             // Recurse
-            DrawSkeletonRecursive(skeleton, boneTransform, childIndex);
+            DrawSkeletonRecursive(skeleton, boneTransform, line, childIndex);
         }
     }
 
     void RenderSystem::DrawSkeleton(const Gep::Skeleton& skeleton, const Gep::VQS& transform)
     {
-        DrawSkeletonRecursive(skeleton, transform, 0); // 0 is the root node of a skeleton
+        Gep::LineGPUData boneLines;
+        boneLines.color = { 1.0f, 1.0f, 1.0f };
+        DrawSkeletonRecursive(skeleton, transform, boneLines, 0); // 0 is the root node of a skeleton
+        mRenderResource.mRenderer.AddLine(boneLines);
     }
     
     void RenderSystem::Update(float dt)

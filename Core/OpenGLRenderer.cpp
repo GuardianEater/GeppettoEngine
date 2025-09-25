@@ -546,9 +546,9 @@ namespace Gep
 
         glBindVertexArray(mLineVAO);
         glBindBuffer(GL_ARRAY_BUFFER, mLineVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * 1000, nullptr, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_STREAM_DRAW);
 
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (void*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
         glEnableVertexAttribArray(0);
     }
 
@@ -624,9 +624,10 @@ namespace Gep
             // one color per set
             mLineShader->SetUniform(1, glm::vec4(lineData.color, 1.0f));
 
-            glBufferSubData(GL_ARRAY_BUFFER, 0,
-                lineData.points.size() * sizeof(glm::vec4) * 2,
-                lineData.points.data()
+            glBufferData(GL_ARRAY_BUFFER,
+                lineData.points.size() * sizeof(glm::vec3) * 2,
+                lineData.points.data(),
+                GL_STREAM_DRAW
             );
 
             // draw all line segments in this set

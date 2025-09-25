@@ -66,7 +66,7 @@ namespace Gep
     {
         struct LineSegment
         {
-            glm::vec4 start, end;
+            glm::vec3 start, end;
         };
 
         glm::vec3 color;
