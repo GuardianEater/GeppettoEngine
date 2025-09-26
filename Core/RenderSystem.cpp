@@ -22,14 +22,18 @@
 
 #include "Conversion.h"
 
-#include "RenderResource.hpp"
+#include "QuadMesh.hpp"
+#include "SphereMesh.hpp"
+#include "IcosphereMesh.hpp"
+#include "CubeMesh.hpp"
 
+#include "ISystem.hpp"
 
 namespace Client
 {
     RenderSystem::RenderSystem(Gep::EngineManager& em)
         : ISystem(em)
-        , mRenderResource(em.GetResource<Client::RenderResource>())
+        , mRenderer(em.GetResource<Gep::OpenGLRenderer>())
     {
 
     }
@@ -46,7 +50,7 @@ namespace Client
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Light>>(this, &RenderSystem::OnLightEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Camera>>(this, &RenderSystem::OnCameraEditorRender);
 
-        Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
+        Gep::OpenGLRenderer& renderer = mRenderer;
 
         renderer.SetShader("assets\\shaders\\PBR.vert", "assets\\shaders\\PBR.frag");
         renderer.SetHighlightShader("assets\\shaders\\Highlight.vert", "assets\\shaders\\Highlight.frag");
@@ -123,12 +127,12 @@ namespace Client
         Gep::LineGPUData boneLines;
         boneLines.color = { 1.0f, 1.0f, 1.0f };
         DrawSkeletonRecursive(skeleton, transform, boneLines, 0); // 0 is the root node of a skeleton
-        mRenderResource.mRenderer.AddLine(boneLines);
+        mRenderer.AddLine(boneLines);
     }
     
     void RenderSystem::Update(float dt)
     {
-        Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
+        Gep::OpenGLRenderer& renderer = mRenderer;
 
         renderer.Start();
 
@@ -307,7 +311,7 @@ namespace Client
 
     void RenderSystem::HandleInputs(float dt)
     {
-        Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
+        Gep::OpenGLRenderer& renderer = mRenderer;
 
         const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
         const float movementSpeed = 10 * dt;
@@ -376,7 +380,7 @@ namespace Client
 
     void RenderSystem::OnModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event)
     {
-        Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
+        Gep::OpenGLRenderer& renderer = mRenderer;
 
         ModelComponent& model = mManager.GetComponent<ModelComponent>(event.entity);
 
@@ -399,7 +403,7 @@ namespace Client
     {
         ModelComponent& mesh = event.component;
 
-        Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
+        Gep::OpenGLRenderer& renderer = mRenderer;
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
         std::vector<std::string> loadedMeshes = renderer.GetLoadedMeshes();
 
@@ -446,7 +450,7 @@ namespace Client
     {
         Texture& texture = event.component;
 
-        const Gep::OpenGLRenderer& renderer = mRenderResource.mRenderer;
+        const Gep::OpenGLRenderer& renderer = mRenderer;
         const Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
         std::vector<std::filesystem::path> loadedTextures = renderer.GetLoadedTextures();
 

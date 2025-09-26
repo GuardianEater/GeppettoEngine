@@ -20,7 +20,6 @@
 #include "imgui_te_engine.h"
  //#include "ImGuizmo.h"
 #include "SerializationResource.hpp"
-#include "RenderResource.hpp"
 #include "EditorResource.hpp"
 
 #include "OS.hpp"
@@ -722,7 +721,7 @@ namespace Client
     }
     void ImGuiSystem::DrawAssetBrowser()
     {
-        Gep::OpenGLRenderer& renderer = mManager.GetResource<Client::RenderResource>().mRenderer;
+        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
 
         ImGui::Begin("Asset Browser");
 

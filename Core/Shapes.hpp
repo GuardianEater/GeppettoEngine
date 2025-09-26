@@ -103,7 +103,7 @@ namespace Gep
     {
         static AABB Combine(const AABB& l, const AABB& r)
         {
-            return { glm::min(l.min, r.min) , glm::max(l.max, r.max) };
+            return { (glm::min)(l.min, r.min) , (glm::max)(l.max, r.max) };
         }
 
         void Fatten(float amount)

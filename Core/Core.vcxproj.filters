@@ -276,9 +276,6 @@
     <ClCompile Include="SkyboxMesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClCompile>
-    <ClCompile Include="RenderResource.cpp">
-      <Filter>Client\Resources</Filter>
-    </ClCompile>
     <ClCompile Include="Shader.cpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClCompile>
@@ -577,9 +574,6 @@
     </ClInclude>
     <ClInclude Include="STLHelp.hpp">
       <Filter>Backend</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderResource.hpp">
-      <Filter>Client\Resources</Filter>
     </ClInclude>
     <ClInclude Include="Shader.hpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>

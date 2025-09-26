@@ -245,7 +245,6 @@
     <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="RelationSystem.cpp" />
     <ClCompile Include="OpenGLRenderer.cpp" />
-    <ClCompile Include="RenderResource.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="IRenderTarget.cpp" />
     <ClCompile Include="RenderTarget.cpp" />
@@ -265,7 +264,6 @@
     <ClInclude Include="Model.hpp" />
     <ClInclude Include="OS.hpp" />
     <ClInclude Include="Quaternion.hpp" />
-    <ClInclude Include="RenderResource.hpp" />
     <ClInclude Include="RenderTarget.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
     <ClCompile Include="ScriptingResource.cpp" />

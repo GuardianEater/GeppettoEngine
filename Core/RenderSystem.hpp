@@ -8,28 +8,38 @@
 
 #pragma once
 
- // core
-#include <Core.hpp>
-
-// backend
 #include "ISystem.hpp"
-#include "EngineManager.hpp"
-#include "RenderResource.hpp"
 
-// Meshes
-#include "SphereMesh.hpp"
-#include "CubeMesh.hpp"
-#include "IcosphereMesh.hpp"
-#include "QuadMesh.hpp"
+// fwd
+namespace Gep
+{
+    class EngineManager;
+    class OpenGLRenderer;
 
-// client
+    struct Skeleton;
+    struct VQS;
+    struct LineGPUData;
+}
+
+// fwd
+namespace Gep::Event
+{
+    template <typename ComponentType> struct ComponentAdded;
+    template <typename ComponentType> struct ComponentEditorRender;
+}
+
+// fwd
 namespace Client
 {
     struct ModelComponent;
     struct Texture;
     struct Light;
     struct Camera;
+}
 
+// client
+namespace Client
+{
     class RenderSystem : public Gep::ISystem
     {
     public:
@@ -57,7 +67,7 @@ namespace Client
         void DrawSkeleton(const Gep::Skeleton& skeleton, const Gep::VQS& transform);
         void DrawSkeletonRecursive(const Gep::Skeleton& skeleton, const Gep::VQS& parentTransform, Gep::LineGPUData& line, uint16_t nodeIndex);
 
-        Client::RenderResource& mRenderResource;
+        Gep::OpenGLRenderer& mRenderer;
     };
 }
 

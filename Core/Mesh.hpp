@@ -63,8 +63,8 @@ namespace Gep
             boundingBox.max = glm::vec3(-FLT_MAX);
             for (const Vertex& vertex : vertices)
             {
-                boundingBox.min = glm::min(boundingBox.min, vertex.position);
-                boundingBox.max = glm::max(boundingBox.max, vertex.position);
+                boundingBox.min = (glm::min)(boundingBox.min, vertex.position);
+                boundingBox.max = (glm::max)(boundingBox.max, vertex.position);
             }
         }
 
@@ -76,7 +76,7 @@ namespace Gep
             glm::vec3 center = (boundingBox.min + boundingBox.max) * 0.5f;
             glm::vec3 size   = boundingBox.max - boundingBox.min;
 
-            float maxDim = glm::max(size.x, glm::max(size.y, size.z));
+            float maxDim = (glm::max)(size.x, (glm::max)(size.y, size.z));
             for (Vertex& vertex : vertices)
             {
                 vertex.position = (vertex.position - center) / maxDim;

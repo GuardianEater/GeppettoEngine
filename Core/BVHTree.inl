@@ -188,7 +188,7 @@ namespace Gep
         bvh_node* currentNode = node->parent;
         while (currentNode)
         {
-            currentNode->height = 1 + std::max(currentNode->left->height, currentNode->right->height);
+            currentNode->height = 1 + (std::max)(currentNode->left->height, currentNode->right->height);
             currentNode->aabb = AABB::Combine(currentNode->left->aabb, currentNode->right->aabb);
             currentNode = currentNode->parent;
         }
@@ -264,7 +264,7 @@ namespace Gep
 
         smallChild->parent = node;
 
-        node->height = 1 + std::max(node->left->height, node->right->height);
+        node->height = 1 + (std::max)(node->left->height, node->right->height);
     }
 
     template <typename KeyType, typename ValueType>

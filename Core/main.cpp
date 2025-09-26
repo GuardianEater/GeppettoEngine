@@ -14,7 +14,6 @@
 #include "Logger.hpp"
 
 // resources
-#include "RenderResource.hpp"
 #include "ScriptingResource.hpp"
 #include "SoundResource.hpp"
 #include "CollisionResource.hpp"
@@ -65,7 +64,7 @@ int main()
     em.RegisterResource<Client::CollisionResource>();
     em.RegisterResource<Client::SerializationResource>();
     em.RegisterResource<Client::EditorResource>();
-    em.RegisterResource<Client::RenderResource>();
+    em.RegisterResource<Gep::OpenGLRenderer>();
 
     // list of all components ///////////////////////////////////////////////////////////////////////
     Gep::type_list<
