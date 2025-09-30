@@ -140,6 +140,11 @@ namespace Gep
         return mAnimations.at(name).second;
     }
 
+    bool OpenGLRenderer::IsAnimationLoaded(const std::string& name)
+    {
+        return mAnimations.contains(name);
+    }
+
     bool OpenGLRenderer::IsMeshLoaded(const std::string& name) const
     {
         return mModels.contains(name);
@@ -301,6 +306,18 @@ namespace Gep
         }
 
         return textures;
+    }
+
+    std::vector<std::string> OpenGLRenderer::GetLoadedAnimations() const
+    {
+        std::vector<std::string> animations;
+
+        for (const auto& [name, pair] : mAnimations)
+        {
+            animations.push_back(name);
+        }
+
+        return animations;
     }
 
     const std::vector<std::string>& OpenGLRenderer::GetSupportedModelFormats() const
@@ -850,8 +867,10 @@ namespace Gep
             const aiNodeAnim* channel = assimpAnimation->mChannels[i];
 
             // find bone index in skeleton
-            auto it = std::find_if(skeleton.bones.begin(), skeleton.bones.end(),
-                [&](const Bone& b) { return b.name == channel->mNodeName.C_Str(); });
+            auto it = std::find_if(skeleton.bones.begin(), skeleton.bones.end(), [&](const Bone& b)
+            { 
+                return b.name == channel->mNodeName.C_Str(); 
+            });
 
             if (it == skeleton.bones.end())
                 continue; // channel for a node that's not a bone
@@ -868,10 +887,10 @@ namespace Gep
 
             for (size_t k = 0; k < numKeys; k++)
             {
-                KeyFrame frame;
+                KeyFrame& frame = track.keyFrames.emplace_back();
                 frame.time = 0.0f;
                 frame.transform.position = glm::vec3(0.0f);
-                frame.transform.rotation = glm::quat(1, 0, 0, 0);
+                frame.transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
                 frame.transform.scale = glm::vec3(1.0f);
 
                 // pick closest available key for each channel
@@ -908,9 +927,17 @@ namespace Gep
             return; // identity
         }
 
-        if (track.keyFrames.size() == 1)
+        // if time is before the first key
+        if (time <= track.keyFrames.front().time || track.keyFrames.size() == 1)
         {
-            result = track.keyFrames[0].transform;
+            result = track.keyFrames.front().transform;
+            return;
+        }
+
+        // if time is after the last key
+        if (time >= track.keyFrames.back().time)
+        {
+            result = track.keyFrames.back().transform;
             return;
         }
 
@@ -1069,8 +1096,10 @@ namespace Gep
             size_t lastValid = num_max<size_t>();
             for (size_t i = 0; i < node->mNumChildren; ++i)
             {
+                node->mChildren[i]->mTransformation = node->mTransformation * node->mChildren[i]->mTransformation;
                 lastValid = LoadHierarchyStep(model, parentIndex, node->mChildren[i]);
             }
+
             return lastValid;
         }
 
@@ -1094,9 +1123,16 @@ namespace Gep
         return index;
     }
 
+    // create hierary
     static void LoadHierarchy(Gep::Model& model, const aiScene* scene)
     {
         LoadHierarchyStep(model, num_max<size_t>(), scene->mRootNode);
+    }
+
+    // load hierarcy
+    static void OptimizeHierarchy(Gep::Model& model)
+    {
+
     }
 
     static void LoadMeshes(Gep::Model& model, const aiScene* scene)
@@ -1148,6 +1184,8 @@ namespace Gep
         }
 
         Gep::Model model;
+
+
 
         LoadBoneData(scene);
         LoadMeshes(model, scene);

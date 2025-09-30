@@ -9,11 +9,15 @@
 #pragma once
 
 #include "ISystem.hpp"
+#include "Events.hpp"
+#include "AnimationComponent.hpp"
 
 namespace Gep
 {
     class EngineManager;
+    struct VQS;
     class OpenGLRenderer;
+    struct LineGPUData;
 }
 
 namespace Client
@@ -28,6 +32,7 @@ namespace Client
 
     private:
         void EvaluateAnimation(const Gep::Animation& animation, float time, std::vector<Gep::VQS>& outLocalPose);
+        void OnAnimationEditorRender(const Gep::Event::ComponentEditorRender<AnimationComponent>& event);
 
     private:
         Gep::OpenGLRenderer& mRenderer;

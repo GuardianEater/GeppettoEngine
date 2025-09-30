@@ -93,6 +93,7 @@ namespace Gep
         const Gep::Model& GetModel(const std::string& name);
         const Gep::Animation& GetAnimation(const std::string& name);
 
+        bool IsAnimationLoaded(const std::string& name);
         bool IsMeshLoaded(const std::string& name) const;
 
         void SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
@@ -115,6 +116,7 @@ namespace Gep
 
         std::vector<std::string> GetLoadedMeshes() const;
         std::vector<std::filesystem::path> GetLoadedTextures() const;
+        std::vector<std::string> GetLoadedAnimations() const;
 
         const std::vector<std::string>& GetSupportedModelFormats() const;
         const std::vector<std::string>& GetSupportedTextureFormats() const;

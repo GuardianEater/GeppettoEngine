@@ -22,7 +22,7 @@ namespace Gep
     {
         glm::vec3 position{0,0,0}; // translation
         glm::quat rotation{1,0,0,0}; // rotation
-        glm::vec3 scale{1.0f, 1.0f, 1.0f}; // uniform scaling factor
+        glm::vec3 scale{1.0f}; // uniform scaling factor
 
         VQS operator*(const VQS& local) const 
         {
@@ -114,8 +114,8 @@ namespace Gep
     struct Animation
     {
         std::string name;
-        float duration = 0.0f; // total duration of the animations
-        float ticksPerSecond = 0.0f;
+        float duration = 0.0f; // total duration of the animation in TICKS
+        float ticksPerSecond = 0.0f; // how many ticks that should pass in a second
         std::vector<Track> tracks; // one track per bone
     };
 }

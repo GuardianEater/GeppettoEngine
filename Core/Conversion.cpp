@@ -39,12 +39,11 @@ namespace Gep
     {
         glm::vec3 translation = glm::vec3(m[3]);
         glm::mat3 rotScale(m);
-
         glm::vec3 scale
         {
             glm::length(rotScale[0]), // length of X basis vector
             glm::length(rotScale[1]), // length of Y basis vector
-            glm::length(rotScale[2]) // length of Z basis vector        
+            glm::length(rotScale[2])  // length of Z basis vector        
         };
 
         glm::mat3 rotationMat{};
