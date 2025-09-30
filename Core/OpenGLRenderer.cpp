@@ -130,6 +130,16 @@ namespace Gep
         return mModels.at(name).second;
     }
 
+    const Gep::Animation& OpenGLRenderer::GetAnimation(const std::string& name)
+    {
+        if (!mAnimations.contains(name))
+        {
+            Gep::Log::Critical("Attempting to get a animation with name: [", name, "] that doesn't exist");
+        }
+
+        return mAnimations.at(name).second;
+    }
+
     bool OpenGLRenderer::IsMeshLoaded(const std::string& name) const
     {
         return mModels.contains(name);
@@ -818,6 +828,107 @@ namespace Gep
         return num_max<GLuint>();
     }
 
+    void OpenGLRenderer::LoadAnimation(const aiAnimation* assimpAnimation, const Skeleton& skeleton)
+    {
+        const auto& [it, inserted] = mAnimations.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(assimpAnimation->mName.C_Str()),
+            std::forward_as_tuple()
+        );
+        auto& [name, pair] = *it;
+        auto& [animationHandle, animation] = pair;
+
+        animation.duration = static_cast<float>(assimpAnimation->mDuration);
+        animation.ticksPerSecond = assimpAnimation->mTicksPerSecond != 0.0
+            ? static_cast<float>(assimpAnimation->mTicksPerSecond)
+            : 25.0f; // Assimp default
+
+        animation.tracks.reserve(assimpAnimation->mNumChannels);
+
+        for (unsigned int i = 0; i < assimpAnimation->mNumChannels; i++)
+        {
+            const aiNodeAnim* channel = assimpAnimation->mChannels[i];
+
+            // find bone index in skeleton
+            auto it = std::find_if(skeleton.bones.begin(), skeleton.bones.end(),
+                [&](const Bone& b) { return b.name == channel->mNodeName.C_Str(); });
+
+            if (it == skeleton.bones.end())
+                continue; // channel for a node that's not a bone
+
+            uint16_t boneIndex = static_cast<uint16_t>(std::distance(skeleton.bones.begin(), it));
+
+            Track track;
+            track.boneIndex = boneIndex;
+
+            // merge Assimp’s position/rotation/scale keys into VQS keyframes
+            size_t numKeys = std::max({ channel->mNumPositionKeys,
+                                        channel->mNumRotationKeys,
+                                        channel->mNumScalingKeys });
+
+            for (size_t k = 0; k < numKeys; k++)
+            {
+                KeyFrame frame;
+                frame.time = 0.0f;
+                frame.transform.position = glm::vec3(0.0f);
+                frame.transform.rotation = glm::quat(1, 0, 0, 0);
+                frame.transform.scale = glm::vec3(1.0f);
+
+                // pick closest available key for each channel
+                if (k < channel->mNumPositionKeys)
+                {
+                    frame.time = static_cast<float>(channel->mPositionKeys[k].mTime);
+                    frame.transform.position = ToVec3(channel->mPositionKeys[k].mValue);
+                }
+
+                if (k < channel->mNumRotationKeys)
+                {
+                    frame.time = static_cast<float>(channel->mRotationKeys[k].mTime);
+                    frame.transform.rotation = ToQuat(channel->mRotationKeys[k].mValue);
+                }
+
+                if (k < channel->mNumScalingKeys)
+                {
+                    frame.time = static_cast<float>(channel->mScalingKeys[k].mTime);
+                    frame.transform.scale = ToVec3(channel->mScalingKeys[k].mValue);
+                }
+
+                track.keyFrames.push_back(frame);
+            }
+
+            animation.tracks.push_back(std::move(track));
+        }
+    }
+
+    void OpenGLRenderer::Interpolate(VQS& result, const Track& track, float time)
+    {
+        if (track.keyFrames.empty())
+        {
+            result = VQS{};
+            return; // identity
+        }
+
+        if (track.keyFrames.size() == 1)
+        {
+            result = track.keyFrames[0].transform;
+            return;
+        }
+
+        // find the two keys around `time`
+        size_t i = 0;
+        while (i < track.keyFrames.size() - 1 && time > track.keyFrames[i + 1].time)
+            i++;
+
+        const KeyFrame& k1 = track.keyFrames[i];
+        const KeyFrame& k2 = track.keyFrames[i + 1];
+
+        float factor = (time - k1.time) / (k2.time - k1.time);
+
+        result.position = glm::mix  (k1.transform.position, k2.transform.position, factor);
+        result.rotation = glm::slerp(k1.transform.rotation, k2.transform.rotation, factor);
+        result.scale    = glm::mix  (k1.transform.scale,    k2.transform.scale,    factor);
+    }
+
     // moves all data from the aiScene into the internal model format
     void OpenGLRenderer::LoadMaterials(Gep::Model& model, const std::filesystem::path& path, const aiScene* scene)
     {
@@ -844,6 +955,14 @@ namespace Gep
 
             material.roughnessTextureHandle = LoadMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE_ROUGHNESS);
             material.hasRoughnessTexture = (material.roughnessTextureHandle != num_max<GLuint>());
+        }
+    }
+
+    void OpenGLRenderer::LoadAnimations(Gep::Model& model, const aiScene* scene)
+    {
+        for (uint32_t i = 0; i < scene->mNumAnimations; ++i)
+        {
+            LoadAnimation(scene->mAnimations[i], model.skeleton);
         }
     }
 
@@ -1034,6 +1153,8 @@ namespace Gep
         LoadMeshes(model, scene);
         LoadMaterials(model, path, scene);
         LoadHierarchy(model, scene);
+        LoadAnimations(model, scene);
+
 
         return model;
     }

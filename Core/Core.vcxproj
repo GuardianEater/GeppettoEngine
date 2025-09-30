@@ -110,6 +110,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Affine.cpp" />
+    <ClCompile Include="AnimationSystem.cpp" />
     <ClCompile Include="BinarySerialzer.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CollisionChecking.cpp" />
@@ -118,6 +119,7 @@
     <ClCompile Include="Conversion.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClInclude Include="AnimationComponent.hpp" />
+    <ClInclude Include="AnimationSystem.hpp" />
     <ClInclude Include="BVHTree.hpp" />
     <ClInclude Include="CollisionResource.hpp" />
     <ClInclude Include="Conversion.h" />

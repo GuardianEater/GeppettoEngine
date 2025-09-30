@@ -22,7 +22,7 @@ namespace Gep
     {
         glm::vec3 position{0,0,0}; // translation
         glm::quat rotation{1,0,0,0}; // rotation
-        float scale{1.0f}; // uniform scaling factor
+        glm::vec3 scale{1.0f, 1.0f, 1.0f}; // uniform scaling factor
 
         VQS operator*(const VQS& local) const 
         {
@@ -101,18 +101,21 @@ namespace Gep
 
     struct KeyFrame
     {
-        float time; // time since the start of the animation
-        VQS toParentFromBone;
+        float time = 0.0f; // time since the start of the animation
+        VQS transform;
     };
 
     struct Track
     {
+        uint16_t boneIndex; // refers to a specific bone
         std::vector<KeyFrame> keyFrames;
     };
 
     struct Animation
     {
-        float duration; // total duration of the animations
+        std::string name;
+        float duration = 0.0f; // total duration of the animations
+        float ticksPerSecond = 0.0f;
         std::vector<Track> tracks; // one track per bone
     };
 }

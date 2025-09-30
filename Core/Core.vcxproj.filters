@@ -294,6 +294,9 @@
     <ClCompile Include="Conversion.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="AnimationSystem.cpp">
+      <Filter>Client\Systems</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -601,6 +604,9 @@
     </ClInclude>
     <ClInclude Include="AnimationComponent.hpp">
       <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="AnimationSystem.hpp">
+      <Filter>Client\Systems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

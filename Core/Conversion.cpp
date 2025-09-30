@@ -25,14 +25,34 @@ namespace Gep
         return out;
     }
 
+    glm::vec3 ToVec3(const aiVector3D& v)
+    {
+        return { v.x, v.y, v.z };
+    }
+
+    glm::quat ToQuat(const aiQuaternion& q)
+    {
+        return { q.x, q.y, q.z, q.w };
+    }
+
     VQS ToVQS(const glm::mat4& m)
     {
         glm::vec3 translation = glm::vec3(m[3]);
         glm::mat3 rotScale(m);
 
-        float scale = glm::length(rotScale[0]); // assumes uniform scaling
-        glm::quat rotation = glm::quat_cast(rotScale / scale);
+        glm::vec3 scale
+        {
+            glm::length(rotScale[0]), // length of X basis vector
+            glm::length(rotScale[1]), // length of Y basis vector
+            glm::length(rotScale[2]) // length of Z basis vector        
+        };
 
+        glm::mat3 rotationMat{};
+        rotationMat[0] = rotScale[0] / scale.x;
+        rotationMat[1] = rotScale[1] / scale.y;
+        rotationMat[2] = rotScale[2] / scale.z;
+
+        glm::quat rotation = glm::quat_cast(rotationMat);
         return { glm::vec4(translation, 1.0f), rotation, scale };
     }
 

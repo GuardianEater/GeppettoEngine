@@ -18,7 +18,7 @@ namespace Client
 {
     struct ModelComponent
     {
-        std::string modelName{ "Cube" };
+        std::string name{ "Cube" };
         bool selected = false;
         bool ignoreLight = false;
 

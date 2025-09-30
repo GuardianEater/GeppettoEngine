@@ -91,6 +91,7 @@ namespace Gep
         void AddAnimation(const std::string& name, const Gep::Animation& animation);
 
         const Gep::Model& GetModel(const std::string& name);
+        const Gep::Animation& GetAnimation(const std::string& name);
 
         bool IsMeshLoaded(const std::string& name) const;
 
@@ -149,6 +150,7 @@ namespace Gep
         void SetUpObjectUniformsSSBO();
         void SetUpCameraUniformsSSBO();
         void SetUpLineDrawing();
+        void Interpolate(VQS& result, const Track& track, float time);
     private:
         struct MaterialGPUHandle
         {
@@ -200,10 +202,12 @@ namespace Gep
         Gep::Model LoadModelFromFile(const std::filesystem::path& path);
         void LoadMaterials(Gep::Model& model, const std::filesystem::path& path, const aiScene* scene);
 
+        void LoadAnimations(Gep::Model& model, const aiScene* scene);
+
         // given information, will load textures onto the gpu that are needed by the given material. will return num_max<GLuint>() if there is no texture loaded
         GLuint LoadMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type);
 
-
+        void LoadAnimation(const aiAnimation* assimpAnimation, const Skeleton& skeleton);
     private:
 
         std::unique_ptr<Shader> mPBRShader;

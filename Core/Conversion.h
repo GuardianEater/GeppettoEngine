@@ -16,6 +16,8 @@ namespace Gep
     struct VQS;
 
     glm::mat4 ToMat4(const aiMatrix4x4& assimpMatrix);
+    glm::vec3 ToVec3(const aiVector3D& v);
+    glm::quat ToQuat(const aiQuaternion& q);
 
     VQS ToVQS(const glm::mat4& matrix);
     VQS ToVQS(const aiMatrix4x4& m);

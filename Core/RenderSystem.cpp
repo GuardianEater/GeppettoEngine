@@ -207,16 +207,16 @@ namespace Client
                 wireframeUniforms.isWireframe = true;
                 wireframeUniforms.material.color = { 1.0f, 1.0f, 0.0f, 0.2f };
 
-                renderer.AddObject(model.modelName, wireframeUniforms);
+                renderer.AddObject(model.name, wireframeUniforms);
             }
 
             if (mDrawBones)
             {
-                const Gep::Model& internalModel = renderer.GetModel(model.modelName);
+                const Gep::Model& internalModel = renderer.GetModel(model.name);
                 DrawSkeleton(internalModel.skeleton, Gep::ToVQS(modelMatrix));
             }
             
-            renderer.AddObject(model.modelName, uniforms);
+            renderer.AddObject(model.name, uniforms);
         });
 
         // draws colliders if on
@@ -384,17 +384,17 @@ namespace Client
 
         ModelComponent& model = mManager.GetComponent<ModelComponent>(event.entity);
 
-        if (!renderer.IsMeshLoaded(model.modelName))
+        if (!renderer.IsMeshLoaded(model.name))
         {
-            if (std::filesystem::exists(model.modelName))
+            if (std::filesystem::exists(model.name))
             {
-                renderer.AddModelFromFile(model.modelName);
+                renderer.AddModelFromFile(model.name);
             }
             else
             {
-                const std::string defaultName = ModelComponent{}.modelName; // re-initializes the meshname to the default value
-                Gep::Log::Warning("A model component was created with an invalid name/location: [", model.modelName, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
-                model.modelName = defaultName; 
+                const std::string defaultName = ModelComponent{}.name; // re-initializes the meshname to the default value
+                Gep::Log::Warning("A model component was created with an invalid name/location: [", model.name, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
+                model.name = defaultName; 
             }
         }
     }
@@ -408,7 +408,7 @@ namespace Client
         std::vector<std::string> loadedMeshes = renderer.GetLoadedMeshes();
 
         // drop down for selecting a model
-        bool meshesOpen = ImGui::BeginCombo("Models", mesh.modelName.c_str());
+        bool meshesOpen = ImGui::BeginCombo("Models", mesh.name.c_str());
 
         const std::vector<std::string>& allowedExtensions = renderer.GetSupportedModelFormats();
 
@@ -419,17 +419,17 @@ namespace Client
                 renderer.AddModelFromFile(droppedPath.string());
             }
 
-            mesh.modelName = droppedPath.string();
+            mesh.name = droppedPath.string();
         });
 
         if (meshesOpen)
         {
             for (const std::string& meshName : loadedMeshes)
             {
-                bool isSelected = (meshName == mesh.modelName);
+                bool isSelected = (meshName == mesh.name);
                 if (ImGui::Selectable(meshName.c_str(), isSelected))
                 {
-                    mesh.modelName = meshName;
+                    mesh.name = meshName;
                 }
                 if (isSelected)
                 {

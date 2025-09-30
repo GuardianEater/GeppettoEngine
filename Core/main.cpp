@@ -32,6 +32,7 @@
 #include "SoundComponent.hpp"
 #include "SphereCollider.hpp"
 #include "CubeCollider.hpp"
+#include "AnimationComponent.hpp"
 
  // systems
 #include "PhysicsSystem.hpp"
@@ -43,6 +44,7 @@
 #include "RelationSystem.hpp"
 #include "SoundSystem.hpp"
 #include "CollisionSystem.hpp"
+#include "AnimationSystem.hpp"
 
 #include "OS.hpp"
 
@@ -78,7 +80,8 @@ int main()
         Client::Light,
         Client::SpatialSoundEmitter,
         Client::SphereCollider,
-        Client::CubeCollider
+        Client::CubeCollider,
+        Client::AnimationComponent
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////
@@ -91,7 +94,8 @@ int main()
         Client::SerializationSystem,
         Client::RelationSystem,
         Client::SoundSystem,
-        Client::CollisionSystem
+        Client::CollisionSystem,
+        Client::AnimationSystem
     > systemTypes;
 
     // register all types ////////////////////////////////////////////////////////////////////////////
