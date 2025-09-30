@@ -10,6 +10,7 @@
 
 #include "OpenGLRenderer.hpp"
 #include "Model.hpp"
+#include "Conversion.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
@@ -62,20 +63,18 @@ namespace Gep
 
         auto& [modelHandle, model] = mModels[path];
 
-        model = Model::FromFile(path);
+        model = LoadModelFromFile(path);
 
         for (const auto& mesh : model.meshes)
         {
             MeshGPUHandle& meshHandle = modelHandle.meshHandles.emplace_back(); // create a handle for this mesh
 
-            const std::filesystem::path& diffuseTexturePath = model.materials.at(mesh.materialIndex).diffuseTexturePath;
+            const Material& material = model.materials.at(mesh.materialIndex);
 
-            // TODO: load the texture at this point and assign an index instead of a filepath
-
-            std::filesystem::path root(path);
-            root = root.parent_path();
-
-            meshHandle.materialHandle.diffuseTexture = GetOrLoadTexture(root / diffuseTexturePath);
+            meshHandle.materialHandle.diffuseTexture   = material.diffuseTextureHandle;
+            meshHandle.materialHandle.aoTexture        = material.aoTextureHandle;
+            meshHandle.materialHandle.metalnessTexture = material.metalnessTextureHandle;
+            meshHandle.materialHandle.roughnessTexture = material.roughnessTextureHandle;
             
             meshHandle.GenVertexBuffer(mesh);
             meshHandle.GenIndexBuffer(mesh);
@@ -91,9 +90,13 @@ namespace Gep
             return;
         }
 
-        auto& [modelHandle, model] = mModels[name];
+        auto [it, inserted] = mModels.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(name),
+            std::forward_as_tuple(ModelGPUHandle{}, newModel)
+        );
 
-        model = newModel;
+        auto& [modelHandle, model] = it->second;
 
         for (const Mesh& mesh : model.meshes)
         {
@@ -399,7 +402,7 @@ namespace Gep
     {
         if (mTextures.contains(texturePath.string()))
         {
-            Gep::Log::Error("Failed to load texture: [", texturePath.string(), "] a texture with that name is already loaded.");
+            Gep::Log::Error("Cannot load texture: [", texturePath.string(), "] is already loaded");
             return;
         }
 
@@ -424,24 +427,38 @@ namespace Gep
         }
 
         LoadTextureFromPixelData(texturePath.string(), image, width, height, required_channels);
+        stbi_image_free(image);
     }
 
     void OpenGLRenderer::LoadTexture(const std::string& name, const uint8_t* imageFileData, size_t size)
     {
+        if (mTextures.contains(name))
+        {
+            Gep::Log::Error("Cannot load texture: [", name, "] is already loaded");
+            return;
+        }
+
         int requiredChannels = 4; // Force RGBA
         int width, height, channels;
         unsigned char* image = stbi_load_from_memory(imageFileData, size, &width, & height, & channels, requiredChannels);
         if (!image)
         {
-            Gep::Log::Error("Failed to load texture from raw data");
+            Gep::Log::Error("Failed to load texture from raw data, with the given name, [", name, "]");
             return;
         }
 
         LoadTextureFromPixelData(name, image, width, height, requiredChannels);
+        stbi_image_free(image);
     }
 
-    void OpenGLRenderer::LoadTextureFromPixelData(const std::string& name, uint8_t* pixelData, size_t width, size_t height, int requiredChannels)
+    void OpenGLRenderer::LoadTextureFromPixelData(const std::string& name, const uint8_t* pixelData, size_t width, size_t height, int requiredChannels)
     {
+        if (mTextures.contains(name))
+        {
+            Gep::Log::Error("Cannot load texture: [", name, "] is already loaded");
+            return;
+        }
+
         GLuint& texture = mTextures[name];
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -457,18 +474,17 @@ namespace Gep
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
-        stbi_image_free(pixelData);
     }
 
-    GLuint OpenGLRenderer::GetTexture(const std::filesystem::path& texturePath)
+    GLuint OpenGLRenderer::GetTexture(const std::string& textureName)
     {
-        if (!mTextures.contains(texturePath.string()))
+        if (!mTextures.contains(textureName))
         {
-            Gep::Log::Error("Cannot get texture: [", texturePath, "] a texture with that name has not been loaded");
+            Gep::Log::Error("Cannot get texture: [", textureName, "] a texture with that name has not been loaded");
             return GetErrorTexture();
         }
 
-        return mTextures.at(texturePath.string());
+        return mTextures.at(textureName);
     }
 
     GLuint OpenGLRenderer::GetOrLoadTexture(const std::filesystem::path& texturePath)
@@ -485,7 +501,7 @@ namespace Gep
     void OpenGLRenderer::LoadErrorTexture(const std::filesystem::path& texturePath)
     {
         LoadTexture(texturePath);
-        mErrorTexture = GetTexture(texturePath);
+        mErrorTexture = GetTexture(texturePath.string());
     }
 
     GLuint OpenGLRenderer::GetErrorTexture() const
@@ -749,5 +765,276 @@ namespace Gep
         mVertexBuffer = num_max<GLuint>();
         mIndexBuffer = num_max<GLuint>();
 #endif // _DEBUG
+    }
+
+    struct BoneInfo
+    {
+        int id;
+        glm::mat4 offset;
+    };
+
+    static std::unordered_map<std::string, BoneInfo> gBoneInfoMap; //
+    static std::unordered_map<std::string, VQS> gBoneData;
+    static int gBoneCounter = 0;
+
+    GLuint OpenGLRenderer::LoadMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type)
+    {
+        auto root = modelPath.parent_path();
+
+        aiString texPath;
+        if (aiReturn_SUCCESS == assimpMaterial->GetTexture(type, 0, &texPath))
+        {
+            if (texPath.C_Str()[0] == '*') // if the first character is a star it is embedded
+            {
+                int assimpTextureIndex = std::atoi(texPath.C_Str() + 1);
+                aiTexture* assimpTexture = scene->mTextures[assimpTextureIndex];
+                std::string textureName = modelPath.string() + "_EMBEDDED_" + std::to_string(assimpTextureIndex);
+
+                if (assimpTexture->mHeight == 0) // if no height then it is compressed
+                {
+                    std::vector<uint8_t> bytes(
+                        reinterpret_cast<uint8_t*>(assimpTexture->pcData),
+                        reinterpret_cast<uint8_t*>(assimpTexture->pcData) + assimpTexture->mWidth
+                    );
+
+                    LoadTexture(textureName, bytes.data(), bytes.size());
+                }
+                else
+                {
+                    const int assimpTextureChannels = 4;
+                    LoadTextureFromPixelData(textureName, reinterpret_cast<uint8_t*>(assimpTexture->pcData), assimpTexture->mWidth, assimpTexture->mHeight, assimpTextureChannels);
+                }
+
+                return GetTexture(textureName);
+            }
+            else
+            {
+                LoadTexture(root / texPath.C_Str());
+
+                return GetTexture((root / texPath.C_Str()).string());
+            }
+        }
+
+        return num_max<GLuint>();
+    }
+
+    // moves all data from the aiScene into the internal model format
+    void OpenGLRenderer::LoadMaterials(Gep::Model& model, const std::filesystem::path& path, const aiScene* scene)
+    {
+        model.materials.reserve(scene->mNumMaterials);
+
+        for (unsigned int i = 0; i < scene->mNumMaterials; ++i)
+        {
+            Material& material = model.materials.emplace_back();
+            const aiMaterial* assimpMaterial = scene->mMaterials[i];
+
+
+            aiColor3D diffuseColor(1.f, 1.f, 1.f);
+            if (aiReturn_SUCCESS == assimpMaterial->Get("$clr.diffuse", 0, 0, diffuseColor))
+                material.color = { diffuseColor.r, diffuseColor.g, diffuseColor.b };
+
+            material.diffuseTextureHandle = LoadMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE);
+            material.hasDiffuseTexture    = (material.diffuseTextureHandle != num_max<GLuint>());
+
+            material.aoTextureHandle = LoadMaterial(path, assimpMaterial, scene, aiTextureType_AMBIENT_OCCLUSION);
+            material.hasAoTexture    = (material.aoTextureHandle != num_max<GLuint>());
+
+            material.metalnessTextureHandle = LoadMaterial(path, assimpMaterial, scene, aiTextureType_METALNESS);
+            material.hasMetalnessTexture = (material.metalnessTextureHandle != num_max<GLuint>());
+
+            material.roughnessTextureHandle = LoadMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE_ROUGHNESS);
+            material.hasRoughnessTexture = (material.roughnessTextureHandle != num_max<GLuint>());
+        }
+    }
+
+    static void SetVertexBoneDataToDefault(Vertex& vertex)
+    {
+        for (int i = 0; i < vertex.boneWeights.size(); i++)
+        {
+            vertex.boneIndices[i] = -1;
+            vertex.boneWeights[i] = 0.0f;
+        }
+    }
+
+    static void SetVertexBoneData(Vertex& vertex, int boneID, float weight)
+    {
+        for (int i = 0; i < vertex.boneWeights.size(); ++i)
+        {
+            if (vertex.boneIndices[i] < 0)
+            {
+                vertex.boneWeights[i] = weight;
+                vertex.boneIndices[i] = boneID;
+                break;
+            }
+        }
+    }
+
+    static void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, const aiMesh* assimpMesh)
+    {
+        for (int boneIndex = 0; boneIndex < assimpMesh->mNumBones; ++boneIndex)
+        {
+            int boneID = -1;
+            std::string boneName = assimpMesh->mBones[boneIndex]->mName.C_Str();
+            if (gBoneInfoMap.find(boneName) == gBoneInfoMap.end())
+            {
+                BoneInfo newBoneInfo{};
+                newBoneInfo.id = gBoneCounter;
+                newBoneInfo.offset = ToMat4(assimpMesh->mBones[boneIndex]->mOffsetMatrix);
+                gBoneInfoMap[boneName] = newBoneInfo;
+                boneID = gBoneCounter;
+                ++gBoneCounter;
+            }
+            else
+            {
+                boneID = gBoneInfoMap[boneName].id;
+            }
+
+            assert(boneID != -1);
+            auto weights = assimpMesh->mBones[boneIndex]->mWeights;
+            int numWeights = assimpMesh->mBones[boneIndex]->mNumWeights;
+
+            for (int weightIndex = 0; weightIndex < numWeights; ++weightIndex)
+            {
+                int vertexId = weights[weightIndex].mVertexId;
+                float weight = weights[weightIndex].mWeight;
+                assert(vertexId <= vertices.size());
+
+                SetVertexBoneData(vertices[vertexId], boneID, weight);
+            }
+        }
+    }
+
+    static void LoadVertices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
+    {
+        mesh.vertices.reserve(assimpMesh->mNumVertices);
+
+        for (unsigned int i = 0; i < assimpMesh->mNumVertices; ++i)
+        {
+            Vertex& v = mesh.vertices.emplace_back();
+
+            v.position = { assimpMesh->mVertices[i].x, assimpMesh->mVertices[i].y, assimpMesh->mVertices[i].z };
+
+            if (assimpMesh->HasNormals())
+                v.normal = { assimpMesh->mNormals[i].x, assimpMesh->mNormals[i].y, assimpMesh->mNormals[i].z };
+
+            if (assimpMesh->HasTextureCoords(0))
+                v.texCoord = { assimpMesh->mTextureCoords[0][i].x, assimpMesh->mTextureCoords[0][i].y };
+        }
+
+        ExtractBoneWeightForVertices(mesh.vertices, assimpMesh);
+    }
+
+    static void LoadIndices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
+    {
+        for (unsigned int i = 0; i < assimpMesh->mNumFaces; ++i)
+        {
+            const aiFace& face = assimpMesh->mFaces[i];
+
+            for (unsigned int j = 0; j < face.mNumIndices; ++j)
+                mesh.indices.push_back(face.mIndices[j]);
+        }
+    }
+
+    // returns the index of the node just created
+    static size_t LoadHierarchyStep(Gep::Model& model, size_t parentIndex, const aiNode* node)
+    {
+        if (!node)
+            return num_max<size_t>();
+
+        auto it = gBoneData.find(node->mName.C_Str());
+
+        // if node is not a bone, skip adding it
+        if (it == gBoneData.end())
+        {
+            // but still traverse children, since bones might be deeper
+            size_t lastValid = num_max<size_t>();
+            for (size_t i = 0; i < node->mNumChildren; ++i)
+            {
+                lastValid = LoadHierarchyStep(model, parentIndex, node->mChildren[i]);
+            }
+            return lastValid;
+        }
+
+        const auto& [boneName, inverseBind] = *it;
+
+        // this is a bone, so add it, note cannot get a reference here because it could be stale
+        size_t index = model.skeleton.bones.size();
+        model.skeleton.bones.emplace_back();
+        model.skeleton.bones.at(index).name = boneName;
+        model.skeleton.bones.at(index).parentIndex = parentIndex;
+        model.skeleton.bones.at(index).transformation = ToVQS(node->mTransformation);
+        model.skeleton.bones.at(index).inverseBind = inverseBind; // use oinverse bind
+
+        for (size_t i = 0; i < node->mNumChildren; ++i)
+        {
+            size_t childIndex = LoadHierarchyStep(model, index, node->mChildren[i]);
+            if (childIndex != num_max<size_t>())
+                model.skeleton.bones.at(index).childrenIndices.push_back(childIndex);
+        }
+
+        return index;
+    }
+
+    static void LoadHierarchy(Gep::Model& model, const aiScene* scene)
+    {
+        LoadHierarchyStep(model, num_max<size_t>(), scene->mRootNode);
+    }
+
+    static void LoadMeshes(Gep::Model& model, const aiScene* scene)
+    {
+        model.meshes.reserve(scene->mNumMeshes);
+
+        for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
+        {
+            Mesh& mesh = model.meshes.emplace_back();
+
+            LoadVertices(mesh, scene->mMeshes[i]);
+            LoadIndices(mesh, scene->mMeshes[i]);
+
+            mesh.materialIndex = scene->mMeshes[i]->mMaterialIndex;
+        }
+    }
+
+    static void LoadBoneData(const aiScene* scene)
+    {
+        for (unsigned int m = 0; m < scene->mNumMeshes; ++m)
+        {
+            aiMesh* mesh = scene->mMeshes[m];
+            for (unsigned int b = 0; b < mesh->mNumBones; ++b)
+            {
+                aiBone* bone = mesh->mBones[b];
+                gBoneData[bone->mName.C_Str()] = ToVQS(bone->mOffsetMatrix);
+            }
+        }
+    }
+
+    Model OpenGLRenderer::LoadModelFromFile(const std::filesystem::path& path)
+    {
+        Assimp::Importer importer;
+        const aiScene* scene = importer.ReadFile(path.string(),
+            aiProcess_Triangulate |
+            aiProcess_GenNormals |
+            aiProcess_FlipUVs |
+            aiProcess_JoinIdenticalVertices |
+            aiProcess_ImproveCacheLocality |
+            aiProcess_SortByPType |
+            aiProcess_OptimizeGraph |
+            aiProcess_OptimizeMeshes
+        );
+
+        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+        {
+            Gep::Log::Error("Assimp error: ", importer.GetErrorString());
+            return {};
+        }
+
+        Gep::Model model;
+
+        LoadBoneData(scene);
+        LoadMeshes(model, scene);
+        LoadMaterials(model, path, scene);
+        LoadHierarchy(model, scene);
+
+        return model;
     }
 }

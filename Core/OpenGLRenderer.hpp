@@ -25,6 +25,11 @@
 
 #include "Model.hpp"
 
+// fwd
+struct aiScene;
+struct aiMaterial;
+enum aiTextureType;
+
 namespace Gep
 {
     struct alignas(16) MaterialGPUData
@@ -118,10 +123,14 @@ namespace Gep
         GLuint GetOrLoadIconTexture(const std::filesystem::path& iconPath);
 
         void LoadTextureAsync(const std::filesystem::path& texturePath);
+
+        // loads a texture from disk
         void LoadTexture(const std::filesystem::path& texturePath);
+
+        // assuming the data is compressed, png/jpg
         void LoadTexture(const std::string& name, const uint8_t* imageFileData, size_t size); // note destroys 
 
-        GLuint GetTexture(const std::filesystem::path& texturePath);
+        GLuint GetTexture(const std::string& texturePath);
         GLuint GetOrLoadTexture(const std::filesystem::path& texturePath);
 
         void LoadErrorTexture(const std::filesystem::path& texturePath);
@@ -143,8 +152,10 @@ namespace Gep
     private:
         struct MaterialGPUHandle
         {
-            GLuint diffuseTexture = num_max<GLuint>();
-            GLuint aoTexture = num_max<GLuint>();
+            GLuint diffuseTexture   = num_max<GLuint>();
+            GLuint aoTexture        = num_max<GLuint>();
+            GLuint metalnessTexture = num_max<GLuint>();
+            GLuint roughnessTexture = num_max<GLuint>();
         };
 
         struct MeshGPUHandle
@@ -181,7 +192,17 @@ namespace Gep
         void DrawRegular();
         void DrawLines();
         void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
-        void LoadTextureFromPixelData(const std::string& name, uint8_t* pixelData, size_t width, size_t height, int requiredChannels); // pixel data loaded from stbimage, note it is freed after use
+
+        // pixel data loaded from stbimage, note pixel data must be freed after use
+        void LoadTextureFromPixelData(const std::string& name, const uint8_t* pixelData, size_t width, size_t height, int requiredChannels); 
+
+        // helpers for loading assimp files
+        Gep::Model LoadModelFromFile(const std::filesystem::path& path);
+        void LoadMaterials(Gep::Model& model, const std::filesystem::path& path, const aiScene* scene);
+
+        // given information, will load textures onto the gpu that are needed by the given material. will return num_max<GLuint>() if there is no texture loaded
+        GLuint LoadMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type);
+
 
     private:
 

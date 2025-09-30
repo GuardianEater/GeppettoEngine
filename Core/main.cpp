@@ -100,13 +100,8 @@ int main()
     em.SetSystemExecutionPolicy<Client::PhysicsSystem>(Gep::EngineState::Play);
     em.SetSystemExecutionPolicy<Client::ScriptingSystem>(Gep::EngineState::Play);
 
-    Gep::Entity aniEntity = em.CreateEntity("Anime");
-    em.AddComponent(aniEntity, Client::Transform{});
-    em.AddComponent(aniEntity, Client::ModelComponent{});
-    // em.AddComponent(aniEntity, Client::AnimationComponent{});
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
-
     em.SetState(Gep::EngineState::Edit);
     em.Initialize();
 

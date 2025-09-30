@@ -15,14 +15,22 @@ namespace Gep
     // contains material data for pbr rendering.
     struct Material
     {
-        float ao;        // ambient occlusion
+        // if it has a uniform material across the entire mesh
+        float ao; // ambient occlusion
         float roughness;
         float metalness;
-        glm::vec3 color; // this is a uniform color across an entire mesh, use an image path for more detailed
+        glm::vec3 color;
 
-        std::filesystem::path aoTexturePath;
-        std::filesystem::path roughnessTexturePath;
-        std::filesystem::path metalnessTexturePath;
-        std::filesystem::path diffuseTexturePath;
+        bool hasAoTexture = false;
+        GLuint aoTextureHandle;
+
+        bool hasRoughnessTexture = false;
+        GLuint roughnessTextureHandle;
+
+        bool hasMetalnessTexture = false;
+        GLuint metalnessTextureHandle;
+
+        bool hasDiffuseTexture = false;
+        GLuint diffuseTextureHandle;
     };
 }
