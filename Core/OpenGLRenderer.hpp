@@ -152,7 +152,7 @@ namespace Gep
         void SetUpObjectUniformsSSBO();
         void SetUpCameraUniformsSSBO();
         void SetUpLineDrawing();
-        void Interpolate(VQS& result, const Track& track, float time);
+        Gep::VQS Interpolate(const Track& track, float time);
     private:
         struct MaterialGPUHandle
         {

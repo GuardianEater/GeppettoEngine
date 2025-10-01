@@ -905,6 +905,7 @@ namespace Gep
                 {
                     frame.time = static_cast<float>(channel->mRotationKeys[k].mTime);
                     frame.transform.rotation = ToQuat(channel->mRotationKeys[k].mValue);
+                    frame.transform.rotation = glm::normalize(frame.transform.rotation);
                 }
 
                 if (k < channel->mNumScalingKeys)
@@ -916,26 +917,23 @@ namespace Gep
         }
     }
 
-    void OpenGLRenderer::Interpolate(VQS& result, const Track& track, float time)
+    Gep::VQS OpenGLRenderer::Interpolate(const Track & track, float time)
     {
         if (track.keyFrames.empty())
         {
-            result = VQS{};
-            return; // identity
+            return VQS{}; // identity
         }
 
         // if time is before the first key
         if (time <= track.keyFrames.front().time || track.keyFrames.size() == 1)
         {
-            result = track.keyFrames.front().transform;
-            return;
+            return track.keyFrames.front().transform;
         }
 
         // if time is after the last key
         if (time >= track.keyFrames.back().time)
         {
-            result = track.keyFrames.back().transform;
-            return;
+            return track.keyFrames.back().transform;
         }
 
         // find the two keys around `time`
@@ -948,9 +946,11 @@ namespace Gep
 
         float factor = (time - k1.time) / (k2.time - k1.time);
 
-        result.position = glm::mix  (k1.transform.position, k2.transform.position, factor);
+        Gep::VQS result;
+        result.position = glm::lerp(k1.transform.position, k2.transform.position, factor);
         result.rotation = glm::slerp(k1.transform.rotation, k2.transform.rotation, factor);
-        result.scale    = glm::mix  (k1.transform.scale,    k2.transform.scale,    factor);
+        result.scale    = glm::lerp(k1.transform.scale,    k2.transform.scale,    factor);
+        return result;
     }
 
     // moves all data from the aiScene into the internal model format

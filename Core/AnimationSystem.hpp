@@ -31,7 +31,7 @@ namespace Client
         void Update(float dt) override;
 
     private:
-        void EvaluateAnimation(const Gep::Animation& animation, float time, std::vector<Gep::VQS>& outLocalPose);
+        void EvaluateAnimation(const Gep::Animation& animation, const Gep::Skeleton& skeleton, float time, std::vector<Gep::VQS>& outLocalPose);
         void OnAnimationEditorRender(const Gep::Event::ComponentEditorRender<AnimationComponent>& event);
 
     private:

@@ -41,46 +41,45 @@ namespace Client
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<AnimationComponent>>(this, &AnimationSystem::OnAnimationEditorRender);
     }
 
-    void AnimationSystem::EvaluateAnimation(const Gep::Animation& animation, float time, std::vector<Gep::VQS>& outLocalPose)
+    void AnimationSystem::EvaluateAnimation(const Gep::Animation& animation, const Gep::Skeleton& skeleton, float time, std::vector<Gep::VQS>& outLocalPose)
     {
         for (const auto& track : animation.tracks)
         {
             if (track.boneIndex < outLocalPose.size())
-                mRenderer.Interpolate(outLocalPose[track.boneIndex], track, time);
+            {
+                outLocalPose[track.boneIndex] = mRenderer.Interpolate(track, time);
+            }
         }
     }
 
-    static void CalculateGlobalPose(const Gep::Skeleton& skeleton,
-        const std::vector<Gep::VQS>& localPose,
-        std::vector<Gep::VQS>& outGlobalPose)
+    static void CalculateGlobalPose(const Gep::Skeleton& skeleton, const std::vector<Gep::VQS>& localPose, std::vector<Gep::VQS>& outGlobalPose)
     {
-        for (size_t i = 0; i < skeleton.bones.size(); ++i)
-        {
-            uint16_t parent = skeleton.bones[i].parentIndex;
+        outGlobalPose.resize(localPose.size());
 
-            if (parent == Gep::num_max<uint16_t>()) // root bone
+        for (uint16_t i = 0; i < skeleton.bones.size(); i++)
+        {
+            const auto& bone = skeleton.bones[i];
+            if (bone.parentIndex == Gep::num_max<uint16_t>()) // root bone
                 outGlobalPose[i] = localPose[i];
             else
-                outGlobalPose[i] = outGlobalPose[parent] * localPose[i];
+                outGlobalPose[i] = outGlobalPose[bone.parentIndex] * localPose[i];
         }
     }
 
     static void DrawSkeleton(const Gep::Skeleton& skeleton, const glm::mat4& modelMatrix, const std::vector<Gep::VQS>& globalPose, Gep::LineGPUData& line)
     {
-        // 4. Draw lines for debug skeleton
-        for (size_t i = 0; i < skeleton.bones.size(); ++i)
+        for (int i = 0; i < skeleton.bones.size(); i++) 
         {
-            const auto& bone = skeleton.bones[i];
-            if (bone.parentIndex != Gep::num_max<uint16_t>())
+            int parent = skeleton.bones[i].parentIndex;
+            if (parent != Gep::num_max<uint16_t>()) 
             {
-                glm::vec3 p1 = globalPose[i].position;
-                glm::vec3 p2 = globalPose[bone.parentIndex].position;
+                glm::vec4 a = glm::vec4(globalPose[parent].position, 1.0f);
+                glm::vec4 b = glm::vec4(globalPose[i].position, 1.0f);
 
-                // Transform skeleton into entity/world space
-                p1 = glm::vec3(modelMatrix * glm::vec4(p1, 1));
-                p2 = glm::vec3(modelMatrix * glm::vec4(p2, 1));
+                a = modelMatrix * a;
+                b = modelMatrix * b;
 
-                line.points.push_back({ p1, p2 });
+                line.points.push_back({a, b}); // however you render debug lines
             }
         }
     }
@@ -102,15 +101,32 @@ namespace Client
 
             const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.name);
 
+            // progress the animation
             animationComponent.currentTime += dt * animationComponent.speed * animation.ticksPerSecond;
+
+            // clamp time / if looping is on loop
             if (animationComponent.currentTime > animation.duration)
-                animationComponent.currentTime = fmod(animationComponent.currentTime, animation.duration);
+            {
+                if (animationComponent.looping)
+                    animationComponent.currentTime = 0.0f;
+                else
+                    animationComponent.currentTime = animation.duration;
+            }
+            else if (animationComponent.currentTime < 0.0f)
+            {
+                if (animationComponent.looping)
+                    animationComponent.currentTime = animation.duration;
+                else
+                    animationComponent.currentTime = 0.0f;
+            }
 
-            // 2. Evaluate animation at current time -> local pose
             std::vector<Gep::VQS> localPose(model.skeleton.bones.size());
-            EvaluateAnimation(animation, animationComponent.currentTime, localPose);
 
-            // 3. Convert local pose to global transforms
+            /*for (uint16_t i = 0; i < model.skeleton.bones.size(); ++i)
+                localPose[i] = model.skeleton.bones[i].transformation;*/
+
+            EvaluateAnimation(animation, model.skeleton, animationComponent.currentTime, localPose);
+
             std::vector<Gep::VQS> globalPose(model.skeleton.bones.size());
             CalculateGlobalPose(model.skeleton, localPose, globalPose);
 
