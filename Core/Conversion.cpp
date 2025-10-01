@@ -32,7 +32,7 @@ namespace Gep
 
     glm::quat ToQuat(const aiQuaternion& q)
     {
-        return { q.x, q.y, q.z, q.w };
+        return glm::quat(q.w, q.x, q.y, q.z);
     }
 
     VQS ToVQS(const glm::mat4& m)

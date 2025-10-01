@@ -122,9 +122,6 @@ namespace Client
 
             std::vector<Gep::VQS> localPose(model.skeleton.bones.size());
 
-            /*for (uint16_t i = 0; i < model.skeleton.bones.size(); ++i)
-                localPose[i] = model.skeleton.bones[i].transformation;*/
-
             EvaluateAnimation(animation, model.skeleton, animationComponent.currentTime, localPose);
 
             std::vector<Gep::VQS> globalPose(model.skeleton.bones.size());
