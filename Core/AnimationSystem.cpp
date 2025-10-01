@@ -102,7 +102,6 @@ namespace Client
 
             const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.name);
 
-
             animationComponent.currentTime += dt * animationComponent.speed * animation.ticksPerSecond;
             if (animationComponent.currentTime > animation.duration)
                 animationComponent.currentTime = fmod(animationComponent.currentTime, animation.duration);

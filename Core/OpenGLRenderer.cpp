@@ -877,7 +877,7 @@ namespace Gep
 
             uint16_t boneIndex = static_cast<uint16_t>(std::distance(skeleton.bones.begin(), it));
 
-            Track track;
+            Track& track = animation.tracks.emplace_back();
             track.boneIndex = boneIndex;
 
             // merge Assimp’s position/rotation/scale keys into VQS keyframes
@@ -885,6 +885,7 @@ namespace Gep
                                         channel->mNumRotationKeys,
                                         channel->mNumScalingKeys });
 
+            track.keyFrames.reserve(numKeys);
             for (size_t k = 0; k < numKeys; k++)
             {
                 KeyFrame& frame = track.keyFrames.emplace_back();
@@ -911,11 +912,7 @@ namespace Gep
                     frame.time = static_cast<float>(channel->mScalingKeys[k].mTime);
                     frame.transform.scale = ToVec3(channel->mScalingKeys[k].mValue);
                 }
-
-                track.keyFrames.push_back(frame);
             }
-
-            animation.tracks.push_back(std::move(track));
         }
     }
 
@@ -993,63 +990,6 @@ namespace Gep
         }
     }
 
-    static void SetVertexBoneDataToDefault(Vertex& vertex)
-    {
-        for (int i = 0; i < vertex.boneWeights.size(); i++)
-        {
-            vertex.boneIndices[i] = -1;
-            vertex.boneWeights[i] = 0.0f;
-        }
-    }
-
-    static void SetVertexBoneData(Vertex& vertex, int boneID, float weight)
-    {
-        for (int i = 0; i < vertex.boneWeights.size(); ++i)
-        {
-            if (vertex.boneIndices[i] < 0)
-            {
-                vertex.boneWeights[i] = weight;
-                vertex.boneIndices[i] = boneID;
-                break;
-            }
-        }
-    }
-
-    static void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, const aiMesh* assimpMesh)
-    {
-        for (int boneIndex = 0; boneIndex < assimpMesh->mNumBones; ++boneIndex)
-        {
-            int boneID = -1;
-            std::string boneName = assimpMesh->mBones[boneIndex]->mName.C_Str();
-            if (gBoneInfoMap.find(boneName) == gBoneInfoMap.end())
-            {
-                BoneInfo newBoneInfo{};
-                newBoneInfo.id = gBoneCounter;
-                newBoneInfo.offset = ToMat4(assimpMesh->mBones[boneIndex]->mOffsetMatrix);
-                gBoneInfoMap[boneName] = newBoneInfo;
-                boneID = gBoneCounter;
-                ++gBoneCounter;
-            }
-            else
-            {
-                boneID = gBoneInfoMap[boneName].id;
-            }
-
-            assert(boneID != -1);
-            auto weights = assimpMesh->mBones[boneIndex]->mWeights;
-            int numWeights = assimpMesh->mBones[boneIndex]->mNumWeights;
-
-            for (int weightIndex = 0; weightIndex < numWeights; ++weightIndex)
-            {
-                int vertexId = weights[weightIndex].mVertexId;
-                float weight = weights[weightIndex].mWeight;
-                assert(vertexId <= vertices.size());
-
-                SetVertexBoneData(vertices[vertexId], boneID, weight);
-            }
-        }
-    }
-
     static void LoadVertices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
     {
         mesh.vertices.reserve(assimpMesh->mNumVertices);
@@ -1066,8 +1006,6 @@ namespace Gep
             if (assimpMesh->HasTextureCoords(0))
                 v.texCoord = { assimpMesh->mTextureCoords[0][i].x, assimpMesh->mTextureCoords[0][i].y };
         }
-
-        ExtractBoneWeightForVertices(mesh.vertices, assimpMesh);
     }
 
     static void LoadIndices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
@@ -1082,22 +1020,24 @@ namespace Gep
     }
 
     // returns the index of the node just created
-    static size_t LoadHierarchyStep(Gep::Model& model, size_t parentIndex, const aiNode* node)
+    static size_t LoadHierarchyStep(Gep::Model& model, size_t parentIndex, const aiNode* node, const VQS& accumulatedTransform = VQS{})
     {
-        if (!node)
-            return num_max<size_t>();
+        if (!node) return num_max<size_t>();
+
+        // convert current node's transformation to VQS and combine with accumulated transform
+        VQS currentTransform = ToVQS(node->mTransformation);
+        VQS combinedTransform = accumulatedTransform * currentTransform;
 
         auto it = gBoneData.find(node->mName.C_Str());
 
-        // if node is not a bone, skip adding it
+        // if node is not a bone, skip adding it but accumulate its transform
         if (it == gBoneData.end())
         {
-            // but still traverse children, since bones might be deeper
+            // but still traverse children, passing down the accumulated transform
             size_t lastValid = num_max<size_t>();
             for (size_t i = 0; i < node->mNumChildren; ++i)
             {
-                node->mChildren[i]->mTransformation = node->mTransformation * node->mChildren[i]->mTransformation;
-                lastValid = LoadHierarchyStep(model, parentIndex, node->mChildren[i]);
+                lastValid = LoadHierarchyStep(model, parentIndex, node->mChildren[i], combinedTransform);
             }
 
             return lastValid;
@@ -1108,13 +1048,14 @@ namespace Gep
         // this is a bone, so add it, note cannot get a reference here because it could be stale
         size_t index = model.skeleton.bones.size();
         model.skeleton.bones.emplace_back();
-        model.skeleton.bones.at(index).name = boneName;
+        model.skeleton.bones.at(index).name = node->mName.C_Str();
         model.skeleton.bones.at(index).parentIndex = parentIndex;
-        model.skeleton.bones.at(index).transformation = ToVQS(node->mTransformation);
-        model.skeleton.bones.at(index).inverseBind = inverseBind; // use oinverse bind
+        model.skeleton.bones.at(index).transformation = combinedTransform; // use combined transform
+        model.skeleton.bones.at(index).inverseBind = inverseBind;
 
         for (size_t i = 0; i < node->mNumChildren; ++i)
         {
+            // reset accumulated transform for children since this bone will handle the transform hierarchy
             size_t childIndex = LoadHierarchyStep(model, index, node->mChildren[i]);
             if (childIndex != num_max<size_t>())
                 model.skeleton.bones.at(index).childrenIndices.push_back(childIndex);
@@ -1127,12 +1068,6 @@ namespace Gep
     static void LoadHierarchy(Gep::Model& model, const aiScene* scene)
     {
         LoadHierarchyStep(model, num_max<size_t>(), scene->mRootNode);
-    }
-
-    // load hierarcy
-    static void OptimizeHierarchy(Gep::Model& model)
-    {
-
     }
 
     static void LoadMeshes(Gep::Model& model, const aiScene* scene)
@@ -1174,7 +1109,7 @@ namespace Gep
             aiProcess_ImproveCacheLocality |
             aiProcess_SortByPType |
             aiProcess_OptimizeGraph |
-            aiProcess_OptimizeMeshes
+            aiProcess_OptimizeMeshes 
         );
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
