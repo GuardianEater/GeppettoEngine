@@ -59,5 +59,28 @@ namespace Gep
     {
         return ToVQS(ToMat4(m));
     }
+
+    VQS Inverse(const VQS& t)
+    {
+        VQS inv{};
+
+        if (t.scale.x == 0.0f ||
+            t.scale.y == 0.0f ||
+            t.scale.z == 0.0f)
+            Gep::Log::Error("Division by zero when taking the inverse of a VQS");
+
+        // Inverse scale (handle zero carefully)
+        inv.scale = 1.0f / t.scale;
+
+        // Inverse rotation (unit quaternion  conjugate)
+        inv.rotation = glm::conjugate(t.rotation);
+
+        // Inverse translation:
+        // First undo scale and rotation on the translation
+        glm::vec3 invTrans = -(inv.rotation * (inv.scale * t.position));
+        inv.position = invTrans;
+
+        return inv;
+    }
 }
 

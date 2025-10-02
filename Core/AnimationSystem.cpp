@@ -41,7 +41,7 @@ namespace Client
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<AnimationComponent>>(this, &AnimationSystem::OnAnimationEditorRender);
     }
 
-    void AnimationSystem::EvaluateAnimation(const Gep::Animation& animation, const Gep::Skeleton& skeleton, float time, std::vector<Gep::VQS>& outLocalPose)
+    void AnimationSystem::EvaluateAnimation(const Gep::Animation& animation, float time, std::vector<Gep::VQS>& outLocalPose)
     {
         for (const auto& track : animation.tracks)
         {
@@ -52,17 +52,14 @@ namespace Client
         }
     }
 
-    static void CalculateGlobalPose(const Gep::Skeleton& skeleton, const std::vector<Gep::VQS>& localPose, std::vector<Gep::VQS>& outGlobalPose)
+    // takes a bone structure in local pose and outputs it as global pose
+    static void CalculateGlobalPose(const Gep::Skeleton& skeleton, std::vector<Gep::VQS>& outGlobalPose)
     {
-        outGlobalPose.resize(localPose.size());
-
-        for (uint16_t i = 0; i < skeleton.bones.size(); i++)
+        for (uint16_t i = 1; i < skeleton.bones.size(); i++) // note skip the root bone
         {
-            const auto& bone = skeleton.bones[i];
-            if (bone.parentIndex == Gep::num_max<uint16_t>()) // root bone
-                outGlobalPose[i] = localPose[i];
-            else
-                outGlobalPose[i] = outGlobalPose[bone.parentIndex] * localPose[i];
+            const Gep::Bone& bone = skeleton.bones[i];
+
+            outGlobalPose[i] = outGlobalPose[bone.parentIndex] * outGlobalPose[i];
         }
     }
 
@@ -122,12 +119,11 @@ namespace Client
 
             std::vector<Gep::VQS> localPose(model.skeleton.bones.size());
 
-            EvaluateAnimation(animation, model.skeleton, animationComponent.currentTime, localPose);
+            EvaluateAnimation(animation, animationComponent.currentTime, localPose);
 
-            std::vector<Gep::VQS> globalPose(model.skeleton.bones.size());
-            CalculateGlobalPose(model.skeleton, localPose, globalPose);
+            CalculateGlobalPose(model.skeleton, localPose);
 
-            DrawSkeleton(model.skeleton, transform.GetModelMatrix(), globalPose, line);
+            DrawSkeleton(model.skeleton, transform.GetModelMatrix(), localPose, line);
         });
 
         mRenderer.AddLine(line);

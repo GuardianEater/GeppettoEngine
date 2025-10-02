@@ -13,6 +13,8 @@
 
 #include "Shapes.hpp"
 
+#include "Core.hpp"
+
 namespace Gep
 {
     // based on International Journal of Algebra, Vol. 2, 2008, no. 19,905 - 918
@@ -22,7 +24,7 @@ namespace Gep
     {
         glm::vec3 position{0,0,0}; // translation
         glm::quat rotation{1,0,0,0}; // rotation
-        glm::vec3 scale{1.0f}; // uniform scaling factor
+        glm::vec3 scale{1.0f, 1.0f, 1.0f}; // uniform scaling factor
 
         VQS operator*(const VQS& local) const 
         {
@@ -43,7 +45,7 @@ namespace Gep
         glm::vec3 position{};
         glm::vec3 normal{};
         glm::vec2 texCoord{};
-        std::array<uint64_t, 4> boneIndices{};
+        std::array<uint64_t, 4> boneIndices{ num_max<uint64_t>() , num_max<uint64_t>() , num_max<uint64_t>() , num_max<uint64_t>() };
         std::array<float, 4> boneWeights{};
     };
 

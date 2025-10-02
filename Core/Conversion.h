@@ -21,4 +21,19 @@ namespace Gep
 
     VQS ToVQS(const glm::mat4& matrix);
     VQS ToVQS(const aiMatrix4x4& m);
+
+    template <typename T>
+    concept TypeIsGLMInversable = requires(const T & t)
+    {
+        { glm::inverse(t) };
+    };
+
+    template <typename T>
+        requires TypeIsGLMInversable<T>
+    T Inverse(const T& t)
+    {
+        return glm::inverse(t);
+    }
+
+    VQS Inverse(const VQS& t);
 }

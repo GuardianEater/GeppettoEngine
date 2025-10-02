@@ -990,6 +990,50 @@ namespace Gep
         }
     }
 
+    // vertex bone datas are flaged with a max int if not set
+    static void SetVertexBoneData(Vertex& v, int boneID, float weight)
+    {
+        for (int i = 0; i < v.boneWeights.size(); ++i)
+        {
+            if (v.boneIndices[i] == num_max<uint64_t>())
+            {
+                v.boneWeights[i] = weight;
+                v.boneIndices[i] = boneID;
+                break;
+            }
+        }
+    }
+
+    static void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, const aiMesh* assimpMesh)
+    {
+        for (aiBone* bone : std::span(assimpMesh->mBones, assimpMesh->mNumBones))
+        {
+            const std::string boneName = bone->mName.C_Str();
+            int boneID = -1;
+
+            if (!gBoneInfoMap.contains(boneName))
+            {
+                BoneInfo newBoneInfo{};
+                newBoneInfo.id = gBoneCounter;
+                newBoneInfo.offset = ToMat4(bone->mOffsetMatrix);
+                gBoneInfoMap[boneName] = newBoneInfo;
+                boneID = gBoneCounter;
+                ++gBoneCounter;
+            }
+            else
+            {
+                boneID = gBoneInfoMap[boneName].id;
+            }
+
+            for (aiVertexWeight weight : std::span(bone->mWeights, bone->mNumWeights))
+            {
+                Vertex& v = vertices[weight.mVertexId];
+                
+                SetVertexBoneData(v, boneID, weight.mWeight);
+            }
+        }
+    }
+
     static void LoadVertices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
     {
         mesh.vertices.reserve(assimpMesh->mNumVertices);
@@ -1006,6 +1050,8 @@ namespace Gep
             if (assimpMesh->HasTextureCoords(0))
                 v.texCoord = { assimpMesh->mTextureCoords[0][i].x, assimpMesh->mTextureCoords[0][i].y };
         }
+
+        ExtractBoneWeightForVertices(mesh.vertices, assimpMesh);
     }
 
     static void LoadIndices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
