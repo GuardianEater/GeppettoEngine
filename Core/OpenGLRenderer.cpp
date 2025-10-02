@@ -185,6 +185,11 @@ namespace Gep
         mLightUniforms.push_back(uniforms);
     }
 
+    void OpenGLRenderer::AddBone(const BoneGPUData& boneData)
+    {
+        mBoneUniforms.push_back(boneData);
+    }
+
     void OpenGLRenderer::AddLine(const LineGPUData& lines)
     {
         mLineUniforms.push_back(lines);
@@ -582,6 +587,15 @@ namespace Gep
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }
 
+    void OpenGLRenderer::SetUpBoneUniformsSSBO()
+    {
+        glGenBuffers(1, &mBoneUniformsSSBO);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mBoneUniformsSSBO);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(BoneGPUData) * 1, nullptr, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, mBoneUniformsSSBO);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    }
+
     void OpenGLRenderer::SetUpLineDrawing()
     {
         glGenVertexArrays(1, &mLineVAO);
@@ -776,6 +790,12 @@ namespace Gep
         glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
         glEnableVertexAttribArray(2);
 
+        glVertexAttribPointer(3, 2, GL_UNSIGNED_INT, false, sizeof(Vertex), (void*)offsetof(Vertex, boneIndices));
+        glEnableVertexAttribArray(3);
+
+        glVertexAttribPointer(4, 2, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, boneWeights));
+        glEnableVertexAttribArray(4);
+
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer);
 
         glBindVertexArray(0);
@@ -885,6 +905,7 @@ namespace Gep
                                         channel->mNumRotationKeys,
                                         channel->mNumScalingKeys });
 
+            // loop through all keyframes reading in their time and position
             track.keyFrames.reserve(numKeys);
             for (size_t k = 0; k < numKeys; k++)
             {

@@ -42,10 +42,12 @@ namespace Gep
 
     struct Vertex
     {
+        constexpr static const uint32_t INVALID_INDEX = num_max<uint32_t>();
+
         glm::vec3 position{};
         glm::vec3 normal{};
         glm::vec2 texCoord{};
-        std::array<uint64_t, 4> boneIndices{ num_max<uint64_t>() , num_max<uint64_t>() , num_max<uint64_t>() , num_max<uint64_t>() };
+        std::array<uint32_t, 4> boneIndices{ INVALID_INDEX , INVALID_INDEX, INVALID_INDEX, INVALID_INDEX };
         std::array<float, 4> boneWeights{};
     };
 
@@ -104,6 +106,7 @@ namespace Gep
     struct KeyFrame
     {
         float time = 0.0f; // time since the start of the animation
+        VQS transformStepConstant; // how much the transformation steps by when interpolating
         VQS transform;
     };
 

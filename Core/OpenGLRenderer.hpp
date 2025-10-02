@@ -67,7 +67,12 @@ namespace Gep
         float intensity;
     };
 
-    struct LineGPUData
+    struct BoneGPUData
+    {
+        glm::mat4 offsetMatrix;
+    };
+
+    struct LineGPUData // this is not actually sent to the gpu
     {
         struct LineSegment
         {
@@ -75,7 +80,7 @@ namespace Gep
         };
 
         glm::vec3 color;
-        std::vector<LineSegment> points;
+        std::vector<LineSegment> points; // this is the only data sent to the gpu per line
         // formula??
     };
 
@@ -105,6 +110,7 @@ namespace Gep
         void AddObject(const std::string& modelName, const ObjectGPUData& objectData);
         void AddCamera(const CameraGPUData& cameraData);
         void AddLight(const LightGPUData& lightData); // adds a light to the renderered, will be sent to the shader when DrawLights is called
+        void AddBone(const BoneGPUData& boneData);
         void AddLine(const LineGPUData& lines); // adds a line set, each point will be connected in this set
 
         void CommitObjects(); // moves all of the added object data from the cpu to the gpu
@@ -151,6 +157,8 @@ namespace Gep
         void SetUpLightSSBO();
         void SetUpObjectUniformsSSBO();
         void SetUpCameraUniformsSSBO();
+        void SetUpBoneUniformsSSBO();
+
         void SetUpLineDrawing();
         Gep::VQS Interpolate(const Track& track, float time);
     private:
@@ -242,6 +250,9 @@ namespace Gep
 
         GLuint mCameraUniformsSSBO{};
         std::vector<CameraGPUData> mCameraUniforms;
+
+        GLuint mBoneUniformsSSBO{};
+        std::vector<BoneGPUData> mBoneUniforms;
 
         // used to store vertices for drawing lines
         GLuint mLineVBO;

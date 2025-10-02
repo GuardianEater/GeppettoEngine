@@ -60,6 +60,7 @@ namespace Client
         renderer.SetUpLightSSBO();
         renderer.SetUpObjectUniformsSSBO();
         renderer.SetUpCameraUniformsSSBO();
+        renderer.SetUpBoneUniformsSSBO();
         renderer.SetUpLineDrawing();
 
         renderer.BackfaceCull();
