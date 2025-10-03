@@ -11,6 +11,7 @@
 #include "OpenGLRenderer.hpp"
 #include "Model.hpp"
 #include "Conversion.h"
+#include "Algorithms.hpp"
 
 #define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
@@ -52,12 +53,6 @@ namespace Gep
     static HICON GetIcon(const std::filesystem::path& iconPath);
     static GLuint IconToTexture(HICON icon);
     static GLuint BitmapToTexture(HBITMAP bitmap);
-
-    void OpenGLRenderer::Initialize()
-    {
-        mPBRShaderStatic = std::make_unique<Shader>(Shader::FromFile("assets\\shaders\\PBR-Static.vert", "assets\\shaders\\PBR.frag"));
-        mPBRShaderSkinned = std::make_unique<Shader>(Shader::FromFile("assets\\shaders\\PBR-Skinned.vert", "assets\\shaders\\PBR.frag"));
-    }
 
     void OpenGLRenderer::AddModelFromFile(const std::string& path)
     {
@@ -146,7 +141,7 @@ namespace Gep
         return mAnimations.at(name).second;
     }
 
-    bool OpenGLRenderer::IsAnimationLoaded(const std::string& name)
+    bool OpenGLRenderer::IsAnimationLoaded(const std::string& name) const
     {
         return mAnimations.contains(name);
     }
@@ -156,24 +151,29 @@ namespace Gep
         return mModels.contains(name);
     }
 
-    void OpenGLRenderer::SetHighlightShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
+    bool OpenGLRenderer::IsShaderLoaded(const std::string& name) const
     {
-        mHighlightShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
+        return mShaders.contains(name);
     }
 
-    void OpenGLRenderer::SetColorShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
+    void OpenGLRenderer::AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& gpuData, RenderFlags flags)
     {
-        mColorShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
-    }
+        //mModels.at(modelName).first.objectDatas.push_back(objectData);
 
-    void OpenGLRenderer::SetLineShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
-    {
-        mLineShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
-    }
+        if (!IsMeshLoaded(modelName))
+        {
+            Gep::Log::Error("Failed to draw object. The model: [", modelName, "] doesn't exist");
+            return;
+        }
 
-    void OpenGLRenderer::AddObject(const std::string& modelName, const ObjectGPUData& objectData)
-    {
-        mModels.at(modelName).first.objectDatas.push_back(objectData);
+        if (!IsShaderLoaded(shaderName))
+        {
+            Gep::Log::Error("Failed to draw object. The shader: [", shaderName, "] doesn't exist");
+            return;
+        }
+
+        // creates a bucket for the given flag combination if they dont exist
+        mObjectDatas[shaderName][modelName][flags].push_back(gpuData);
     }
 
     void OpenGLRenderer::AddCamera(const CameraGPUData& uniforms)
@@ -198,27 +198,16 @@ namespace Gep
 
     void OpenGLRenderer::CommitObjects()
     {
-        for (auto& [modelName, modelPair] : mModels)
+        // sends the objects to the gpu in a very specific order
+        for (const auto& [shaderName, modelToFlags] : mObjectDatas)
         {
-            auto& [modelHandle, model] = modelPair;
-
-            for (auto& obj : modelHandle.objectDatas)
+            for (const auto& [modelName, flagsToObjects] : modelToFlags)
             {
-                if (obj.isWireframe)
-                    modelHandle.wireframeObjectDatas.push_back(obj);
-                else
-                    modelHandle.regularObjectDatas.push_back(obj);
+                for (const auto& [flags, objects] : flagsToObjects)
+                {
+                    mObjectUniforms.insert(mObjectUniforms.end(), objects.begin(), objects.end());
+                }
             }
-
-            mObjectUniforms.insert(mObjectUniforms.end(),
-                modelHandle.regularObjectDatas.begin(),
-                modelHandle.regularObjectDatas.end()
-            );
-
-            mObjectUniforms.insert(mObjectUniforms.end(),
-                modelHandle.wireframeObjectDatas.begin(),
-                modelHandle.wireframeObjectDatas.end()
-            );
         }
 
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, mObjectsSSBO);
@@ -246,15 +235,18 @@ namespace Gep
 
     void OpenGLRenderer::SetCameraIndex(size_t index)
     {
-        mPBRShaderStatic->SetUniform(0, static_cast<int>(index));
-        mHighlightShader->SetUniform(0, static_cast<int>(index));
-        mLineShader->SetUniform(0, static_cast<int>(index));
+        for (const auto& [shaderName, shader] : mShaders)
+        {
+            shader->SetUniform(0, static_cast<int>(index));
+        }
     }
 
     void OpenGLRenderer::SetLightCount(size_t count)
     {
-        mPBRShaderStatic->SetUniform(2, static_cast<int>(count));
-        mHighlightShader->SetUniform(2, static_cast<int>(count));
+        for (const auto& [shaderName, shader] : mShaders)
+        {
+            shader->SetUniform(2, static_cast<int>(count));
+        }
     }
 
     void OpenGLRenderer::UnloadModel(const std::string& name)
@@ -437,6 +429,15 @@ namespace Gep
             }).detach();
     }
 
+    void OpenGLRenderer::LoadShader(const std::string& name, const std::filesystem::path& vert, const std::filesystem::path& frag)
+    {
+        mShaders.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(name),
+            std::forward_as_tuple(std::make_unique<Shader>(Shader::FromFile(vert, frag)))
+        );
+    }
+
     void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)
     {
         if (mTextures.contains(texturePath.string()))
@@ -565,6 +566,7 @@ namespace Gep
         mLightUniforms.clear();
         mObjectUniforms.clear();
         mCameraUniforms.clear();
+        mBoneUniforms.clear();
     }
 
     void OpenGLRenderer::SetUpLightSSBO()
@@ -618,75 +620,75 @@ namespace Gep
 
     void OpenGLRenderer::DrawRegular()
     {
-        mPBRShaderStatic->Bind();
-
-        size_t baseInstance = 0;
-        for (auto& [modelName, modelPair] : mModels)
+        for (const auto& [shaderName, modelToFlags] : mObjectDatas)
         {
-            auto& [modelHandle, model] = modelPair;
+            Shader& currentShader = *mShaders.at(shaderName);
 
-            // normal draw
-            for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
+            currentShader.Bind();
+
+            size_t baseInstance = 0;
+            for (const auto& [modelName, flagsToObjects] : modelToFlags)
             {
-                glBindVertexArray(meshHandle.mVertexArrayObject);
+                auto& [modelHandle, model] = mModels.at(modelName);
 
-                if (meshHandle.materialHandle.diffuseTexture != num_max<GLuint>())
-                    glBindTexture(GL_TEXTURE_2D, meshHandle.materialHandle.diffuseTexture);
+                for (const auto& [flags, objects] : flagsToObjects)
+                {
+                    // wireframe check
+                    if ((flags & RenderFlags::Wireframe) == RenderFlags::Wireframe) // if wireframe is set draw with wireframes
+                        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                    else
+                        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                glDrawElementsInstancedBaseInstance(
-                    GL_TRIANGLES,
-                    meshHandle.mIndexCount,
-                    GL_UNSIGNED_INT,
-                    0,
-                    modelHandle.regularObjectDatas.size(),
-                    baseInstance
-                );
+                    // depth test check
+                    if ((flags & RenderFlags::NoDepthTest) == RenderFlags::NoDepthTest)
+                        glDisable(GL_DEPTH_TEST);
+                    else
+                        glEnable(GL_DEPTH_TEST);
 
-                glBindTexture(GL_TEXTURE_2D, 0);
+                    // continue to drawing meshes
+                    for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
+                    {
+                        glBindVertexArray(meshHandle.mVertexArrayObject);
+
+                        if (meshHandle.materialHandle.diffuseTexture != num_max<GLuint>())
+                            glBindTexture(GL_TEXTURE_2D, meshHandle.materialHandle.diffuseTexture);
+
+                        glDrawElementsInstancedBaseInstance(
+                            GL_TRIANGLES,
+                            meshHandle.mIndexCount,
+                            GL_UNSIGNED_INT,
+                            0,
+                            objects.size(),
+                            baseInstance
+                        );
+
+                        glBindTexture(GL_TEXTURE_2D, 0);
+                    }
+                    baseInstance += objects.size();
+                }
+
+                // clear all of the objects and flags as they are drawn
             }
-            baseInstance += modelHandle.regularObjectDatas.size();
 
-            // --- Wireframe draw ---
-            glDisable(GL_DEPTH_TEST);
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
-            {
-                glBindVertexArray(meshHandle.mVertexArrayObject);
-                glDrawElementsInstancedBaseInstance(
-                    GL_TRIANGLES,
-                    meshHandle.mIndexCount,
-                    GL_UNSIGNED_INT,
-                    0,
-                    modelHandle.wireframeObjectDatas.size(),
-                    baseInstance
-                );
-            }
-            glDisable(GL_BLEND);
-            glEnable(GL_DEPTH_TEST);
-            baseInstance += modelHandle.wireframeObjectDatas.size();
-
-            modelHandle.objectDatas.clear();
-            modelHandle.regularObjectDatas.clear();
-            modelHandle.wireframeObjectDatas.clear();
+            currentShader.Unbind();
         }
 
-        mPBRShaderStatic->Unbind();
+        mObjectDatas.clear();
     }
 
     void OpenGLRenderer::DrawLines()
     {
         glDisable(GL_DEPTH_TEST);
-        mLineShader->Bind();
+        Shader& lineShader = *mShaders.at("Line");
+        lineShader.Bind();
+
         glBindVertexArray(mLineVAO);
         glBindBuffer(GL_ARRAY_BUFFER, mLineVBO);
 
         for (const LineGPUData& lineData : mLineUniforms)
         {
             // one color per set
-            mLineShader->SetUniform(1, glm::vec4(lineData.color, 1.0f));
+            lineShader.SetUniform(1, glm::vec4(lineData.color, 1.0f));
 
             glBufferData(GL_ARRAY_BUFFER,
                 lineData.points.size() * sizeof(glm::vec3) * 2,
@@ -698,7 +700,7 @@ namespace Gep
             glDrawArrays(GL_LINES, 0, lineData.points.size() * 2);
         }
 
-        mLineShader->Unbind();
+        lineShader.Unbind();
         mLineUniforms.clear();
         glEnable(GL_DEPTH_TEST);
     }

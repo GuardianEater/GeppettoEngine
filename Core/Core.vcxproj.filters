@@ -608,6 +608,9 @@
     <ClInclude Include="AnimationSystem.hpp">
       <Filter>Client\Systems</Filter>
     </ClInclude>
+    <ClInclude Include="Algorithms.hpp">
+      <Filter>Backend\Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">

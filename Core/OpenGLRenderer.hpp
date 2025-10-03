@@ -84,6 +84,36 @@ namespace Gep
         // formula??
     };
 
+    enum class RenderFlags : uint32_t
+    {
+        None = 0,
+        Wireframe = 1 << 0,
+        Blending = 1 << 1,
+        NoDepthTest = 1 << 2,
+        // add more later if needed (Stencil, Cull, etc.)
+    };
+
+    // enable bitwise ops for the enum
+    inline RenderFlags operator|(RenderFlags a, RenderFlags b)
+    {
+        return static_cast<RenderFlags>(
+            static_cast<uint32_t>(a) | static_cast<uint32_t>(b)
+            );
+    }
+
+    inline RenderFlags operator&(RenderFlags a, RenderFlags b)
+    {
+        return static_cast<RenderFlags>(
+            static_cast<uint32_t>(a) & static_cast<uint32_t>(b)
+            );
+    }
+
+    inline RenderFlags& operator|=(RenderFlags& a, RenderFlags b)
+    {
+        a = a | b;
+        return a;
+    }
+
     class OpenGLRenderer
     {
     public:
@@ -100,8 +130,9 @@ namespace Gep
         const Gep::Model& GetModel(const std::string& name);
         const Gep::Animation& GetAnimation(const std::string& name);
 
-        bool IsAnimationLoaded(const std::string& name);
+        bool IsAnimationLoaded(const std::string& name) const;
         bool IsMeshLoaded(const std::string& name) const;
+        bool IsShaderLoaded(const std::string& name) const;
 
         void SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
         void SetHighlightShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
@@ -109,11 +140,11 @@ namespace Gep
         void SetLineShader(const std::filesystem::path& vert, const std::filesystem::path& frag);
 
         // adds an object to be drawn by 
-        void AddObject(const std::string& modelName, const ObjectGPUData& objectData);
+        void AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& objectData, RenderFlags flags = RenderFlags::None);
         void AddCamera(const CameraGPUData& cameraData);
         void AddLight(const LightGPUData& lightData); // adds a light to the renderered, will be sent to the shader when DrawLights is called
         void AddBone(const BoneGPUData& boneData);
-        void AddLine(const LineGPUData& lines); // adds a line set, each point will be connected in this set
+        void AddLine(const LineGPUData& lines); // adds a line set to be drawn
 
         void CommitObjects(); // moves all of the added object data from the cpu to the gpu
         void CommitCameras(); // moves all of the added camera data from the cpu to the gpu
@@ -135,6 +166,7 @@ namespace Gep
         GLuint GetOrLoadIconTexture(const std::filesystem::path& iconPath);
 
         void LoadTextureAsync(const std::filesystem::path& texturePath);
+        void LoadShader(const std::string& name, const std::filesystem::path& vert, const std::filesystem::path& frag);
 
         // loads a texture from disk
         void LoadTexture(const std::filesystem::path& texturePath);
@@ -192,16 +224,27 @@ namespace Gep
         struct ModelGPUHandle
         {
             std::vector<MeshGPUHandle> meshHandles;
-            std::vector<ObjectGPUData> objectDatas;
-
-            std::vector<ObjectGPUData> regularObjectDatas;
-            std::vector<ObjectGPUData> wireframeObjectDatas;
         };
 
         struct AnimationGPUHandle
         {
             
         };
+
+
+        struct ObjectCPUData // meta data for objects that is only needed on the cpu. corresponds to the gpu data variant
+        {
+            std::string shader;
+            std::string model;
+        };
+
+        struct ObjectData
+        {
+            ObjectGPUData gpuData;
+            ObjectCPUData cpuData;; 
+        };
+
+
 
     private:
         void DrawRegular();
@@ -222,12 +265,8 @@ namespace Gep
 
         void LoadAnimation(const aiAnimation* assimpAnimation, const Skeleton& skeleton);
     private:
-
-        std::unique_ptr<Shader> mPBRShaderStatic;
-        std::unique_ptr<Shader> mPBRShaderSkinned;
-        std::unique_ptr<Shader> mHighlightShader;
-        std::unique_ptr<Shader> mColorShader;
-        std::unique_ptr<Shader> mLineShader; // used to draw lines in 3d space
+        // name of the shader to the compiled shader
+        std::unordered_map<std::string, std::unique_ptr<Shader>> mShaders;
 
         glm::vec3 mSolidColor{};
 
@@ -257,6 +296,12 @@ namespace Gep
 
         GLuint mBoneUniformsSSBO{};
         std::vector<BoneGPUData> mBoneUniforms;
+
+        // sorted by shader name -> model name
+        //std::vector<ObjectGPUData> mObjectsToRender;
+        //std::vector<ObjectCPUData> mObjectsToRenderMeta;
+        // shader name -> model name -> render state -> objects
+        std::map<std::string, std::map<std::string, std::map<RenderFlags, std::vector<ObjectGPUData>>>> mObjectDatas;
 
         // used to store vertices for drawing lines
         GLuint mLineVBO;

@@ -56,10 +56,10 @@ namespace Client
 
         Gep::OpenGLRenderer& renderer = mRenderer;
 
-        renderer.Initialize();
-        renderer.SetHighlightShader("assets\\shaders\\Highlight.vert", "assets\\shaders\\Highlight.frag");
-
-        renderer.SetLineShader("assets\\shaders\\Line.vert", "assets\\shaders\\Line.frag");
+        renderer.LoadShader("Highlight",   "assets\\shaders\\Highlight.vert", "assets\\shaders\\Highlight.frag");
+        renderer.LoadShader("Line",        "assets\\shaders\\Line.vert", "assets\\shaders\\Line.frag");
+        renderer.LoadShader("PBR-Static",  "assets\\shaders\\PBR-Static.vert", "assets\\shaders\\PBR.frag");
+        renderer.LoadShader("PBR-Skinned", "assets\\shaders\\PBR-Skinned.vert", "assets\\shaders\\PBR.frag");
 
         renderer.SetUpLightSSBO();
         renderer.SetUpObjectUniformsSSBO();
@@ -225,7 +225,7 @@ namespace Client
                 wireframeUniforms.isWireframe = true;
                 wireframeUniforms.material.color = { 1.0f, 1.0f, 0.0f, 0.2f };
 
-                renderer.AddObject(model.name, wireframeUniforms);
+                renderer.AddObject("PBR-Static", model.name, wireframeUniforms, Gep::RenderFlags::Wireframe | Gep::RenderFlags::NoDepthTest);
             }
 
             if (mDrawBones)
@@ -234,7 +234,7 @@ namespace Client
                 DrawSkeleton(internalModel.skeleton, Gep::ToVQS(modelMatrix));
             }
             
-            renderer.AddObject(model.name, uniforms);
+            renderer.AddObject("PBR-Static", model.name, uniforms);
         });
 
         // draws colliders if on
@@ -265,7 +265,7 @@ namespace Client
                     .material = material
                 };
 
-                renderer.AddObject("Cube", uniforms);
+                renderer.AddObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
             });
 
             mManager.ForEachArchetype<SphereCollider, Transform>([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
@@ -284,7 +284,7 @@ namespace Client
                     .material = material
                 };
 
-                renderer.AddObject("Sphere", uniforms);
+                renderer.AddObject("PBR-Static", "Sphere", uniforms, Gep::RenderFlags::Wireframe);
             });
 
         }
