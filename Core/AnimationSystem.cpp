@@ -117,13 +117,15 @@ namespace Client
                     animationComponent.currentTime = 0.0f;
             }
 
-            std::vector<Gep::VQS> localPose(model.skeleton.bones.size());
+            // I dont really understand why the clear has to be here but if I remove it there are strange anomalies sometimes.
+            animationComponent.pose.clear();
+            animationComponent.pose.resize(model.skeleton.bones.size());
 
-            EvaluateAnimation(animation, animationComponent.currentTime, localPose);
+            EvaluateAnimation(animation, animationComponent.currentTime, animationComponent.pose);
 
-            CalculateGlobalPose(model.skeleton, localPose);
+            CalculateGlobalPose(model.skeleton, animationComponent.pose);
 
-            DrawSkeleton(model.skeleton, transform.GetModelMatrix(), localPose, line);
+            DrawSkeleton(model.skeleton, transform.GetModelMatrix(), animationComponent.pose, line);
         });
 
         mRenderer.AddLine(line);
@@ -181,7 +183,7 @@ namespace Client
         // progress bar
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 1)); // Reduce vertical padding
         ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 5.0f); // Set grab size to 5px
-        ImGui::SliderFloat("##Time", &animationComponent.currentTime, 0.0f, animation.duration, "");
+        ImGui::SliderFloat("##AnimationTime", &animationComponent.currentTime, 0.0f, animation.duration, "");
         ImGui::PopStyleVar(2);
 
         // progress bar time in seconds

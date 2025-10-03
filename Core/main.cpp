@@ -88,14 +88,14 @@ int main()
     Gep::type_list<
         Client::WindowSystem,
         Client::ImGuiSystem,
+        Client::AnimationSystem, // must happen before the render system
         Client::RenderSystem,
         Client::ScriptingSystem,
         Client::PhysicsSystem,
         Client::SerializationSystem,
         Client::RelationSystem,
         Client::SoundSystem,
-        Client::CollisionSystem,
-        Client::AnimationSystem
+        Client::CollisionSystem
     > systemTypes;
 
     // register all types ////////////////////////////////////////////////////////////////////////////

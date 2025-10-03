@@ -13,12 +13,16 @@
 #include "CubeCollider.hpp"
 #include <ImGuizmo.h>
 
+// component
 #include "Transform.hpp"
 #include "ModelComponent.hpp"
 #include "CameraComponent.hpp"
 #include "TextureComponent.hpp"
 #include "LightComponent.hpp"
+#include "AnimationComponent.hpp"
+
 #include "SkyboxMesh.hpp"
+#include "Mesh.hpp"
 
 #include "Conversion.h"
 
@@ -52,7 +56,7 @@ namespace Client
 
         Gep::OpenGLRenderer& renderer = mRenderer;
 
-        renderer.SetShader("assets\\shaders\\PBR.vert", "assets\\shaders\\PBR.frag");
+        renderer.Initialize();
         renderer.SetHighlightShader("assets\\shaders\\Highlight.vert", "assets\\shaders\\Highlight.frag");
 
         renderer.SetLineShader("assets\\shaders\\Line.vert", "assets\\shaders\\Line.frag");
@@ -108,17 +112,14 @@ namespace Client
 
         Gep::VQS boneTransform = parentTransform * bone.transformation;
 
-        // Draw lines to children
         for (uint16_t childIndex : bone.childrenIndices)
         {
             const Gep::Bone& child = skeleton.bones.at(childIndex);
 
             Gep::VQS childTransform = boneTransform * child.transformation;
 
-            // Draw the bone (parent to child)
             line.points.push_back({ glm::vec4(boneTransform.position, 1.0f), glm::vec4(childTransform.position, 1.0f) });
 
-            // Recurse
             DrawSkeletonRecursive(skeleton, boneTransform, line, childIndex);
         }
     }
@@ -174,8 +175,9 @@ namespace Client
         // prepare the object uniforms
         mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
         {
-            glm::mat4 modelMatrix = transform.GetModelMatrix();
-            glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
+            const glm::mat4 modelMatrix = transform.GetModelMatrix();
+            const glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
+            const Gep::Model& internalModel = renderer.GetModel(model.name);
 
             Gep::MaterialGPUData material
             {
@@ -189,6 +191,21 @@ namespace Client
             {
                 material.color = glm::vec4(mManager.GetComponent<Light>(entity).color, 1.0f);
                 model.ignoreLight = true;
+            }
+
+            // if the model also has an animation compute its final pose and pass all bone info to the gpu
+            if (mManager.HasComponent<AnimationComponent>(entity))
+            {
+                AnimationComponent& ac = mManager.GetComponent<AnimationComponent>(entity);
+
+                for (uint32_t i = 0; i < internalModel.skeleton.bones.size(); ++i)
+                {
+                    Gep::BoneGPUData bone{
+                        .offsetMatrix = Gep::ToMat4(ac.pose[i] * internalModel.skeleton.bones[i].inverseBind)
+                    };
+
+                    mRenderer.AddBone(bone);
+                }
             }
 
             Gep::ObjectGPUData uniforms
@@ -273,6 +290,7 @@ namespace Client
         }
 
         // send all things added to the gpu
+        renderer.CommitBones();
         renderer.CommitLights();
         renderer.CommitCameras();
         renderer.CommitObjects();

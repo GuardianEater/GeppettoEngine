@@ -25,6 +25,13 @@ namespace Gep
         return out;
     }
 
+    glm::mat4 ToMat4(const Gep::VQS& vqs)
+    {
+        return glm::translate(glm::mat4(1.0f), vqs.position) *
+               glm::mat4_cast(vqs.rotation) *
+               glm::scale(glm::mat4(1.0f), vqs.scale);
+    }
+
     glm::vec3 ToVec3(const aiVector3D& v)
     {
         return { v.x, v.y, v.z };

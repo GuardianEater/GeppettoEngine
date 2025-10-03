@@ -7,6 +7,8 @@
 in vec4 position; // surface point
 in vec4 normal;   // normal at position
 in vec2 uv;       // texture coordinates
+in uint boneIndexs[4]; // indices of bones affecting this vertex
+in float boneWeights[4];   // weights of bones affecting this vertex
 
 // out to fragment shader //////////////////////////////////////////////////////
 out vec4 worldPosition; // surface point

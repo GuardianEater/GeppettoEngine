@@ -53,6 +53,12 @@ namespace Gep
     static GLuint IconToTexture(HICON icon);
     static GLuint BitmapToTexture(HBITMAP bitmap);
 
+    void OpenGLRenderer::Initialize()
+    {
+        mPBRShaderStatic = std::make_unique<Shader>(Shader::FromFile("assets\\shaders\\PBR-Static.vert", "assets\\shaders\\PBR.frag"));
+        mPBRShaderSkinned = std::make_unique<Shader>(Shader::FromFile("assets\\shaders\\PBR-Skinned.vert", "assets\\shaders\\PBR.frag"));
+    }
+
     void OpenGLRenderer::AddModelFromFile(const std::string& path)
     {
         if (mModels.contains(path))
@@ -150,11 +156,6 @@ namespace Gep
         return mModels.contains(name);
     }
 
-    void OpenGLRenderer::SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
-    {
-        mPBRShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
-    }
-
     void OpenGLRenderer::SetHighlightShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
     {
         mHighlightShader = std::make_unique<Shader>(Shader::FromFile(vertPath, fragPath));
@@ -230,6 +231,12 @@ namespace Gep
         glBufferData(GL_SHADER_STORAGE_BUFFER, mCameraUniforms.size() * sizeof(CameraGPUData), mCameraUniforms.data(), GL_DYNAMIC_DRAW);
     }
 
+    void OpenGLRenderer::CommitBones()
+    {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mBoneUniformsSSBO);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, mBoneUniforms.size() * sizeof(BoneGPUData), mBoneUniforms.data(), GL_DYNAMIC_DRAW);
+    }
+
     void OpenGLRenderer::CommitLights()
     {
         SetLightCount(mLightUniforms.size());
@@ -239,14 +246,14 @@ namespace Gep
 
     void OpenGLRenderer::SetCameraIndex(size_t index)
     {
-        mPBRShader->SetUniform(0, static_cast<int>(index));
+        mPBRShaderStatic->SetUniform(0, static_cast<int>(index));
         mHighlightShader->SetUniform(0, static_cast<int>(index));
         mLineShader->SetUniform(0, static_cast<int>(index));
     }
 
     void OpenGLRenderer::SetLightCount(size_t count)
     {
-        mPBRShader->SetUniform(2, static_cast<int>(count));
+        mPBRShaderStatic->SetUniform(2, static_cast<int>(count));
         mHighlightShader->SetUniform(2, static_cast<int>(count));
     }
 
@@ -611,7 +618,7 @@ namespace Gep
 
     void OpenGLRenderer::DrawRegular()
     {
-        mPBRShader->Bind();
+        mPBRShaderStatic->Bind();
 
         size_t baseInstance = 0;
         for (auto& [modelName, modelPair] : mModels)
@@ -666,7 +673,7 @@ namespace Gep
             modelHandle.wireframeObjectDatas.clear();
         }
 
-        mPBRShader->Unbind();
+        mPBRShaderStatic->Unbind();
     }
 
     void OpenGLRenderer::DrawLines()

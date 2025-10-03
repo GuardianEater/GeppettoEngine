@@ -87,6 +87,8 @@ namespace Gep
     class OpenGLRenderer
     {
     public:
+        void Initialize();
+
         // adds a model directly from a file using its path as its name. necessary textures
         void AddModelFromFile(const std::string& path);
 
@@ -115,6 +117,7 @@ namespace Gep
 
         void CommitObjects(); // moves all of the added object data from the cpu to the gpu
         void CommitCameras(); // moves all of the added camera data from the cpu to the gpu
+        void CommitBones();   // moves all of the added bone data from the cpu to the gpu
         void CommitLights();  // moves all of the added light data from the cpu to the gpu
 
         void SetCameraIndex(size_t index);
@@ -220,7 +223,8 @@ namespace Gep
         void LoadAnimation(const aiAnimation* assimpAnimation, const Skeleton& skeleton);
     private:
 
-        std::unique_ptr<Shader> mPBRShader;
+        std::unique_ptr<Shader> mPBRShaderStatic;
+        std::unique_ptr<Shader> mPBRShaderSkinned;
         std::unique_ptr<Shader> mHighlightShader;
         std::unique_ptr<Shader> mColorShader;
         std::unique_ptr<Shader> mLineShader; // used to draw lines in 3d space

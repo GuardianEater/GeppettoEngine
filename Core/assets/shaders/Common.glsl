@@ -45,6 +45,11 @@ struct ObjectUniforms
   PBRMaterial material;  
 };
 
+struct BoneUniforms
+{
+  mat4 transform;
+};
+
 // buffers /////////////////////////////////////////////////////////////////////
 layout(std430, binding=0) buffer ObjectUniformsBuffer
 {
@@ -60,6 +65,12 @@ layout(std430, binding=2) buffer CameraUniformsBuffer
 {
   CameraUniforms cameraUniforms[];
 };
+
+layout(std430, binding=3) buffer BoneUniformsBuffer
+{
+  BoneUniforms boneUniforms[];
+};
+
 
 // uniforms ////////////////////////////////////////////////////////////////////
 layout(location=0) uniform int cameraIndex; // the currently active camera in the cameraUniforms array
