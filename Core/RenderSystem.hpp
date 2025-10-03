@@ -64,9 +64,6 @@ namespace Client
         void OnLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event);
         void OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event);
 
-        void DrawSkeleton(const Gep::Skeleton& skeleton, const Gep::VQS& transform);
-        void DrawSkeletonRecursive(const Gep::Skeleton& skeleton, const Gep::VQS& parentTransform, Gep::LineGPUData& line, uint16_t nodeIndex);
-
         Gep::OpenGLRenderer& mRenderer;
     };
 }

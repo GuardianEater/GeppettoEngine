@@ -101,35 +101,22 @@ namespace Client
         glEnable(GL_DEPTH_TEST);
     }
 
-    void RenderSystem::DrawSkeletonRecursive(const Gep::Skeleton& skeleton, const Gep::VQS& parentTransform, Gep::LineGPUData& line, uint16_t nodeIndex)
+    static void DrawSkeleton(const Gep::Skeleton& skeleton, const glm::mat4& modelMatrix, const std::vector<Gep::VQS>& globalPose, Gep::LineGPUData& line)
     {
-        if (nodeIndex == Gep::num_max<uint16_t>()) // if the node is null
-            return;
-        if (skeleton.bones.empty()) // if no bones
-            return;
-
-        const Gep::Bone& bone = skeleton.bones.at(nodeIndex);
-
-        Gep::VQS boneTransform = parentTransform * bone.transformation;
-
-        for (uint16_t childIndex : bone.childrenIndices)
+        for (int i = 0; i < skeleton.bones.size(); i++)
         {
-            const Gep::Bone& child = skeleton.bones.at(childIndex);
+            int parent = skeleton.bones[i].parentIndex;
+            if (parent != Gep::num_max<uint16_t>())
+            {
+                glm::vec4 a = glm::vec4(globalPose[parent].position, 1.0f);
+                glm::vec4 b = glm::vec4(globalPose[i].position, 1.0f);
 
-            Gep::VQS childTransform = boneTransform * child.transformation;
+                a = modelMatrix * a;
+                b = modelMatrix * b;
 
-            line.points.push_back({ glm::vec4(boneTransform.position, 1.0f), glm::vec4(childTransform.position, 1.0f) });
-
-            DrawSkeletonRecursive(skeleton, boneTransform, line, childIndex);
+                line.points.push_back({ a, b }); // however you render debug lines
+            }
         }
-    }
-
-    void RenderSystem::DrawSkeleton(const Gep::Skeleton& skeleton, const Gep::VQS& transform)
-    {
-        Gep::LineGPUData boneLines;
-        boneLines.color = { 1.0f, 1.0f, 1.0f };
-        DrawSkeletonRecursive(skeleton, transform, boneLines, 0); // 0 is the root node of a skeleton
-        mRenderer.AddLine(boneLines);
     }
     
     void RenderSystem::Update(float dt)
@@ -173,6 +160,9 @@ namespace Client
         });
 
         // prepare the object uniforms
+        Gep::LineGPUData skeletonLines;
+        skeletonLines.color = { 1.0f, 0.5f, 0.5f };
+
         mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
         {
             const glm::mat4 modelMatrix = transform.GetModelMatrix();
@@ -196,11 +186,11 @@ namespace Client
             std::string targetShader = "PBR-Static";
 
             // if the model also has an animation compute its final pose and pass all bone info to the gpu
-            if (mManager.HasComponent<AnimationComponent>(entity))
+            if (mManager.HasComponent<AnimationComponent>(entity) && mManager.IsState(Gep::EngineState::Play))
             {
                 AnimationComponent& ac = mManager.GetComponent<AnimationComponent>(entity);
 
-                for (uint32_t i = 0; i < internalModel.skeleton.bones.size(); ++i)
+                for (uint32_t i = 0; i < internalModel.skeleton.bones.size() && i < ac.pose.size(); ++i)
                 {
                     Gep::BoneGPUData bone{
                         .offsetMatrix = Gep::ToMat4(ac.pose[i] * internalModel.skeleton.bones[i].inverseBind)
@@ -209,7 +199,12 @@ namespace Client
                     mRenderer.AddBone(bone);
                 }
 
-                // targetShader = "PBR-Skinned";
+                if (mDrawBones)
+                {
+                    DrawSkeleton(internalModel.skeleton, modelMatrix, ac.pose, skeletonLines);
+                }
+
+                targetShader = "PBR-Skinned";
             }
 
             Gep::ObjectGPUData uniforms
@@ -230,11 +225,6 @@ namespace Client
                 wireframeUniforms.material.color = { 1.0f, 1.0f, 0.0f, 0.2f };
 
                 renderer.AddObject("PBR-Static", model.name, wireframeUniforms, Gep::RenderFlags::Wireframe | Gep::RenderFlags::NoDepthTest);
-            }
-
-            if (mDrawBones)
-            {
-                DrawSkeleton(internalModel.skeleton, Gep::ToVQS(modelMatrix));
             }
             
             renderer.AddObject(targetShader, model.name, uniforms);

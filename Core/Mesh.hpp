@@ -48,7 +48,7 @@ namespace Gep
         glm::vec3 normal{};
         glm::vec2 texCoord{};
         std::array<uint32_t, 4> boneIndices{ INVALID_INDEX , INVALID_INDEX, INVALID_INDEX, INVALID_INDEX };
-        std::array<float, 4> boneWeights{};
+        std::array<float, 4> boneWeights{ 0.0f, 0.0f, 0.0f, 0.0f };
     };
 
     struct Mesh

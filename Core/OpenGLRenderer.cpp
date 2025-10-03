@@ -620,13 +620,13 @@ namespace Gep
 
     void OpenGLRenderer::DrawRegular()
     {
+        size_t baseInstance = 0;
         for (const auto& [shaderName, modelToFlags] : mObjectDatas)
         {
             Shader& currentShader = *mShaders.at(shaderName);
 
             currentShader.Bind();
 
-            size_t baseInstance = 0;
             for (const auto& [modelName, flagsToObjects] : modelToFlags)
             {
                 auto& [modelHandle, model] = mModels.at(modelName);
@@ -797,10 +797,10 @@ namespace Gep
         glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
         glEnableVertexAttribArray(2);
 
-        glVertexAttribPointer(3, 2, GL_UNSIGNED_INT, false, sizeof(Vertex), (void*)offsetof(Vertex, boneIndices));
+        glVertexAttribIPointer(3, 4, GL_UNSIGNED_INT, sizeof(Vertex), (void*)offsetof(Vertex, boneIndices));
         glEnableVertexAttribArray(3);
 
-        glVertexAttribPointer(4, 2, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, boneWeights));
+        glVertexAttribPointer(4, 4, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, boneWeights));
         glEnableVertexAttribArray(4);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer);
@@ -823,13 +823,11 @@ namespace Gep
 
     struct BoneInfo
     {
-        int id;
-        glm::mat4 offset;
+        uint32_t id = 0;
+        Gep::VQS offset;
     };
 
-    static std::unordered_map<std::string, BoneInfo> gBoneInfoMap; //
-    static std::unordered_map<std::string, VQS> gBoneData;
-    static int gBoneCounter = 0;
+    static std::unordered_map<std::string, BoneInfo> gBoneData;
 
     GLuint OpenGLRenderer::LoadMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type)
     {
@@ -1018,60 +1016,52 @@ namespace Gep
         }
     }
 
-    // vertex bone datas are flaged with a max int if not set
-    static void SetVertexBoneData(Vertex& v, int boneID, float weight)
+    static void SetVertexBoneData(Vertex& vertex, uint32_t boneID, float weight)
     {
-        for (int i = 0; i < v.boneWeights.size(); ++i)
+        for (size_t i = 0; i < vertex.boneIndices.size(); ++i)
         {
-            if (v.boneIndices[i] == num_max<uint64_t>())
+            if (vertex.boneIndices[i] == Vertex::INVALID_INDEX)
             {
-                v.boneWeights[i] = weight;
-                v.boneIndices[i] = boneID;
+                vertex.boneWeights[i] = weight;
+                vertex.boneIndices[i] = boneID;
                 break;
             }
         }
     }
 
-    static void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, const aiMesh* assimpMesh)
+    static void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, aiMesh* mesh, const aiScene* scene)
     {
-        for (aiBone* bone : std::span(assimpMesh->mBones, assimpMesh->mNumBones))
+        for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
         {
-            const std::string boneName = bone->mName.C_Str();
-            int boneID = -1;
+            uint32_t boneID = Vertex::INVALID_INDEX;
+            std::string boneName = mesh->mBones[boneIndex]->mName.C_Str();
 
-            if (!gBoneInfoMap.contains(boneName))
+            if (!gBoneData.contains(boneName))
             {
-                BoneInfo newBoneInfo{};
-                newBoneInfo.id = gBoneCounter;
-                newBoneInfo.offset = ToMat4(bone->mOffsetMatrix);
-                gBoneInfoMap[boneName] = newBoneInfo;
-                boneID = gBoneCounter;
-                ++gBoneCounter;
+                BoneInfo newBoneInfo;
+                newBoneInfo.id = static_cast<uint32_t>(gBoneData.size()); // Assign ID before inserting
+                newBoneInfo.offset = ToVQS(mesh->mBones[boneIndex]->mOffsetMatrix);
+                gBoneData[boneName] = newBoneInfo;
+                boneID = newBoneInfo.id;
             }
             else
             {
-                boneID = gBoneInfoMap[boneName].id;
+                boneID = gBoneData[boneName].id;
             }
 
-            for (aiVertexWeight weight : std::span(bone->mWeights, bone->mNumWeights))
-            {
-                Vertex& v = vertices[weight.mVertexId];
-                
-                SetVertexBoneData(v, boneID, weight.mWeight);
-            }
-        }
+            auto weights = mesh->mBones[boneIndex]->mWeights;
+            uint32_t numWeights = mesh->mBones[boneIndex]->mNumWeights;
 
-        for (auto& vertex : vertices)
-        {
-            for (auto& index : vertex.boneIndices)
+            for (uint32_t weightIndex = 0; weightIndex < numWeights; ++weightIndex)
             {
-                if (index == Vertex::INVALID_INDEX)
-                {
-                    index = 0;
-                }
+                uint32_t vertexId = weights[weightIndex].mVertexId;
+                float weight = weights[weightIndex].mWeight;
+
+                SetVertexBoneData(vertices[vertexId], boneID, weight);
             }
         }
     }
+
 
     static void LoadVertices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
     {
@@ -1089,8 +1079,6 @@ namespace Gep
             if (assimpMesh->HasTextureCoords(0))
                 v.texCoord = { assimpMesh->mTextureCoords[0][i].x, assimpMesh->mTextureCoords[0][i].y };
         }
-
-        ExtractBoneWeightForVertices(mesh.vertices, assimpMesh);
     }
 
     static void LoadIndices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
@@ -1128,7 +1116,8 @@ namespace Gep
             return lastValid;
         }
 
-        const auto& [boneName, inverseBind] = *it;
+        const auto& [boneName, boneData] = *it;
+        const auto& [oldIndex, inverseBind] = boneData;
 
         // this is a bone, so add it, note cannot get a reference here because it could be stale
         size_t index = model.skeleton.bones.size();
@@ -1161,30 +1150,24 @@ namespace Gep
 
         for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
         {
+            const aiMesh* assimpMesh = scene->mMeshes[i];
+            std::string meshName = assimpMesh->mName.length > 0 ? assimpMesh->mName.C_Str() : ("UnnamedMesh_" + std::to_string(i));
+
             Mesh& mesh = model.meshes.emplace_back();
+            mesh.name = meshName;
 
             LoadVertices(mesh, scene->mMeshes[i]);
             LoadIndices(mesh, scene->mMeshes[i]);
 
             mesh.materialIndex = scene->mMeshes[i]->mMaterialIndex;
-        }
-    }
 
-    static void LoadBoneData(const aiScene* scene)
-    {
-        for (unsigned int m = 0; m < scene->mNumMeshes; ++m)
-        {
-            aiMesh* mesh = scene->mMeshes[m];
-            for (unsigned int b = 0; b < mesh->mNumBones; ++b)
-            {
-                aiBone* bone = mesh->mBones[b];
-                gBoneData[bone->mName.C_Str()] = ToVQS(bone->mOffsetMatrix);
-            }
+            ExtractBoneWeightForVertices(mesh.vertices, scene->mMeshes[i], scene);
         }
     }
 
     Model OpenGLRenderer::LoadModelFromFile(const std::filesystem::path& path)
     {
+        gBoneData.clear();
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(path.string(),
             aiProcess_Triangulate |
@@ -1194,7 +1177,7 @@ namespace Gep
             aiProcess_ImproveCacheLocality |
             aiProcess_SortByPType |
             aiProcess_OptimizeGraph |
-            aiProcess_OptimizeMeshes 
+            aiProcess_OptimizeMeshes
         );
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
@@ -1205,14 +1188,10 @@ namespace Gep
 
         Gep::Model model;
 
-
-
-        LoadBoneData(scene);
         LoadMeshes(model, scene);
         LoadMaterials(model, path, scene);
         LoadHierarchy(model, scene);
         LoadAnimations(model, scene);
-
 
         return model;
     }

@@ -63,25 +63,6 @@ namespace Client
         }
     }
 
-    static void DrawSkeleton(const Gep::Skeleton& skeleton, const glm::mat4& modelMatrix, const std::vector<Gep::VQS>& globalPose, Gep::LineGPUData& line)
-    {
-        for (int i = 0; i < skeleton.bones.size(); i++) 
-        {
-            int parent = skeleton.bones[i].parentIndex;
-            if (parent != Gep::num_max<uint16_t>()) 
-            {
-                glm::vec4 a = glm::vec4(globalPose[parent].position, 1.0f);
-                glm::vec4 b = glm::vec4(globalPose[i].position, 1.0f);
-
-                a = modelMatrix * a;
-                b = modelMatrix * b;
-
-                line.points.push_back({a, b}); // however you render debug lines
-            }
-        }
-    }
-
-
     void AnimationSystem::Update(float dt)
     {
         Gep::LineGPUData line;
@@ -124,8 +105,6 @@ namespace Client
             EvaluateAnimation(animation, animationComponent.currentTime, animationComponent.pose);
 
             CalculateGlobalPose(model.skeleton, animationComponent.pose);
-
-            DrawSkeleton(model.skeleton, transform.GetModelMatrix(), animationComponent.pose, line);
         });
 
         mRenderer.AddLine(line);
