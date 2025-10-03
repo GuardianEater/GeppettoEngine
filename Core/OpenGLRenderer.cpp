@@ -666,8 +666,6 @@ namespace Gep
                     }
                     baseInstance += objects.size();
                 }
-
-                // clear all of the objects and flags as they are drawn
             }
 
             currentShader.Unbind();
@@ -1060,6 +1058,17 @@ namespace Gep
                 Vertex& v = vertices[weight.mVertexId];
                 
                 SetVertexBoneData(v, boneID, weight.mWeight);
+            }
+        }
+
+        for (auto& vertex : vertices)
+        {
+            for (auto& index : vertex.boneIndices)
+            {
+                if (index == Vertex::INVALID_INDEX)
+                {
+                    index = 0;
+                }
             }
         }
     }

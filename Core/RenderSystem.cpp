@@ -193,6 +193,8 @@ namespace Client
                 model.ignoreLight = true;
             }
 
+            std::string targetShader = "PBR-Static";
+
             // if the model also has an animation compute its final pose and pass all bone info to the gpu
             if (mManager.HasComponent<AnimationComponent>(entity))
             {
@@ -206,6 +208,8 @@ namespace Client
 
                     mRenderer.AddBone(bone);
                 }
+
+                // targetShader = "PBR-Skinned";
             }
 
             Gep::ObjectGPUData uniforms
@@ -230,11 +234,10 @@ namespace Client
 
             if (mDrawBones)
             {
-                const Gep::Model& internalModel = renderer.GetModel(model.name);
                 DrawSkeleton(internalModel.skeleton, Gep::ToVQS(modelMatrix));
             }
             
-            renderer.AddObject("PBR-Static", model.name, uniforms);
+            renderer.AddObject(targetShader, model.name, uniforms);
         });
 
         // draws colliders if on
