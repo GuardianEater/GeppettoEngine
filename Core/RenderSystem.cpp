@@ -504,10 +504,11 @@ namespace Client
     void RenderSystem::OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event)
     {
         Camera& camera = event.component;
+        EditorResource& er = mManager.GetResource<EditorResource>();
 
-        ImGui::DragFloat("near plane", &camera.nearPlane, 0.1f, 0.1f, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
-        ImGui::DragFloat("far plane", &camera.farPlane, 0.1f, camera.nearPlane, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
-        ImGui::DragFloat("fov", &camera.fov, 0.1f, 0.001f, 179.999f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
+        er.LabledInput_Float("Near Plane", &camera.nearPlane, 100.0f, 0.1f, 0.1f, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
+        er.LabledInput_Float("Far Plane", &camera.farPlane, 100.0f, 0.1f, camera.nearPlane, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
+        er.LabledInput_Float("FOV", &camera.fov, 100.0f, 0.1f, 0.001f, 179.999f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
 
         // drop down menu for render target
         if (ImGui::BeginCombo("target", camera.renderTargetType.PrettyName().c_str()))

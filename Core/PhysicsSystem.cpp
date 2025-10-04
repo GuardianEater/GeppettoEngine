@@ -15,6 +15,9 @@
 #include <Transform.hpp>
 #include <RigidBody.hpp>
 
+// resouce
+#include <EditorResource.hpp>
+
 // engine
 #include <EngineManager.hpp>
 
@@ -65,10 +68,11 @@ namespace Client
     void PhysicsSystem::OnTransformEditorRender(const Gep::Event::ComponentEditorRender<Transform>& event)
     {
         Transform& transform = event.component;
+        EditorResource& er = mManager.GetResource<EditorResource>();
 
-        ImGui::DragFloat3("Position", &transform.position.x, 0.1f);
-        ImGui::DragFloat3("Scale", &transform.scale.x, 0.1f, 0.0f, Gep::num_max<float>());
-        ImGui::DragFloat3("Rotation", &transform.rotation.x, 0.1f, 0.0f, 360.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_WrapAround);
+        er.LabledInput_Float3("Position", &transform.position.x, 100.0f, 0.1f);
+        er.LabledInput_Float3("Scale", &transform.scale.x, 100.0f, 0.1f, 0.0f, Gep::num_max<float>());
+        er.LabledInput_Float3("Rotation", &transform.rotation.x, 100.0f, 0.1f, 0.0f, 360.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_WrapAround);
     }
 
     void PhysicsSystem::OnRigidBodyEditorRender(const Gep::Event::ComponentEditorRender<RigidBody>& event)

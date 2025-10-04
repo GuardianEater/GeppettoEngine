@@ -39,6 +39,14 @@ namespace Client
 		requires std::invocable<Func, const std::filesystem::path&>
 		void AssetBrowserDropTarget(Func&& onDrop) const;
 
+		void LabledInput_Float(const std::string& label, float* v, float columnWidth = 100.0f, float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
+		void LabledInput_Float3(const std::string& label, float* v, float columnWidth = 100.0f, float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
+		void LabledInput_Float4(const std::string& label, float* v, float columnWidth = 100.0f, float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
+
+	private:
+		void LabledInput_Setup(const std::string& label, float columnWidth);
+		void LabledInput_End();
+
 	private:
 		std::vector<Gep::Entity> mHierarchyEntities; // the order of the entities in the hierarchy
 
