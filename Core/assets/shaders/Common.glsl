@@ -43,6 +43,9 @@ struct ObjectUniforms
   int isSolidColor;    
   int isWireframe;   
   PBRMaterial material;  
+
+  int boneOffset;
+  int pad[3];
 };
 
 struct BoneUniforms

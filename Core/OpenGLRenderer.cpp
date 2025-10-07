@@ -72,11 +72,11 @@ namespace Gep
 
             const Material& material = model.materials.at(mesh.materialIndex);
 
-            meshHandle.materialHandle.diffuseTexture   = material.diffuseTextureHandle;
-            meshHandle.materialHandle.aoTexture        = material.aoTextureHandle;
+            meshHandle.materialHandle.diffuseTexture = material.diffuseTextureHandle;
+            meshHandle.materialHandle.aoTexture = material.aoTextureHandle;
             meshHandle.materialHandle.metalnessTexture = material.metalnessTextureHandle;
             meshHandle.materialHandle.roughnessTexture = material.roughnessTextureHandle;
-            
+
             meshHandle.GenVertexBuffer(mesh);
             meshHandle.GenIndexBuffer(mesh);
             meshHandle.BindBuffers();
@@ -480,7 +480,7 @@ namespace Gep
 
         int requiredChannels = 4; // Force RGBA
         int width, height, channels;
-        unsigned char* image = stbi_load_from_memory(imageFileData, size, &width, & height, & channels, requiredChannels);
+        unsigned char* image = stbi_load_from_memory(imageFileData, size, &width, &height, &channels, requiredChannels);
         if (!image)
         {
             Gep::Log::Error("Failed to load texture from raw data, with the given name, [", name, "]");
@@ -870,11 +870,11 @@ namespace Gep
         return num_max<GLuint>();
     }
 
-    void OpenGLRenderer::LoadAnimation(const aiAnimation* assimpAnimation, const Skeleton& skeleton)
+    void OpenGLRenderer::LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton)
     {
         const auto& [it, inserted] = mAnimations.emplace(
             std::piecewise_construct,
-            std::forward_as_tuple(assimpAnimation->mName.C_Str()),
+            std::forward_as_tuple(std::string(assimpAnimation->mName.C_Str()) + " (" + parentPath + ")"),
             std::forward_as_tuple()
         );
         auto& [name, pair] = *it;
@@ -893,12 +893,15 @@ namespace Gep
 
             // find bone index in skeleton
             auto it = std::find_if(skeleton.bones.begin(), skeleton.bones.end(), [&](const Bone& b)
-            { 
-                return b.name == channel->mNodeName.C_Str(); 
+            {
+                return b.name == channel->mNodeName.C_Str();
             });
 
             if (it == skeleton.bones.end())
-                continue; // channel for a node that's not a bone
+            {
+                Gep::Log::Warning("Animation channel for bone '", channel->mNodeName.C_Str(), "' not found in skeleton");
+                continue;
+            }
 
             uint16_t boneIndex = static_cast<uint16_t>(std::distance(skeleton.bones.begin(), it));
 
@@ -943,7 +946,7 @@ namespace Gep
         }
     }
 
-    Gep::VQS OpenGLRenderer::Interpolate(const Track & track, float time)
+    Gep::VQS OpenGLRenderer::Interpolate(const Track& track, float time)
     {
         if (track.keyFrames.empty())
         {
@@ -975,7 +978,7 @@ namespace Gep
         Gep::VQS result;
         result.position = glm::lerp(k1.transform.position, k2.transform.position, factor);
         result.rotation = glm::slerp(k1.transform.rotation, k2.transform.rotation, factor);
-        result.scale    = glm::lerp(k1.transform.scale,    k2.transform.scale,    factor);
+        result.scale = glm::lerp(k1.transform.scale, k2.transform.scale, factor);
         return result;
     }
 
@@ -995,10 +998,10 @@ namespace Gep
                 material.color = { diffuseColor.r, diffuseColor.g, diffuseColor.b };
 
             material.diffuseTextureHandle = LoadMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE);
-            material.hasDiffuseTexture    = (material.diffuseTextureHandle != num_max<GLuint>());
+            material.hasDiffuseTexture = (material.diffuseTextureHandle != num_max<GLuint>());
 
             material.aoTextureHandle = LoadMaterial(path, assimpMaterial, scene, aiTextureType_AMBIENT_OCCLUSION);
-            material.hasAoTexture    = (material.aoTextureHandle != num_max<GLuint>());
+            material.hasAoTexture = (material.aoTextureHandle != num_max<GLuint>());
 
             material.metalnessTextureHandle = LoadMaterial(path, assimpMaterial, scene, aiTextureType_METALNESS);
             material.hasMetalnessTexture = (material.metalnessTextureHandle != num_max<GLuint>());
@@ -1008,11 +1011,11 @@ namespace Gep
         }
     }
 
-    void OpenGLRenderer::LoadAnimations(Gep::Model& model, const aiScene* scene)
+    void OpenGLRenderer::LoadAnimations(const std::string& name, Gep::Model& model, const aiScene* scene)
     {
         for (uint32_t i = 0; i < scene->mNumAnimations; ++i)
         {
-            LoadAnimation(scene->mAnimations[i], model.skeleton);
+            LoadAnimation(name, scene->mAnimations[i], model.skeleton);
         }
     }
 
@@ -1191,7 +1194,7 @@ namespace Gep
         LoadMeshes(model, scene);
         LoadMaterials(model, path, scene);
         LoadHierarchy(model, scene);
-        LoadAnimations(model, scene);
+        LoadAnimations(path.string(), model, scene);
 
         return model;
     }

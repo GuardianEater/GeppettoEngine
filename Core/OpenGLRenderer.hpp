@@ -25,7 +25,7 @@
 
 #include "Model.hpp"
 
-// fwd
+ // fwd
 struct aiScene;
 struct aiMaterial;
 enum aiTextureType;
@@ -35,7 +35,7 @@ namespace Gep
     struct alignas(16) MaterialGPUData
     {
         float ao;        // ambient occlusion
-        float roughness; 
+        float roughness;
         float metalness; float pad0;
         glm::vec4 color;
     };
@@ -46,10 +46,14 @@ namespace Gep
         glm::mat4 normalMatrix;
 
         int isUsingTexture;
-        int isIgnoringLight; 
-        int isSolidColor;    
-        int isWireframe;   
+        int isIgnoringLight;
+        int isSolidColor;
+        int isWireframe;
+
         MaterialGPUData material;
+
+        int boneOffset; // should be added to this objects vertices boneindices to locate the correct bone matrices 
+        int pad[3];
     };
 
     struct alignas(16) CameraGPUData
@@ -63,7 +67,7 @@ namespace Gep
     struct LightGPUData
     {
         glm::vec3 position; float pad;
-        glm::vec3 color;   
+        glm::vec3 color;
         float intensity;
     };
 
@@ -117,8 +121,6 @@ namespace Gep
     class OpenGLRenderer
     {
     public:
-        void Initialize();
-
         // adds a model directly from a file using its path as its name. necessary textures
         void AddModelFromFile(const std::string& path);
 
@@ -134,11 +136,6 @@ namespace Gep
         bool IsMeshLoaded(const std::string& name) const;
         bool IsShaderLoaded(const std::string& name) const;
 
-        void SetShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
-        void SetHighlightShader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath);
-        void SetColorShader(const std::filesystem::path& vert, const std::filesystem::path& frag);
-        void SetLineShader(const std::filesystem::path& vert, const std::filesystem::path& frag);
-
         // adds an object to be drawn by 
         void AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& objectData, RenderFlags flags = RenderFlags::None);
         void AddCamera(const CameraGPUData& cameraData);
@@ -152,7 +149,7 @@ namespace Gep
         void CommitLights();  // moves all of the added light data from the cpu to the gpu
 
         void SetCameraIndex(size_t index);
-        void SetLightCount(size_t count); 
+        void SetLightCount(size_t count);
 
         std::vector<std::string> GetLoadedMeshes() const;
         std::vector<std::filesystem::path> GetLoadedTextures() const;
@@ -160,7 +157,7 @@ namespace Gep
 
         const std::vector<std::string>& GetSupportedModelFormats() const;
         const std::vector<std::string>& GetSupportedTextureFormats() const;
-        
+
         void LoadIconTexture(const std::filesystem::path& iconPath);
         GLuint GetIconTexture(const std::string& extension);
         GLuint GetOrLoadIconTexture(const std::filesystem::path& iconPath);
@@ -199,8 +196,8 @@ namespace Gep
     private:
         struct MaterialGPUHandle
         {
-            GLuint diffuseTexture   = num_max<GLuint>();
-            GLuint aoTexture        = num_max<GLuint>();
+            GLuint diffuseTexture = num_max<GLuint>();
+            GLuint aoTexture = num_max<GLuint>();
             GLuint metalnessTexture = num_max<GLuint>();
             GLuint roughnessTexture = num_max<GLuint>();
         };
@@ -228,7 +225,7 @@ namespace Gep
 
         struct AnimationGPUHandle
         {
-            
+
         };
 
 
@@ -241,7 +238,7 @@ namespace Gep
         struct ObjectData
         {
             ObjectGPUData gpuData;
-            ObjectCPUData cpuData;; 
+            ObjectCPUData cpuData;;
         };
 
 
@@ -252,18 +249,18 @@ namespace Gep
         void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
 
         // pixel data loaded from stbimage, note pixel data must be freed after use
-        void LoadTextureFromPixelData(const std::string& name, const uint8_t* pixelData, size_t width, size_t height, int requiredChannels); 
+        void LoadTextureFromPixelData(const std::string& name, const uint8_t* pixelData, size_t width, size_t height, int requiredChannels);
 
         // helpers for loading assimp files
         Gep::Model LoadModelFromFile(const std::filesystem::path& path);
         void LoadMaterials(Gep::Model& model, const std::filesystem::path& path, const aiScene* scene);
 
-        void LoadAnimations(Gep::Model& model, const aiScene* scene);
+        void LoadAnimations(const std::string& name, Gep::Model& model, const aiScene* scene);
 
         // given information, will load textures onto the gpu that are needed by the given material. will return num_max<GLuint>() if there is no texture loaded
         GLuint LoadMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type);
 
-        void LoadAnimation(const aiAnimation* assimpAnimation, const Skeleton& skeleton);
+        void LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton);
     private:
         // name of the shader to the compiled shader
         std::unordered_map<std::string, std::unique_ptr<Shader>> mShaders;

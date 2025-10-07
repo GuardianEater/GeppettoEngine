@@ -26,7 +26,7 @@ void main(void)
 
   for (int i = 0; i < 4; i++) 
   {
-    uint boneIndex = boneIndexs[i];
+    uint boneIndex = objectUniforms[vObjectIndex].boneOffset + boneIndexs[i];
     float weight = boneWeights[i];
     if (weight > 0.0) 
     {

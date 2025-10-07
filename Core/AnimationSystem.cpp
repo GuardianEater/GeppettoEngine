@@ -1,7 +1,7 @@
 /*****************************************************************//**
  * \file   AnimationSystem.cpp
- * \brief  
- * 
+ * \brief
+ *
  * \author Travis Gronvold (travis.gronvold@digipen.edu)
  * \date   September 2025
  *********************************************************************/
@@ -9,7 +9,7 @@
 #include "pch.hpp"
 
 
-// gep
+ // gep
 #include "EngineManager.hpp"
 #include "Mesh.hpp"
 
@@ -68,44 +68,44 @@ namespace Client
         Gep::LineGPUData line;
         line.color = { 1.0f, 0.0f, 0.0f };
         mManager.ForEachArchetype<AnimationComponent, ModelComponent, Transform>([&](Gep::Entity entity, AnimationComponent& animationComponent, const ModelComponent& modelComponent, const Transform& transform)
-        {
-            if (!mRenderer.IsAnimationLoaded(animationComponent.name)) 
-                return; // return is continue in for_each loop
-
-            const Gep::Model& model = mRenderer.GetModel(modelComponent.name);
-
-            if (model.skeleton.bones.empty()) // do not operate on a skeleton with no bones
-                return;
-
-            const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.name);
-
-            // progress the animation
-            animationComponent.currentTime += dt * animationComponent.speed * animation.ticksPerSecond;
-
-            // clamp time / if looping is on loop
-            if (animationComponent.currentTime > animation.duration)
             {
-                if (animationComponent.looping)
-                    animationComponent.currentTime = 0.0f;
-                else
-                    animationComponent.currentTime = animation.duration;
-            }
-            else if (animationComponent.currentTime < 0.0f)
-            {
-                if (animationComponent.looping)
-                    animationComponent.currentTime = animation.duration;
-                else
-                    animationComponent.currentTime = 0.0f;
-            }
+                if (!mRenderer.IsAnimationLoaded(animationComponent.name))
+                    return; // return is continue in for_each loop
 
-            // I dont really understand why the clear has to be here but if I remove it there are strange anomalies sometimes.
-            animationComponent.pose.clear();
-            animationComponent.pose.resize(model.skeleton.bones.size());
+                const Gep::Model& model = mRenderer.GetModel(modelComponent.name);
 
-            EvaluateAnimation(animation, animationComponent.currentTime, animationComponent.pose);
+                if (model.skeleton.bones.empty()) // do not operate on a skeleton with no bones
+                    return;
 
-            CalculateGlobalPose(model.skeleton, animationComponent.pose);
-        });
+                const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.name);
+
+                // progress the animation
+                animationComponent.currentTime += dt * animationComponent.speed * animation.ticksPerSecond;
+
+                // clamp time / if looping is on loop
+                if (animationComponent.currentTime > animation.duration)
+                {
+                    if (animationComponent.looping)
+                        animationComponent.currentTime = 0.0f;
+                    else
+                        animationComponent.currentTime = animation.duration;
+                }
+                else if (animationComponent.currentTime < 0.0f)
+                {
+                    if (animationComponent.looping)
+                        animationComponent.currentTime = animation.duration;
+                    else
+                        animationComponent.currentTime = 0.0f;
+                }
+
+                // I dont really understand why the clear has to be here but if I remove it there are strange anomalies sometimes.
+                animationComponent.pose.clear();
+                animationComponent.pose.resize(model.skeleton.bones.size());
+
+                EvaluateAnimation(animation, animationComponent.currentTime, animationComponent.pose);
+
+                CalculateGlobalPose(model.skeleton, animationComponent.pose);
+            });
 
         mRenderer.AddLine(line);
     }
@@ -123,12 +123,12 @@ namespace Client
         const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
 
         er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
-        {
-            if (!mRenderer.IsMeshLoaded(droppedPath.string()))
             {
-                mRenderer.AddModelFromFile(droppedPath.string());
-            }
-        });
+                if (!mRenderer.IsMeshLoaded(droppedPath.string()))
+                {
+                    mRenderer.AddModelFromFile(droppedPath.string());
+                }
+            });
 
         if (meshesOpen)
         {

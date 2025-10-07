@@ -13,7 +13,7 @@
 #include "CubeCollider.hpp"
 #include <ImGuizmo.h>
 
-// component
+ // component
 #include "Transform.hpp"
 #include "ModelComponent.hpp"
 #include "CameraComponent.hpp"
@@ -56,9 +56,9 @@ namespace Client
 
         Gep::OpenGLRenderer& renderer = mRenderer;
 
-        renderer.LoadShader("Highlight",   "assets\\shaders\\Highlight.vert", "assets\\shaders\\Highlight.frag");
-        renderer.LoadShader("Line",        "assets\\shaders\\Line.vert", "assets\\shaders\\Line.frag");
-        renderer.LoadShader("PBR-Static",  "assets\\shaders\\PBR-Static.vert", "assets\\shaders\\PBR.frag");
+        renderer.LoadShader("Highlight", "assets\\shaders\\Highlight.vert", "assets\\shaders\\Highlight.frag");
+        renderer.LoadShader("Line", "assets\\shaders\\Line.vert", "assets\\shaders\\Line.frag");
+        renderer.LoadShader("PBR-Static", "assets\\shaders\\PBR-Static.vert", "assets\\shaders\\PBR.frag");
         renderer.LoadShader("PBR-Skinned", "assets\\shaders\\PBR-Skinned.vert", "assets\\shaders\\PBR.frag");
 
         renderer.SetUpLightSSBO();
@@ -73,12 +73,12 @@ namespace Client
 
         // load all of the default meshes
         {
-            Gep::Model quad; 
+            Gep::Model quad;
             quad.meshes.push_back(Gep::QuadMesh());
             renderer.AddModel("Quad", quad);
         }
         {
-            Gep::Model sphere; 
+            Gep::Model sphere;
             sphere.meshes.push_back(Gep::SphereMesh(10, 10));
             renderer.AddModel("Sphere", sphere);
         }
@@ -86,12 +86,12 @@ namespace Client
             Gep::Model cube;
             cube.meshes.push_back(Gep::CubeMesh());
             renderer.AddModel("Cube", cube);
-        } 
+        }
         {
             Gep::Model icosphere;
             icosphere.meshes.push_back(Gep::IcosphereMesh(3));
             renderer.AddModel("Icosphere", icosphere);
-        } 
+        }
         {
             Gep::Model skybox;
             skybox.meshes.push_back(Gep::SkyboxMesh());
@@ -118,7 +118,7 @@ namespace Client
             }
         }
     }
-    
+
     void RenderSystem::Update(float dt)
     {
         Gep::OpenGLRenderer& renderer = mRenderer;
@@ -127,108 +127,112 @@ namespace Client
 
         // prepares all of the light uniform values
         mManager.ForEachArchetype<Light, Transform>([&](Gep::Entity e, Light& l, Transform& t)
-        {
-            Gep::LightGPUData uniforms
             {
-                .position = t.position,
-                .color = l.color,
-                .intensity = l.intensity
-            };
+                Gep::LightGPUData uniforms
+                {
+                    .position = t.position,
+                    .color = l.color,
+                    .intensity = l.intensity
+                };
 
-            renderer.AddLight(uniforms);
-        });
+                renderer.AddLight(uniforms);
+            });
 
         // prepares the camera uniforms
         mManager.ForEachArchetype<Transform, Camera>([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
-        {
-            Gep::CameraGPUData uniforms
             {
-                .perspectiveMatrix = cam.GetProjectionMatrix(),
-                .viewMatrix = cam.GetViewMatrix(camTransform.position),
-                .camPosition = glm::vec4(camTransform.position, 1.0f),
-            };
+                Gep::CameraGPUData uniforms
+                {
+                    .perspectiveMatrix = cam.GetProjectionMatrix(),
+                    .viewMatrix = cam.GetViewMatrix(camTransform.position),
+                    .camPosition = glm::vec4(camTransform.position, 1.0f),
+                };
 
-            // convert the camera's rotation to radians
-            glm::vec3 camRotation = glm::radians(camTransform.rotation);
+                // convert the camera's rotation to radians
+                glm::vec3 camRotation = glm::radians(camTransform.rotation);
 
-            // calculate the camera's right, up, and back vectors from the transforms rotation
-            cam.right = { cos(camRotation.y), 0, sin(camRotation.y) };
-            cam.up = { sin(camRotation.x) * sin(camRotation.y), cos(camRotation.x), -sin(camRotation.x) * cos(camRotation.y) };
-            cam.back = glm::normalize(glm::cross(cam.right, cam.up));
+                // calculate the camera's right, up, and back vectors from the transforms rotation
+                cam.right = { cos(camRotation.y), 0, sin(camRotation.y) };
+                cam.up = { sin(camRotation.x) * sin(camRotation.y), cos(camRotation.x), -sin(camRotation.x) * cos(camRotation.y) };
+                cam.back = glm::normalize(glm::cross(cam.right, cam.up));
 
-            renderer.AddCamera(uniforms);
-        });
+                renderer.AddCamera(uniforms);
+            });
 
         // prepare the object uniforms
         Gep::LineGPUData skeletonLines;
         skeletonLines.color = { 1.0f, 0.5f, 0.5f };
+        int boneOffset = 0;
 
         mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
-        {
-            const glm::mat4 modelMatrix = transform.GetModelMatrix();
-            const glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
-            const Gep::Model& internalModel = renderer.GetModel(model.name);
-
-            Gep::MaterialGPUData material
             {
-                .ao = model.ao, // ambient occlusion
-                .roughness = model.roughness,
-                .metalness = model.metalness,
-                .color = glm::vec4(model.color, 1.0f)
-            };
+                const glm::mat4 modelMatrix = transform.GetModelMatrix();
+                const glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
+                const Gep::Model& internalModel = renderer.GetModel(model.name);
 
-            if (mManager.HasComponent<Light>(entity))
-            {
-                material.color = glm::vec4(mManager.GetComponent<Light>(entity).color, 1.0f);
-                model.ignoreLight = true;
-            }
-
-            std::string targetShader = "PBR-Static";
-
-            // if the model also has an animation compute its final pose and pass all bone info to the gpu
-            if (mManager.HasComponent<AnimationComponent>(entity) && mManager.IsState(Gep::EngineState::Play))
-            {
-                AnimationComponent& ac = mManager.GetComponent<AnimationComponent>(entity);
-
-                for (uint32_t i = 0; i < internalModel.skeleton.bones.size() && i < ac.pose.size(); ++i)
+                Gep::MaterialGPUData material
                 {
-                    Gep::BoneGPUData bone{
-                        .offsetMatrix = Gep::ToMat4(ac.pose[i] * internalModel.skeleton.bones[i].inverseBind)
-                    };
+                    .ao = model.ao, // ambient occlusion
+                    .roughness = model.roughness,
+                    .metalness = model.metalness,
+                    .color = glm::vec4(model.color, 1.0f)
+                };
 
-                    mRenderer.AddBone(bone);
+                if (mManager.HasComponent<Light>(entity))
+                {
+                    material.color = glm::vec4(mManager.GetComponent<Light>(entity).color, 1.0f);
+                    model.ignoreLight = true;
                 }
 
-                if (mDrawBones)
+                std::string targetShader = "PBR-Static";
+
+                // if the model also has an animation compute its final pose and pass all bone info to the gpu
+                int previousBoneOffset = boneOffset;
+                if (mManager.HasComponent<AnimationComponent>(entity) && mManager.IsState(Gep::EngineState::Play))
                 {
-                    DrawSkeleton(internalModel.skeleton, modelMatrix, ac.pose, skeletonLines);
+                    AnimationComponent& ac = mManager.GetComponent<AnimationComponent>(entity);
+
+                    for (uint32_t i = 0; i < internalModel.skeleton.bones.size() && i < ac.pose.size(); ++i)
+                    {
+                        Gep::BoneGPUData bone{
+                            .offsetMatrix = Gep::ToMat4(ac.pose[i] * internalModel.skeleton.bones[i].inverseBind)
+                        };
+
+                        mRenderer.AddBone(bone);
+                        ++boneOffset;
+                    }
+
+                    if (mDrawBones)
+                    {
+                        DrawSkeleton(internalModel.skeleton, modelMatrix, ac.pose, skeletonLines);
+                    }
+
+                    targetShader = "PBR-Skinned";
                 }
 
-                targetShader = "PBR-Skinned";
-            }
+                Gep::ObjectGPUData uniforms
+                {
+                    .modelMatrix = modelMatrix,
+                    .normalMatrix = normal,
+                    .isUsingTexture = !mNoTextureMode,
+                    .isIgnoringLight = model.ignoreLight,
+                    .isSolidColor = false,
+                    .isWireframe = mWireframeMode,
+                    .material = material,
+                    .boneOffset = previousBoneOffset // only used in the skinned pbr shader
+                };
 
-            Gep::ObjectGPUData uniforms
-            {
-                .modelMatrix = modelMatrix,
-                .normalMatrix = normal,
-                .isUsingTexture = !mNoTextureMode,
-                .isIgnoringLight = model.ignoreLight,
-                .isSolidColor = false,
-                .isWireframe = mWireframeMode,
-                .material = material
-            };
+                if (model.selected)
+                {
+                    Gep::ObjectGPUData wireframeUniforms = uniforms;
+                    wireframeUniforms.isWireframe = true;
+                    wireframeUniforms.material.color = { 1.0f, 1.0f, 0.0f, 0.2f };
 
-            if (model.selected)
-            {
-                Gep::ObjectGPUData wireframeUniforms = uniforms;
-                wireframeUniforms.isWireframe = true;
-                wireframeUniforms.material.color = { 1.0f, 1.0f, 0.0f, 0.2f };
+                    renderer.AddObject("PBR-Static", model.name, wireframeUniforms, Gep::RenderFlags::Wireframe | Gep::RenderFlags::NoDepthTest);
+                }
 
-                renderer.AddObject("PBR-Static", model.name, wireframeUniforms, Gep::RenderFlags::Wireframe | Gep::RenderFlags::NoDepthTest);
-            }
-            
-            renderer.AddObject(targetShader, model.name, uniforms);
-        });
+                renderer.AddObject(targetShader, model.name, uniforms);
+            });
 
         // draws colliders if on
 
@@ -243,42 +247,42 @@ namespace Client
             };
 
             mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity entity, CubeCollider& collider, Transform& transform)
-            {
-                glm::mat4 modelMatrix = transform.GetModelMatrix();
-                glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
-
-                Gep::ObjectGPUData uniforms
                 {
-                    .modelMatrix = modelMatrix,
-                    .normalMatrix = normal,
-                    .isUsingTexture = false,
-                    .isIgnoringLight = true,
-                    .isSolidColor = true,
-                    .isWireframe = true,
-                    .material = material
-                };
+                    glm::mat4 modelMatrix = transform.GetModelMatrix();
+                    glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
 
-                renderer.AddObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
-            });
+                    Gep::ObjectGPUData uniforms
+                    {
+                        .modelMatrix = modelMatrix,
+                        .normalMatrix = normal,
+                        .isUsingTexture = false,
+                        .isIgnoringLight = true,
+                        .isSolidColor = true,
+                        .isWireframe = true,
+                        .material = material
+                    };
+
+                    renderer.AddObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
+                });
 
             mManager.ForEachArchetype<SphereCollider, Transform>([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
-            {
-                glm::mat4 modelMatrix = transform.GetModelMatrix();
-                glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
-
-                Gep::ObjectGPUData uniforms
                 {
-                    .modelMatrix = modelMatrix,
-                    .normalMatrix = normal,
-                    .isUsingTexture = false,
-                    .isIgnoringLight = true,
-                    .isSolidColor = true,
-                    .isWireframe = true,
-                    .material = material
-                };
+                    glm::mat4 modelMatrix = transform.GetModelMatrix();
+                    glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
 
-                renderer.AddObject("PBR-Static", "Sphere", uniforms, Gep::RenderFlags::Wireframe);
-            });
+                    Gep::ObjectGPUData uniforms
+                    {
+                        .modelMatrix = modelMatrix,
+                        .normalMatrix = normal,
+                        .isUsingTexture = false,
+                        .isIgnoringLight = true,
+                        .isSolidColor = true,
+                        .isWireframe = true,
+                        .material = material
+                    };
+
+                    renderer.AddObject("PBR-Static", "Sphere", uniforms, Gep::RenderFlags::Wireframe);
+                });
 
         }
 
@@ -292,24 +296,24 @@ namespace Client
         // main render passes
         size_t cameraIndex = 0;
         mManager.ForEachArchetype<Transform, Camera>([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
-        {
-            renderer.SetCameraIndex(cameraIndex++);
+            {
+                renderer.SetCameraIndex(cameraIndex++);
 
-            cam.renderTarget->Bind();
-            cam.renderTarget->Clear({ 0.0f, 0.0f, 0.0f });
+                cam.renderTarget->Bind();
+                cam.renderTarget->Clear({ 0.0f, 0.0f, 0.0f });
 
-            // draw the scene once for every camera
-            renderer.Draw();
+                // draw the scene once for every camera
+                renderer.Draw();
 
-            cam.renderTarget->Draw(mManager, camEntity);
-            cam.Resize(cam.renderTarget->GetSize());
-            cam.renderTarget->Unbind();
-        });
+                cam.renderTarget->Draw(mManager, camEntity);
+                cam.Resize(cam.renderTarget->GetSize());
+                cam.renderTarget->Unbind();
+            });
 
         mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
-        {
-            model.selected = false;
-        });
+            {
+                model.selected = false;
+            });
 
         renderer.End();
         HandleInputs(dt);
@@ -406,7 +410,7 @@ namespace Client
             {
                 const std::string defaultName = ModelComponent{}.name; // re-initializes the meshname to the default value
                 Gep::Log::Warning("A model component was created with an invalid name/location: [", model.name, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
-                model.name = defaultName; 
+                model.name = defaultName;
             }
         }
     }
@@ -425,14 +429,14 @@ namespace Client
         const std::vector<std::string>& allowedExtensions = renderer.GetSupportedModelFormats();
 
         er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
-        {
-            if (!renderer.IsMeshLoaded(droppedPath.string()))
             {
-                renderer.AddModelFromFile(droppedPath.string());
-            }
+                if (!renderer.IsMeshLoaded(droppedPath.string()))
+                {
+                    renderer.AddModelFromFile(droppedPath.string());
+                }
 
-            mesh.name = droppedPath.string();
-        });
+                mesh.name = droppedPath.string();
+            });
 
         if (meshesOpen)
         {
@@ -471,9 +475,9 @@ namespace Client
         const std::vector<std::string>& supportedTextures = renderer.GetSupportedTextureFormats();
 
         er.AssetBrowserDropTarget(supportedTextures, [&](const std::filesystem::path& droppedPath)
-        {
-            texture.texturePath = droppedPath;
-        });
+            {
+                texture.texturePath = droppedPath;
+            });
 
         if (texturesOpen)
         {

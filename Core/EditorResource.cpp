@@ -88,7 +88,7 @@ namespace Client
     void EditorResource::LabledInput_Setup(const std::string& label, float columnWidth)
     {
         ImGui::Columns(2, "input_columns", false);
-        ImGui::SetColumnWidth(0, columnWidth);
+        ImGui::SetColumnWidth(0, columnWidth * ImGui::GetIO().FontGlobalScale);
 
         // Calculate height difference to center text
         float lineHeight = ImGui::GetTextLineHeight();
