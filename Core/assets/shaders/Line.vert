@@ -1,21 +1,8 @@
 #version 460
 
-// stores all per camera data
-struct CameraUniforms
-{
-  mat4 perspectiveMatrix;
-  mat4 viewMatrix;
-  
-  vec4 camPosition;
-};
+#include "Common.glsl"
 
-layout(std430, binding=2) buffer CameraUniformsBuffer
-{
-  CameraUniforms cameraUniforms[];
-};
-
-layout(location=0) uniform int cameraIndex; // the currently active camera in the cameraUniforms array
-
+// in 
 layout(location=0) in vec3 inPosition;
 
 void main()

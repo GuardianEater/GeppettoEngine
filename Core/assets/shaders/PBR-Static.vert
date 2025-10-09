@@ -4,17 +4,17 @@
 #include "Common.glsl"
 
 // in variables ////////////////////////////////////////////////////////////////
-in vec4 position; // surface point
-in vec4 normal;   // normal at position
-in vec2 uv;       // texture coordinates
-in uint boneIndexs[4]; // indices of bones affecting this vertex
-in float boneWeights[4];   // weights of bones affecting this vertex
+layout(location=0) in vec4 position;    // surface point
+layout(location=1) in vec4 normal;      // normal at position
+layout(location=2) in vec2 uv;          // texture coordinates
+layout(location=3) in uvec4 boneIndexs; // indices of bones affecting this vertex
+layout(location=4) in vec4 boneWeights; // weights of bones affecting this vertex
 
 // out to fragment shader //////////////////////////////////////////////////////
-out vec4 worldPosition; // surface point
-out vec4 worldNormal;   // normal at position
-out vec2 uvOut;        // texture coordinates
-flat out int vObjectIndex;
+layout(location=0) out vec4 worldPosition;    // surface point
+layout(location=1) out vec4 worldNormal;      // normal at position
+layout(location=2) out vec2 uvOut;            // texture coordinates
+layout(location=3) flat out int vObjectIndex; // the current objects index into object uniforms
 
 void main(void)
 {

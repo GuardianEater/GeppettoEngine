@@ -4,11 +4,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.9.34723.18
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "Core\Core.vcxproj", "{1F68079E-C5F1-4907-8CEF-F4A8F1CB13D9}"
-	ProjectSection(ProjectDependencies) = postProject
-		{023FF270-EE63-4315-BCC7-CEA7830D9725} = {023FF270-EE63-4315-BCC7-CEA7830D9725}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Lua", "Lua\Lua.vcxproj", "{023FF270-EE63-4315-BCC7-CEA7830D9725}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,10 +15,6 @@ Global
 		{1F68079E-C5F1-4907-8CEF-F4A8F1CB13D9}.Debug|x64.Build.0 = Debug|x64
 		{1F68079E-C5F1-4907-8CEF-F4A8F1CB13D9}.Release|x64.ActiveCfg = Release|x64
 		{1F68079E-C5F1-4907-8CEF-F4A8F1CB13D9}.Release|x64.Build.0 = Release|x64
-		{023FF270-EE63-4315-BCC7-CEA7830D9725}.Debug|x64.ActiveCfg = Debug|x64
-		{023FF270-EE63-4315-BCC7-CEA7830D9725}.Debug|x64.Build.0 = Debug|x64
-		{023FF270-EE63-4315-BCC7-CEA7830D9725}.Release|x64.ActiveCfg = Release|x64
-		{023FF270-EE63-4315-BCC7-CEA7830D9725}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

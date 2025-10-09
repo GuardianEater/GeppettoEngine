@@ -4,10 +4,10 @@
 #include "Common.glsl"
 
 // in variables ////////////////////////////////////////////////////////////////
-in vec4 worldNormal;   // the normal vector of the surface hit
-in vec4 worldPosition; // the point that the light hits
-in vec2 uvOut;       // the uv coordinates of the surface hit
-flat in int vObjectIndex;
+layout(location=0) in vec4 worldPosition;    // the point that the light hits
+layout(location=1) in vec4 worldNormal;      // the normal vector of the surface hit
+layout(location=2) in vec2 uvOut;            // the uv coordinates of the surface hit
+layout(location=3) flat in int vObjectIndex; // the index of the currently being drawn object
 
 // out /////////////////////////////////////////////////////////////////////////
 out vec4 frag_color; // the resulting pixel color
