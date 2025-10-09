@@ -177,14 +177,14 @@ namespace Gep
         void LoadErrorTexture(const std::filesystem::path& texturePath);
         GLuint GetErrorTexture() const;
 
-        void Draw();
+        void Draw() const;
 
         void UnloadModel(const std::string& name);
         void BackfaceCull(bool enabled = true);
 
         // Start must be called before rendering and End must be called after rendering
         void Start(const glm::vec3& color = { 0, 0, 0 });
-        void End();
+        void End(); // resets the state of the renderer must be called after all draw calls
 
         void SetUpLightSSBO();
         void SetUpObjectUniformsSSBO();
@@ -244,8 +244,8 @@ namespace Gep
 
 
     private:
-        void DrawRegular();
-        void DrawLines();
+        void DrawRegular() const;
+        void DrawLines() const;
         void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
 
         // pixel data loaded from stbimage, note pixel data must be freed after use

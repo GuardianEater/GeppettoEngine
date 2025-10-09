@@ -296,24 +296,24 @@ namespace Client
         // main render passes
         size_t cameraIndex = 0;
         mManager.ForEachArchetype<Transform, Camera>([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
-            {
-                renderer.SetCameraIndex(cameraIndex++);
+        {
+            renderer.SetCameraIndex(cameraIndex++);
 
-                cam.renderTarget->Bind();
-                cam.renderTarget->Clear({ 0.0f, 0.0f, 0.0f });
+            cam.renderTarget->Bind();
+            cam.renderTarget->Clear({ 0.0f, 0.0f, 0.0f });
 
-                // draw the scene once for every camera
-                renderer.Draw();
+            // draw the scene once for every camera
+            renderer.Draw();
 
-                cam.renderTarget->Draw(mManager, camEntity);
-                cam.Resize(cam.renderTarget->GetSize());
-                cam.renderTarget->Unbind();
-            });
+            cam.renderTarget->Draw(mManager, camEntity);
+            cam.Resize(cam.renderTarget->GetSize());
+            cam.renderTarget->Unbind();
+        });
 
         mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
-            {
-                model.selected = false;
-            });
+        {
+            model.selected = false;
+        });
 
         renderer.End();
         HandleInputs(dt);

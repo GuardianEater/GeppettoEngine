@@ -555,7 +555,7 @@ namespace Gep
         return mErrorTexture;
     }
 
-    void OpenGLRenderer::Draw()
+    void OpenGLRenderer::Draw() const
     {
         DrawRegular();
         DrawLines();
@@ -563,10 +563,13 @@ namespace Gep
 
     void OpenGLRenderer::End()
     {
+        mLineUniforms.clear();
         mLightUniforms.clear();
         mObjectUniforms.clear();
         mCameraUniforms.clear();
         mBoneUniforms.clear();
+        mObjectDatas.clear();
+
     }
 
     void OpenGLRenderer::SetUpLightSSBO()
@@ -618,7 +621,7 @@ namespace Gep
         glEnableVertexAttribArray(0);
     }
 
-    void OpenGLRenderer::DrawRegular()
+    void OpenGLRenderer::DrawRegular() const
     {
         size_t baseInstance = 0;
         for (const auto& [shaderName, modelToFlags] : mObjectDatas)
@@ -670,11 +673,9 @@ namespace Gep
 
             currentShader.Unbind();
         }
-
-        mObjectDatas.clear();
     }
 
-    void OpenGLRenderer::DrawLines()
+    void OpenGLRenderer::DrawLines() const
     {
         glDisable(GL_DEPTH_TEST);
         Shader& lineShader = *mShaders.at("Line");
@@ -699,7 +700,6 @@ namespace Gep
         }
 
         lineShader.Unbind();
-        mLineUniforms.clear();
         glEnable(GL_DEPTH_TEST);
     }
 
