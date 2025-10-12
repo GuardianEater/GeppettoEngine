@@ -247,42 +247,42 @@ namespace Client
             };
 
             mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity entity, CubeCollider& collider, Transform& transform)
+            {
+                glm::mat4 modelMatrix = transform.GetModelMatrix();
+                glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
+
+                Gep::ObjectGPUData uniforms
                 {
-                    glm::mat4 modelMatrix = transform.GetModelMatrix();
-                    glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
+                    .modelMatrix = modelMatrix,
+                    .normalMatrix = normal,
+                    .isUsingTexture = false,
+                    .isIgnoringLight = true,
+                    .isSolidColor = true,
+                    .isWireframe = true,
+                    .material = material
+                };
 
-                    Gep::ObjectGPUData uniforms
-                    {
-                        .modelMatrix = modelMatrix,
-                        .normalMatrix = normal,
-                        .isUsingTexture = false,
-                        .isIgnoringLight = true,
-                        .isSolidColor = true,
-                        .isWireframe = true,
-                        .material = material
-                    };
-
-                    renderer.AddObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
-                });
+                renderer.AddObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
+            });
 
             mManager.ForEachArchetype<SphereCollider, Transform>([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
+            {
+                glm::mat4 modelMatrix = transform.GetModelMatrix();
+                glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
+
+                Gep::ObjectGPUData uniforms
                 {
-                    glm::mat4 modelMatrix = transform.GetModelMatrix();
-                    glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
+                    .modelMatrix = modelMatrix,
+                    .normalMatrix = normal,
+                    .isUsingTexture = false,
+                    .isIgnoringLight = true,
+                    .isSolidColor = true,
+                    .isWireframe = true,
+                    .material = material
+                };
 
-                    Gep::ObjectGPUData uniforms
-                    {
-                        .modelMatrix = modelMatrix,
-                        .normalMatrix = normal,
-                        .isUsingTexture = false,
-                        .isIgnoringLight = true,
-                        .isSolidColor = true,
-                        .isWireframe = true,
-                        .material = material
-                    };
-
-                    renderer.AddObject("PBR-Static", "Sphere", uniforms, Gep::RenderFlags::Wireframe);
-                });
+                renderer.AddObject("PBR-Static", "Sphere", uniforms, Gep::RenderFlags::Wireframe);
+            });
 
         }
 
