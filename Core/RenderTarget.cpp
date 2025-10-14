@@ -23,7 +23,7 @@ namespace Gep
         // create the texture
         glGenTextures(1, &target. mTexture);
         glBindTexture(GL_TEXTURE_2D, target.mTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, result.mSize.x, result.mSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, result.mSize.x, result.mSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, target.mTexture, 0);
@@ -67,7 +67,7 @@ namespace Gep
         mSize = newSize;
 
         glBindTexture(GL_TEXTURE_2D,  mTarget->mTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, newSize.x, newSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, newSize.x, newSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         glBindRenderbuffer(GL_RENDERBUFFER, mTarget->mRenderBuffer);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, newSize.x, newSize.y);
 

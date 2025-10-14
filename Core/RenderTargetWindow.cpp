@@ -16,7 +16,7 @@ namespace Gep
     {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         int width, height;
-        glfwGetWindowSize(glfwGetCurrentContext(), &width, &height);
+        glfwGetFramebufferSize(glfwGetCurrentContext(), &width, &height);
         glViewport(0, 0, width, height);
     }
     void RenderTargetWindow::Unbind()
@@ -35,7 +35,7 @@ namespace Gep
     {
         // check if the window has changed size
         int width, height;
-        glfwGetWindowSize(glfwGetCurrentContext(), &width, &height);
+        glfwGetFramebufferSize(glfwGetCurrentContext(), &width, &height);
         if (width != mSize.x || height != mSize.y)
         {
             mSize.x = width;

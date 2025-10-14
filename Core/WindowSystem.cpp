@@ -355,7 +355,7 @@ namespace Client
     {
         WindowSystem* ws = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
         if (!ws) return;
-
+        
         ws->mManager.SignalEvent<Gep::Event::KeyPressed>({ key, scancode, action, mods });
     }
 

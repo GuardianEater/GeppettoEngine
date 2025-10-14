@@ -36,8 +36,15 @@ namespace Gep
     {
         float ao;        // ambient occlusion
         float roughness;
-        float metalness; float pad0;
+        float metalness; 
+        float __pad;
+
         glm::vec4 color;
+        
+        uint64_t aoTextureHandle;
+        uint64_t roughnessTextureHandle;
+        uint64_t metalnessTextureHandle;
+        uint64_t colorTextureHandle;
     };
 
     struct alignas(16) ObjectGPUData
@@ -94,7 +101,7 @@ namespace Gep
         Wireframe = 1 << 0,
         Blending = 1 << 1,
         NoDepthTest = 1 << 2,
-        // add more later if needed (Stencil, Cull, etc.)
+        Highlight = 1 << 3,
     };
 
     // enable bitwise ops for the enum
@@ -169,7 +176,7 @@ namespace Gep
         void LoadTexture(const std::filesystem::path& texturePath);
 
         // assuming the data is compressed, png/jpg
-        void LoadTexture(const std::string& name, const uint8_t* imageFileData, size_t size); // note destroys 
+        void LoadTexture(const std::string& name, const uint8_t* imageFileData, size_t size);
 
         GLuint GetTexture(const std::string& texturePath);
         GLuint GetOrLoadTexture(const std::filesystem::path& texturePath);
@@ -258,7 +265,7 @@ namespace Gep
         void LoadAnimations(const std::string& name, Gep::Model& model, const aiScene* scene);
 
         // given information, will load textures onto the gpu that are needed by the given material. will return num_max<GLuint>() if there is no texture loaded
-        GLuint LoadMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type);
+        GLuint LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type);
 
         void LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton);
     private:

@@ -1,6 +1,3 @@
-#version 460
-#extension GL_ARB_bindless_texture : require
-
 #include "Common.glsl"
 
 // in variables ////////////////////////////////////////////////////////////////
@@ -10,7 +7,7 @@ layout(location=2) in vec2 uvOut;            // the uv coordinates of the surfac
 layout(location=3) flat in int vObjectIndex; // the index of the currently being drawn object
 
 // out /////////////////////////////////////////////////////////////////////////
-out vec4 frag_color; // the resulting pixel color
+layout(location=0) out vec4 frag_color; // the resulting pixel color
 
 // forward /////////////////////////////////////////////////////////////////////
 vec3 CalculatePBRLightingTotal();

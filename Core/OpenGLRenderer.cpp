@@ -656,6 +656,8 @@ namespace Gep
                         if (meshHandle.materialHandle.diffuseTexture != num_max<GLuint>())
                             glBindTexture(GL_TEXTURE_2D, meshHandle.materialHandle.diffuseTexture);
 
+                        //currentShader.SetUniform(1, meshIndex)
+
                         glDrawElementsInstancedBaseInstance(
                             GL_TRIANGLES,
                             meshHandle.mIndexCount,
@@ -829,7 +831,7 @@ namespace Gep
 
     static std::unordered_map<std::string, BoneInfo> gBoneData;
 
-    GLuint OpenGLRenderer::LoadMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type)
+    GLuint OpenGLRenderer::LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type)
     {
         auto root = modelPath.parent_path();
 
@@ -997,16 +999,16 @@ namespace Gep
             if (aiReturn_SUCCESS == assimpMaterial->Get("$clr.diffuse", 0, 0, diffuseColor))
                 material.color = { diffuseColor.r, diffuseColor.g, diffuseColor.b };
 
-            material.diffuseTextureHandle = LoadMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE);
+            material.diffuseTextureHandle = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE);
             material.hasDiffuseTexture = (material.diffuseTextureHandle != num_max<GLuint>());
 
-            material.aoTextureHandle = LoadMaterial(path, assimpMaterial, scene, aiTextureType_AMBIENT_OCCLUSION);
+            material.aoTextureHandle = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_AMBIENT_OCCLUSION);
             material.hasAoTexture = (material.aoTextureHandle != num_max<GLuint>());
 
-            material.metalnessTextureHandle = LoadMaterial(path, assimpMaterial, scene, aiTextureType_METALNESS);
+            material.metalnessTextureHandle = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_METALNESS);
             material.hasMetalnessTexture = (material.metalnessTextureHandle != num_max<GLuint>());
 
-            material.roughnessTextureHandle = LoadMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE_ROUGHNESS);
+            material.roughnessTextureHandle = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE_ROUGHNESS);
             material.hasRoughnessTexture = (material.roughnessTextureHandle != num_max<GLuint>());
         }
     }

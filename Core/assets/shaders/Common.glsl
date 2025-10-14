@@ -5,6 +5,11 @@
  * brief  : a common file where all shared shader information is defined
 /*//////////////////////////////////////////////////////////////////////////////
 
+// start ///////////////////////////////////////////////////////////////////////
+#version 460
+#extension GL_ARB_bindless_texture : require
+#extension GL_ARB_gpu_shader_int64 : enable
+
 // structures //////////////////////////////////////////////////////////////////
 
 struct LightUniforms
@@ -20,7 +25,14 @@ struct PBRMaterial
   float ao;       // ambientOcclusion
   float roughness;
   float metallic; 
-  vec4 color;     // albedo 
+  float pad;
+
+  vec4 color;     // diffuse
+
+  uint64_t aoTextureHandle;
+  uint64_t roughnessTextureHandle;
+  uint64_t metallicTextureHandle;
+  uint64_t colorTextureHandle;
 };
 
 // stores all per camera data
@@ -74,6 +86,10 @@ layout(std430, binding=3) buffer BoneUniformsBuffer
   BoneUniforms boneUniforms[];
 };
 
+layout(std430, binding = 4) buffer MaterialUniformsBuffer 
+{
+  PBRMaterial materialUniforms[];
+};
 
 // uniforms ////////////////////////////////////////////////////////////////////
 layout(location=0) uniform int cameraIndex; // the currently active camera in the cameraUniforms array
