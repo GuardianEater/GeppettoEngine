@@ -856,6 +856,8 @@ namespace Gep
                 else
                 {
                     const int assimpTextureChannels = 4;
+                    // BGRA? format may cause issues remember this
+                    Gep::Log::Critical("I'm not sure if this is ever used so this is going to crash if this is");
                     LoadTextureFromPixelData(textureName, reinterpret_cast<uint8_t*>(assimpTexture->pcData), assimpTexture->mWidth, assimpTexture->mHeight, assimpTextureChannels);
                 }
 

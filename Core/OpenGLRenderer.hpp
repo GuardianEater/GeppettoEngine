@@ -34,28 +34,28 @@ namespace Gep
 {
     struct alignas(16) MaterialGPUData
     {
-        float ao;        // ambient occlusion
-        float roughness;
-        float metalness; 
-        float __pad;
+        float ao;        // ambient occlusion. uniformly applied to the mesh. Will only be used if the ao texture handle is null
+        float roughness; // diffuse roughness. uniformly applied to the mesh. Will only be used if the roughness texture handle is null
+        float metalness; // uniformly applied to the mesh. Will only be used if the metalness texture handle is null
+        float __pad;     // used for allignment
 
-        glm::vec4 color;
+        glm::vec4 color; // diffuse color. uniformly applied to the mesh. Will only be used if the color texture handle is null
         
-        uint64_t aoTextureHandle;
-        uint64_t roughnessTextureHandle;
-        uint64_t metalnessTextureHandle;
-        uint64_t colorTextureHandle;
+        GLuint64 aoTextureHandle;        // 64 bit gpu pointer, used to sample ao texture on the gpu
+        GLuint64 roughnessTextureHandle; // 64 bit gpu pointer, used to sample roughness texture on the gpu
+        GLuint64 metalnessTextureHandle; // 64 bit gpu pointer, used to sample metalness texture on the gpu
+        GLuint64 colorTextureHandle;     // 64 bit gpu pointer, used to sample color texture on the gpu
     };
 
     struct alignas(16) ObjectGPUData
     {
-        glm::mat4 modelMatrix;
-        glm::mat4 normalMatrix;
+        glm::mat4 modelMatrix;  // the location rotation and scale of an object; converts from a model from model space to world space
+        glm::mat4 normalMatrix; // used to move normals from model space to world space
 
-        int isUsingTexture;
-        int isIgnoringLight;
-        int isSolidColor;
-        int isWireframe;
+        int isUsingTexture;  // [DEPRICATED] gpu bool: whether or not this object is using textures
+        int isIgnoringLight; // [DEPRICATED] gpu bool: whether or not this object is ignoring light
+        int isSolidColor;    // [DEPRICATED] gpu bool: whether or not this object is a uniform color
+        int isWireframe;     // [DEPRICATED] gpu bool: whether or not this object is a wire frame
 
         MaterialGPUData material;
 
@@ -65,58 +65,56 @@ namespace Gep
 
     struct alignas(16) CameraGPUData
     {
-        glm::mat4 perspectiveMatrix;
-        glm::mat4 viewMatrix;
+        glm::mat4 perspectiveMatrix; // perspective matrix for camera
+        glm::mat4 viewMatrix;        // view matrix for camera
 
-        glm::vec4 camPosition;
+        glm::vec4 camPosition; // position of the camera in world space
     };
 
     struct LightGPUData
     {
-        glm::vec3 position; float pad;
-        glm::vec3 color;
-        float intensity;
+        glm::vec3 position; // location of the light in world space
+        float pad; 
+
+        glm::vec3 color; // color of the light
+        float intensity; // intensity of the light
     };
 
     struct BoneGPUData
     {
-        glm::mat4 offsetMatrix;
+        glm::mat4 offsetMatrix; // how the bone should move; used for animation
     };
 
     struct LineGPUData // this is not actually sent to the gpu
     {
         struct LineSegment
         {
-            glm::vec3 start, end;
+            glm::vec3 start, end; // begining and end point in world space of the line
         };
 
-        glm::vec3 color;
+        glm::vec3 color; // color of the line when drawn.
         std::vector<LineSegment> points; // this is the only data sent to the gpu per line
         // formula??
     };
 
     enum class RenderFlags : uint32_t
     {
-        None = 0,
-        Wireframe = 1 << 0,
-        Blending = 1 << 1,
-        NoDepthTest = 1 << 2,
-        Highlight = 1 << 3,
+        None = 0, // no render flags will do nothing special when drawing this object
+        Wireframe = 1 << 0, // will draw this object with wireframe mode enabled
+        Blending = 1 << 1, // [UNIMPLEMENTED] will draw this object with alpha blending enabled
+        NoDepthTest = 1 << 2, // draws thisdiables depth test
+        Highlight = 1 << 3, // [UNIMPLEMENTED] will draw this object highlighted
     };
 
     // enable bitwise ops for the enum
     inline RenderFlags operator|(RenderFlags a, RenderFlags b)
     {
-        return static_cast<RenderFlags>(
-            static_cast<uint32_t>(a) | static_cast<uint32_t>(b)
-            );
+        return static_cast<RenderFlags>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
     }
 
     inline RenderFlags operator&(RenderFlags a, RenderFlags b)
     {
-        return static_cast<RenderFlags>(
-            static_cast<uint32_t>(a) & static_cast<uint32_t>(b)
-            );
+        return static_cast<RenderFlags>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
     }
 
     inline RenderFlags& operator|=(RenderFlags& a, RenderFlags b)
@@ -249,7 +247,6 @@ namespace Gep
         };
 
 
-
     private:
         void DrawRegular() const;
         void DrawLines() const;
@@ -288,18 +285,22 @@ namespace Gep
         GLuint mErrorTexture{}; // always loaded, used when a texuture fails to load
 
         std::mutex mTextureLoadingMutex{};
+    
 
-        GLuint mLightUniformsSSBO{};
-        std::vector<LightGPUData> mLightUniforms;
+        GLuint mLightUniformsSSBO{};               // handle to block of memory on the gpu that stores light information
+        std::vector<LightGPUData> mLightUniforms;  // this vector is perfectly copied onto the gpu at the associated SSBO handle
 
-        GLuint mObjectsSSBO{};
-        std::vector<ObjectGPUData> mObjectUniforms;
+        GLuint mObjectsSSBO{};                      // handle to block of memory on the gpu that stores object information
+        std::vector<ObjectGPUData> mObjectUniforms; // this vector is perfectly copied onto the gpu at the associated SSBO handle
 
-        GLuint mCameraUniformsSSBO{};
-        std::vector<CameraGPUData> mCameraUniforms;
+        GLuint mCameraUniformsSSBO{};               // handle to block of memory on the gpu that stores camera information
+        std::vector<CameraGPUData> mCameraUniforms; // this vector is perfectly copied onto the gpu at the associated SSBO handle
 
-        GLuint mBoneUniformsSSBO{};
-        std::vector<BoneGPUData> mBoneUniforms;
+        GLuint mBoneUniformsSSBO{};             // handle to block of memory on the gpu that stores bone information
+        std::vector<BoneGPUData> mBoneUniforms; // this vector is perfectly copied onto the gpu at the associated SSBO handle
+
+        GLuint mMaterialUniformsSSBO{};                 // handle to block of memory on the gpu that stores material information
+        std::vector<MaterialGPUData> mMaterialUniforms; // this vector is perfectly copied onto the gpu at the associated SSBO handle
 
         // sorted by shader name -> model name
         //std::vector<ObjectGPUData> mObjectsToRender;
