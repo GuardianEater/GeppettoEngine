@@ -66,6 +66,7 @@ namespace Gep
 
         model = LoadModelFromFile(path);
 
+        // moves all of the model data from the cpu onto the gpu, and keeps track of the handles
         for (const auto& mesh : model.meshes)
         {
             MeshGPUHandle& meshHandle = modelHandle.meshHandles.emplace_back(); // create a handle for this mesh
@@ -1036,7 +1037,7 @@ namespace Gep
         }
     }
 
-    static void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, aiMesh* mesh, const aiScene* scene)
+    static void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, const aiMesh* mesh, const aiScene* scene)
     {
         for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
         {
@@ -1163,12 +1164,13 @@ namespace Gep
             Mesh& mesh = model.meshes.emplace_back();
             mesh.name = meshName;
 
-            LoadVertices(mesh, scene->mMeshes[i]);
-            LoadIndices(mesh, scene->mMeshes[i]);
+            LoadVertices(mesh, assimpMesh);
+            LoadIndices(mesh, assimpMesh);
 
-            mesh.materialIndex = scene->mMeshes[i]->mMaterialIndex;
+            // add materials to a vector later in the same order
+            mesh.materialIndex = assimpMesh->mMaterialIndex;
 
-            ExtractBoneWeightForVertices(mesh.vertices, scene->mMeshes[i], scene);
+            ExtractBoneWeightForVertices(mesh.vertices, assimpMesh, scene);
         }
     }
 
