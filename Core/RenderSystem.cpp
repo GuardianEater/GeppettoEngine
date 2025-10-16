@@ -172,10 +172,11 @@ namespace Client
 
             Gep::MaterialGPUData material
             {
-                .ao = model.ao, // ambient occlusion
-                .roughness = model.roughness,
-                .metalness = model.metalness,
-                .color = glm::vec4(model.color, 1.0f)
+                // temporary until I have mesh objects
+                .ao = 0.8f,
+                .roughness = 0.8f,
+                .metalness = 0.8f,
+                .color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)
             };
 
             if (mManager.HasComponent<Light>(entity))
@@ -228,7 +229,7 @@ namespace Client
                 wireframeUniforms.isWireframe = true;
                 wireframeUniforms.material.color = { 1.0f, 1.0f, 0.0f, 0.1f };
 
-                renderer.AddObject("Highlight", model.name, wireframeUniforms, Gep::RenderFlags::Wireframe/* | Gep::RenderFlags::NoDepthTest*/);
+                renderer.AddObject("Highlight", model.name, wireframeUniforms, Gep::RenderFlags::Wireframe);
             }
 
             renderer.AddObject(targetShader, model.name, uniforms);
@@ -457,10 +458,6 @@ namespace Client
             ImGui::EndCombo();
         }
 
-        ImGui::DragFloat("Ambient Occlusion", &mesh.ao, 0.001f, 0.0f, 1.0f);
-        ImGui::DragFloat("Roughness", &mesh.roughness, 0.001f, 0.0f, 1.0f);
-        ImGui::DragFloat("Metalness", &mesh.metalness, 0.001f, 0.0f, 1.0f);
-        ImGui::ColorEdit3("Color", &mesh.color[0]);
         ImGui::Checkbox("Ignore Light", &mesh.ignoreLight);
     }
 
