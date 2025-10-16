@@ -8,7 +8,6 @@
 // start ///////////////////////////////////////////////////////////////////////
 #version 460
 #extension GL_ARB_bindless_texture : require
-#extension GL_ARB_gpu_shader_int64 : enable
 
 // structures //////////////////////////////////////////////////////////////////
 
@@ -29,10 +28,10 @@ struct PBRMaterial
 
   vec4 color;     // diffuse
 
-  uint64_t aoTextureHandle;
-  uint64_t roughnessTextureHandle;
-  uint64_t metallicTextureHandle;
-  uint64_t colorTextureHandle;
+  uvec2 aoTextureHandle;
+  uvec2 roughnessTextureHandle;
+  uvec2 metallicTextureHandle;
+  uvec2 colorTextureHandle;
 };
 
 // stores all per camera data

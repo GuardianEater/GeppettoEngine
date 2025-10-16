@@ -55,6 +55,8 @@ namespace Client
         /// ImGui setup ///////////////////////////////////////////////////////////////////////
         const char* glsl_version = "#version 460";
 
+
+
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -324,6 +326,28 @@ namespace Client
         const GLubyte* version = glGetString(GL_VERSION);
         Gep::Log::Info("Renderer: ", renderer);
         Gep::Log::Info("OpenGL version supported: ", version);
+
+        // checks the system for opengl extensions
+        GLint nExtensions = 0;
+        glGetIntegerv(GL_NUM_EXTENSIONS, &nExtensions);
+        std::unordered_set<std::string> supportedExtensions;
+        for (GLint i = 0; i < nExtensions; ++i)
+        {
+            const char* ext = reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i));
+            supportedExtensions.insert(ext);
+        }
+
+        const std::vector<std::string> requiredExtensions = {
+            "GL_ARB_bindless_texture",
+        };
+
+        for (const auto& required : requiredExtensions)
+        {
+            if (!supportedExtensions.contains(required))
+            {
+                Gep::Log::Critical("This engine requires a missing gpu extension. Current GPU doesn't support, [", required, "]");
+            }
+        }
     }
 
     void WindowSystem::FrameStart_GLFW()
