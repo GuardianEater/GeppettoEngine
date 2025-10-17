@@ -174,14 +174,6 @@ namespace Gep
             return;
         }
 
-        const Gep::Model& model = GetModel(modelName);
-        for (const auto& mesh : model.meshes)
-        {
-            //mMeshUniforms.push_back({ 
-            //    .materialIndex = mesh.materialIndex 
-            //});
-        }
-
         // creates a bucket for the given flag combination if they dont exist
         mObjectDatas[shaderName][modelName][flags].push_back(gpuData);
     }
@@ -208,6 +200,32 @@ namespace Gep
 
     void OpenGLRenderer::CommitObjects()
     {
+        static std::unordered_map<uint32_t, uint32_t> materialMapping;
+
+        for (const auto& [id, material] : mMaterials)
+        {
+            size_t uniformIndex = mMaterialUniforms.size();
+            MaterialGPUData& gpuMaterial = mMaterialUniforms.emplace_back();
+
+            // ambient occulsion
+            gpuMaterial.ao              = material.ao;
+            gpuMaterial.aoTextureHandle = material.aoTexture.handle;
+
+            // color
+            gpuMaterial.color              = material.color;
+            gpuMaterial.colorTextureHandle = material.diffuseTexture.handle;
+
+            // metalness
+            gpuMaterial.metalness              = material.metalness;
+            gpuMaterial.metalnessTextureHandle = material.metalnessTexture.handle;
+
+            // roughness
+            gpuMaterial.roughness              = material.roughness;
+            gpuMaterial.roughnessTextureHandle = material.roughnessTexture.handle;
+
+            materialMapping[id] = uniformIndex;
+        }
+
         // sends the objects to the gpu in a very specific order
         for (const auto& [shaderName, modelToFlags] : mObjectDatas)
         {
@@ -216,6 +234,14 @@ namespace Gep
                 for (const auto& [flags, objects] : flagsToObjects)
                 {
                     mObjectUniforms.insert(mObjectUniforms.end(), objects.begin(), objects.end());
+
+                    const Gep::Model& model = GetModel(modelName);
+                    for (const auto& mesh : model.meshes)
+                    {
+                        mMeshUniforms.push_back({
+                            .materialIndex = materialMapping.at(mesh.materialIndex)
+                        });
+                    }
                 }
             }
         }
@@ -223,8 +249,8 @@ namespace Gep
         mObjectUniforms.commit();
 
         // send all per mesh data to the gpu
-        //CommitMeshes();
-        //CommitMaterials();
+        CommitMeshes();
+        CommitMaterials();
     }
 
     void OpenGLRenderer::CommitCameras()
@@ -245,12 +271,12 @@ namespace Gep
 
     void OpenGLRenderer::CommitMeshes()
     {
-        //mMeshUniforms.commit();
+        mMeshUniforms.commit();
     }
 
     void OpenGLRenderer::CommitMaterials()
     {
-        //mMaterialUniforms.commit();
+        mMaterialUniforms.commit();
     }
 
     void OpenGLRenderer::SetCameraIndex(uint32_t index)
@@ -287,18 +313,6 @@ namespace Gep
         }
 
         mModels.erase(name);
-    }
-
-    void OpenGLRenderer::BackfaceCull(bool enabled)
-    {
-        if (enabled)
-        {
-            glEnable(GL_CULL_FACE);
-        }
-        else
-        {
-            glDisable(GL_CULL_FACE);
-        }
     }
 
     void OpenGLRenderer::Start(const glm::vec3& color)
@@ -593,8 +607,8 @@ namespace Gep
         mObjectUniforms.clear();
         mCameraUniforms.clear();
         mBoneUniforms.clear();
-        //mMeshUniforms.clear();
-        //mMaterialUniforms.clear();
+        mMeshUniforms.clear();
+        mMaterialUniforms.clear();
     }
 
     void OpenGLRenderer::SetUpLineDrawing()
@@ -637,6 +651,13 @@ namespace Gep
                         glDisable(GL_DEPTH_TEST);
                     else
                         glEnable(GL_DEPTH_TEST);
+
+                    // backface cull check
+                    if ((flags & RenderFlags::NoBackfaceCull) == RenderFlags::NoBackfaceCull)
+                        glDisable(GL_CULL_FACE);
+                    else
+                        glEnable(GL_CULL_FACE);
+
 
                     // continue to drawing meshes
                     for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
@@ -994,7 +1015,7 @@ namespace Gep
 
             aiColor3D diffuseColor(1.f, 1.f, 1.f);
             if (aiReturn_SUCCESS == assimpMaterial->Get("$clr.diffuse", 0, 0, diffuseColor))
-                material.color = { diffuseColor.r, diffuseColor.g, diffuseColor.b };
+                material.color = { diffuseColor.r, diffuseColor.g, diffuseColor.b, 1.0f };
 
             material.diffuseTexture   = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE);
             material.aoTexture        = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_AMBIENT_OCCLUSION);

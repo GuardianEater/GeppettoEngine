@@ -61,8 +61,6 @@ namespace Gep
         int isSolidColor;    // [DEPRICATED] gpu bool: whether or not this object is a uniform color
         int isWireframe;     // [DEPRICATED] gpu bool: whether or not this object is a wire frame
 
-        MaterialGPUData material;
-
         int boneOffset; // should be added to this objects vertices boneindices to locate the correct bone matrices 
         int pad[3];
     };
@@ -113,6 +111,7 @@ namespace Gep
         Blending = 1 << 1, // [UNIMPLEMENTED] will draw this object with alpha blending enabled
         NoDepthTest = 1 << 2, // draws thisdiables depth test
         Highlight = 1 << 3, // [UNIMPLEMENTED] will draw this object highlighted
+        NoBackfaceCull = 1 << 4, // wether or not to backface cull
     };
 
     // enable bitwise ops for the enum
@@ -198,7 +197,6 @@ namespace Gep
         void Draw() const;
 
         void UnloadModel(const std::string& name);
-        void BackfaceCull(bool enabled = true);
 
         // Start must be called before rendering and End must be called after rendering
         void Start(const glm::vec3& color = { 0, 0, 0 });
@@ -300,8 +298,8 @@ namespace Gep
         Gep::gpu_vector<LightGPUData,    1> mLightUniforms;    // this vector is perfectly copied onto the gpu into the lights array
         Gep::gpu_vector<CameraGPUData,   2> mCameraUniforms;   // this vector is perfectly copied onto the gpu into the cameraUniforms array
         Gep::gpu_vector<BoneGPUData,     3> mBoneUniforms;     // this vector is perfectly copied onto the gpu into the boneUniforms array
-        //Gep::gpu_vector<MaterialGPUData, 4> mMaterialUniforms; // this vector is perfectly copied onto the gpu into the materialUniforms array
-        //Gep::gpu_vector<MeshGPUData,     5> mMeshUniforms;     // this vector is perfectly copied onto the gpu into the meshUniforms array
+        Gep::gpu_vector<MaterialGPUData, 4> mMaterialUniforms; // this vector is perfectly copied onto the gpu into the materialUniforms array
+        Gep::gpu_vector<MeshGPUData,     5> mMeshUniforms;     // this vector is perfectly copied onto the gpu into the meshUniforms array
 
         // sorted by shader name -> model name
         //std::vector<ObjectGPUData> mObjectsToRender;

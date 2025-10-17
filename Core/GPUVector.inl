@@ -20,9 +20,7 @@ namespace Gep
     template<typename Type, size_t BINDING_POINT>
     inline gpu_vector<Type, BINDING_POINT>::~gpu_vector()
     {
-        if (mGPUPointer)
-            glUnmapNamedBuffer(mBufferHandle);
-        glDeleteBuffers(1, &mBufferHandle);
+        gpu_clear();
     }
 
     template<typename Type, size_t BINDING_POINT>
@@ -37,9 +35,7 @@ namespace Gep
     {
         if (mBufferHandle)
         {
-            if (mGPUPointer)
-                glUnmapNamedBuffer(mBufferHandle);
-
+            glUnmapNamedBuffer(mBufferHandle);
             glDeleteBuffers(1, &mBufferHandle);
             mBufferHandle = 0;
             mGPUPointer = nullptr;
@@ -57,7 +53,14 @@ namespace Gep
     template<class ...Args>
     inline gpu_vector<Type, BINDING_POINT>::iterator gpu_vector<Type, BINDING_POINT>::emplace(const_iterator where, Args && ...args)
     {
-        return mCPUBuffer.emplace(where, args);
+        return mCPUBuffer.emplace(where, std::forward<Args>(args)...);
+    }
+
+    template<typename Type, size_t BINDING_POINT>
+    template<class ...Args>
+    inline Type& gpu_vector<Type, BINDING_POINT>::emplace_back(Args && ...args)
+    {
+        return mCPUBuffer.emplace_back(std::forward<Args>(args)...);
     }
 
     template<typename Type, size_t BINDING_POINT>
@@ -99,17 +102,16 @@ namespace Gep
         // if the current amount of objects in the buffer exceeds the amount on the gpu, allocate more memory on the gpu
         if (mCPUBuffer.size() > mCapacity)
         {
-            Gep::Log::Important("expanding binding point [", BINDING_POINT, "] to a size of [", mCapacity == 0 ? mFirstAllocationSize : mCapacity * 2, "]");
-            gpu_reserve(mCapacity == 0 ? mFirstAllocationSize : mCapacity * 2); // double amount of memory on gpu
+            // allocating based on the amount of objects to prevent under allocation from bulk adding
+            size_t allocationSize = std::bit_ceil(mCPUBuffer.size()) * 2; // gets the next power of 2
+            gpu_reserve(allocationSize);
         }
 
-        // Check if mapping failed
+        // check if mapping failed
         if (mGPUPointer == nullptr)
         {
-            // Log OpenGL error or handle failure
             GLenum error = glGetError();
-            // Handle the error appropriately
-            Gep::Log::Error(error);
+            Gep::Log::Error("Failed to map buffer at binding point [", BINDING_POINT, "] glError = [", error, "]");
 
             return;
         }

@@ -25,7 +25,7 @@ namespace Gep
         float ao; // ambient occlusion
         float roughness;
         float metalness;
-        glm::vec3 color;
+        glm::vec4 color;
 
         Texture aoTexture;
         Texture roughnessTexture;

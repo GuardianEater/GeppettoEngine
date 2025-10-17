@@ -57,7 +57,6 @@ struct ObjectUniforms
   int isIgnoringLight; 
   int isSolidColor;    
   int isWireframe;   
-  PBRMaterial material;  
 
   int boneOffset;
   int pad[3];

@@ -43,6 +43,9 @@ namespace Gep
         template <class... Args>
         iterator emplace(const_iterator where, Args&&... args);
 
+        template <class... Args>
+        Type& emplace_back(Args&&... args);
+
         void push_back(const Type& v);    // inserts a new value into buffer, doesnt touch gpu memory
         void reserve(size_t newCapacity); // reserves the cpu side vector, doesnt touch gpu memory
         void clear();                     // clear cpu side vector, doesnt touch gpu memory

@@ -13,11 +13,13 @@ layout(location=1) out vec4 worldNormal;      // normal at position
 layout(location=2) out vec2 uvOut;            // texture coordinates
 layout(location=3) flat out uint vObjectIndex; // the current objects index into object uniforms
 layout(location=4) flat out uint vMeshIndex;   // the current mesh index into mesh uniforms
+layout(location=5) flat out uint vMaterialIndex;   // the current material index into material uniforms
 
 void main(void)
 {
-  vObjectIndex = gl_InstanceID + gl_BaseInstance;
-  vMeshIndex   = gl_InstanceID + meshBaseInstance;
+  vObjectIndex   = gl_InstanceID + gl_BaseInstance;
+  vMeshIndex     = gl_InstanceID + meshBaseInstance;
+  vMaterialIndex = meshUniforms[vMeshIndex].materialIndex;
 
   worldPosition = objectUniforms[vObjectIndex].modelMatrix * position;
 

@@ -63,8 +63,6 @@ namespace Client
 
         renderer.SetUpLineDrawing();
 
-        renderer.BackfaceCull();
-
         renderer.LoadErrorTexture("assets\\textures\\Checker.jpg");
 
         // load all of the default meshes
@@ -356,14 +354,6 @@ namespace Client
 
     void RenderSystem::AddColliders()
     {
-        Gep::MaterialGPUData material
-        {
-            .ao = 1.0f, // ambient occlusion
-            .roughness = 1.0f,
-            .metalness = 1.0f,
-            .color = {1.0f, 0.0f, 0.0f, 0.5f}
-        };
-
         mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity entity, CubeCollider& collider, Transform& transform)
         {
             glm::mat4 modelMatrix = transform.GetModelMatrix();
@@ -377,7 +367,6 @@ namespace Client
                 .isIgnoringLight = true,
                 .isSolidColor = true,
                 .isWireframe = true,
-                .material = material
             };
 
             mRenderer.AddObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
@@ -396,7 +385,6 @@ namespace Client
                 .isIgnoringLight = true,
                 .isSolidColor = true,
                 .isWireframe = true,
-                .material = material
             };
 
             mRenderer.AddObject("PBR-Static", "Sphere", uniforms, Gep::RenderFlags::Wireframe);
@@ -473,18 +461,8 @@ namespace Client
             const glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
             const Gep::Model& internalModel = mRenderer.GetModel(model.name);
 
-            Gep::MaterialGPUData material
-            {
-                // temporary until I have mesh objects
-                .ao = 0.8f,
-                .roughness = 0.8f,
-                .metalness = 0.8f,
-                .color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)
-            };
-
             if (mManager.HasComponent<Light>(entity))
             {
-                material.color = glm::vec4(mManager.GetComponent<Light>(entity).color, 1.0f);
                 model.ignoreLight = true;
             }
 
@@ -522,7 +500,6 @@ namespace Client
                 .isIgnoringLight = model.ignoreLight,
                 .isSolidColor = false,
                 .isWireframe = mWireframeMode,
-                .material = material,
                 .boneOffset = previousBoneOffset // only used in the skinned pbr shader
             };
 
@@ -530,7 +507,6 @@ namespace Client
             {
                 Gep::ObjectGPUData wireframeUniforms = uniforms;
                 wireframeUniforms.isWireframe = true;
-                wireframeUniforms.material.color = { 1.0f, 1.0f, 0.0f, 0.1f };
 
                 mRenderer.AddObject("Highlight", model.name, wireframeUniforms, Gep::RenderFlags::Wireframe);
             }
