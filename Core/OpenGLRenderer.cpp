@@ -51,8 +51,8 @@ namespace Gep
     };
 
     static HICON GetIcon(const std::filesystem::path& iconPath);
-    static GLuint IconToTexture(HICON icon);
-    static GLuint BitmapToTexture(HBITMAP bitmap);
+    static Texture IconToTexture(HICON icon);
+    static Texture BitmapToTexture(HBITMAP bitmap);
 
     void OpenGLRenderer::AddModelFromFile(const std::string& path)
     {
@@ -71,12 +71,13 @@ namespace Gep
         {
             MeshGPUHandle& meshHandle = modelHandle.meshHandles.emplace_back(); // create a handle for this mesh
 
-            const Material& material = model.materials.at(mesh.materialIndex);
+            const Material& material = mMaterials.at(mesh.materialIndex);
 
-            meshHandle.materialHandle.diffuseTexture = material.diffuseTextureHandle;
-            meshHandle.materialHandle.aoTexture = material.aoTextureHandle;
-            meshHandle.materialHandle.metalnessTexture = material.metalnessTextureHandle;
-            meshHandle.materialHandle.roughnessTexture = material.roughnessTextureHandle;
+            meshHandle.materialHandle.colorTextureHandle     = material.diffuseTexture.handle;
+            meshHandle.materialHandle.aoTextureHandle        = material.aoTexture.handle;
+            meshHandle.materialHandle.metalnessTextureHandle = material.metalnessTexture.handle;
+            meshHandle.materialHandle.roughnessTextureHandle = material.roughnessTexture.handle;
+            meshHandle.materialHandle.normalTextureHandle    = material.normalTexture.handle;
 
             meshHandle.GenVertexBuffer(mesh);
             meshHandle.GenIndexBuffer(mesh);
@@ -104,7 +105,7 @@ namespace Gep
         {
             MeshGPUHandle& meshHandle = modelHandle.meshHandles.emplace_back();
 
-            meshHandle.materialHandle.diffuseTexture = GetErrorTexture();
+            meshHandle.materialHandle.colorTextureHandle = GetErrorTexture().handle;
             meshHandle.GenVertexBuffer(mesh);
             meshHandle.GenIndexBuffer(mesh);
             meshHandle.BindBuffers();
@@ -173,6 +174,14 @@ namespace Gep
             return;
         }
 
+        const Gep::Model& model = GetModel(modelName);
+        for (const auto& mesh : model.meshes)
+        {
+            //mMeshUniforms.push_back({ 
+            //    .materialIndex = mesh.materialIndex 
+            //});
+        }
+
         // creates a bucket for the given flag combination if they dont exist
         mObjectDatas[shaderName][modelName][flags].push_back(gpuData);
     }
@@ -211,42 +220,52 @@ namespace Gep
             }
         }
 
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mObjectsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, mObjectUniforms.size() * sizeof(ObjectGPUData), mObjectUniforms.data(), GL_DYNAMIC_DRAW);
+        mObjectUniforms.commit();
+
+        // send all per mesh data to the gpu
+        //CommitMeshes();
+        //CommitMaterials();
     }
 
     void OpenGLRenderer::CommitCameras()
     {
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mCameraUniformsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, mCameraUniforms.size() * sizeof(CameraGPUData), mCameraUniforms.data(), GL_DYNAMIC_DRAW);
+        mCameraUniforms.commit();
     }
 
     void OpenGLRenderer::CommitBones()
     {
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mBoneUniformsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, mBoneUniforms.size() * sizeof(BoneGPUData), mBoneUniforms.data(), GL_DYNAMIC_DRAW);
+        mBoneUniforms.commit();
     }
 
     void OpenGLRenderer::CommitLights()
     {
         SetLightCount(mLightUniforms.size());
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mLightUniformsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, mLightUniforms.size() * sizeof(LightGPUData), mLightUniforms.data(), GL_DYNAMIC_DRAW);
+        mLightUniforms.commit();
     }
 
-    void OpenGLRenderer::SetCameraIndex(size_t index)
+    void OpenGLRenderer::CommitMeshes()
+    {
+        //mMeshUniforms.commit();
+    }
+
+    void OpenGLRenderer::CommitMaterials()
+    {
+        //mMaterialUniforms.commit();
+    }
+
+    void OpenGLRenderer::SetCameraIndex(uint32_t index)
     {
         for (const auto& [shaderName, shader] : mShaders)
         {
-            shader->SetUniform(0, static_cast<int>(index));
+            shader->SetUniform(0, index);
         }
     }
 
-    void OpenGLRenderer::SetLightCount(size_t count)
+    void OpenGLRenderer::SetLightCount(uint32_t count)
     {
         for (const auto& [shaderName, shader] : mShaders)
         {
-            shader->SetUniform(2, static_cast<int>(count));
+            shader->SetUniform(2, count);
         }
     }
 
@@ -369,8 +388,8 @@ namespace Gep
             return;
         }
 
-        GLuint texture = IconToTexture(icon);
-        if (!texture)
+        Texture texture = IconToTexture(icon);
+        if (texture.id == 0)
         {
             Gep::Log::Error("Failed to convert icon to texture: [", iconPath.string(), "]");
             return;
@@ -379,18 +398,18 @@ namespace Gep
         mIconTextures[iconPath.extension().string()] = texture;
     }
 
-    GLuint OpenGLRenderer::GetIconTexture(const std::string& extension)
+    Texture OpenGLRenderer::GetIconTexture(const std::string& extension)
     {
         if (!mIconTextures.contains(extension))
         {
             Gep::Log::Error("Cannot get icon texture: [", extension, "] an icon with that extension has not been loaded");
-            return 0;
+            return {};
         }
 
         return mIconTextures.at(extension);
     }
 
-    GLuint OpenGLRenderer::GetOrLoadIconTexture(const std::filesystem::path& iconPath)
+    Texture OpenGLRenderer::GetOrLoadIconTexture(const std::filesystem::path& iconPath)
     {
         if (!mIconTextures.contains(iconPath.extension().string()))
             LoadIconTexture(iconPath);
@@ -500,9 +519,9 @@ namespace Gep
             return;
         }
 
-        GLuint& texture = mTextures[name];
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
+        Texture& texture = mTextures[name];
+        glGenTextures(1, &texture.id);
+        glBindTexture(GL_TEXTURE_2D, texture.id);
 
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Ensure proper alignment
         GLenum format = (requiredChannels == 4) ? GL_RGBA : GL_RGB;
@@ -514,10 +533,13 @@ namespace Gep
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+        texture.handle = glGetTextureHandleARB(texture.id);
+        glMakeTextureHandleResidentARB(texture.handle);
+
         glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
     }
 
-    GLuint OpenGLRenderer::GetTexture(const std::string& textureName)
+    Texture OpenGLRenderer::GetTexture(const std::string& textureName)
     {
         if (!mTextures.contains(textureName))
         {
@@ -528,7 +550,7 @@ namespace Gep
         return mTextures.at(textureName);
     }
 
-    GLuint OpenGLRenderer::GetOrLoadTexture(const std::filesystem::path& texturePath)
+    Texture OpenGLRenderer::GetOrLoadTexture(const std::filesystem::path& texturePath)
     {
         if (!mTextures.contains(texturePath.string()))
             LoadTexture(texturePath);
@@ -545,12 +567,12 @@ namespace Gep
         mErrorTexture = GetTexture(texturePath.string());
     }
 
-    GLuint OpenGLRenderer::GetErrorTexture() const
+    Texture OpenGLRenderer::GetErrorTexture() const
     {
-        if (!mErrorTexture)
+        if (mErrorTexture.id == 0)
         {
             Gep::Log::Error("Cannot get error texture: an error texture has not been loaded");
-            return 0;
+            return {};
         }
 
         return mErrorTexture;
@@ -565,48 +587,14 @@ namespace Gep
     void OpenGLRenderer::End()
     {
         mLineUniforms.clear();
+        mObjectDatas.clear();
+
         mLightUniforms.clear();
         mObjectUniforms.clear();
         mCameraUniforms.clear();
         mBoneUniforms.clear();
-        mObjectDatas.clear();
-
-    }
-
-    void OpenGLRenderer::SetUpLightSSBO()
-    {
-        glGenBuffers(1, &mLightUniformsSSBO);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mLightUniformsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LightGPUData) * 1, nullptr, GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mLightUniformsSSBO); // the number is the binding value of the buffer declared in the shader
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    }
-
-    void OpenGLRenderer::SetUpObjectUniformsSSBO()
-    {
-        glGenBuffers(1, &mObjectsSSBO);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mObjectsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ObjectGPUData) * 1, nullptr, GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mObjectsSSBO);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    }
-
-    void OpenGLRenderer::SetUpCameraUniformsSSBO()
-    {
-        glGenBuffers(1, &mCameraUniformsSSBO);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mCameraUniformsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CameraGPUData) * 1, nullptr, GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, mCameraUniformsSSBO);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    }
-
-    void OpenGLRenderer::SetUpBoneUniformsSSBO()
-    {
-        glGenBuffers(1, &mBoneUniformsSSBO);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, mBoneUniformsSSBO);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(BoneGPUData) * 1, nullptr, GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, mBoneUniformsSSBO);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        //mMeshUniforms.clear();
+        //mMaterialUniforms.clear();
     }
 
     void OpenGLRenderer::SetUpLineDrawing()
@@ -624,7 +612,8 @@ namespace Gep
 
     void OpenGLRenderer::DrawRegular() const
     {
-        size_t baseInstance = 0;
+        uint32_t baseInstance = 0;
+        uint32_t meshBaseInstance = 0;
         for (const auto& [shaderName, modelToFlags] : mObjectDatas)
         {
             Shader& currentShader = *mShaders.at(shaderName);
@@ -654,10 +643,7 @@ namespace Gep
                     {
                         glBindVertexArray(meshHandle.mVertexArrayObject);
 
-                        if (meshHandle.materialHandle.diffuseTexture != num_max<GLuint>())
-                            glBindTexture(GL_TEXTURE_2D, meshHandle.materialHandle.diffuseTexture);
-
-                        //currentShader.SetUniform(1, meshIndex)
+                        currentShader.SetUniform(3, meshBaseInstance);
 
                         glDrawElementsInstancedBaseInstance(
                             GL_TRIANGLES,
@@ -668,7 +654,7 @@ namespace Gep
                             baseInstance
                         );
 
-                        glBindTexture(GL_TEXTURE_2D, 0);
+                        meshBaseInstance += objects.size();
                     }
                     baseInstance += objects.size();
                 }
@@ -721,13 +707,13 @@ namespace Gep
         return nullptr;
     }
 
-    GLuint BitmapToTexture(HBITMAP bitmap)
+    Texture BitmapToTexture(HBITMAP bitmap)
     {
-        if (!bitmap) return 0;
+        if (!bitmap) return {};
 
         BITMAP bm{};
         if (!GetObject(bitmap, sizeof(bm), &bm))
-            return 0;
+            return {};
 
         BITMAPINFO bmpInfo{};
         bmpInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -742,11 +728,11 @@ namespace Gep
         int rows = GetDIBits(dc, bitmap, 0, bm.bmHeight, pixels.data(), &bmpInfo, DIB_RGB_COLORS);
         ReleaseDC(nullptr, dc);
         if (rows == 0)
-            return 0;
+            return {};
 
-        GLuint tex = 0;
-        glGenTextures(1, &tex);
-        glBindTexture(GL_TEXTURE_2D, tex);
+        Texture texture;
+        glGenTextures(1, &texture.id);
+        glBindTexture(GL_TEXTURE_2D, texture.id);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
             bm.bmWidth, bm.bmHeight, 0,
             GL_BGRA, GL_UNSIGNED_BYTE,
@@ -754,17 +740,20 @@ namespace Gep
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+        texture.handle = glGetTextureHandleARB(texture.id);
+        glMakeTextureHandleResidentARB(texture.handle);
+
         DeleteObject(bitmap);
-        return tex;
+        return texture;
 
     }
 
-    GLuint IconToTexture(HICON icon)
+    Texture IconToTexture(HICON icon)
     {
-        if (!icon) return 0;
+        if (!icon) return {};
 
         ICONINFO iconInfo;
-        if (!GetIconInfo(icon, &iconInfo)) return 0;
+        if (!GetIconInfo(icon, &iconInfo)) return {};
 
         return BitmapToTexture(iconInfo.hbmColor);
     }
@@ -832,7 +821,7 @@ namespace Gep
 
     static std::unordered_map<std::string, BoneInfo> gBoneData;
 
-    GLuint OpenGLRenderer::LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type)
+    Texture OpenGLRenderer::LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type)
     {
         auto root = modelPath.parent_path();
 
@@ -872,7 +861,7 @@ namespace Gep
             }
         }
 
-        return num_max<GLuint>();
+        return {};
     }
 
     void OpenGLRenderer::LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton)
@@ -987,32 +976,31 @@ namespace Gep
         return result;
     }
 
+    // cleared once per call to load materials. used to map assimp material indexes to the internal mMaterials indexes
+    static std::unordered_map<uint32_t, uint64_t> gAssimpMaterialIndexToMaterialIndex;
+
     // moves all data from the aiScene into the internal model format
-    void OpenGLRenderer::LoadMaterials(Gep::Model& model, const std::filesystem::path& path, const aiScene* scene)
+    void OpenGLRenderer::LoadMaterials(const std::filesystem::path& path, const aiScene* scene)
     {
-        model.materials.reserve(scene->mNumMaterials);
+        gAssimpMaterialIndexToMaterialIndex.clear();
 
         for (unsigned int i = 0; i < scene->mNumMaterials; ++i)
         {
-            Material& material = model.materials.emplace_back();
+            size_t materialIndex = mMaterials.emplace();
+            Material& material = mMaterials.at(materialIndex);
             const aiMaterial* assimpMaterial = scene->mMaterials[i];
 
+            gAssimpMaterialIndexToMaterialIndex[i] = materialIndex; // create the mapping
 
             aiColor3D diffuseColor(1.f, 1.f, 1.f);
             if (aiReturn_SUCCESS == assimpMaterial->Get("$clr.diffuse", 0, 0, diffuseColor))
                 material.color = { diffuseColor.r, diffuseColor.g, diffuseColor.b };
 
-            material.diffuseTextureHandle = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE);
-            material.hasDiffuseTexture = (material.diffuseTextureHandle != num_max<GLuint>());
-
-            material.aoTextureHandle = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_AMBIENT_OCCLUSION);
-            material.hasAoTexture = (material.aoTextureHandle != num_max<GLuint>());
-
-            material.metalnessTextureHandle = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_METALNESS);
-            material.hasMetalnessTexture = (material.metalnessTextureHandle != num_max<GLuint>());
-
-            material.roughnessTextureHandle = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE_ROUGHNESS);
-            material.hasRoughnessTexture = (material.roughnessTextureHandle != num_max<GLuint>());
+            material.diffuseTexture   = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE);
+            material.aoTexture        = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_AMBIENT_OCCLUSION);
+            material.metalnessTexture = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_METALNESS);
+            material.roughnessTexture = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE_ROUGHNESS);
+            material.normalTexture    = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_NORMALS);
         }
     }
 
@@ -1167,8 +1155,7 @@ namespace Gep
             LoadVertices(mesh, assimpMesh);
             LoadIndices(mesh, assimpMesh);
 
-            // add materials to a vector later in the same order
-            mesh.materialIndex = assimpMesh->mMaterialIndex;
+            mesh.materialIndex = gAssimpMaterialIndexToMaterialIndex.at(assimpMesh->mMaterialIndex);
 
             ExtractBoneWeightForVertices(mesh.vertices, assimpMesh, scene);
         }
@@ -1197,8 +1184,10 @@ namespace Gep
 
         Gep::Model model;
 
+        // loads all of the materials out of this scene
+        LoadMaterials(path, scene);
+
         LoadMeshes(model, scene);
-        LoadMaterials(model, path, scene);
         LoadHierarchy(model, scene);
         LoadAnimations(path.string(), model, scene);
 

@@ -261,6 +261,7 @@
     <ClInclude Include="FunctionTraits.hpp" />
     <ClInclude Include="GetCallerInfo.hpp" />
     <ClInclude Include="Archetypes.h" />
+    <ClInclude Include="GPUVector.hpp" />
     <ClInclude Include="HeirarchyStorage.hpp" />
     <ClInclude Include="JsonHelp.hpp" />
     <ClInclude Include="Material.hpp" />
@@ -384,6 +385,7 @@
     <None Include="assets\shaders\PhongRender.frag" />
     <None Include="assets\shaders\PhongRender.vert" />
     <None Include="BVHTree.inl" />
+    <None Include="GPUVector.inl" />
     <None Include="KeyedVector.inl" />
     <None Include="ComponentArray.inl" />
     <None Include="EngineManager.inl" />

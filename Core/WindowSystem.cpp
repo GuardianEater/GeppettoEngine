@@ -338,7 +338,7 @@ namespace Client
         }
 
         const std::vector<std::string> requiredExtensions = {
-            "GL_ARB_bindless_texture",
+            //"GL_ARB_bindless_texture",
         };
 
         for (const auto& required : requiredExtensions)

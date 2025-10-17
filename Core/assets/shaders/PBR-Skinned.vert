@@ -11,11 +11,13 @@ layout(location=4) in vec4 boneWeights; // weights of bones affecting this verte
 layout(location=0) out vec4 worldPosition;    // surface point
 layout(location=1) out vec4 worldNormal;      // normal at position
 layout(location=2) out vec2 uvOut;            // texture coordinates
-layout(location=3) flat out int vObjectIndex; // the current objects index into object uniforms
+layout(location=3) flat out uint vObjectIndex; // the current objects index into object uniforms
+layout(location=4) flat out uint vMeshIndex;   // the current mesh index into mesh uniforms
 
 void main(void)
 {
   vObjectIndex = gl_InstanceID + gl_BaseInstance;
+  vMeshIndex   = gl_InstanceID + meshBaseInstance;
 
   // ---- skin the vertex using bone matrices ----
   vec4 totalPosition = vec4(0.0);

@@ -4,7 +4,8 @@
 layout(location=0) in vec4 worldPosition;    // the point that the light hits
 layout(location=1) in vec4 worldNormal;      // the normal vector of the surface hit
 layout(location=2) in vec2 uvOut;            // the uv coordinates of the surface hit
-layout(location=3) flat in int vObjectIndex; // the index of the currently being drawn object
+layout(location=3) flat in uint vObjectIndex; // the index of the currently being drawn object
+layout(location=4) flat in uint vMeshIndex; // the index of the currently being drawn object
 
 // out /////////////////////////////////////////////////////////////////////////
 layout(location=0) out vec4 frag_color; // the resulting pixel color
@@ -30,7 +31,7 @@ void main(void)
   {
     if (object.isUsingTexture == 1) 
     {
-      frag_color = texture(textureSampler, uvOut);
+      frag_color =  vec4(1.0, 1.0, 0.0, 1.0); //texture(textureSampler, uvOut);
     }
     else
     {
@@ -129,7 +130,7 @@ vec3 CalculatePBRLightingTotal()
   vec3 objectColor = vec3(objectUniforms[vObjectIndex].material.color);
   if (objectUniforms[vObjectIndex].isUsingTexture == 1) 
   {
-    objectColor *= texture(textureSampler, uvOut).rgb;
+    objectColor *= vec3(1.0, 1.0, 0.0); //texture(textureSampler, uvOut).rgb;
   }
 
   for (int i = 0; i < lightCount; i++) 

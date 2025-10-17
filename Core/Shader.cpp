@@ -64,6 +64,16 @@ namespace Gep
 		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
 	}
 
+	void Shader::SetUniform(const std::string& name, uint32_t v)
+	{
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
+	}
+
+	void Shader::SetUniform(const std::string& name, uint64_t v)
+	{
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
+	}
+
 	void Shader::SetUniform(size_t location, const glm::vec3& v)
 	{
 		Bind();
@@ -92,6 +102,17 @@ namespace Gep
 	{
 		Bind();
 		glUniform1f(location, v);
+	}
+
+	void Shader::SetUniform(size_t location, uint32_t v)
+	{
+		glUniform1ui(location, v);
+	}
+
+	void Shader::SetUniform(size_t location, uint64_t v)
+	{
+		Bind();
+		glUniformHandleui64ARB(location, v);
 	}
 
     GLuint Shader::Compile(GLenum shaderType, const std::string& source)

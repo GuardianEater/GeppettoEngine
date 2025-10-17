@@ -25,6 +25,8 @@
 
 #include "Model.hpp"
 
+#include "GPUVector.hpp"
+
  // fwd
 struct aiScene;
 struct aiMaterial;
@@ -45,6 +47,8 @@ namespace Gep
         GLuint64 roughnessTextureHandle; // 64 bit gpu pointer, used to sample roughness texture on the gpu
         GLuint64 metalnessTextureHandle; // 64 bit gpu pointer, used to sample metalness texture on the gpu
         GLuint64 colorTextureHandle;     // 64 bit gpu pointer, used to sample color texture on the gpu
+        GLuint64 normalTextureHandle;    // 64 bit gpu pointer, used to sample normal texture on the gpu
+        GLuint64 padding;
     };
 
     struct alignas(16) ObjectGPUData
@@ -61,6 +65,11 @@ namespace Gep
 
         int boneOffset; // should be added to this objects vertices boneindices to locate the correct bone matrices 
         int pad[3];
+    };
+
+    struct alignas(16) MeshGPUData
+    {
+        uint32_t materialIndex; // index into the materials ssbo
     };
 
     struct alignas(16) CameraGPUData
@@ -153,8 +162,12 @@ namespace Gep
         void CommitBones();   // moves all of the added bone data from the cpu to the gpu
         void CommitLights();  // moves all of the added light data from the cpu to the gpu
 
-        void SetCameraIndex(size_t index);
-        void SetLightCount(size_t count);
+        // currently done automatically with objects
+        void CommitMeshes(); // moves all of the added mesh data from the cpu to the gpu
+        void CommitMaterials(); // moves all of the added materials from the cpu to the gpu
+
+        void SetCameraIndex(uint32_t index);
+        void SetLightCount(uint32_t count);
 
         std::vector<std::string> GetLoadedMeshes() const;
         std::vector<std::filesystem::path> GetLoadedTextures() const;
@@ -164,8 +177,8 @@ namespace Gep
         const std::vector<std::string>& GetSupportedTextureFormats() const;
 
         void LoadIconTexture(const std::filesystem::path& iconPath);
-        GLuint GetIconTexture(const std::string& extension);
-        GLuint GetOrLoadIconTexture(const std::filesystem::path& iconPath);
+        Texture GetIconTexture(const std::string& extension);
+        Texture GetOrLoadIconTexture(const std::filesystem::path& iconPath);
 
         void LoadTextureAsync(const std::filesystem::path& texturePath);
         void LoadShader(const std::string& name, const std::filesystem::path& vert, const std::filesystem::path& frag);
@@ -176,11 +189,11 @@ namespace Gep
         // assuming the data is compressed, png/jpg
         void LoadTexture(const std::string& name, const uint8_t* imageFileData, size_t size);
 
-        GLuint GetTexture(const std::string& texturePath);
-        GLuint GetOrLoadTexture(const std::filesystem::path& texturePath);
+        Texture GetTexture(const std::string& texturePath);
+        Texture GetOrLoadTexture(const std::filesystem::path& texturePath);
 
         void LoadErrorTexture(const std::filesystem::path& texturePath);
-        GLuint GetErrorTexture() const;
+        Texture GetErrorTexture() const;
 
         void Draw() const;
 
@@ -190,11 +203,6 @@ namespace Gep
         // Start must be called before rendering and End must be called after rendering
         void Start(const glm::vec3& color = { 0, 0, 0 });
         void End(); // resets the state of the renderer must be called after all draw calls
-
-        void SetUpLightSSBO();
-        void SetUpObjectUniformsSSBO();
-        void SetUpCameraUniformsSSBO();
-        void SetUpBoneUniformsSSBO();
 
         void SetUpLineDrawing();
         Gep::VQS Interpolate(const Track& track, float time);
@@ -220,7 +228,7 @@ namespace Gep
             GLuint mIndexBuffer = num_max<GLuint>();
             size_t mIndexCount{}; // the amount of indices in the index buffer
 
-            MaterialGPUHandle materialHandle{}; // handle to the material used by this mesh
+            MaterialGPUData materialHandle{}; // handle to the material used by this mesh
         };
 
         struct ModelGPUHandle
@@ -257,12 +265,12 @@ namespace Gep
 
         // helpers for loading assimp files
         Gep::Model LoadModelFromFile(const std::filesystem::path& path);
-        void LoadMaterials(Gep::Model& model, const std::filesystem::path& path, const aiScene* scene);
+        void LoadMaterials(const std::filesystem::path& path, const aiScene* scene);
 
         void LoadAnimations(const std::string& name, Gep::Model& model, const aiScene* scene);
 
         // given information, will load textures onto the gpu that are needed by the given material. will return num_max<GLuint>() if there is no texture loaded
-        GLuint LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type);
+        Texture LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type);
 
         void LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton);
     private:
@@ -278,29 +286,22 @@ namespace Gep
 
         std::unordered_map<std::string, std::pair<ModelGPUHandle, Gep::Model>> mModels; // model name -> its handle and data
         std::unordered_map<std::string, std::pair<AnimationGPUHandle, Gep::Animation>> mAnimations;
+        Gep::keyed_vector<Material> mMaterials;
 
-        //std::unordered_map<std::string, MeshGPUHandle> mModels;
-        std::unordered_map<std::string, GLuint> mIconTextures;// icon extension -> texture id
-        std::unordered_map<std::string, GLuint> mTextures; // texture path -> texture id
-        GLuint mErrorTexture{}; // always loaded, used when a texuture fails to load
+        std::unordered_map<std::string, Gep::Texture> mIconTextures;// icon extension -> texture
+        std::unordered_map<std::string, Gep::Texture> mTextures; // texture path -> texture
+
+        Texture mErrorTexture{}; // always loaded, used when a texuture fails to load
+        Material mErrorMaterial{};
 
         std::mutex mTextureLoadingMutex{};
     
-
-        GLuint mLightUniformsSSBO{};               // handle to block of memory on the gpu that stores light information
-        std::vector<LightGPUData> mLightUniforms;  // this vector is perfectly copied onto the gpu at the associated SSBO handle
-
-        GLuint mObjectsSSBO{};                      // handle to block of memory on the gpu that stores object information
-        std::vector<ObjectGPUData> mObjectUniforms; // this vector is perfectly copied onto the gpu at the associated SSBO handle
-
-        GLuint mCameraUniformsSSBO{};               // handle to block of memory on the gpu that stores camera information
-        std::vector<CameraGPUData> mCameraUniforms; // this vector is perfectly copied onto the gpu at the associated SSBO handle
-
-        GLuint mBoneUniformsSSBO{};             // handle to block of memory on the gpu that stores bone information
-        std::vector<BoneGPUData> mBoneUniforms; // this vector is perfectly copied onto the gpu at the associated SSBO handle
-
-        GLuint mMaterialUniformsSSBO{};                 // handle to block of memory on the gpu that stores material information
-        std::vector<MaterialGPUData> mMaterialUniforms; // this vector is perfectly copied onto the gpu at the associated SSBO handle
+        Gep::gpu_vector<ObjectGPUData,   0> mObjectUniforms;   // this vector is perfectly copied onto the gpu into the objectUniforms array
+        Gep::gpu_vector<LightGPUData,    1> mLightUniforms;    // this vector is perfectly copied onto the gpu into the lights array
+        Gep::gpu_vector<CameraGPUData,   2> mCameraUniforms;   // this vector is perfectly copied onto the gpu into the cameraUniforms array
+        Gep::gpu_vector<BoneGPUData,     3> mBoneUniforms;     // this vector is perfectly copied onto the gpu into the boneUniforms array
+        //Gep::gpu_vector<MaterialGPUData, 4> mMaterialUniforms; // this vector is perfectly copied onto the gpu into the materialUniforms array
+        //Gep::gpu_vector<MeshGPUData,     5> mMeshUniforms;     // this vector is perfectly copied onto the gpu into the meshUniforms array
 
         // sorted by shader name -> model name
         //std::vector<ObjectGPUData> mObjectsToRender;

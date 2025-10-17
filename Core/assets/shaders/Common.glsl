@@ -24,14 +24,18 @@ struct PBRMaterial
   float ao;       // ambientOcclusion
   float roughness;
   float metallic; 
-  float pad;
+  float pad4;
 
   vec4 color;     // diffuse
 
   uvec2 aoTextureHandle;
   uvec2 roughnessTextureHandle;
+
   uvec2 metallicTextureHandle;
   uvec2 colorTextureHandle;
+
+  uvec2 normalTextureHandle;
+  uvec2 pad8;
 };
 
 // stores all per camera data
@@ -64,6 +68,11 @@ struct BoneUniforms
   mat4 transform;
 };
 
+struct MeshUniforms
+{
+  uint materialIndex;
+};
+
 // buffers /////////////////////////////////////////////////////////////////////
 layout(std430, binding=0) buffer ObjectUniformsBuffer
 {
@@ -85,17 +94,21 @@ layout(std430, binding=3) buffer BoneUniformsBuffer
   BoneUniforms boneUniforms[];
 };
 
-layout(std430, binding = 4) buffer MaterialUniformsBuffer 
+layout(std430, binding=4) buffer MaterialUniformsBuffer 
 {
   PBRMaterial materialUniforms[];
 };
 
-// uniforms ////////////////////////////////////////////////////////////////////
-layout(location=0) uniform int cameraIndex;   // the currently active camera in the cameraUniforms array
-//layout(location=1) used by color in the line shader
-layout(location=2) uniform int lightCount;    // the total amount of lights in the lights array
+layout(std430, binding=5) buffer MeshUniformsBuffer
+{
+  MeshUniforms meshUniforms[];
+};
 
-uniform sampler2D textureSampler;
+// uniforms ////////////////////////////////////////////////////////////////////
+layout(location=0) uniform uint cameraIndex;      // the currently active camera in the cameraUniforms array
+//layout(location=1)                             // used by color in the line shader
+layout(location=2) uniform uint lightCount;       // the total amount of lights in the lights array
+layout(location=3) uniform uint meshBaseInstance; // the base instance of the current mesh, used to index into per mesh data
 
 // constants ///////////////////////////////////////////////////////////////////
 const float PI = 3.14159265359;

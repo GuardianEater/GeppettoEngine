@@ -13,7 +13,7 @@
 
 namespace Gep
 {
-    GLuint Texture::UploadToGPU() const
+    GLuint RawTexture::UploadToGPU() const
     {
         GLuint texture;
         glGenTextures(1, &texture);
@@ -34,9 +34,9 @@ namespace Gep
         return texture;
     }
 
-    Texture Texture::FromFile(const std::filesystem::path& path)
+    RawTexture RawTexture::FromFile(const std::filesystem::path& path)
     {
-        Texture result{};
+        RawTexture result{};
 
         int width;
         int height;
@@ -64,7 +64,7 @@ namespace Gep
         return result;
     }
 
-    const std::vector<std::string>& Texture::SupportedExtensions()
+    const std::vector<std::string>& RawTexture::SupportedExtensions()
     {
         static std::vector<std::string> extensions = { ".jpg", ".jpeg", ".png", ".bmp" };
 

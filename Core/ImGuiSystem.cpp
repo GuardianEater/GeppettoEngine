@@ -828,7 +828,7 @@ namespace Client
             const std::string filenameButHidden = "##" + filename;
             const ImVec2 cursorPos = ImGui::GetCursorScreenPos();
             const std::filesystem::path relativePath = entry.path().lexically_relative(workingDir);
-            const GLuint texture = renderer.GetOrLoadIconTexture(relativePath);
+            const Gep::Texture texture = renderer.GetOrLoadIconTexture(relativePath);
 
             constexpr float imageToTextDistance = 6.0f;
 
@@ -836,7 +836,7 @@ namespace Client
             ImGui::BeginGroup();
 
             // first draws an image for the thumpnail of the asset
-            ImGui::Image((ImTextureID)texture, ImVec2(imageSize, imageSize));
+            ImGui::Image((ImTextureID)texture.id, ImVec2(imageSize, imageSize));
 
             // next draws the text under the file image
             ImGui::SetCursorScreenPos(ImVec2(cursorPos.x, cursorPos.y + imageSize + imageToTextDistance));//
@@ -863,7 +863,7 @@ namespace Client
                 ImGui::SetDragDropPayload("ASSET_BROWSER", pathStr.c_str(), pathStr.size() + 1);
 
                 // Display the dragged item
-                ImGui::Image((void*)(intptr_t)texture, { imageSize * 2.0f, imageSize * 2.0f });
+                ImGui::Image((void*)(intptr_t)texture.id, { imageSize * 2.0f, imageSize * 2.0f });
                 ImGui::TextWrapped("%s", entry.path().filename().string().c_str());
                 ImGui::EndDragDropSource();
             }

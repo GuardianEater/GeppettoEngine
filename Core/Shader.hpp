@@ -27,12 +27,16 @@ namespace Gep
         void SetUniform(const std::string& name, const glm::mat4& v, bool transpose = false);
         void SetUniform(const std::string& name, int v);
         void SetUniform(const std::string& name, float v);
+        void SetUniform(const std::string& name, uint32_t v);
+        void SetUniform(const std::string& name, uint64_t v);
 
         void SetUniform(size_t location, const glm::vec3& v);
         void SetUniform(size_t location, const glm::vec4& v);
         void SetUniform(size_t location, const glm::mat4& v, bool transpose = false);
         void SetUniform(size_t location, int v);
         void SetUniform(size_t location, float v);
+        void SetUniform(size_t location, uint32_t v);
+        void SetUniform(size_t location, uint64_t v);
 
         void Bind();
         void Unbind();

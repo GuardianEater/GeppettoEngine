@@ -61,10 +61,6 @@ namespace Client
         renderer.LoadShader("PBR-Static", "assets\\shaders\\PBR-Static.vert", "assets\\shaders\\PBR.frag");
         renderer.LoadShader("PBR-Skinned", "assets\\shaders\\PBR-Skinned.vert", "assets\\shaders\\PBR.frag");
 
-        renderer.SetUpLightSSBO();
-        renderer.SetUpObjectUniformsSSBO();
-        renderer.SetUpCameraUniformsSSBO();
-        renderer.SetUpBoneUniformsSSBO();
         renderer.SetUpLineDrawing();
 
         renderer.BackfaceCull();

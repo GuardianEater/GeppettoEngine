@@ -12,6 +12,12 @@
 
 namespace Gep
 {
+    struct Texture
+    {
+        GLuint64 handle = NULL;        // gpu side pointer
+        GLuint id = num_max<GLuint>(); // bindable id
+    };
+
     // contains material data for pbr rendering.
     struct Material
     {
@@ -21,16 +27,10 @@ namespace Gep
         float metalness;
         glm::vec3 color;
 
-        bool hasAoTexture = false;
-        GLuint aoTextureHandle;
-
-        bool hasRoughnessTexture = false;
-        GLuint roughnessTextureHandle;
-
-        bool hasMetalnessTexture = false;
-        GLuint metalnessTextureHandle;
-
-        bool hasDiffuseTexture = false;
-        GLuint diffuseTextureHandle;
+        Texture aoTexture;
+        Texture roughnessTexture;
+        Texture metalnessTexture;
+        Texture diffuseTexture;
+        Texture normalTexture;
     };
 }

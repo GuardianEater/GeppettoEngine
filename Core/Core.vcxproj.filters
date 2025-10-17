@@ -611,6 +611,9 @@
     <ClInclude Include="Algorithms.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
+    <ClInclude Include="GPUVector.hpp">
+      <Filter>Backend\Rendering\NewRenderAPI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">
@@ -687,6 +690,9 @@
     </None>
     <None Include="assets\shaders\Highlight.vert">
       <Filter>Backend\Rendering\Shaders</Filter>
+    </None>
+    <None Include="GPUVector.inl">
+      <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </None>
   </ItemGroup>
 </Project>
