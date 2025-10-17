@@ -36,18 +36,18 @@ namespace Gep
 {
     struct alignas(16) MaterialGPUData
     {
-        float ao;        // ambient occlusion. uniformly applied to the mesh. Will only be used if the ao texture handle is null
-        float roughness; // diffuse roughness. uniformly applied to the mesh. Will only be used if the roughness texture handle is null
-        float metalness; // uniformly applied to the mesh. Will only be used if the metalness texture handle is null
+        float ao = 0.8f;        // ambient occlusion. uniformly applied to the mesh. Will only be used if the ao texture handle is null
+        float roughness = 0.8f; // diffuse roughness. uniformly applied to the mesh. Will only be used if the roughness texture handle is null
+        float metalness = 0.8f; // uniformly applied to the mesh. Will only be used if the metalness texture handle is null
         float __pad;     // used for allignment
 
-        glm::vec4 color; // diffuse color. uniformly applied to the mesh. Will only be used if the color texture handle is null
+        glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f }; // diffuse color. uniformly applied to the mesh. Will only be used if the color texture handle is null
         
-        GLuint64 aoTextureHandle;        // 64 bit gpu pointer, used to sample ao texture on the gpu
-        GLuint64 roughnessTextureHandle; // 64 bit gpu pointer, used to sample roughness texture on the gpu
-        GLuint64 metalnessTextureHandle; // 64 bit gpu pointer, used to sample metalness texture on the gpu
-        GLuint64 colorTextureHandle;     // 64 bit gpu pointer, used to sample color texture on the gpu
-        GLuint64 normalTextureHandle;    // 64 bit gpu pointer, used to sample normal texture on the gpu
+        GLuint64 aoTextureHandle = 0;        // 64 bit gpu pointer, used to sample ao texture on the gpu
+        GLuint64 roughnessTextureHandle = 0; // 64 bit gpu pointer, used to sample roughness texture on the gpu
+        GLuint64 metalnessTextureHandle = 0; // 64 bit gpu pointer, used to sample metalness texture on the gpu
+        GLuint64 colorTextureHandle = 0;     // 64 bit gpu pointer, used to sample color texture on the gpu
+        GLuint64 normalTextureHandle = 0;    // 64 bit gpu pointer, used to sample normal texture on the gpu
         GLuint64 padding;
     };
 
@@ -68,6 +68,8 @@ namespace Gep
     struct alignas(16) MeshGPUData
     {
         uint32_t materialIndex; // index into the materials ssbo
+
+        int pad[3];
     };
 
     struct alignas(16) CameraGPUData

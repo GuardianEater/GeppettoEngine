@@ -207,21 +207,26 @@ namespace Gep
             size_t uniformIndex = mMaterialUniforms.size();
             MaterialGPUData& gpuMaterial = mMaterialUniforms.emplace_back();
 
-            // ambient occulsion
-            gpuMaterial.ao              = material.ao;
-            gpuMaterial.aoTextureHandle = material.aoTexture.handle;
+            //// ambient occulsion
+            //gpuMaterial.ao              = material.ao;
+            //gpuMaterial.aoTextureHandle = material.aoTexture.handle;
 
-            // color
-            gpuMaterial.color              = material.color;
-            gpuMaterial.colorTextureHandle = material.diffuseTexture.handle;
+            //// color
+            //gpuMaterial.color              = material.color;
+            //gpuMaterial.colorTextureHandle = material.diffuseTexture.handle;
 
-            // metalness
-            gpuMaterial.metalness              = material.metalness;
-            gpuMaterial.metalnessTextureHandle = material.metalnessTexture.handle;
+            //// metalness
+            //gpuMaterial.metalness              = material.metalness;
+            //gpuMaterial.metalnessTextureHandle = material.metalnessTexture.handle;
 
-            // roughness
-            gpuMaterial.roughness              = material.roughness;
-            gpuMaterial.roughnessTextureHandle = material.roughnessTexture.handle;
+            //// roughness
+            //gpuMaterial.roughness              = material.roughness;
+            //gpuMaterial.roughnessTextureHandle = material.roughnessTexture.handle;
+
+            gpuMaterial.color = { 1.0f, 0.0f, 0.0f, 1.0f};
+            gpuMaterial.ao        = 0.8f;
+            gpuMaterial.metalness = 0.8f;
+            gpuMaterial.roughness = 0.8f;
 
             materialMapping[id] = uniformIndex;
         }

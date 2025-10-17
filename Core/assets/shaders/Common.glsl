@@ -70,6 +70,8 @@ struct BoneUniforms
 struct MeshUniforms
 {
   uint materialIndex;
+
+  int pad[3];
 };
 
 // buffers /////////////////////////////////////////////////////////////////////
