@@ -56,11 +56,6 @@ namespace Gep
         glm::mat4 modelMatrix;  // the location rotation and scale of an object; converts from a model from model space to world space
         glm::mat4 normalMatrix; // used to move normals from model space to world space
 
-        int isUsingTexture;  // [DEPRICATED] gpu bool: whether or not this object is using textures
-        int isIgnoringLight; // [DEPRICATED] gpu bool: whether or not this object is ignoring light
-        int isSolidColor;    // [DEPRICATED] gpu bool: whether or not this object is a uniform color
-        int isWireframe;     // [DEPRICATED] gpu bool: whether or not this object is a wire frame
-
         int boneOffset; // should be added to this objects vertices boneindices to locate the correct bone matrices 
         int pad[3];
     };
@@ -227,8 +222,6 @@ namespace Gep
             GLuint mVertexBuffer = num_max<GLuint>();
             GLuint mIndexBuffer = num_max<GLuint>();
             size_t mIndexCount{}; // the amount of indices in the index buffer
-
-            MaterialGPUData materialHandle{}; // handle to the material used by this mesh
         };
 
         struct ModelGPUHandle

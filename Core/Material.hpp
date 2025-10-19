@@ -14,8 +14,8 @@ namespace Gep
 {
     struct Texture
     {
-        GLuint64 handle = NULL;        // gpu side pointer
-        GLuint id = num_max<GLuint>(); // bindable id
+        GLuint64 handle = NULL; // gpu side pointer
+        GLuint id       = NULL; // bindable id
     };
 
     // contains material data for pbr rendering.

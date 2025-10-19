@@ -33,6 +33,7 @@
 #include "SphereCollider.hpp"
 #include "CubeCollider.hpp"
 #include "AnimationComponent.hpp"
+#include "MeshCollider.hpp"
 
  // systems
 #include "PhysicsSystem.hpp"
@@ -81,7 +82,8 @@ int main()
         Client::SpatialSoundEmitter,
         Client::SphereCollider,
         Client::CubeCollider,
-        Client::AnimationComponent
+        Client::AnimationComponent,
+        Client::MeshCollider
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////

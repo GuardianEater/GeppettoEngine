@@ -36,19 +36,15 @@ void main(void)
   currentSample.metallic  = material.metallicTextureHandle  == uvec2(0,0) ? material.metallic  : texture(sampler2D(material.metallicTextureHandle), uvOut).r;
   currentSample.color     = material.colorTextureHandle     == uvec2(0,0) ? material.color     : texture(sampler2D(material.colorTextureHandle), uvOut);
 
-  // Normalize surface normal and compute view vector.
-  vec3 N = normalize(worldNormal.xyz);
-  
-  // Determine the base color from texture or solid color.
-  if (object.isSolidColor == 1 || object.isWireframe == 1 || object.isIgnoringLight == 1) 
-  {
-    frag_color = currentSample.color;
-    return;
-  } 
-  
+  float alpha = currentSample.color.a;
+  const float ALPHA_CUTOFF = 0.02;
+  if (alpha < ALPHA_CUTOFF)
+    discard;
+
   vec3 finalColor = CalculatePBRLightingTotal();
 
-  frag_color = vec4(finalColor, 1.0);
+  // Output with alpha for blending
+  frag_color = vec4(finalColor, alpha);
 }
 
 // calculates F in the pbr equation
@@ -127,24 +123,48 @@ vec3 CalculatePBRLighting(LightUniforms light, vec3 n, vec3 objectColor)
   return finalColor;
 }
 
+// Builds a world-space normal using a tangent-space normal map if present.
+// Computes TBN per-fragment via derivatives to avoid requiring mesh tangents.
+vec3 ComputeShadedNormal()
+{
+  vec3 n = normalize(worldNormal.xyz);
+
+  const PBRMaterial material = materialUniforms[vMaterialIndex];
+  if (material.normalTextureHandle != uvec2(0,0))
+  {
+    // Sample and decode normal from [0,1] -> [-1,1]
+    vec3 mapN = texture(sampler2D(material.normalTextureHandle), uvOut).xyz * 2.0 - 1.0;
+
+    // Derivative-based TBN construction in world space
+    vec3 dp1 = dFdx(worldPosition.xyz);
+    vec3 dp2 = dFdy(worldPosition.xyz);
+    vec2 duv1 = dFdx(uvOut);
+    vec2 duv2 = dFdy(uvOut);
+
+    vec3 t = normalize(duv2.y * dp1 - duv1.y * dp2);
+    // Orthonormalize T against N, then derive B
+    t = normalize(t - n * dot(n, t));
+    vec3 b = normalize(cross(n, t));
+
+    mat3 tbn = mat3(t, b, n);
+    n = normalize(tbn * mapN);
+  }
+
+  return n;
+}
+
 vec3 CalculatePBRLightingTotal()
 {    
-  vec3 n = normalize(worldNormal.xyz);
+  vec3 n = ComputeShadedNormal();
   vec3 color = vec3(0.0); // the final color of the fragment
 
   // loop over each light.
-  vec3 objectColor = vec3(1.0, 1.0, 1.0); // replace this with tint
-  if (objectUniforms[vObjectIndex].isUsingTexture == 1) 
-  {
-    objectColor *= vec3(currentSample.color); //texture(textureSampler, uvOut).rgb;
-  }
-
   for (int i = 0; i < lightCount; i++) 
   {
-    color += CalculatePBRLighting(lights[i], n, objectColor);
+    color += CalculatePBRLighting(lights[i], n, currentSample.color.rgb);
   }
 
-  vec3 ambient = vec3(0.8) * objectColor * currentSample.ao;
+  vec3 ambient = vec3(0.8) * currentSample.color.rgb * currentSample.ao;
   color += ambient;
 
   // HDR tone mapping

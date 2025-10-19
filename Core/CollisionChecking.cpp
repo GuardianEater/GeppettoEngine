@@ -518,5 +518,32 @@ namespace Gep
         t = tMin;
         return true;
     }
+
+    Gep::AABB TransformAABB(const Gep::AABB& aabb, const glm::mat4& transformation)
+    {
+        // Transform all 8 corners, then recompute an AABB in world space
+        const glm::vec3& mn = aabb.min;
+        const glm::vec3& mx = aabb.max;
+
+        glm::vec3 corners[8] = {
+            { mn.x, mn.y, mn.z }, { mx.x, mn.y, mn.z },
+            { mn.x, mx.y, mn.z }, { mx.x, mx.y, mn.z },
+            { mn.x, mn.y, mx.z }, { mx.x, mn.y, mx.z },
+            { mn.x, mx.y, mx.z }, { mx.x, mx.y, mx.z },
+        };
+
+        glm::vec3 wmin(std::numeric_limits<float>::max());
+        glm::vec3 wmax(-std::numeric_limits<float>::max());
+
+        for (auto& c : corners)
+        {
+            glm::vec4 w = transformation * glm::vec4(c, 1.0f);
+            glm::vec3 p(w);
+            wmin = (glm::min)(wmin, p);
+            wmax = (glm::max)(wmax, p);
+        }
+
+        return { wmin, wmax };
+    }
 }
 

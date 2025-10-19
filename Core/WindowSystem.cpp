@@ -348,6 +348,16 @@ namespace Client
                 Gep::Log::Critical("This engine requires a missing gpu extension. Current GPU doesn't support, [", required, "]");
             }
         }
+
+        //glEnable(GL_DEBUG_OUTPUT);
+        //glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        //glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity,
+        //GLsizei length, const GLchar* message, const void* userParam)
+        //{
+        //    Gep::Log::Info("[OPENGL OUTPUT] ", message);
+        //}, nullptr);
+
+        //glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
     }
 
     void WindowSystem::FrameStart_GLFW()

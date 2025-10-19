@@ -39,7 +39,7 @@ namespace Gep
         void SetUniform(size_t location, uint64_t v);
 
         void Bind();
-        void Unbind();
+        static void Unbind();
         
         template <typename Func>
         void Use(Func&& func); // during the scope of the lamda the shader is bound

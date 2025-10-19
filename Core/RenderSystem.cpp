@@ -363,10 +363,6 @@ namespace Client
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrix = normal,
-                .isUsingTexture = false,
-                .isIgnoringLight = true,
-                .isSolidColor = true,
-                .isWireframe = true,
             };
 
             mRenderer.AddObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
@@ -381,10 +377,6 @@ namespace Client
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrix = normal,
-                .isUsingTexture = false,
-                .isIgnoringLight = true,
-                .isSolidColor = true,
-                .isWireframe = true,
             };
 
             mRenderer.AddObject("PBR-Static", "Sphere", uniforms, Gep::RenderFlags::Wireframe);
@@ -496,17 +488,13 @@ namespace Client
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrix = normal,
-                .isUsingTexture = !mNoTextureMode,
-                .isIgnoringLight = model.ignoreLight,
-                .isSolidColor = false,
-                .isWireframe = mWireframeMode,
+
                 .boneOffset = previousBoneOffset // only used in the skinned pbr shader
             };
 
             if (model.selected)
             {
                 Gep::ObjectGPUData wireframeUniforms = uniforms;
-                wireframeUniforms.isWireframe = true;
 
                 mRenderer.AddObject("Highlight", model.name, wireframeUniforms, Gep::RenderFlags::Wireframe);
             }

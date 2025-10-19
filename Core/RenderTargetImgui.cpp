@@ -44,7 +44,8 @@ namespace Gep
         const ImVec2 windowSizeMax(FLT_MAX, FLT_MAX);
         const float dt = em.GetDeltaTime();
         const float sensitivity = 0.1f;
-        float movementSpeed = 5.0f * dt;
+        float movementSpeed = 25.0f * dt;
+        float boostMuliplier = 4.0f;
 
 
         const glm::vec3 forward = glm::normalize(glm::vec3(-camera.back.x, 0.0f, -camera.back.z));
@@ -111,7 +112,7 @@ namespace Gep
 
                 // speed boost
                 if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
-                    movementSpeed *= 4.0f;
+                    movementSpeed *= boostMuliplier;
 
                 // controls for moveing the camera around
                 if (glfwGetKey(window, GLFW_KEY_W))

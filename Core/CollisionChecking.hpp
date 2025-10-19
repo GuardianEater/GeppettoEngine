@@ -65,5 +65,6 @@ namespace Gep
     bool CubeSphere(const Cube& cube, const Sphere& sphere);
     bool CubeCube(const Cube& cube1, const Cube& cube2);
     bool RayCube(const Ray& ray, const Cube& cube, float& t);
+    Gep::AABB TransformAABB(const Gep::AABB& aabb, const glm::mat4& transformation);
 }
 

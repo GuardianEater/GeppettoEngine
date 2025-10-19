@@ -106,6 +106,7 @@ namespace Gep
 
 	void Shader::SetUniform(size_t location, uint32_t v)
 	{
+		Bind();
 		glUniform1ui(location, v);
 	}
 

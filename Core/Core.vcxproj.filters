@@ -614,6 +614,9 @@
     <ClInclude Include="GPUVector.hpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClInclude>
+    <ClInclude Include="MeshCollider.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">

@@ -265,6 +265,7 @@
     <ClInclude Include="HeirarchyStorage.hpp" />
     <ClInclude Include="JsonHelp.hpp" />
     <ClInclude Include="Material.hpp" />
+    <ClInclude Include="MeshCollider.hpp" />
     <ClInclude Include="Model.hpp" />
     <ClInclude Include="OS.hpp" />
     <ClInclude Include="Quaternion.hpp" />

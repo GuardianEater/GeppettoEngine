@@ -20,7 +20,6 @@ namespace Gep
         std::string name;
 
         std::vector<Mesh> meshes;
-        std::vector<Material> materials;
         Skeleton skeleton;
         Animation animation;
     };

@@ -658,7 +658,7 @@ namespace Client
             }
         }
 
-        if (ImGui::IsKeyPressed(ImGuiKey_A, false) && ImGui::GetIO().KeyCtrl)
+        if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_A, false) && ImGui::GetIO().KeyCtrl)
         {
             mEditorResource.mSelectedEntities.clear();
             for (Gep::Entity entity : mEditorResource.mHierarchyEntities)

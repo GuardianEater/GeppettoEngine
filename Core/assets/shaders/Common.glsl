@@ -8,12 +8,14 @@
 // start ///////////////////////////////////////////////////////////////////////
 #version 460
 #extension GL_ARB_bindless_texture : require
+#extension GL_NV_shader_printf : enable
 
 // structures //////////////////////////////////////////////////////////////////
 
 struct LightUniforms
 {
   vec3 position;   // the location of the light source
+  float pad;
   vec3 color;      // the color of the light source
   float intensity; 
 };
@@ -52,11 +54,6 @@ struct ObjectUniforms
 {
   mat4 modelMatrix;
   mat4 normalMatrix;
-
-  int isUsingTexture;  
-  int isIgnoringLight; 
-  int isSolidColor;    
-  int isWireframe;   
 
   int boneOffset;
   int pad[3];
