@@ -20,6 +20,15 @@ namespace Gep
         static Shader FromFile(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath); // reads shaders in from files, supports includes
         static Shader FromSource(const std::string& vertSrc, const std::string& fragSrc); // reads shader in from source, this DOES NOT support includes
 
+        Shader() = default;
+        ~Shader();
+
+        Shader(const Shader&) = delete;
+        Shader& operator=(const Shader&) = delete;
+
+        Shader(Shader&& other) noexcept;
+        Shader& operator=(Shader&& other) noexcept;
+
         bool IsValid() const; // checks if the shader compiled successfully
 
         void SetUniform(const std::string& name, const glm::vec3& v);
@@ -38,11 +47,11 @@ namespace Gep
         void SetUniform(size_t location, uint32_t v);
         void SetUniform(size_t location, uint64_t v);
 
+        // recompiles the shader
+        void Reload();
+
         void Bind();
         static void Unbind();
-        
-        template <typename Func>
-        void Use(Func&& func); // during the scope of the lamda the shader is bound
 
     private:
         friend class Renderer;
@@ -53,14 +62,11 @@ namespace Gep
         static std::string ReadShader(const std::filesystem::path& path); // reads in the data and handles includes
         
     private:
-        GLuint mProgram = 0;
-    };
 
-    template<typename Func>
-    inline void Shader::Use(Func&& func)
-    {
-        Bind();
-        func();
-        Unbind();
-    }
+        GLuint mProgram = 0;
+
+        // if FromFile
+        std::filesystem::path mVertPath{};
+        std::filesystem::path mFragPath{};
+    };
 }

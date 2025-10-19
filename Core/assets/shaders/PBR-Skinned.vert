@@ -43,7 +43,7 @@ void main(void)
   worldPosition = objectUniforms[vObjectIndex].modelMatrix * totalPosition;
 
   // correct normal transform (TBN-safe)
-  mat3 normalMatrix = transpose(inverse(mat3(objectUniforms[vObjectIndex].modelMatrix)));
+  mat3 normalMatrix = objectUniforms[vObjectIndex].normalMatrix;
   worldNormal = vec4(normalize(normalMatrix * totalNormal), 1.0);
 
   uvOut = uv;

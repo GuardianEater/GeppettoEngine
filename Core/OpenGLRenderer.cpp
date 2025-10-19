@@ -482,6 +482,14 @@ namespace Gep
         );
     }
 
+    void OpenGLRenderer::ReloadShaders()
+    {
+        for (auto& [shaderName, shader] : mShaders)
+        {
+            shader->Reload();
+        }
+    }
+
     void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)
     {
         if (mTextures.contains(texturePath.string()))
@@ -650,26 +658,85 @@ namespace Gep
 
                 for (const auto& [flags, objects] : flagsToObjects)
                 {
-                    // wireframe check
-                    if ((flags & RenderFlags::Wireframe) == RenderFlags::Wireframe) // if wireframe is set draw with wireframes
+                    // Optional highlight pre-pass (outline)
+                    if ((flags & RenderFlags::Highlight) == RenderFlags::Highlight)
+                    {
+                        if (mShaders.contains("Highlight"))
+                        {
+                            // Use dedicated highlight shader
+                            Shader& outlineShader = *mShaders.at("Highlight");
+
+                            if (outlineShader.IsValid())
+                            {
+                                outlineShader.Bind();
+
+                                // Depth test behavior mirrors flag, but don't write depth for outline
+                                if ((flags & RenderFlags::NoDepthTest) == RenderFlags::NoDepthTest)
+                                    glDisable(GL_DEPTH_TEST);
+                                else
+                                    glEnable(GL_DEPTH_TEST);
+
+                                glDepthMask(GL_FALSE);                // don't write outline into depth
+                                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                                glEnable(GL_CULL_FACE);
+                                glCullFace(GL_FRONT);                 // draw backfaces to create silhouette
+
+                                for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
+                                {
+                                    glBindVertexArray(meshHandle.mVertexArrayObject);
+
+                                    // Maintain the same SSBO/UBO base consumption as the main pass
+                                    outlineShader.SetUniform(3, meshBaseInstance);
+
+                                    glDrawElementsInstancedBaseInstance(
+                                        GL_TRIANGLES,
+                                        meshHandle.mIndexCount,
+                                        GL_UNSIGNED_INT,
+                                        0,
+                                        objects.size(),
+                                        baseInstance
+                                    );
+                                }
+
+                                // Restore default depth write and cull face mode
+                                glDepthMask(GL_TRUE);
+                                glCullFace(GL_BACK);
+
+                                // Re-bind the main shader for the normal pass
+                                currentShader.Bind();
+                            }
+
+                        }
+                        else
+                        {
+                            Gep::Log::Error("No Highlight Shader Found!");
+                        }
+                    }
+
+                    // Wireframe check (normal pass)
+                    if ((flags & RenderFlags::Wireframe) == RenderFlags::Wireframe)
                         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
                     else
                         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-                    // depth test check
+                    // Depth test check (normal pass)
                     if ((flags & RenderFlags::NoDepthTest) == RenderFlags::NoDepthTest)
                         glDisable(GL_DEPTH_TEST);
                     else
                         glEnable(GL_DEPTH_TEST);
 
-                    // backface cull check
+                    // Backface culling (normal pass)
                     if ((flags & RenderFlags::NoBackfaceCull) == RenderFlags::NoBackfaceCull)
+                    {
                         glDisable(GL_CULL_FACE);
+                    }
                     else
+                    {
                         glEnable(GL_CULL_FACE);
+                        glCullFace(GL_BACK);
+                    }
 
-
-                    // continue to drawing meshes
+                    // Draw meshes (normal pass)
                     for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
                     {
                         glBindVertexArray(meshHandle.mVertexArrayObject);
@@ -694,7 +761,6 @@ namespace Gep
 
         Shader::Unbind();
     }
-
     void OpenGLRenderer::DrawLines() const
     {
         glDisable(GL_DEPTH_TEST);

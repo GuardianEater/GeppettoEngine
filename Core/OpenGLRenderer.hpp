@@ -54,7 +54,11 @@ namespace Gep
     struct alignas(16) ObjectGPUData
     {
         glm::mat4 modelMatrix;  // the location rotation and scale of an object; converts from a model from model space to world space
-        glm::mat4 normalMatrix; // used to move normals from model space to world space
+
+        // Store mat3 as 3 vec4 columns (w unused) to match std430 16-byte column stride
+        glm::vec3 normalMatrixCol0; float pad0;
+        glm::vec3 normalMatrixCol1; float pad1;
+        glm::vec3 normalMatrixCol2; float pad2;
 
         int boneOffset; // should be added to this objects vertices boneindices to locate the correct bone matrices 
         int pad[3];
@@ -178,6 +182,7 @@ namespace Gep
 
         void LoadTextureAsync(const std::filesystem::path& texturePath);
         void LoadShader(const std::string& name, const std::filesystem::path& vert, const std::filesystem::path& frag);
+        void ReloadShaders(); // Recompiles all shaders.
 
         // loads a texture from disk
         void LoadTexture(const std::filesystem::path& texturePath);

@@ -152,64 +152,76 @@ namespace Client
 
     void RenderSystem::HandleInputs(float dt)
     {
-        Gep::OpenGLRenderer& renderer = mRenderer;
-
-        const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Transform, Camera>();
-        const float movementSpeed = 10 * dt;
-
         GLFWwindow* window = glfwGetCurrentContext();
 
-        static bool isTKeyPressed = false;
-        static bool isYKeyPressed = false;
-        static bool isUKeyPressed = false;
-        static bool isFKeyPressed = false;
+        static bool isF1 = false;
+        static bool isF2 = false;
+        static bool isF3 = false;
+        static bool isF4 = false;
+        static bool isShaderReload = false;
 
-        // Handle T key for textures
+        // for textures
         if (glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS)
         {
-            if (!isTKeyPressed)
+            if (!isF1)
             {
                 mNoTextureMode = !mNoTextureMode;
-                isTKeyPressed = true;
+                isF1 = true;
             }
         }
         else
-            isTKeyPressed = false;
+            isF1 = false;
 
-        // Handle Y key for wireframes
+        // for wireframes
         if (glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS)
         {
-            if (!isYKeyPressed)
+            if (!isF2)
             {
                 mWireframeMode = !mWireframeMode;
-                isYKeyPressed = true;
+                isF2 = true;
             }
         }
         else
-            isYKeyPressed = false; // Reset when key is released
+            isF2 = false; // Reset when key is released
 
-        // Handle U key for wireframes
+        // for colliders
         if (glfwGetKey(window, GLFW_KEY_F3) == GLFW_PRESS)
         {
-            if (!isUKeyPressed)
+            if (!isF3)
             {
                 this->mDrawColliders = !this->mDrawColliders;
-                isUKeyPressed = true;
+                isF3 = true;
             }
         }
         else
-            isUKeyPressed = false; // Reset when key is released
+            isF3 = false; // Reset when key is released
 
+        // for bones
         if (glfwGetKey(window, GLFW_KEY_F4) == GLFW_PRESS)
         {
-            if (!isFKeyPressed)
+            if (!isF4)
             {
                 mDrawBones = !mDrawBones;
-                isFKeyPressed = true;
+                isF4 = true;
             }
         }
         else
-            isFKeyPressed = false; // Reset when key is released
+            isF4 = false; // Reset when key is released
+
+
+        // for bones
+        if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL))
+        {
+            if (!isShaderReload)
+            {
+                Gep::Log::Info("Reloading Shaders...");
+                mRenderer.ReloadShaders();
+                
+                isShaderReload = true;
+            }
+        }
+        else
+            isShaderReload = false; // Reset when key is released
 
     }
 
@@ -357,12 +369,14 @@ namespace Client
         mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity entity, CubeCollider& collider, Transform& transform)
         {
             glm::mat4 modelMatrix = transform.GetModelMatrix();
-            glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
+            glm::mat3 normal = transform.GetNormalMatrix(modelMatrix);
 
             Gep::ObjectGPUData uniforms
             {
                 .modelMatrix = modelMatrix,
-                .normalMatrix = normal,
+                .normalMatrixCol0 = normal[0],
+                .normalMatrixCol1 = normal[1],
+                .normalMatrixCol2 = normal[2]
             };
 
             mRenderer.AddObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
@@ -371,12 +385,14 @@ namespace Client
         mManager.ForEachArchetype<SphereCollider, Transform>([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
         {
             glm::mat4 modelMatrix = transform.GetModelMatrix();
-            glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
+            glm::mat3 normal = transform.GetNormalMatrix(modelMatrix);
 
             Gep::ObjectGPUData uniforms
             {
                 .modelMatrix = modelMatrix,
-                .normalMatrix = normal,
+                .normalMatrixCol0 = normal[0],
+                .normalMatrixCol1 = normal[1],
+                .normalMatrixCol2 = normal[2]
             };
 
             mRenderer.AddObject("PBR-Static", "Sphere", uniforms, Gep::RenderFlags::Wireframe);
@@ -450,7 +466,7 @@ namespace Client
         mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
         {
             const glm::mat4 modelMatrix = transform.GetModelMatrix();
-            const glm::mat4 normal = glm::mat4(glm::mat3(Gep::affine_inverse(modelMatrix)));
+            const glm::mat4 normal = transform.GetNormalMatrix(modelMatrix);
             const Gep::Model& internalModel = mRenderer.GetModel(model.name);
 
             if (mManager.HasComponent<Light>(entity))
@@ -487,19 +503,17 @@ namespace Client
             Gep::ObjectGPUData uniforms
             {
                 .modelMatrix = modelMatrix,
-                .normalMatrix = normal,
+                .normalMatrixCol0 = normal[0],
+                .normalMatrixCol1 = normal[1],
+                .normalMatrixCol2 = normal[2],
 
                 .boneOffset = previousBoneOffset // only used in the skinned pbr shader
             };
 
-            if (model.selected)
-            {
-                Gep::ObjectGPUData wireframeUniforms = uniforms;
+            Gep::RenderFlags flags = Gep::RenderFlags::None;
+            if (model.selected) flags |= Gep::RenderFlags::Highlight; // add highlight flag if selected
 
-                mRenderer.AddObject("Highlight", model.name, wireframeUniforms, Gep::RenderFlags::Wireframe);
-            }
-
-            mRenderer.AddObject(targetShader, model.name, uniforms);
+            mRenderer.AddObject(targetShader, model.name, uniforms, flags);
         });
 
         mRenderer.AddLine(skeletonLines);

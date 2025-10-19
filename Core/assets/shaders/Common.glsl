@@ -8,7 +8,6 @@
 // start ///////////////////////////////////////////////////////////////////////
 #version 460
 #extension GL_ARB_bindless_texture : require
-#extension GL_NV_shader_printf : enable
 
 // structures //////////////////////////////////////////////////////////////////
 
@@ -53,7 +52,7 @@ struct CameraUniforms
 struct ObjectUniforms
 {
   mat4 modelMatrix;
-  mat4 normalMatrix;
+  mat3 normalMatrix;
 
   int boneOffset;
   int pad[3];

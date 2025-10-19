@@ -168,7 +168,7 @@ namespace Gep
                 currentOperation = ImGuizmo::OPERATION::ROTATE;
                 currentMode = ImGuizmo::MODE::LOCAL;
             }
-            else if (ImGui::IsKeyPressed(ImGuiKey_R))
+            else if (ImGui::IsKeyPressed(ImGuiKey_R) && !ImGui::GetIO().KeyCtrl)
             {
                 Gep::Log::Error("Scale is not implemented");
 

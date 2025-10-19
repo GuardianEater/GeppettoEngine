@@ -35,6 +35,11 @@ namespace Client
             return model;
         }
 
+        glm::mat3 GetNormalMatrix(const glm::mat4& model) const
+        {
+            return glm::transpose(glm::inverse(glm::mat3(model)));
+        }
+
         void SetModelMatrix(const glm::mat4& modelMatrix)
         {
             glm::vec3 skew;

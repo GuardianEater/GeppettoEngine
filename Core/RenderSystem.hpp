@@ -58,6 +58,7 @@ namespace Client
         bool mWireframeMode = false;
         bool mNoTextureMode = false;
         bool mDrawBones     = false;
+        bool mDrawAABBs     = false;
 
         // events
         void OnModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event);

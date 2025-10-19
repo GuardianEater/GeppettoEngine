@@ -14,12 +14,15 @@ namespace Gep
 {
 	Shader Shader::FromFile(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
 	{
-		Shader newShader{};
-
 		std::string vertSrc = ReadShader(vertPath);
 		std::string fragSrc = ReadShader(fragPath);
 
-		return FromSource(vertSrc, fragSrc);
+		Shader newShader = FromSource(vertSrc, fragSrc);
+
+		newShader.mVertPath = vertPath;
+		newShader.mFragPath = fragPath;
+
+		return std::move(newShader);
 	}
 
 	Shader Shader::FromSource(const std::string& vertSrc, const std::string& fragSrc)
@@ -29,9 +32,41 @@ namespace Gep
 		GLuint vertShader = Compile(GL_VERTEX_SHADER, vertSrc);
 		GLuint fragShader = Compile(GL_FRAGMENT_SHADER, fragSrc);
 
-		newShader.mProgram = CreateProgram(vertShader, fragShader);
+		if (vertShader && fragShader)
+			newShader.mProgram = CreateProgram(vertShader, fragShader);
 
-		return newShader;
+		return std::move(newShader);
+	}
+
+	Shader::~Shader()
+	{
+		if (IsValid())
+			glDeleteProgram(mProgram);
+	}
+
+	Shader::Shader(Shader&& other) noexcept
+		: mProgram(other.mProgram)
+	{
+		other.mProgram = 0;
+		mVertPath.swap(other.mVertPath);
+		mFragPath.swap(other.mFragPath);
+	}
+
+	Shader& Shader::operator=(Shader&& other) noexcept
+	{
+		if (this != &other)
+		{
+			if (IsValid())
+				glDeleteProgram(mProgram);
+
+			mProgram = other.mProgram;
+			other.mProgram = 0;
+
+			mVertPath.swap(other.mVertPath);
+			mFragPath.swap(other.mFragPath);
+		}
+
+		return *this;
 	}
 
 	bool Shader::IsValid() const
@@ -130,9 +165,11 @@ namespace Gep
 			std::string message;
 			message.resize(1024);
 			glGetShaderInfoLog(shaderID, message.capacity(), 0, message.data());
-			std::cout << "Failed to Compile Shader " << '\n' << message << std::endl;
-			std::cout << source;
-			throw std::runtime_error("Failed to Compile Shader");
+
+			Gep::Log::Error("Failed to Compile Shader\n", message);
+			Gep::Log::Error("\n", source);
+
+			return 0; // failed to compile
 		}
 
 		return shaderID;
@@ -157,8 +194,10 @@ namespace Gep
 			std::string message;
 			message.resize(1024);
 			glGetProgramInfoLog(program, message.capacity(), 0, message.data());
-			std::cout << "Failed to Link OpenGL Program\n" << message << std::endl;
-			throw std::runtime_error("Failed to Link OpenGL Program");
+
+			Gep::Log::Error("Failed to Link OpenGL Program\n", message);
+
+			return 0; // failed to link
 		}
 
 		glValidateProgram(program);
@@ -170,8 +209,10 @@ namespace Gep
 			std::string message;
 			message.resize(1024);
 			glGetProgramInfoLog(program, message.capacity(), 0, message.data());
-			std::cout << "Failed to Validate OpenGL Program\n" << message << std::endl;
-			throw std::runtime_error("Failed to Validate OpenGL Program");
+
+			Gep::Log::Error("Failed to Validate OpenGL Program\n", message);
+
+			return 0; // failed to Validate
 		}
 
 		return program;
@@ -208,6 +249,16 @@ namespace Gep
 		}
 
 		return shaderSource;
+	}
+
+	void Shader::Reload()
+	{
+		Shader newShader = FromFile(mVertPath, mFragPath);
+		 
+		if (newShader.IsValid())
+		{
+			*this = std::move(newShader);
+		}
 	}
 
 	void Shader::Bind()
