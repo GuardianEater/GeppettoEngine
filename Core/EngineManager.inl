@@ -128,23 +128,31 @@ namespace Gep
 
         for (auto& [signature, chunk] : mArchetypes)
         {
+            // inside the matching-chunk branch
             if ((targetSignature & signature) == targetSignature)
             {
-                for (size_t i = 0; i < chunk.entityCount; ++i)
+                // cheap early-out
+                if (chunk.entityCount == 0) continue;
+
+                // cache chunk state
+                uint8_t* base = chunk.data.data();
+                size_t stride = chunk.stride;
+
+                // precompute component offsets once per chunk
+                auto offsetsTuple = std::make_tuple(chunk.componentOffsets[GetComponentIndex<ComponentTypes>()]...);
+
+                // iterate with pointer arithmetic
+                for (size_t i = 0; i < chunk.entityCount; ++i, base += stride)
                 {
-                    // navigates to the entity position in the data block
-                    uint8_t* byteEntity = chunk.data.data() + (i * chunk.stride);
-                    Entity* entity = reinterpret_cast<Entity*>(byteEntity);
+                    Entity& entityRef = *reinterpret_cast<Entity*>(base);
 
-                    // helper to get the component out of a data block given a type
-                    auto getComponentRef = [&]<typename ComponentType>() -> ComponentType& 
+                    // expand offset tuple and call lambda with entity + components
+                    std::apply([&](auto... offs) 
                     {
-                        size_t offset = chunk.componentOffsets.at(GetComponentIndex<ComponentType>());
-                        return *reinterpret_cast<ComponentType*>(byteEntity + offset);
-                    };
-
-                    // passes the entity, followed by all of the componenets that are in the data block
-                    lambda(*entity, getComponentRef.template operator()<ComponentTypes>()...);
+                        // offs are offsets for ComponentTypes in the same order
+                        lambda(entityRef, *reinterpret_cast<ComponentTypes*>(base + offs)...);
+                    }, 
+                    offsetsTuple);
                 }
             }
         }

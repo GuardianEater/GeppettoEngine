@@ -22,18 +22,27 @@ namespace Client
         glm::vec3 scale{1.0f, 1.0f, 1.0f};
         glm::vec3 rotation{};
 
-        glm::vec3 previousPosition{position};
-        glm::vec3 previousScale{scale};
-        glm::vec3 previousRotation{rotation};
+        // Cache previous state to avoid rebuilding matrices unnecessarily
+        glm::vec3 previousPosition{ position };
+        glm::vec3 previousScale{ scale };
+        glm::vec3 previousRotation{ rotation };
 
-        glm::mat4 GetModelMatrix() const
+        // Cached model matrix (updated lazily on change)
+        glm::mat4 cachedModel{ 1.0f };
+
+        glm::mat4 GetModelMatrix()
         {
-            glm::mat4 model = Gep::translation_matrix(position)
+            // Recompute only if something changed
+            if (position != previousPosition || rotation != previousRotation || scale != previousScale)
+            {
+                cachedModel = Gep::translation_matrix(position)
                             * Gep::rotation(rotation)
                             * Gep::scale_matrix(scale);
-            
-            return model;
+            }
+
+            return cachedModel;
         }
+
 
         glm::mat3 GetNormalMatrix(const glm::mat4& model) const
         {

@@ -151,8 +151,7 @@ namespace Gep
 
     void OpenGLRenderer::AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& gpuData, RenderFlags flags)
     {
-        //mModels.at(modelName).first.objectDatas.push_back(objectData);
-
+        // fast existence checks
         if (!IsMeshLoaded(modelName))
         {
             Gep::Log::Error("Failed to draw object. The model: [", modelName, "] doesn't exist");
@@ -165,7 +164,6 @@ namespace Gep
             return;
         }
 
-        // creates a bucket for the given flag combination if they dont exist
         mObjectDatas[shaderName][modelName][flags].push_back(gpuData);
     }
 

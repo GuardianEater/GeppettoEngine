@@ -16,6 +16,7 @@
 #include "Shader.hpp"
 
 #include <mutex>
+#include <unordered_map>
 
 #include "stb_image.h"
 #include "Logger.hpp"
@@ -131,6 +132,15 @@ namespace Gep
         a = a | b;
         return a;
     }
+
+    // hash for RenderFlags so it can be used as a key in unordered_map
+    struct RenderFlagsHash
+    {
+        size_t operator()(RenderFlags f) const noexcept
+        {
+            return std::hash<uint32_t>()(static_cast<uint32_t>(f));
+        }
+    };
 
     class OpenGLRenderer
     {
@@ -301,11 +311,8 @@ namespace Gep
         Gep::gpu_vector<MaterialGPUData, 4> mMaterialUniforms; // this vector is perfectly copied onto the gpu into the materialUniforms array
         Gep::gpu_vector<MeshGPUData,     5> mMeshUniforms;     // this vector is perfectly copied onto the gpu into the meshUniforms array
 
-        // sorted by shader name -> model name
-        //std::vector<ObjectGPUData> mObjectsToRender;
-        //std::vector<ObjectCPUData> mObjectsToRenderMeta;
-        // shader name -> model name -> render state -> objects
-        std::map<std::string, std::map<std::string, std::map<RenderFlags, std::vector<ObjectGPUData>>>> mObjectDatas;
+        // shader -> model -> flags -> objects
+        std::unordered_map<std::string, std::unordered_map<std::string, std::unordered_map<RenderFlags, std::vector<ObjectGPUData>, RenderFlagsHash>>> mObjectDatas;
 
         // used to store vertices for drawing lines
         GLuint mLineVBO;
