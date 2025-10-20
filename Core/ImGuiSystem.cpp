@@ -213,16 +213,16 @@ namespace Client
 
         const auto& systems = mManager.GetSystemDatas();
         ImGui::Text("Active Systems: %u", systems.size());
-        if (ImGui::BeginTable("SystemTable", 9, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+        if (ImGui::BeginTable("SystemTable", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
         {
             ImGui::TableSetupColumn("System", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("Initialize", ImGuiTableColumnFlags_WidthFixed);
-            ImGui::TableSetupColumn("Frame Start", ImGuiTableColumnFlags_WidthFixed);
-            ImGui::TableSetupColumn("Update", ImGuiTableColumnFlags_WidthFixed);
-            ImGui::TableSetupColumn("Frame End", ImGuiTableColumnFlags_WidthFixed);
-            ImGui::TableSetupColumn("Exit", ImGuiTableColumnFlags_WidthFixed);
+            //ImGui::TableSetupColumn("Frame Start", ImGuiTableColumnFlags_WidthFixed);
+            //ImGui::TableSetupColumn("Update", ImGuiTableColumnFlags_WidthFixed);
+            //ImGui::TableSetupColumn("Frame End", ImGuiTableColumnFlags_WidthFixed);
+            //ImGui::TableSetupColumn("Exit", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("Frame %", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableHeadersRow();
 
@@ -237,14 +237,14 @@ namespace Client
                 ImGui::Text("%u", data.size);
                 ImGui::TableNextColumn();
                 ImGui::Text("%.3fms", data.timeInInitialize * 1000.0f);
-                ImGui::TableNextColumn();
-                ImGui::Text("%.3fms", data.timeInFrameStart * 1000.0f);
-                ImGui::TableNextColumn();
-                ImGui::Text("%.3fms", data.timeInUpdate * 1000.0f);
-                ImGui::TableNextColumn();
-                ImGui::Text("%.3fms", data.timeInFrameEnd * 1000.0f);
-                ImGui::TableNextColumn();
-                ImGui::Text("%.3fms", data.timeInExit * 1000.0f);
+                //ImGui::TableNextColumn();
+                //ImGui::Text("%.3fms", data.timeInFrameStart * 1000.0f);
+                //ImGui::TableNextColumn();
+                //ImGui::Text("%.3fms", data.timeInUpdate * 1000.0f);
+                //ImGui::TableNextColumn();
+                //ImGui::Text("%.3fms", data.timeInFrameEnd * 1000.0f);
+                //ImGui::TableNextColumn();
+                //ImGui::Text("%.3fms", data.timeInExit * 1000.0f);
 
                 float engineFrameTime = mManager.GetDeltaTime();
                 float systemFrameTime = data.timeInFrameStart + data.timeInUpdate + data.timeInFrameEnd;
