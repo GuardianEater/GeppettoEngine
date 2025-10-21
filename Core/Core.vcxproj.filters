@@ -298,7 +298,7 @@
       <Filter>Client\Systems</Filter>
     </ClCompile>
     <ClCompile Include="CurveSystem.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Client\Systems</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -620,11 +620,11 @@
     <ClInclude Include="MeshCollider.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
-    <ClInclude Include="CurveComponent.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
     <ClInclude Include="CurveSystem.hpp">
-      <Filter>Client</Filter>
+      <Filter>Client\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="CurveComponent.hpp">
+      <Filter>Client\Components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

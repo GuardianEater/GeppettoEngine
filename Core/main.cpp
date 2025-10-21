@@ -94,14 +94,14 @@ int main()
         Client::WindowSystem,
         Client::ImGuiSystem,
         Client::AnimationSystem, // must happen before the render system
+        Client::CurveSystem,
         Client::RenderSystem,
         Client::ScriptingSystem,
         Client::PhysicsSystem,
         Client::SerializationSystem,
         Client::RelationSystem,
         Client::SoundSystem,
-        Client::CollisionSystem,
-        Client::CurveSystem
+        Client::CollisionSystem
     > systemTypes;
 
     // register all types ////////////////////////////////////////////////////////////////////////////

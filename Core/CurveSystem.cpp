@@ -53,120 +53,114 @@ namespace Client
     void CurveSystem::UpdateFunctionLine()
     {
         static std::vector<glm::vec3> points; // storing this is a buffer for less allocations
-        mManager.ForEachArchetype<Client::Transform, Client::CurveComponent>([&](Gep::Entity ent, Client::Transform& transform, Client::CurveComponent& curveComponent) 
-        {
-            //if (!curveComponent.dirty) return; // skip this component if it has no changes
-
-            Gep::LineGPUData line;
-            line.color = curveComponent.color;
-
-            points.clear();
-            UpdateCubicSpline(curveComponent.controlPoints, curveComponent.subdivisions, points);
-
-            for (size_t i = 0; i < points.size() - 1; ++i)
+        mManager.ForEachArchetype<Client::Transform, Client::CurveComponent>([&](Gep::Entity ent, Client::Transform& transform, Client::CurveComponent& curveComponent)
             {
-                const glm::vec3& p0 = points[i];
-                const glm::vec3& p1 = points[i + 1];
+                //if (!curveComponent.dirty) return; // skip this component if it has no changes
 
-                line.points.emplace_back(p0, p1);
-            }
+                Gep::LineGPUData line;
+                line.color = curveComponent.color;
 
-            mRenderer.AddLine(line);
-        });
+                points.clear();
+                UpdateCubicSpline(curveComponent.controlPoints, curveComponent.subdivisions, points);
+
+                for (size_t i = 0; i < points.size() - 1; ++i)
+                {
+                    const glm::vec3& p0 = points[i];
+                    const glm::vec3& p1 = points[i + 1];
+
+                    line.points.emplace_back(p0, p1);
+                }
+
+                mRenderer.AddLine(line);
+            });
     }
 
     void CurveSystem::UpdateCubicSpline(const std::vector<glm::vec3>& controlPoints, const size_t resolution, std::vector<glm::vec3>& points)
     {
-        const size_t n = controlPoints.size();
-        if (n < 2) return; // dont do anything if there is 0 or 1 points
+        const uint32_t n = static_cast<uint32_t>(controlPoints.size());
+        if (n < 2) return;
 
-        const size_t k = n - 1;
+        const uint32_t k = n - 1;
+        const uint32_t dim = n + 2;
 
-        Eigen::MatrixXf A(n + 2, n + 2);
-        Eigen::VectorXf bx(n + 2);
-        Eigen::VectorXf by(n + 2);
-        Eigen::VectorXf bz(n + 2);
+        Eigen::MatrixXf A(dim, dim);
+        Eigen::VectorXf bx(dim), by(dim), bz(dim);
 
         A.setZero();
         bx.setZero();
-        bx.setZero();
-        bx.setZero();
-        
-        for (int i = 0; i < n; i++)
+        by.setZero();
+        bz.setZero();
+
+        // Data fitting rows (t = 0,1,...,k)
+        for (uint32_t i = 0; i < n; ++i)
         {
-            // evaluates thes a's
-            float t = i;
-            A(i, 0) = 1;
+            const float t = static_cast<float>(i);
+
+            // polynomial part: [1, t, t^2, t^3]
+            A(i, 0) = 1.0f;
             A(i, 1) = t;
             A(i, 2) = t * t;
             A(i, 3) = t * t * t;
 
-            // evaluates the b's
-            for (int j = 1; j <= k - 1; j++)
+            // truncated power terms: (t - j)^3_+ for j = 1..k-1
+            for (uint32_t j = 1; j <= k - 1; ++j)
             {
-                A(i, j + 3) = TruncatedPower(t, j, 3);
+                A(i, j + 3) = TruncatedPower(t, static_cast<float>(j), 3.0f);
             }
 
-            // evaluates the v's
             bx[i] = controlPoints[i].x;
             by[i] = controlPoints[i].y;
             bz[i] = controlPoints[i].z;
         }
-        bx[n] = 0;
-        by[n] = 0;
-        by[n + 1] = 0;
-        by[n + 1] = 0;
 
-        // boundary conditions
-        A(n, 0) = 0;
-        A(n, 1) = 0;
-        A(n, 2) = 2;
-        A(n, 3) = 0;
-        for (size_t j = 1; j <= k - 1; j++)
+        // Natural spline boundary conditions: s''(0) = 0, s''(k) = 0
+        const uint32_t r0 = n;
+        const uint32_t r1 = n + 1;
+
+        // s''(t) = 2c + 6dt + sum_j 6(t - j)_+ * alpha_j
+        // At t = 0: 2c = 0
+        A(r0, 2) = 2.0f;
+
+        // At t = k: 2c + 6dk + sum_j 6(k - j) * alpha_j = 0
+        A(r1, 3) = 6.0f * static_cast<float>(k);
+        for (uint32_t j = 1; j <= k - 1; ++j)
         {
-            A(n, j + 3) = 0;
+            A(r1, j + 3) = 6.0f * static_cast<float>(k - j);
         }
 
-        A(n + 1, 0) = 0;
-        A(n + 1, 1) = 0;
-        A(n + 1, 2) = 0;
-        A(n + 1, 3) = 6 * k;
-        for (size_t j = 1; j <= k - 1; j++)
+        // RHS for boundary rows (zeros) — previously missing/incorrect
+        bx[r0] = by[r0] = bz[r0] = 0.0f;
+        bx[r1] = by[r1] = bz[r1] = 0.0f;
+
+        // Solve once and reuse the factorization
+        const auto decomp = A.colPivHouseholderQr();
+        Eigen::VectorXf coeffsX = decomp.solve(bx);
+        Eigen::VectorXf coeffsY = decomp.solve(by);
+        Eigen::VectorXf coeffsZ = decomp.solve(bz);
+
+        // Evaluate
+        for (uint32_t i = 0; i < resolution; ++i)
         {
-            double contribution = 6 * (k - j);
-            A(n + 1, j + 3) = contribution;
-        }
+            const float t = static_cast<float>(k) * (static_cast<float>(i) / static_cast<float>(resolution));
 
-        // solve the linear system
-        //Eigen::ColPivHouseholderQR<float> linSystem(A);
-
-        Eigen::VectorXf coeffsX = A.colPivHouseholderQr().solve(bx);
-        Eigen::VectorXf coeffsY = A.colPivHouseholderQr().solve(by);
-        Eigen::VectorXf coeffsZ = A.colPivHouseholderQr().solve(bz);
-
-        // evaluate the spline
-        for (size_t i = 0; i < resolution; ++i)
-        {
-            float t = ((float)k / resolution) * i;
-
-            // evaluates the a's at t
             glm::vec3 vt{
-                coeffsX[0] + (coeffsX[1] * t) + (coeffsX[2] * t * t) + (coeffsX[3] * t * t * t),
-                coeffsY[0] + (coeffsY[1] * t) + (coeffsY[2] * t * t) + (coeffsY[3] * t * t * t),
-                coeffsZ[0] + (coeffsZ[1] * t) + (coeffsZ[2] * t * t) + (coeffsZ[3] * t * t * t)
+                coeffsX[0] + coeffsX[1] * t + coeffsX[2] * t * t + coeffsX[3] * t * t * t,
+                coeffsY[0] + coeffsY[1] * t + coeffsY[2] * t * t + coeffsY[3] * t * t * t,
+                coeffsZ[0] + coeffsZ[1] * t + coeffsZ[2] * t * t + coeffsZ[3] * t * t * t
             };
 
-            // evaluates the b's at ts
-            for (int j = 1; j <= k - 1; j++)
+            for (size_t j = 1; j <= k - 1; ++j)
             {
-                vt.x += coeffsX[j + 3] * TruncatedPower(t, j, 3);
-                vt.y += coeffsY[j + 3] * TruncatedPower(t, j, 3);
-                vt.z += coeffsZ[j + 3] * TruncatedPower(t, j, 3);
+                const float tp = TruncatedPower(t, static_cast<float>(j), 3.0f);
+                vt.x += coeffsX[j + 3] * tp;
+                vt.y += coeffsY[j + 3] * tp;
+                vt.z += coeffsZ[j + 3] * tp;
             }
 
             points.push_back(vt);
         }
 
+        // Ensure the end point is exact
         points.push_back(controlPoints.back());
     }
 
