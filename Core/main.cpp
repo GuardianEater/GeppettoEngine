@@ -34,6 +34,7 @@
 #include "CubeCollider.hpp"
 #include "AnimationComponent.hpp"
 #include "MeshCollider.hpp"
+#include "CurveComponent.hpp"
 
  // systems
 #include "PhysicsSystem.hpp"
@@ -46,6 +47,7 @@
 #include "SoundSystem.hpp"
 #include "CollisionSystem.hpp"
 #include "AnimationSystem.hpp"
+#include "CurveSystem.hpp"
 
 #include "OS.hpp"
 
@@ -70,7 +72,7 @@ int main()
     em.RegisterResource<Gep::OpenGLRenderer>();
 
     // list of all components ///////////////////////////////////////////////////////////////////////
-    Gep::type_list<
+    Gep::type_list <
         Client::Transform,
         Client::RigidBody,
         Client::ModelComponent,
@@ -83,7 +85,8 @@ int main()
         Client::SphereCollider,
         Client::CubeCollider,
         Client::AnimationComponent,
-        Client::MeshCollider
+        Client::MeshCollider,
+        Client::CurveComponent
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////
@@ -97,7 +100,8 @@ int main()
         Client::SerializationSystem,
         Client::RelationSystem,
         Client::SoundSystem,
-        Client::CollisionSystem
+        Client::CollisionSystem,
+        Client::CurveSystem
     > systemTypes;
 
     // register all types ////////////////////////////////////////////////////////////////////////////
@@ -106,7 +110,6 @@ int main()
     em.SetSystemExecutionPolicy<Client::PhysicsSystem>(Gep::EngineState::Play);
     em.SetSystemExecutionPolicy<Client::ScriptingSystem>(Gep::EngineState::Play);
     em.SetSystemExecutionPolicy<Client::AnimationSystem>(Gep::EngineState::Play);
-
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.SetState(Gep::EngineState::Edit);

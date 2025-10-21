@@ -312,7 +312,7 @@ namespace Gep
         Gep::gpu_vector<MeshGPUData,     5> mMeshUniforms;     // this vector is perfectly copied onto the gpu into the meshUniforms array
 
         // shader -> model -> flags -> objects
-        std::unordered_map<std::string, std::unordered_map<std::string, std::unordered_map<RenderFlags, std::vector<ObjectGPUData>, RenderFlagsHash>>> mObjectDatas;
+        std::map<std::string, std::map<std::string, std::map<RenderFlags, std::vector<ObjectGPUData>>>> mObjectDatas;
 
         // used to store vertices for drawing lines
         GLuint mLineVBO;

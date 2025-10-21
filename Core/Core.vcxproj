@@ -47,13 +47,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)dependencies\glm\include;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine;$(ProjectDir)dependencies\nlohmann\include;$(ProjectDir)dependencies\ImGuizmo;$(ProjectDir)dependencies\soloud\include;$(ProjectDir)dependencies\pybind11\include;$(ProjectDir)dependencies\Python\include;$(ProjectDir)dependencies\assimp\include</IncludePath>
+    <IncludePath>$(ProjectDir)dependencies\glm\include;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine;$(ProjectDir)dependencies\nlohmann\include;$(ProjectDir)dependencies\ImGuizmo;$(ProjectDir)dependencies\soloud\include;$(ProjectDir)dependencies\pybind11\include;$(ProjectDir)dependencies\Python\include;$(ProjectDir)dependencies\assimp\include;;$(ProjectDir)dependencies\eigen</IncludePath>
     <SourcePath>$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\imgui\backends;$(SourcePath)</SourcePath>
     <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(ProjectDir)dependencies\soloud\lib;$(SolutionDir)x64\Debug;$(ProjectDir)dependencies\assimp\lib;$(ProjectDir)dependencies\Python\libs;$(LibraryPath)</LibraryPath>
     <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)dependencies\glm\include;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine;$(ProjectDir)dependencies\nlohmann\include;$(ProjectDir)dependencies\ImGuizmo;$(ProjectDir)dependencies\soloud\include;$(ProjectDir)dependencies\pybind11\include;$(ProjectDir)dependencies\Python\include;$(ProjectDir)dependencies\assimp\include</IncludePath>
+    <IncludePath>$(ProjectDir)dependencies\glm\include;$(ProjectDir)dependencies\imgui;$(ProjectDir);$(ProjectDir)dependencies\imgui\backends;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glew\include\GL;$(ProjectDir)dependencies\reflect-cpp\include;$(ProjectDir)dependencies\reflect-cpp\include\rfl;$(ProjectDir)dependencies\reflect-cpp\include\rfl\thirdparty;$(ProjectDir)dependencies\stb;$(ProjectDir)dependencies\imgui_test_engine\imgui_test_engine;$(ProjectDir)dependencies\nlohmann\include;$(ProjectDir)dependencies\ImGuizmo;$(ProjectDir)dependencies\soloud\include;$(ProjectDir)dependencies\pybind11\include;$(ProjectDir)dependencies\Python\include;$(ProjectDir)dependencies\assimp\include;$(ProjectDir)dependencies\eigen;$(ProjectDir)dependencies\eigen</IncludePath>
     <SourcePath>$(ProjectDir)dependencies\imgui;$(ProjectDir)dependencies\imgui\backends;$(SourcePath)</SourcePath>
     <LibraryPath>$(ProjectDir)dependencies\glfw;$(ProjectDir)dependencies\glew\lib;$(ProjectDir)dependencies\soloud\lib;$(SolutionDir)x64\Debug;$(ProjectDir)dependencies\assimp\lib;$(ProjectDir)dependencies\Python\libs;$(LibraryPath)</LibraryPath>
     <RunCodeAnalysis>false</RunCodeAnalysis>
@@ -126,6 +126,7 @@
     <ClInclude Include="Conversion.h" />
     <ClInclude Include="CubeCollider.hpp" />
     <ClCompile Include="CubeMesh.cpp" />
+    <ClCompile Include="CurveSystem.cpp" />
     <ClCompile Include="dependencies\ImGuizmo\GraphEditor.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
@@ -256,6 +257,8 @@
     <ClCompile Include="RenderTargetWindow.cpp" />
     <ClInclude Include="CollisionChecking.hpp" />
     <ClInclude Include="CollisionSystem.hpp" />
+    <ClInclude Include="CurveComponent.hpp" />
+    <ClInclude Include="CurveSystem.hpp" />
     <ClInclude Include="EditorResource.hpp" />
     <ClInclude Include="FileHelp.hpp" />
     <ClInclude Include="FunctionTraits.hpp" />
