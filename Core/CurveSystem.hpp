@@ -11,11 +11,22 @@
 
 #include "ISystem.hpp"
 
+
 namespace Gep
 {
     class EngineManager;
-    struct CurveComponent;
     class OpenGLRenderer;
+}
+
+namespace Gep::Event
+{
+    template <typename ComponentType> struct ComponentEditorRender;
+}
+
+namespace Client
+{
+    class EditorResource;
+    struct CurveComponent;
 }
 
 namespace Client
@@ -32,6 +43,9 @@ namespace Client
         void UpdateFunctionLine();
         void UpdateCubicSpline(const std::vector<glm::vec3>& controlPoints, const size_t resolution, std::vector<glm::vec3>& points);
 
+        void OnCurveEditorRender(const Gep::Event::ComponentEditorRender<Client::CurveComponent>& cc);
+
         Gep::OpenGLRenderer& mRenderer;
+        Client::EditorResource& mEditor;
     };
 }

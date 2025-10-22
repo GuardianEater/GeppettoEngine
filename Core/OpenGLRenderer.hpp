@@ -152,6 +152,7 @@ namespace Gep
         void AddModel(const std::string& name, const Gep::Model& model);
 
         void AddAnimation(const std::string& name, const Gep::Animation& animation);
+        void AddMaterial(const Gep::Material& material);
 
         const Gep::Model& GetModel(const std::string& name);
         const Gep::Animation& GetAnimation(const std::string& name);

@@ -22,15 +22,15 @@ namespace Gep
     struct Material
     {
         // if it has a uniform material across the entire mesh
-        float ao; // ambient occlusion
-        float roughness;
-        float metalness;
-        glm::vec4 color;
+        float ao = 0.8f; // ambient occlusion
+        float roughness = 0.8f;
+        float metalness = 0.8f;
+        glm::vec4 color = {0.8f, 0.8f, 0.8f, 1.0f};
 
-        Texture aoTexture;
-        Texture roughnessTexture;
-        Texture metalnessTexture;
-        Texture diffuseTexture;
-        Texture normalTexture;
+        Texture aoTexture{};
+        Texture roughnessTexture{};
+        Texture metalnessTexture{};
+        Texture diffuseTexture{};
+        Texture normalTexture{};
     };
 }

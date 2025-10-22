@@ -91,6 +91,10 @@ namespace Client
             skybox.meshes.push_back(Gep::SkyboxMesh());
             renderer.AddModel("Skybox", skybox);
         }
+        {
+            Gep::Material defaultMat;
+            renderer.AddMaterial(defaultMat);
+        }
 
         glEnable(GL_DEPTH_TEST);
     }

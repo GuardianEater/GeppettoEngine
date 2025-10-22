@@ -136,4 +136,9 @@ namespace Gep
 
         glm::mat3 axes{};
     };
+
+    struct Curve
+    {
+        std::vector<glm::vec3> controlPoints;
+    };
 }

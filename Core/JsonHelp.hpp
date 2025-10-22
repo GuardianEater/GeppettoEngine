@@ -12,6 +12,22 @@
 
 #include <nlohmann/json.hpp>
 #include <glm/glm.hpp>
+#include <TypeID.hpp>
+
+// adds overloads for nlohmann
+namespace nlohmann
+{
+    void to_json(json& j, const glm::vec3& v);
+    void from_json(const json& j, glm::vec3& v);
+    void to_json(json& j, const glm::vec4& v);
+    void from_json(const json& j, glm::vec4& v);
+    void to_json(json& j, const glm::quat& v);
+    void from_json(const json& j, glm::quat& v);
+    void to_json(json& j, const glm::mat3& v);
+    void from_json(const json& j, glm::mat3& v);
+    void to_json(json& j, const glm::mat4& v);
+    void from_json(const json& j, glm::mat4& v);
+}
 
 namespace Gep
 {
@@ -30,38 +46,35 @@ namespace Gep
         };
 
         template<typename T>
-        void WriteType(nlohmann::json& json, const std::string_view name, T& t)
+        void WriteType(nlohmann::json& json, T& t)
         {
-            json[name] = 0;
+            // catch all applied to all types that are not supprted by nlohmann
+            // do nothing if the type is not writable
+
+            Gep::Log::Warning("Attempting to write an unsupported type to json. Type was: [", Gep::GetTypeInfo<T>().Name(), "]");
         }
 
         template <typename T>
             requires JsonWritable<T>
-        void WriteType(nlohmann::json& json, const std::string_view name, T& t)
+        void WriteType(nlohmann::json& json, T& t)
         {
-            json[name] = t;
+            json = t;
         }
 
         template<typename T>
-        void ReadType(const nlohmann::json& json, const std::string_view name, T& t)
+        void ReadType(const nlohmann::json& json, T& t)
         {
+            // catch all applied to all types that are not supprted by nlohmann
             // do nothing if the type is not readable
+
+            Gep::Log::Warning("Attempting to read an unsupported type from json. Type was: [", Gep::GetTypeInfo<T>().Name(), "]");
         }
 
         template <typename T>
             requires JsonReadable<T>
-        void ReadType(const nlohmann::json& json, const std::string_view name, T& t)
+        void ReadType(const nlohmann::json& json, T& t)
         {
-            t = json[name].get<std::remove_reference_t<T>>();
+            t = json.get<std::remove_reference_t<T>>();
         }
-
-        // bunch of base type specializations
-        void WriteType(nlohmann::json& json, const std::string_view name, const glm::vec3& t);
-        void WriteType(nlohmann::json& json, const std::string_view name, const glm::vec4& t);
-        void WriteType(nlohmann::json& json, const std::string_view name, const glm::quat& t);
-
-        void ReadType(const nlohmann::json& json, const std::string_view name, glm::vec3& t);
-        void ReadType(const nlohmann::json& json, const std::string_view name, glm::vec4& t);
-        void ReadType(const nlohmann::json& json, const std::string_view name, glm::quat& t);
     }
 }

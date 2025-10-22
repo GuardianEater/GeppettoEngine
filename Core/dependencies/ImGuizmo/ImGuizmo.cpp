@@ -940,17 +940,27 @@ namespace IMGUIZMO_NAMESPACE
 
    static bool IsHoveringWindow()
    {
-      ImGuiContext& g = *ImGui::GetCurrentContext();
-      ImGuiWindow* window = ImGui::FindWindowByName(gContext.mDrawList->_OwnerName);
-      if (g.HoveredWindow == window)   // Mouse hovering drawlist window
-         return true;
-      if (gContext.mAlternativeWindow != nullptr && g.HoveredWindow == gContext.mAlternativeWindow)
-         return true;
-      if (g.HoveredWindow != NULL)     // Any other window is hovered
-         return false;
-      if (ImGui::IsMouseHoveringRect(window->InnerRect.Min, window->InnerRect.Max, false))   // Hovering drawlist window rect, while no other window is hovered (for _NoInputs windows)
-         return true;
-      return false;
+       ImGuiContext& g = *ImGui::GetCurrentContext();
+       ImGuiWindow* owner = nullptr;
+
+       // Find the owner window by matching the draw list pointer (avoid using _OwnerName)
+       for (int i = 0; i < g.Windows.Size; ++i)
+       {
+           if (g.Windows[i]->DrawList == gContext.mDrawList) { owner = g.Windows[i]; break; }
+       }
+       if (!owner)
+           return false;
+
+       if (g.HoveredWindow == owner) // mouse hovering drawlist window
+           return true;
+       if (gContext.mAlternativeWindow && g.HoveredWindow == gContext.mAlternativeWindow)
+           return true;
+       if (g.HoveredWindow) // some other window is hovered
+           return false;
+
+       if (ImGui::IsMouseHoveringRect(owner->InnerRect.Min, owner->InnerRect.Max, false))
+           return true;
+       return false;
    }
 
    void SetRect(float x, float y, float width, float height)

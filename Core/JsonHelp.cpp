@@ -8,58 +8,70 @@
 
 #include "pch.hpp"
 #include "JsonHelp.hpp"
+#include <glm/gtx/type_trait.hpp>
 
-namespace Gep::Json
+namespace nlohmann
 {
-    void WriteType(nlohmann::json& json, const std::string_view name, const glm::vec3& t)
+    void to_json(json& j, const glm::vec3& v)
     {
-        json[name] = {
-            {"x", t.x},
-            {"y", t.y},
-            {"z", t.z}
-        };
+        j = { v.x, v.y, v.z };
     }
 
-    void WriteType(nlohmann::json& json, const std::string_view name, const glm::vec4& t)
+    void from_json(const json& j, glm::vec3& v)
     {
-        json[name] = {
-            {"x", t.x},
-            {"y", t.y},
-            {"z", t.z},
-            {"w", t.w}
-        };
+        for (size_t i = 0; i < 3; ++i)
+            v[i] = j.at(i).get<float>();
     }
 
-    void WriteType(nlohmann::json& json, const std::string_view name, const glm::quat& t)
+    void to_json(json& j, const glm::vec4& v)
     {
-        json[name] = {
-          {"x", t.x},
-          {"y", t.y},
-          {"z", t.z},
-          {"w", t.w}
-        };
+        j = { v.x, v.y, v.z, v.w };
     }
 
-    void ReadType(const nlohmann::json& json, const std::string_view name, glm::vec3& t)
+    void from_json(const json& j, glm::vec4& v)
     {
-        t.x = json.at(name).at("x").get<float>();
-        t.y = json.at(name).at("y").get<float>();
-        t.z = json.at(name).at("z").get<float>();
+        for (size_t i = 0; i < 4; ++i)
+            v[i] = j.at(i).get<float>();
     }
 
-    void ReadType(const nlohmann::json& json, const std::string_view name, glm::vec4& t)
+    void to_json(json& j, const glm::quat& v)
     {
-        t.x = json.at(name).at("x").get<float>();
-        t.y = json.at(name).at("y").get<float>();
-        t.z = json.at(name).at("z").get<float>();
-        t.w = json.at(name).at("w").get<float>();
+        j = { v.x, v.y, v.z, v.w };
     }
 
-    void ReadType(const nlohmann::json& json, const std::string_view name, glm::quat& t)
+    void from_json(const json& j, glm::quat& v)
     {
-        t.x = json.at(name).at("x").get<float>();
-        t.y = json.at(name).at("y").get<float>();
-        t.z = json.at(name).at("z").get<float>();
-        t.w = json.at(name).at("w").get<float>();
+        for (size_t i = 0; i < 4; ++i)
+            v[i] = j.at(i).get<float>();
+    }
+
+    void to_json(json& j, const glm::mat3& v)
+    {
+        const float* p = glm::value_ptr(v); // 9 floats, column-major
+        j = json::array();
+        for (size_t i = 0; i < 9; ++i)
+            j.push_back(p[i]);
+    }
+    
+    void from_json(const json& j, glm::mat3& v)
+    {
+        float* p = glm::value_ptr(v);
+        for (size_t i = 0; i < 9; ++i)
+            p[i] = j.at(i).get<float>();
+    }
+
+    void to_json(json& j, const glm::mat4& v)
+    {
+        const float* p = glm::value_ptr(v); // 16 floats, column-major
+        j = json::array();
+        for (size_t i = 0; i < 16; ++i)
+            j.push_back(p[i]);
+    }
+
+    void from_json(const json& j, glm::mat4& v)
+    {
+        float* p = glm::value_ptr(v);
+        for (size_t i = 0; i < 16; ++i)
+            p[i] = j.at(i).get<float>();
     }
 }

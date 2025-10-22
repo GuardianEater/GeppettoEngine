@@ -114,6 +114,11 @@ namespace Gep
         mAnimations[name] = std::make_pair(AnimationGPUHandle{}, animation);
     }
 
+    void OpenGLRenderer::AddMaterial(const Gep::Material& material)
+    {
+        mMaterials.insert(material);
+    }
+
     const Gep::Model& OpenGLRenderer::GetModel(const std::string& name)
     {
         if (!mModels.contains(name))

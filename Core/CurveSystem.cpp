@@ -13,14 +13,20 @@
 #include "CurveSystem.hpp"
 #include "EngineManager.hpp"
 
+// helper
+#include "STLHelp.hpp"
+#include "JsonHelp.hpp"
+
 // component
 #include "CurveComponent.hpp"
 #include "Transform.hpp"
 
 // resource
 #include "OpenGLRenderer.hpp"
+#include "EditorResource.hpp"
 
 // external
+#include <vector>
 #include <Eigen/Dense>
 
 namespace Client
@@ -35,13 +41,18 @@ namespace Client
     CurveSystem::CurveSystem(Gep::EngineManager& em)
         : ISystem(em)
         , mRenderer(em.GetResource<Gep::OpenGLRenderer>())
+        , mEditor(em.GetResource<Client::EditorResource>())
     {
 
     }
 
     void CurveSystem::Initialize()
     {
-
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Client::CurveComponent>>(this, &CurveSystem::OnCurveEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentSerializing<Client::CurveComponent>>([](const Gep::Event::ComponentSerializing<Client::CurveComponent>& cc)
+        {
+            cc.componentJson.erase("dirty"); // do not save the dirty variable
+        });
     }
 
     void CurveSystem::Update(float dt)
@@ -52,27 +63,26 @@ namespace Client
 
     void CurveSystem::UpdateFunctionLine()
     {
-        static std::vector<glm::vec3> points; // storing this is a buffer for less allocations
+        Gep::LineGPUData line;
+        line.color = { 0.0f, 0.0f ,1.0f };
         mManager.ForEachArchetype<Client::Transform, Client::CurveComponent>([&](Gep::Entity ent, Client::Transform& transform, Client::CurveComponent& curveComponent)
+        {
+            if (curveComponent.dirty)
             {
-                //if (!curveComponent.dirty) return; // skip this component if it has no changes
+                curveComponent.points.clear();
+                UpdateCubicSpline(curveComponent.controlPoints, curveComponent.subdivisions, curveComponent.points);
+                curveComponent.dirty = false;
+            }
 
-                Gep::LineGPUData line;
-                line.color = curveComponent.color;
+            for (size_t i = 0; i < curveComponent.points.size() - 1; ++i)
+            {
+                const glm::vec3& p0 = curveComponent.points[i] + transform.position;
+                const glm::vec3& p1 = curveComponent.points[i + 1] + transform.position;
 
-                points.clear();
-                UpdateCubicSpline(curveComponent.controlPoints, curveComponent.subdivisions, points);
-
-                for (size_t i = 0; i < points.size() - 1; ++i)
-                {
-                    const glm::vec3& p0 = points[i];
-                    const glm::vec3& p1 = points[i + 1];
-
-                    line.points.emplace_back(p0, p1);
-                }
-
-                mRenderer.AddLine(line);
-            });
+                line.points.emplace_back(p0, p1);
+            }
+        });
+        mRenderer.AddLine(line);
     }
 
     void CurveSystem::UpdateCubicSpline(const std::vector<glm::vec3>& controlPoints, const size_t resolution, std::vector<glm::vec3>& points)
@@ -162,6 +172,47 @@ namespace Client
 
         // Ensure the end point is exact
         points.push_back(controlPoints.back());
+    }
+
+    void CurveSystem::OnCurveEditorRender(const Gep::Event::ComponentEditorRender<CurveComponent>& cc)
+    {
+        ImGui::PushID(cc.entity);
+
+        if (ImGui::InputScalar("Segments", ImGuiDataType_U64, &cc.component.subdivisions))
+            cc.component.dirty = true;
+
+        if (ImGui::TreeNode("Control Points"))
+        {
+            for (int i = 0; i < cc.component.controlPoints.size(); ++i)
+            {
+                const size_t id = reinterpret_cast<const size_t>(glm::value_ptr(cc.component.controlPoints[i])); // interpret pointer as a number
+
+                ImGui::PushID(id);
+                if (ImGui::DragFloat3("##", glm::value_ptr(cc.component.controlPoints[i])))
+                    cc.component.dirty = true;
+
+                ImGui::SameLine();
+                if (ImGui::Button("X", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+                {
+                    cc.component.controlPoints.erase(cc.component.controlPoints.begin() + i);
+                    cc.component.dirty = true;
+                    --i;
+                }
+                ImGui::PopID();
+
+            }
+
+            if (ImGui::Button("+", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+            {
+                cc.component.controlPoints.emplace_back(0.0f);
+                cc.component.dirty = true;
+            }
+
+            ImGui::Spacing();
+            ImGui::TreePop();
+        }
+
+        ImGui::PopID();
     }
 
 }

@@ -53,7 +53,8 @@ namespace Gep
 
         ImGui::SetNextWindowSize(windowSizeMin, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSizeConstraints(windowSizeMin, windowSizeMax);
-        if (ImGui::Begin((GetDisplayName(em, cameraEntity) + "###" + em.GetUUID(cameraEntity).ToString()).c_str()))
+        std::string windowName = GetDisplayName(em, cameraEntity) + "###" + em.GetUUID(cameraEntity).ToString();
+        if (ImGui::Begin(windowName.c_str()))
         {
             // get mouse delta and wether or not right click is pressed to rotate the camera
             bool rightClick = ImGui::IsMouseDown(ImGuiMouseButton_Right);

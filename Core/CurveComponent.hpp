@@ -23,9 +23,10 @@ namespace Client
 
         CurveType curveType = CurveType::CubicSpline;
         std::vector<glm::vec3> controlPoints{ {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f} };
-        size_t subdivisions = 20;
-
+        size_t subdivisions = 10;
         glm::vec3 color = {1.0f, 1.0f, 1.0f};
+
+        std::vector<glm::vec3> points{};
         bool dirty = true;
     };
 }

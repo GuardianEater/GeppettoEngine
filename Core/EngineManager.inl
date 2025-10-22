@@ -499,7 +499,7 @@ namespace Gep
         // this writes each type inside of the component
         view.apply([&](const auto& f)
         {
-            Json::WriteType(componentDataJson, f.name(), *f.value());
+            Json::WriteType(componentDataJson[f.name()], *f.value());
         });
 
         nlohmann::json componentJson = nlohmann::json::object();
@@ -528,15 +528,15 @@ namespace Gep
                 try
                 {
                     // reads the components variable name from the json data into the location of that variable
-                    Json::ReadType(componentDataJson, componentField.name(), *componentField.value());
+                    Json::ReadType(componentDataJson[componentField.name()], *componentField.value());
                 }
                 catch(const std::exception& e)
                 {
                     const nlohmann::json& componentFieldJson = componentDataJson.at(componentField.name());
                     using ComponentFieldType = decltype(*componentField.value());
 
-                    Gep::Log::Error("\nFailed to read in a field on component: [", Gep::GetTypeInfo<ComponentType>().PrettyName(),"]. "
-                                    "Attempted to read: [", componentFieldJson.type_name(), ": ", componentFieldJson.dump(), "] into: [", componentField.name(), ": ", Gep::GetTypeInfo<ComponentFieldType>().Name(), "].");
+                    Gep::Log::Warning("Failed to read in a field on component: [", Gep::GetTypeInfo<ComponentType>().PrettyName(),"]. "
+                                      "Attempted to read: [", componentFieldJson.type_name(), ": ", componentFieldJson.dump(), "] into: [", componentField.name(), ": ", Gep::GetTypeInfo<ComponentFieldType>().Name(), "].");
                 }
             }
         });
