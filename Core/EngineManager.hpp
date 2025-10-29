@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Core.hpp"
+#include "UUID.hpp"
 
 #include "ComponentArray.hpp"
 #include "ISystem.hpp"
@@ -181,6 +182,9 @@ namespace Gep
         Entity DuplicateEntity(Entity entity);
         void DestroyEntity(Entity entity);
         bool EntityExists(Entity entity) const;
+
+        // will silently fail if it doesnt find it and return INVALID_ENTITY
+        Entity FindEntity(const UUID& uuid) const;
 
         nlohmann::json SaveEntity(Entity entity) const;
         Entity LoadEntity(const nlohmann::json& entityJson);
@@ -398,6 +402,7 @@ namespace Gep
         // entities
         std::vector<Entity> mMarkedEntities; // entities that are marked to be destroyed
         Gep::keyed_vector<EntityData> mEntityDatas; // maps from an entity -> all of data
+        std::unordered_map<UUID, Entity> mUUIDToEntity;
 
         // components
         Gep::keyed_vector<ComponentData> mComponentDatas; // maps from a component type -> all of the data

@@ -180,6 +180,7 @@ namespace Gep
             // prepare gizmos for rendering
             ImGuizmo::SetDrawlist();
             ImGuizmo::SetRect(contentRegionPos.x, contentRegionPos.y, contentRegionSize.x, contentRegionSize.y);
+            ImGuizmo::SetOrthographic(false);
             glm::mat4 view = camera.GetViewMatrix(cameraTransform.position);
             glm::mat4 pers = camera.GetProjectionMatrix();
 

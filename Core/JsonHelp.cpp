@@ -74,4 +74,14 @@ namespace nlohmann
         for (size_t i = 0; i < 16; ++i)
             p[i] = j.at(i).get<float>();
     }
+
+    void to_json(json& j, const Gep::UUID& v)
+    {
+        j = v.ToString();
+    }
+
+    void from_json(const json& j, Gep::UUID& v)
+    {
+        v = Gep::UUID::FromString(j); // json implicit conversion to string
+    }
 }

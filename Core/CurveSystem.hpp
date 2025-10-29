@@ -27,6 +27,7 @@ namespace Client
 {
     class EditorResource;
     struct CurveComponent;
+    struct PathFollowerComponent;
 }
 
 namespace Client
@@ -44,6 +45,7 @@ namespace Client
         void UpdateCubicSpline(const std::vector<glm::vec3>& controlPoints, const size_t resolution, std::vector<glm::vec3>& points);
 
         void OnCurveEditorRender(const Gep::Event::ComponentEditorRender<Client::CurveComponent>& cc);
+        void OnPathFollowerEditorRender(const Gep::Event::ComponentEditorRender<Client::PathFollowerComponent>& cc);
 
         Gep::OpenGLRenderer& mRenderer;
         Client::EditorResource& mEditor;

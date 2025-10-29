@@ -32,8 +32,18 @@ namespace Client
 
 		// will only accept imgui drag drop targets from the asset browser with the given extension. Calls the user function with the dropped path
 		template <typename Func>
-		requires std::invocable<Func, const std::filesystem::path&>
+			requires std::invocable<Func, const std::filesystem::path&>
 		void AssetBrowserDropTarget(const std::vector<std::string>& allowedExtension, Func&& onDrop) const;
+
+		// calls the given function for each entity dropped
+		template <typename FunctionType, typename ExitFunctionType>
+			requires std::invocable<FunctionType, Gep::Entity>
+		void EntitiesDragDropTarget(FunctionType func, ExitFunctionType exitFunc = [](){});
+
+		// calls the given function for the entity dropped (accepts many entities however will only use first entity)
+		template <typename FunctionType>
+			requires std::invocable<FunctionType, Gep::Entity>
+		void EntityDragDropTarget(FunctionType func);
 
 		template <typename Func>
 		requires std::invocable<Func, const std::filesystem::path&>
@@ -42,6 +52,7 @@ namespace Client
 		void LabledInput_Float(const std::string& label, float* v, float columnWidth = 100.0f, float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
 		void LabledInput_Float3(const std::string& label, float* v, float columnWidth = 100.0f, float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
 		void LabledInput_Float4(const std::string& label, float* v, float columnWidth = 100.0f, float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
+
 
 	private:
 		void LabledInput_Setup(const std::string& label, float columnWidth);
@@ -115,6 +126,49 @@ namespace Client
 				onDrop(droppedPath);
 			}
 
+			ImGui::EndDragDropTarget();
+		}
+	}
+
+	template <typename FunctionType, typename ExitFunctionType>
+		requires std::invocable<FunctionType, Gep::Entity>
+	void EditorResource::EntitiesDragDropTarget(FunctionType func, ExitFunctionType funcExit)
+	{
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY"))
+			{
+				Gep::Entity* droppedEntities = (Gep::Entity*)payload->Data;
+				size_t droppedEntityCount = payload->DataSize / sizeof(Gep::Entity);
+				std::set<Gep::Entity> droppedEntitiesSet(droppedEntities, droppedEntities + droppedEntityCount);
+
+				for (Gep::Entity droppedEntity : droppedEntitiesSet)
+				{
+					func(droppedEntity);
+				}
+				funcExit();
+			}
+			ImGui::EndDragDropTarget();
+		}
+	}
+
+	template <typename FunctionType>
+		requires std::invocable<FunctionType, Gep::Entity>
+	void EditorResource::EntityDragDropTarget(FunctionType func)
+	{
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY"))
+			{
+				Gep::Entity* droppedEntities = (Gep::Entity*)payload->Data;
+				size_t droppedEntityCount = payload->DataSize / sizeof(Gep::Entity);
+				std::set<Gep::Entity> droppedEntitiesSet(droppedEntities, droppedEntities + droppedEntityCount);
+
+				if (!droppedEntitiesSet.empty())
+				{
+					func(*droppedEntitiesSet.begin());
+				}
+			}
 			ImGui::EndDragDropTarget();
 		}
 	}

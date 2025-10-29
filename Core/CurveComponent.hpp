@@ -13,6 +13,8 @@
 
 namespace Client
 {
+
+    // defines an entity as a path that path followers can use
     struct CurveComponent
     {
         enum class CurveType

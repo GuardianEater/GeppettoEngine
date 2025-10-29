@@ -372,29 +372,6 @@ namespace Client
         SetAssetBrowserPath(mAssetBrowserPath);
     }
 
-    template <typename FunctionType>
-        requires std::invocable<FunctionType, Gep::Entity>
-    void ImGuiSystem::EntitiesDragDropTarget(FunctionType func)
-    {
-        if (ImGui::BeginDragDropTarget())
-        {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY"))
-            {
-                Gep::Entity* droppedEntities = (Gep::Entity*)payload->Data;
-                size_t droppedEntityCount = payload->DataSize / sizeof(Gep::Entity);
-                std::set<Gep::Entity> droppedEntitiesSet(droppedEntities, droppedEntities + droppedEntityCount);
-
-                for (Gep::Entity droppedEntity : droppedEntitiesSet)
-                {
-                    func(droppedEntity);
-                }
-                mEditorResource.mSelectedEntities.clear();
-
-            }
-            ImGui::EndDragDropTarget();
-        }
-    }
-
     void ImGuiSystem::OnEntityCreated(const Gep::Event::EntityCreated& event)
     {
         mEditorResource.mHierarchyEntities.push_back(event.entity);
@@ -626,9 +603,13 @@ namespace Client
         size.y = 200 * ImGui::GetIO().FontGlobalScale;
         ImGui::Dummy(size);
 
-        EntitiesDragDropTarget([&](Gep::Entity entity)
+        mEditorResource.EntitiesDragDropTarget([&](Gep::Entity entity)
         {
             mManager.DetachEntity(entity);
+        }, 
+        [&]() // called once after all entities
+        {
+            mEditorResource.mSelectedEntities.clear();
         });
 
         // clears selected entities if the background is clicked
@@ -686,15 +667,8 @@ namespace Client
             const bool isCtrlPressed = ImGui::GetIO().KeyCtrl;
             const bool isShiftPressed = ImGui::GetIO().KeyShift;
 
-            // default selection
-            if (ImGui::IsItemClicked() && !isCtrlPressed && !isShiftPressed && mEditorResource.mSelectedEntities.size() <= 1)
-            {
-                mEditorResource.SelectEntity(entity);
-                mEditorResource.mLastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
-            }
-
             // same as default but if there are multiple entities selected, doesn't deselect until released
-            else if (ImGui::IsItemDeactivated() && !isCtrlPressed && !isShiftPressed && mEditorResource.mSelectedEntities.size() > 1)
+            if (ImGui::IsItemDeactivated() && ImGui::IsItemHovered() && !isCtrlPressed && !isShiftPressed)
             {
                 mEditorResource.SelectEntity(entity);
                 mEditorResource.mLastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
@@ -766,19 +740,30 @@ namespace Client
             // drag and drop source
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
             {
-                std::vector<Gep::Entity> selectedEntities(mEditorResource.mSelectedEntities.begin(), mEditorResource.mSelectedEntities.end());
+                if (mEditorResource.mSelectedEntities.contains(entity))
+                {
+                    std::vector<Gep::Entity> selectedEntities(mEditorResource.mSelectedEntities.begin(), mEditorResource.mSelectedEntities.end());
+                    ImGui::SetDragDropPayload("ENTITY", selectedEntities.data(), selectedEntities.size() * sizeof(Gep::Entity));
+                }
+                else
+                {
+                    ImGui::SetDragDropPayload("ENTITY", &entity, sizeof(Gep::Entity));
+                }
 
-                ImGui::SetDragDropPayload("ENTITY", selectedEntities.data(), selectedEntities.size() * sizeof(Gep::Entity));
                 ImGui::Text("Dragging %s", displayName.c_str());
                 ImGui::EndDragDropSource();
             }
 
             // Add drag and drop target
-            EntitiesDragDropTarget([&](Gep::Entity droppedEntity)
+            mEditorResource.EntitiesDragDropTarget([&](Gep::Entity droppedEntity)
             {
                 if (droppedEntity == entity) return;
 
                 mManager.AttachEntity(entity, droppedEntity);
+            },
+            [&]() // called once after all entities
+            {
+                mEditorResource.mSelectedEntities.clear();
             });
 
             if (isOpen)

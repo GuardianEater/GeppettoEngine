@@ -126,6 +126,7 @@
     <ClInclude Include="Conversion.h" />
     <ClInclude Include="CubeCollider.hpp" />
     <ClCompile Include="CubeMesh.cpp" />
+    <ClCompile Include="CubicSpline.cpp" />
     <ClCompile Include="CurveSystem.cpp" />
     <ClCompile Include="dependencies\ImGuizmo\GraphEditor.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -257,6 +258,7 @@
     <ClCompile Include="RenderTargetWindow.cpp" />
     <ClInclude Include="CollisionChecking.hpp" />
     <ClInclude Include="CollisionSystem.hpp" />
+    <ClInclude Include="CubicSpline.h" />
     <ClInclude Include="CurveComponent.hpp" />
     <ClInclude Include="CurveSystem.hpp" />
     <ClInclude Include="EditorResource.hpp" />
@@ -271,6 +273,7 @@
     <ClInclude Include="MeshCollider.hpp" />
     <ClInclude Include="Model.hpp" />
     <ClInclude Include="OS.hpp" />
+    <ClInclude Include="PathFollowerComponent.hpp" />
     <ClInclude Include="Quaternion.hpp" />
     <ClInclude Include="RenderTarget.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
@@ -290,6 +293,7 @@
     <ClCompile Include="StringHelp.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="TypeID.cpp" />
+    <ClCompile Include="UUID.cpp" />
     <ClCompile Include="WindowSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -370,6 +374,7 @@
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="TypeID.hpp" />
     <ClInclude Include="TypeList.hpp" />
+    <ClInclude Include="UUID.hpp" />
     <ClInclude Include="WindowSystem.hpp" />
   </ItemGroup>
   <ItemGroup>

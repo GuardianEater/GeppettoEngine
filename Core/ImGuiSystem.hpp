@@ -60,11 +60,6 @@ namespace Client
         bool DrawEntityNode(Gep::Entity entity);
         void DrawQuickTest();
 
-        // calls the given function for each entity dropped
-        template <typename FunctionType>
-        requires std::invocable<FunctionType, Gep::Entity>
-        void EntitiesDragDropTarget(FunctionType func);
-
         std::vector<Gep::Entity> SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm);
         void SetAssetBrowserPath(const std::filesystem::path& newPath);
         void ReloadAssetBrowser();

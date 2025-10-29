@@ -35,6 +35,7 @@
 #include "AnimationComponent.hpp"
 #include "MeshCollider.hpp"
 #include "CurveComponent.hpp"
+#include "PathFollowerComponent.hpp"
 
  // systems
 #include "PhysicsSystem.hpp"
@@ -86,7 +87,8 @@ int main()
         Client::CubeCollider,
         Client::AnimationComponent,
         Client::MeshCollider,
-        Client::CurveComponent
+        Client::CurveComponent,
+        Client::PathFollowerComponent
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////

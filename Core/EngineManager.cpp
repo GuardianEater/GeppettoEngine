@@ -158,6 +158,14 @@ namespace Gep
             return;
         }
 
+        // if the entity already had a uuid set, erase the old one
+        const UUID& oldid = GetUUID(entity);
+        if (oldid.IsValid() && mUUIDToEntity.contains(oldid))
+        {
+            mUUIDToEntity.erase(oldid);
+        }
+
+        mUUIDToEntity[uuid] = entity;
         mEntityDatas.at(entity).uuid = uuid;
     }
 
@@ -245,7 +253,7 @@ namespace Gep
 
         SetName(entity, name);
 
-        if (uuid.IsValid())
+        if (uuid.IsValid()) // allows construction of an entity without a predefined uuid, will just generate one instead
             SetUUID(entity, uuid);
         else
             SetUUID(entity, UUID::GenerateNew());
@@ -469,6 +477,17 @@ namespace Gep
         }
 
         return true;
+    }
+
+    Entity EngineManager::FindEntity(const UUID& uuid) const
+    {
+        auto it = mUUIDToEntity.find(uuid);
+        if (it == mUUIDToEntity.end())
+        {
+            return INVALID_ENTITY;
+        }
+
+        return it->second;
     }
 
     nlohmann::json EngineManager::SaveEntity(Entity entity) const

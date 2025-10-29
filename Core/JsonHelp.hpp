@@ -13,6 +13,7 @@
 #include <nlohmann/json.hpp>
 #include <glm/glm.hpp>
 #include <TypeID.hpp>
+#include <UUID.hpp>
 
 // adds overloads for nlohmann
 namespace nlohmann
@@ -27,6 +28,8 @@ namespace nlohmann
     void from_json(const json& j, glm::mat3& v);
     void to_json(json& j, const glm::mat4& v);
     void from_json(const json& j, glm::mat4& v);
+    void to_json(json& j, const Gep::UUID& v);
+    void from_json(const json& j, Gep::UUID& v);
 }
 
 namespace Gep

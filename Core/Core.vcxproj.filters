@@ -300,6 +300,12 @@
     <ClCompile Include="CurveSystem.cpp">
       <Filter>Client\Systems</Filter>
     </ClCompile>
+    <ClCompile Include="CubicSpline.cpp">
+      <Filter>Backend\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="UUID.cpp">
+      <Filter>Backend\Tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -625,6 +631,15 @@
     </ClInclude>
     <ClInclude Include="CurveComponent.hpp">
       <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="CubicSpline.h">
+      <Filter>Backend\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="PathFollowerComponent.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="UUID.hpp">
+      <Filter>Backend\Tools</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
