@@ -177,9 +177,21 @@ namespace Client
     void CurveSystem::OnPathFollowerEditorRender(const Gep::Event::ComponentEditorRender<Client::PathFollowerComponent>& event)
     {
         Gep::Entity targetEntity = mManager.FindEntity(event.component.targetPathEntity);
+        std::string uuidString = event.component.targetPathEntity.ToString();
 
-        std::string displayString = mManager.EntityExists(targetEntity) ? mManager.GetName(targetEntity) : "Not Following an entity";
-        ImGui::Text(displayString.c_str());
+        ImGui::BeginGroup();
+        if (mManager.EntityExists(targetEntity))
+        {
+            ImGui::Text("Following Entity:");
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), mManager.GetName(targetEntity).c_str());
+            //ImGui::TextDisabled(uuidString.c_str());
+        }
+        else
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Not Following an entity");
+        }
+        ImGui::EndGroup();
 
         mEditor.EntityDragDropTarget([&](Gep::Entity e)
         {

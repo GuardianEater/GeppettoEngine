@@ -240,9 +240,8 @@ namespace Gep
         if (HasParent(entity))
             DetachEntity(entity);
 
+        mUUIDToEntity.erase(mEntityDatas.at(entity).uuid); // makesure the uuid is unbound to this entity when destroyed
         mEntityDatas.erase(entity);
-
-
 
         Log::Trace("Destroyed Entity: [", entity, "]");
     }
@@ -481,6 +480,9 @@ namespace Gep
 
     Entity EngineManager::FindEntity(const UUID& uuid) const
     {
+        if (!uuid.IsValid()) 
+            return INVALID_ENTITY;
+
         auto it = mUUIDToEntity.find(uuid);
         if (it == mUUIDToEntity.end())
         {
