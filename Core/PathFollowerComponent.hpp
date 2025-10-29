@@ -18,6 +18,8 @@ namespace Client
     struct PathFollowerComponent
     {
         Gep::UUID targetPathEntity; // the entity that is currently being followed
+
+        float distanceAlongPath = 0.0f;
     };
 }
 

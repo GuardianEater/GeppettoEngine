@@ -16,11 +16,13 @@ namespace Gep
 {
     class EngineManager;
     class OpenGLRenderer;
+    class CubicSpline;
 }
 
 namespace Gep::Event
 {
     template <typename ComponentType> struct ComponentEditorRender;
+    template <typename ComponentType> struct ComponentAdded;
 }
 
 namespace Client
@@ -42,9 +44,14 @@ namespace Client
 
     private:
         void UpdateFunctionLine();
-        void UpdateCubicSpline(const std::vector<glm::vec3>& controlPoints, const size_t resolution, std::vector<glm::vec3>& points);
+        void UpdateArcLengthTable(Client::CurveComponent& curve);
+        void UpdatePathFollowers();
+        void EvaluateCubicSplinePoints(Client::CurveComponent& curve);
+        glm::vec3 EvaluateAtDistance(const Client::CurveComponent& curve, float distance) const;
 
         void OnCurveEditorRender(const Gep::Event::ComponentEditorRender<Client::CurveComponent>& cc);
+        void OnCurveAdded(const Gep::Event::ComponentAdded<Client::CurveComponent>& event);
+
         void OnPathFollowerEditorRender(const Gep::Event::ComponentEditorRender<Client::PathFollowerComponent>& cc);
 
         Gep::OpenGLRenderer& mRenderer;

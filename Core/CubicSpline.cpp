@@ -28,9 +28,11 @@ namespace Gep
         ComputeCoeffs();
     }
 
-    glm::vec3 CubicSpline::Evaluate(float t)
+    glm::vec3 CubicSpline::Evaluate(float t) const
     {
         if (controlPointCount < 2) return glm::vec3(0.0f);
+
+        t *= static_cast<float>(controlPointCount - 1); // normalize the t value
 
         glm::vec3 vt{
             coeffsx[0] + coeffsx[1] * t + coeffsx[2] * t * t + coeffsx[3] * t * t * t,

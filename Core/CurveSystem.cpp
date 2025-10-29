@@ -22,6 +22,7 @@
 #include "CurveComponent.hpp"
 #include "Transform.hpp"
 #include "PathFollowerComponent.hpp"
+#include "AnimationComponent.hpp"
 
 // resource
 #include "OpenGLRenderer.hpp"
@@ -43,16 +44,15 @@ namespace Client
     void CurveSystem::Initialize()
     {
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Client::CurveComponent>>(this, &CurveSystem::OnCurveEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<Client::CurveComponent>>(this, &CurveSystem::OnCurveAdded);
+
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Client::PathFollowerComponent>>(this, &CurveSystem::OnPathFollowerEditorRender);
-        mManager.SubscribeToEvent<Gep::Event::ComponentSerializing<Client::CurveComponent>>([](const Gep::Event::ComponentSerializing<Client::CurveComponent>& cc)
-        {
-            cc.componentJson.erase("dirty"); // do not save the dirty variable
-        });
     }
 
     void CurveSystem::Update(float dt)
-    {
-        UpdateFunctionLine();
+    { 
+        UpdateFunctionLine(); // completes all curve components
+        UpdatePathFollowers(); // path followers are updated to the location on the curve
     }
 
 
@@ -64,8 +64,12 @@ namespace Client
         {
             if (curveComponent.dirty)
             {
+                curveComponent.spline.SetControlPoints(curveComponent.controlPoints); // updates the control points of the spline
                 curveComponent.points.clear();
-                UpdateCubicSpline(curveComponent.controlPoints, curveComponent.subdivisions, curveComponent.points);
+
+                EvaluateCubicSplinePoints(curveComponent); // fills the points variable with points allong the line
+                UpdateArcLengthTable(curveComponent); // fills the arc length table
+
                 curveComponent.dirty = false;
             }
 
@@ -92,7 +96,6 @@ namespace Client
                 mRenderer.AddObject("PBR-Static", "Icosphere", uniformsCP);
             }
 
-
             for (size_t i = 0; i + 1 < curveComponent.points.size(); ++i)
             {
                 const glm::vec3 p0 = glm::vec3(model * glm::vec4(curveComponent.points[i], 1.0f));
@@ -102,35 +105,121 @@ namespace Client
             }
         });
         mRenderer.AddLine(line);
+    }
 
-        mManager.ForEachArchetype<Client::PathFollowerComponent>([&](Gep::Entity ent, Client::PathFollowerComponent& pfc)
+    void CurveSystem::UpdateArcLengthTable(Client::CurveComponent& curve)
+    {
+        // sets up the lookup table
+        curve.lookUpTable.clear();
+        curve.lookUpTable.emplace_back(0.0f, 0.0f);
+        curve.arcLength = 0.0f;
+
+        // computes all of the initial t values in the curve segments
+        std::stack<CurveComponent::CurveSegment> curveSegments;
+        for (int i = curve.controlPoints.size() - 2; i >= 0; --i)
+        {
+            float ua = static_cast<float>(i)     / (curve.controlPoints.size() - 1);
+            float ub = static_cast<float>(i + 1) / (curve.controlPoints.size() - 1);
+            curveSegments.push(CurveComponent::CurveSegment{ ua, ub });
+        }
+
+        while (!curveSegments.empty())
+        {
+            const auto[ua, ub] = curveSegments.top();// note copy by value so the references dont go stale
+            const float um = (ua + ub) / 2.0f;
+            const float A = glm::length(curve.spline.Evaluate(ua) - curve.spline.Evaluate(um));
+            const float B = glm::length(curve.spline.Evaluate(um) - curve.spline.Evaluate(ub));
+            const float C = glm::length(curve.spline.Evaluate(ua) - curve.spline.Evaluate(ub));
+            const float D = abs(A + B - C);
+
+            if (D > glm::epsilon<float>())
+            {
+                curveSegments.pop();
+                curveSegments.emplace(um, ub);
+                curveSegments.emplace(ua, um);
+            }
+            else
+            {
+                curveSegments.pop();
+                curve.arcLength += A;
+                curve.lookUpTable.emplace_back(um, curve.arcLength);
+                curve.arcLength += B;
+                curve.lookUpTable.emplace_back(ub, curve.arcLength);
+            }
+        }
+    }
+
+    void CurveSystem::UpdatePathFollowers()
+    {
+        mManager.ForEachArchetype<Client::Transform, Client::PathFollowerComponent>(
+        [&](Gep::Entity ent, Client::Transform& transform, Client::PathFollowerComponent& pfc)
         {
             Gep::Entity targetEntity = mManager.FindEntity(pfc.targetPathEntity);
 
-            // if the entity doesnt exist do nothing
+            // if the entity doesnt exist do nothing. Also the entity must have curve/transform
             if (!mManager.EntityExists(targetEntity)) return;
+            if (!mManager.HasComponent<Client::CurveComponent>(targetEntity)) return;
+            if (!mManager.HasComponent<Client::Transform>(targetEntity)) return;
+
+            CurveComponent& path = mManager.GetComponent<Client::CurveComponent>(targetEntity);
+            Transform& pathTransform = mManager.GetComponent<Client::Transform>(targetEntity);
+
+            // if the current entity has an animation component
+            if (mManager.HasComponent<Client::AnimationComponent>(ent))
+            {
+                AnimationComponent& animation = mManager.GetComponent<AnimationComponent>(ent);
+            }
+            
+            glm::mat4 model = pathTransform.GetModelMatrix();
+            transform.position = model * glm::vec4(EvaluateAtDistance(path, pfc.distanceAlongPath), 1.0f);
         });
     }
 
-    void CurveSystem::UpdateCubicSpline(const std::vector<glm::vec3>& controlPoints, const size_t resolution, std::vector<glm::vec3>& points)
+    void CurveSystem::EvaluateCubicSplinePoints(CurveComponent& curve)
     {
-        const uint32_t n = static_cast<uint32_t>(controlPoints.size());
-        if (n < 2) return;
-
-        Gep::CubicSpline spline;
-        
-        spline.SetControlPoints(controlPoints);
-
         // evaluate uniformly for rendering
-        for (uint32_t i = 0; i < resolution; ++i)
+        for (uint32_t i = 0; i < curve.subdivisions; ++i)
         {
             // note: one less control point and add it after to be exatcly at the end
-            const float t = static_cast<float>(controlPoints.size() - 1) * i / resolution;
-            points.push_back(spline.Evaluate(t));
+            const float t = (float)i / curve.subdivisions;
+            curve.points.push_back(curve.spline.Evaluate(t));
         }
         // ensure the end point is exact
-        points.push_back(controlPoints.back());
+        curve.points.push_back(curve.controlPoints.back());
+    }
 
+    glm::vec3 CurveSystem::EvaluateAtDistance(const Client::CurveComponent& curve, float distance) const
+    {
+        // noop if there is nothing in the lookup table
+        if (curve.lookUpTable.empty())
+            return {};
+
+        // clamp before
+        if (distance <= 0.0f)
+            return curve.spline.Evaluate(0.0f);
+
+        // clamp after
+        if (distance >= curve.arcLength)
+            return curve.spline.Evaluate(1.0f);
+
+        // std::lower_bound is a binary search, finds the first item greater than the key
+        auto it = std::lower_bound(curve.lookUpTable.begin(), curve.lookUpTable.end(), distance, 
+        [](const auto& entry, float value) 
+        {
+            return entry.arcLength < value;
+        });
+
+        auto prev = std::prev(it);
+
+        const auto& [t0, d0] = *prev;
+        const auto& [t1, d1] = *it;
+
+        // interpolate parameter t based on how far between the two distances we are
+        float alpha = (distance - d0) / (d1 - d0);
+        float t = t0 + alpha * (t1 - t0);
+
+        // evaluate the spline at this normalized parameter
+        return curve.spline.Evaluate(t);
     }
 
     void CurveSystem::OnCurveEditorRender(const Gep::Event::ComponentEditorRender<CurveComponent>& cc)
@@ -174,6 +263,11 @@ namespace Client
         ImGui::PopID();
     }
 
+    void CurveSystem::OnCurveAdded(const Gep::Event::ComponentAdded<Client::CurveComponent>& event)
+    {
+        event.component.dirty = true;
+    }
+
     void CurveSystem::OnPathFollowerEditorRender(const Gep::Event::ComponentEditorRender<Client::PathFollowerComponent>& event)
     {
         Gep::Entity targetEntity = mManager.FindEntity(event.component.targetPathEntity);
@@ -197,6 +291,8 @@ namespace Client
         {
             event.component.targetPathEntity = mManager.GetUUID(e);
         });
+
+        ImGui::DragFloat("Distance Along Path", &event.component.distanceAlongPath);
     }
 
 }

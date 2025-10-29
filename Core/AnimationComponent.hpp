@@ -10,6 +10,11 @@
 
 #include <string>
 
+namespace Gep
+{
+    struct VQS;
+}
+
 namespace Client
 {
     struct AnimationComponent

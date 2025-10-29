@@ -20,7 +20,7 @@ namespace Gep
 
         // needs to be called whener a value is changed
         void SetControlPoints(const std::vector<glm::vec3>& controlPoints);
-        glm::vec3 Evaluate(float t);
+        glm::vec3 Evaluate(float t) const;
 
     private:
         uint32_t controlPointCount = 0;
