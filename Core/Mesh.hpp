@@ -103,17 +103,20 @@ namespace Gep
         std::vector<Bone> bones; // must always be sorted
     };
 
+    template <typename Type>
     struct KeyFrame
     {
         float time = 0.0f; // time since the start of the animation
-        VQS transformStepConstant; // how much the transformation steps by when interpolating
-        VQS transform;
+        Type transform{};
     };
 
     struct Track
     {
         uint16_t boneIndex; // refers to a specific bone
-        std::vector<KeyFrame> keyFrames;
+
+        std::vector<KeyFrame<glm::vec3>> positionKeyFrames;
+        std::vector<KeyFrame<glm::quat>> rotationKeyFrames;
+        std::vector<KeyFrame<glm::vec3>> scaleKeyFrames;
     };
 
     struct Animation

@@ -270,14 +270,14 @@ namespace Client
         const std::vector<std::string>& allowedExtensions = renderer.GetSupportedModelFormats();
 
         er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
+        {
+            if (!renderer.IsMeshLoaded(droppedPath.string()))
             {
-                if (!renderer.IsMeshLoaded(droppedPath.string()))
-                {
-                    renderer.AddModelFromFile(droppedPath.string());
-                }
+                renderer.AddModelFromFile(droppedPath.string());
+            }
 
-                mesh.name = droppedPath.string();
-            });
+            mesh.name = droppedPath.string();
+        });
 
         if (meshesOpen)
         {
@@ -445,19 +445,16 @@ namespace Client
 
     static void DrawSkeleton(const Gep::Skeleton& skeleton, const glm::mat4& modelMatrix, const std::vector<Gep::VQS>& globalPose, Gep::LineGPUData& line)
     {
-        for (int i = 0; i < skeleton.bones.size(); i++)
+        for (int i = 1; i < skeleton.bones.size(); i++)
         {
             int parent = skeleton.bones[i].parentIndex;
-            if (parent != Gep::num_max<uint16_t>())
-            {
-                glm::vec4 a = glm::vec4(globalPose[parent].position, 1.0f);
-                glm::vec4 b = glm::vec4(globalPose[i].position, 1.0f);
+            glm::vec4 a = glm::vec4(globalPose[parent].position, 1.0f);
+            glm::vec4 b = glm::vec4(globalPose[i].position, 1.0f);
 
-                a = modelMatrix * a;
-                b = modelMatrix * b;
+            a = modelMatrix * a;
+            b = modelMatrix * b;
 
-                line.points.push_back({ a, b }); // however you render debug lines
-            }
+            line.points.push_back({ a, b }); // however you render debug lines
         }
     }
 
@@ -486,10 +483,14 @@ namespace Client
             {
                 AnimationComponent& ac = mManager.GetComponent<AnimationComponent>(entity);
 
-                for (uint32_t i = 0; i < internalModel.skeleton.bones.size() && i < ac.pose.size(); ++i)
+                for (uint16_t i = 0; i < internalModel.skeleton.bones.size(); ++i)
                 {
+                    // Build skin matrix in model space: currentGlobal * inverseBind
+                    const glm::mat4 currentGlobal = Gep::ToMat4(ac.pose[i]);
+                    const glm::mat4 inverseBind = Gep::ToMat4(internalModel.skeleton.bones[i].inverseBind);
+                    const glm::mat4 result = currentGlobal * inverseBind;
                     Gep::BoneGPUData bone{
-                        .offsetMatrix = Gep::ToMat4(ac.pose[i] * internalModel.skeleton.bones[i].inverseBind)
+                        .offsetMatrix = result
                     };
 
                     mRenderer.AddBone(bone);

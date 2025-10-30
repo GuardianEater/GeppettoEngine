@@ -917,6 +917,7 @@ namespace Gep
     {
         uint32_t id = 0;
         Gep::VQS offset;
+        Gep::VQS transform;
     };
 
     static std::unordered_map<std::string, BoneInfo> gBoneData;
@@ -1002,78 +1003,111 @@ namespace Gep
             Track& track = animation.tracks.emplace_back();
             track.boneIndex = boneIndex;
 
-            // merge Assimp’s position/rotation/scale keys into VQS keyframes
-            size_t numKeys = std::max({ channel->mNumPositionKeys,
-                                        channel->mNumRotationKeys,
-                                        channel->mNumScalingKeys });
-
             // loop through all keyframes reading in their time and position
-            track.keyFrames.reserve(numKeys);
-            for (size_t k = 0; k < numKeys; k++)
+            track.positionKeyFrames.reserve(channel->mNumPositionKeys);
+            track.rotationKeyFrames.reserve(channel->mNumRotationKeys);
+            track.scaleKeyFrames.reserve(channel->mNumScalingKeys);
+
+            for (size_t k = 0; k < channel->mNumPositionKeys; k++)
             {
-                KeyFrame& frame = track.keyFrames.emplace_back();
-                frame.time = 0.0f;
-                frame.transform.position = glm::vec3(0.0f);
-                frame.transform.rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-                frame.transform.scale = glm::vec3(1.0f);
+                auto& keyFrame = track.positionKeyFrames.emplace_back();
 
-                // pick closest available key for each channel
-                if (k < channel->mNumPositionKeys)
-                {
-                    frame.time = static_cast<float>(channel->mPositionKeys[k].mTime);
-                    frame.transform.position = ToVec3(channel->mPositionKeys[k].mValue);
-                }
+                keyFrame.time = static_cast<float>(channel->mPositionKeys[k].mTime);
+                keyFrame.transform = ToVec3(channel->mPositionKeys[k].mValue);
+            }
+            for (size_t k = 0; k < channel->mNumRotationKeys; k++)
+            {
+                auto& keyFrame = track.rotationKeyFrames.emplace_back();
 
-                if (k < channel->mNumRotationKeys)
-                {
-                    frame.time = static_cast<float>(channel->mRotationKeys[k].mTime);
-                    frame.transform.rotation = ToQuat(channel->mRotationKeys[k].mValue);
-                    frame.transform.rotation = glm::normalize(frame.transform.rotation);
-                }
+                keyFrame.time = static_cast<float>(channel->mRotationKeys[k].mTime);
+                keyFrame.transform = ToQuat(channel->mRotationKeys[k].mValue);
+            }
+            for (size_t k = 0; k < channel->mNumScalingKeys; k++)
+            {
+                auto& keyFrame = track.scaleKeyFrames.emplace_back();
 
-                if (k < channel->mNumScalingKeys)
-                {
-                    frame.time = static_cast<float>(channel->mScalingKeys[k].mTime);
-                    frame.transform.scale = ToVec3(channel->mScalingKeys[k].mValue);
-                }
+                keyFrame.time = static_cast<float>(channel->mScalingKeys[k].mTime);
+                keyFrame.transform = ToVec3(channel->mScalingKeys[k].mValue);
             }
         }
     }
 
-    Gep::VQS OpenGLRenderer::Interpolate(const Track& track, float time)
+    glm::quat OpenGLRenderer::InterpolateRotation(const Track& track, float time)
     {
-        if (track.keyFrames.empty())
-        {
-            return VQS{}; // identity
-        }
+        if (track.rotationKeyFrames.empty())
+            return glm::vec3{}; // identity
 
         // if time is before the first key
-        if (time <= track.keyFrames.front().time || track.keyFrames.size() == 1)
-        {
-            return track.keyFrames.front().transform;
-        }
+        if (time <= track.rotationKeyFrames.front().time || track.rotationKeyFrames.size() == 1)
+            return track.rotationKeyFrames.front().transform;
 
         // if time is after the last key
-        if (time >= track.keyFrames.back().time)
-        {
-            return track.keyFrames.back().transform;
-        }
+        if (time >= track.rotationKeyFrames.back().time)
+            return track.rotationKeyFrames.back().transform;
 
         // find the two keys around `time`
         size_t i = 0;
-        while (i < track.keyFrames.size() - 1 && time > track.keyFrames[i + 1].time)
+        while (i < track.rotationKeyFrames.size() - 1 && time > track.rotationKeyFrames[i + 1].time)
             i++;
 
-        const KeyFrame& k1 = track.keyFrames[i];
-        const KeyFrame& k2 = track.keyFrames[i + 1];
+        const auto& k1 = track.rotationKeyFrames[i];
+        const auto& k2 = track.rotationKeyFrames[i + 1];
 
         float factor = (time - k1.time) / (k2.time - k1.time);
 
-        Gep::VQS result;
-        result.position = glm::lerp(k1.transform.position, k2.transform.position, factor);
-        result.rotation = glm::slerp(k1.transform.rotation, k2.transform.rotation, factor);
-        result.scale = glm::lerp(k1.transform.scale, k2.transform.scale, factor);
-        return result;
+        return glm::slerp(k1.transform, k2.transform, factor);
+    }
+
+    glm::vec3 OpenGLRenderer::InterpolateScale(const Track& track, float time)
+    {
+        if (track.scaleKeyFrames.empty())
+            return glm::vec3{}; // identity
+
+        // if time is before the first key
+        if (time <= track.scaleKeyFrames.front().time || track.scaleKeyFrames.size() == 1)
+            return track.scaleKeyFrames.front().transform;
+
+        // if time is after the last key
+        if (time >= track.scaleKeyFrames.back().time)
+            return track.scaleKeyFrames.back().transform;
+        
+        // find the two keys around `time`
+        size_t i = 0;
+        while (i < track.scaleKeyFrames.size() - 1 && time > track.scaleKeyFrames[i + 1].time)
+            i++;
+
+        const auto& k1 = track.scaleKeyFrames[i];
+        const auto& k2 = track.scaleKeyFrames[i + 1];
+
+        float factor = (time - k1.time) / (k2.time - k1.time);
+
+        return glm::lerp(k1.transform, k2.transform, factor);
+    }
+
+    glm::vec3 OpenGLRenderer::InterpolatePosition(const Track& track, float time)
+    {
+        if (track.positionKeyFrames.empty())
+            return glm::vec3{}; // identity
+
+        // if time is before the first key
+        if (time <= track.positionKeyFrames.front().time || track.positionKeyFrames.size() == 1)
+            return track.positionKeyFrames.front().transform;
+
+        // if time is after the last key
+        if (time >= track.positionKeyFrames.back().time)
+            return track.positionKeyFrames.back().transform;
+
+        // find the two keys around `time`
+        size_t i = 0;
+        while (i < track.positionKeyFrames.size() - 1 && time > track.positionKeyFrames[i + 1].time)
+            i++;
+
+        const auto& k1 = track.positionKeyFrames[i];
+        const auto& k2 = track.positionKeyFrames[i + 1];
+
+        float factor = (time - k1.time) / (k2.time - k1.time);
+
+        return glm::lerp(k1.transform, k2.transform, factor);
     }
 
     // cleared once per call to load materials. used to map assimp material indexes to the internal mMaterials indexes
@@ -1146,6 +1180,7 @@ namespace Gep
                 BoneInfo newBoneInfo;
                 newBoneInfo.id = static_cast<uint32_t>(gBoneData.size()); // Assign ID before inserting
                 newBoneInfo.offset = ToVQS(mesh->mBones[boneIndex]->mOffsetMatrix);
+                //newBoneInfo.transform = ToVQS(mesh->mBones[boneIndex]->mTra)
                 gBoneData[boneName] = newBoneInfo;
                 boneID = newBoneInfo.id;
             }
@@ -1204,32 +1239,22 @@ namespace Gep
 
         // convert current node's transformation to VQS and combine with accumulated transform
         VQS currentTransform = ToVQS(node->mTransformation);
-        VQS combinedTransform = accumulatedTransform * currentTransform;
 
         auto it = gBoneData.find(node->mName.C_Str());
 
         // if node is not a bone, skip adding it but accumulate its transform
-        if (it == gBoneData.end())
+        VQS inverseBind{};
+        if (it != gBoneData.end())
         {
-            // but still traverse children, passing down the accumulated transform
-            size_t lastValid = num_max<size_t>();
-            for (size_t i = 0; i < node->mNumChildren; ++i)
-            {
-                lastValid = LoadHierarchyStep(model, parentIndex, node->mChildren[i], combinedTransform);
-            }
-
-            return lastValid;
+            inverseBind = it->second.offset;
         }
-
-        const auto& [boneName, boneData] = *it;
-        const auto& [oldIndex, inverseBind] = boneData;
 
         // this is a bone, so add it, note cannot get a reference here because it could be stale
         size_t index = model.skeleton.bones.size();
         model.skeleton.bones.emplace_back();
         model.skeleton.bones.at(index).name = node->mName.C_Str();
         model.skeleton.bones.at(index).parentIndex = parentIndex;
-        model.skeleton.bones.at(index).transformation = combinedTransform; // use combined transform
+        model.skeleton.bones.at(index).transformation = currentTransform; // use combined transform
         model.skeleton.bones.at(index).inverseBind = inverseBind;
 
         for (size_t i = 0; i < node->mNumChildren; ++i)

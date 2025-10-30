@@ -216,7 +216,10 @@ namespace Gep
         void End(); // resets the state of the renderer must be called after all draw calls
 
         void SetUpLineDrawing();
-        Gep::VQS Interpolate(const Track& track, float time);
+        glm::quat InterpolateRotation(const Track& track, float time);
+        glm::vec3 InterpolatePosition(const Track& track, float time);
+        glm::vec3 InterpolateScale(const Track& track, float time);
+
     private:
         struct MaterialGPUHandle
         {
