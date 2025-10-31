@@ -273,7 +273,7 @@ namespace Gep
         }
 
         nlohmann::json entityData = SaveEntity(entity);
-        Entity newEntity = LoadEntity(entityData);
+        Entity newEntity = LoadEntity(entityData, false);
         SetUUID(newEntity, UUID::GenerateNew());
 
         return newEntity;
@@ -518,7 +518,7 @@ namespace Gep
         return entityJson;
     }
 
-    Entity EngineManager::LoadEntity(const nlohmann::json& entityJson)
+    Entity EngineManager::LoadEntity(const nlohmann::json& entityJson, bool readUUID)
     {
         Gep::Entity entity = CreateEntity();
 
@@ -556,7 +556,7 @@ namespace Gep
             const nlohmann::json& childrenJson = entityJson["children"];
             for (const nlohmann::json& childJson : childrenJson)
             {
-                Gep::Entity child = LoadEntity(childJson);
+                Gep::Entity child = LoadEntity(childJson, readUUID);
                 AttachEntity(entity, child);
             }
         }
@@ -568,9 +568,12 @@ namespace Gep
         }
         else
         {
-            UUID uuid = UUID::FromString(entityJson["uuid"].get<std::string>());
-            if (uuid.IsValid())
-                SetUUID(entity, uuid);
+            if (readUUID) // CreateEntity generates a uuid by default
+            {
+                UUID uuid = UUID::FromString(entityJson["uuid"].get<std::string>());
+                if (uuid.IsValid())
+                    SetUUID(entity, uuid);
+            }
         }
         
         if (!entityJson.contains("name"))

@@ -20,14 +20,14 @@ namespace Gep
 
         // needs to be called whener a value is changed
         void SetControlPoints(const std::vector<glm::vec3>& controlPoints);
-        glm::vec3 Evaluate(float t) const;
+        glm::vec3 Evaluate(double t) const;
 
     private:
         uint32_t controlPointCount = 0;
 
-        Eigen::MatrixXf A;
-        Eigen::VectorXf bx, by, bz;
-        Eigen::VectorXf coeffsx, coeffsy, coeffsz;
+        Eigen::MatrixXd A;
+        Eigen::VectorXd bx, by, bz;
+        Eigen::VectorXd coeffsx, coeffsy, coeffsz;
 
     private:
         void ComputeAandB(const std::vector<glm::vec3>& controlPoints);

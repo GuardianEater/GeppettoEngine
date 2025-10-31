@@ -1,8 +1,8 @@
 #include "Common.glsl"
 
 // in variables ////////////////////////////////////////////////////////////////
-layout(location=0) in vec4 worldPosition;    // the point that the light hits
-layout(location=1) in vec4 worldNormal;      // the normal vector of the surface hit
+layout(location=0) in vec3 worldPosition;    // the point that the light hits
+layout(location=1) in vec3 worldNormal;      // the normal vector of the surface hit
 layout(location=2) in vec2 uvOut;            // the uv coordinates of the surface hit
 layout(location=3) flat in uint vObjectIndex; // the index of the currently being drawn object
 layout(location=4) flat in uint vMeshIndex; // the index of the currently being drawn object
@@ -89,14 +89,14 @@ vec3 CalculatePBRLighting(LightUniforms light, vec3 n, vec3 objectColor)
 {
   vec3 l = vec3(0.0);
 
-  l = light.position - worldPosition.xyz;
+  l = light.position - worldPosition;
   float lightToPixelDist = length(l); // before normalizing get the length
   l = normalize(l);
   
   float attenuation = 1.0 / (lightToPixelDist * lightToPixelDist);
   vec3 radiance = light.color * attenuation * light.intensity * 100.0;
 
-  vec3 v = normalize(cameraUniforms[cameraIndex].camPosition.xyz - worldPosition.xyz); // view vector
+  vec3 v = normalize(cameraUniforms[cameraIndex].camPosition.xyz - worldPosition); // view vector
   vec3 h = normalize(v + l); // half vector
 
   float nDotH = max(dot(n, h), 0.0); // clamp to 0 for values less than 0
@@ -123,11 +123,46 @@ vec3 CalculatePBRLighting(LightUniforms light, vec3 n, vec3 objectColor)
   return finalColor;
 }
 
+// Simple global directional light (hardcoded for quick testing)
+vec3 CalculatePBRDirectional(vec3 n, vec3 objectColor)
+{
+  // Direction points from light toward the scene; light comes FROM -dir
+  const vec3 dir = normalize(vec3(0.3, -1.0, 0.2));
+  const vec3 lightColor = vec3(1.0, 1.0, 1.0);
+  const float intensity = 2.0; // tweak as needed
+
+  vec3 l = normalize(-dir);
+  vec3 v = normalize(cameraUniforms[cameraIndex].camPosition.xyz - worldPosition);
+  vec3 h = normalize(v + l);
+
+  float nDotH = max(dot(n, h), 0.0);
+  float vDotH = max(dot(v, h), 0.0);
+  float nDotL = max(dot(n, l), 0.0);
+  float nDotV = max(dot(n, v), 0.0);
+
+  float D = GGXDistribution(nDotH);
+  float G = GeometrySmith(nDotV, nDotL);
+  vec3 F = SchlickFresnel(vDotH);
+
+  vec3 ks = F;
+  vec3 kd = (vec3(1.0) - ks) * (1.0 - currentSample.metallic);
+
+  vec3 numerator = D * G * F;
+  float denominator = 4.0 * nDotL * nDotV + 0.0001;
+
+  vec3 specularBRDF = numerator / denominator;
+  vec3 diffuseBRDF = kd * objectColor / PI;
+
+  vec3 radiance = lightColor * intensity; // no attenuation for directional
+
+  return (diffuseBRDF + specularBRDF) * radiance * nDotL;
+}
+
 // Builds a world-space normal using a tangent-space normal map if present.
 // Computes TBN per-fragment via derivatives to avoid requiring mesh tangents.
 vec3 ComputeShadedNormal()
 {
-  vec3 n = normalize(worldNormal.xyz);
+  vec3 n = normalize(worldNormal);
 
   const PBRMaterial material = materialUniforms[vMaterialIndex];
   if (material.normalTextureHandle != uvec2(0,0))
@@ -136,8 +171,8 @@ vec3 ComputeShadedNormal()
     vec3 mapN = texture(sampler2D(material.normalTextureHandle), uvOut).xyz * 2.0 - 1.0;
 
     // Derivative-based TBN construction in world space
-    vec3 dp1 = dFdx(worldPosition.xyz);
-    vec3 dp2 = dFdy(worldPosition.xyz);
+    vec3 dp1 = dFdx(worldPosition);
+    vec3 dp2 = dFdy(worldPosition);
     vec2 duv1 = dFdx(uvOut);
     vec2 duv2 = dFdy(uvOut);
 
@@ -163,6 +198,9 @@ vec3 CalculatePBRLightingTotal()
   {
     color += CalculatePBRLighting(lights[i], n, currentSample.color.rgb);
   }
+
+  // add one global directional light
+  color += CalculatePBRDirectional(n, currentSample.color.rgb);
 
   vec3 ambient = vec3(0.8) * currentSample.color.rgb * currentSample.ao;
   color += ambient;

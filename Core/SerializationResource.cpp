@@ -149,7 +149,7 @@ namespace Client
         const nlohmann::json& entitiesJson = sceneJson["entities"];
         for (const nlohmann::json& entityJson : entitiesJson)
         {
-            Gep::Entity entity = em.LoadEntity(entityJson);
+            Gep::Entity entity = em.LoadEntity(entityJson, true);
         }
     }
 }

@@ -32,13 +32,13 @@ namespace Client
 
         glm::mat4 GetModelMatrix()
         {
-            // Recompute only if something changed
-            if (position != previousPosition || rotation != previousRotation || scale != previousScale)
-            {
+            //// Recompute only if something changed
+            //if (position != previousPosition || rotation != previousRotation || scale != previousScale)
+            //{
                 cachedModel = Gep::translation_matrix(position)
                             * Gep::rotation(rotation)
                             * Gep::scale_matrix(scale);
-            }
+            //}
 
             return cachedModel;
         }

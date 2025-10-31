@@ -45,16 +45,16 @@ namespace Client
         {
             outLocalPose[track.boneIndex].position = mRenderer.InterpolatePosition(track, time);
             outLocalPose[track.boneIndex].rotation = mRenderer.InterpolateRotation(track, time);
-            outLocalPose[track.boneIndex].scale    = mRenderer.InterpolateScale(track, time);
+            outLocalPose[track.boneIndex].scale = mRenderer.InterpolateScale(track, time);
         }
     }
 
     // takes a bone structure in local pose and outputs it as global pose
     static void CalculateGlobalPose(const Gep::Skeleton& skeleton, std::vector<Gep::VQS>& outGlobalPose)
     {
-        for (uint16_t i = 1; i < skeleton.bones.size(); i++) // note skip the root bone
+        for (uint32_t i = 1; i < skeleton.bones.size(); i++) // note skip the root bone
         {
-            uint16_t parent = skeleton.bones[i].parentIndex;
+            uint32_t parent = skeleton.bones[i].parentIndex;
 
             outGlobalPose[i] = outGlobalPose[parent] * outGlobalPose[i];
         }
@@ -94,11 +94,11 @@ namespace Client
             }
 
             // I dont really understand why the clear has to be here but if I remove it there are strange anomalies sometimes.
+            const uint32_t boneCount = static_cast<uint32_t>(model.skeleton.bones.size());
             animationComponent.pose.clear();
-            //animationComponent.pose.resize(model.skeleton.bones.size());
-
-            for (const Gep::Bone& bone : model.skeleton.bones)
-                animationComponent.pose.push_back(bone.transformation);
+            animationComponent.pose.resize(boneCount);
+            //for (uint32_t i = 0; i < boneCount; ++i)
+            //    animationComponent.pose[i] = model.skeleton.bones[i].transformation;
 
             EvaluateAnimation(animation, animationComponent.currentTime, animationComponent.pose);
 

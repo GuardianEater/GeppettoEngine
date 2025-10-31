@@ -1,13 +1,13 @@
 #include "Common.glsl"
 
 // in variables ////////////////////////////////////////////////////////////////
-layout(location=0) in vec4 position; // surface point
-layout(location=1) in vec4 normal;   // normal at position
+layout(location=0) in vec3 position; // surface point
+layout(location=1) in vec3 normal;   // normal at position
 layout(location=2) in vec2 uv;       // texture coordinates
 
 // out to fragment shader //////////////////////////////////////////////////////
-layout(location=0) out vec4 worldPosition; // surface point
-layout(location=1) out vec4 worldNormal;   // normal at position
+layout(location=0) out vec3 worldPosition; // surface point
+layout(location=1) out vec3 worldNormal;   // normal at position
 layout(location=2) out vec2 uvOut;         // texture coordinates
 
 void main()
@@ -21,7 +21,7 @@ void main()
   CameraUniforms cam = cameraUniforms[cameraIndex];
 
   // World-space
-  vec4 wpos = obj.modelMatrix * position;
+  vec4 wpos = obj.modelMatrix * vec4(position, 1.0);
   vec3 wnrm = normalize(obj.normalMatrix * normal.xyz);
 
   // View-space
@@ -44,7 +44,7 @@ void main()
   gl_Position = clipPos;
 
   // Populate varyings (even if the frag shader doesn’t use them)
-  worldPosition = wpos;
-  worldNormal   = vec4(wnrm, 0.0);
+  worldPosition = vec3(wpos);
+  worldNormal   = wnrm;
   uvOut         = uv;
 }

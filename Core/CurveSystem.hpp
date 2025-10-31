@@ -45,9 +45,9 @@ namespace Client
     private:
         void UpdateFunctionLine();
         void UpdateArcLengthTable(Client::CurveComponent& curve);
-        void UpdatePathFollowers();
+        void UpdatePathFollowers(float dt);
         void EvaluateCubicSplinePoints(Client::CurveComponent& curve);
-        glm::vec3 EvaluateAtDistance(const Client::CurveComponent& curve, float distance) const;
+        glm::vec3 EvaluateAtDistance(const Client::CurveComponent& curve, double distance) const;
 
         void OnCurveEditorRender(const Gep::Event::ComponentEditorRender<Client::CurveComponent>& cc);
         void OnCurveAdded(const Gep::Event::ComponentAdded<Client::CurveComponent>& event);

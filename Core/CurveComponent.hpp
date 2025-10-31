@@ -33,20 +33,20 @@ namespace Client
 
         struct TableEntry
         {
-            float parameterValue = 0.0f;
-            float arcLength = 0.0f;
+            double parameterValue = 0.0f;
+            double arcLength = 0.0f;
         };
 
         struct CurveSegment
         {
-            float ua = 0.0f;
-            float ub = 0.0f;
+            double ua = 0.0f;
+            double ub = 0.0f;
         };
 
         // used for evaluating arc length
         Gep::CubicSpline spline; // object for computing and evaluating the spline at a normalized t value
         std::vector<TableEntry> lookUpTable; // used to find paramter values from a given arclength
         //std::deque<CurveSegment> curveSegments; // stores all segments on the curve
-        float arcLength = 0.0f; // the accumulated arclength of the curve
+        double arcLength = 0.0f; // the accumulated arclength of the curve
     };
 }

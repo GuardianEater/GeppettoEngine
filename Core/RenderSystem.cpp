@@ -483,14 +483,10 @@ namespace Client
             {
                 AnimationComponent& ac = mManager.GetComponent<AnimationComponent>(entity);
 
-                for (uint16_t i = 0; i < internalModel.skeleton.bones.size(); ++i)
+                for (uint32_t i = 0; i < internalModel.skeleton.bones.size(); ++i)
                 {
-                    // Build skin matrix in model space: currentGlobal * inverseBind
-                    const glm::mat4 currentGlobal = Gep::ToMat4(ac.pose[i]);
-                    const glm::mat4 inverseBind = Gep::ToMat4(internalModel.skeleton.bones[i].inverseBind);
-                    const glm::mat4 result = currentGlobal * inverseBind;
                     Gep::BoneGPUData bone{
-                        .offsetMatrix = result
+                        .offsetMatrix = Gep::ToMat4(ac.pose[i] * internalModel.skeleton.bones[i].inverseBind)
                     };
 
                     mRenderer.AddBone(bone);

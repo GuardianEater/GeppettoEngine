@@ -187,7 +187,7 @@ namespace Gep
         Entity FindEntity(const UUID& uuid) const;
 
         nlohmann::json SaveEntity(Entity entity) const;
-        Entity LoadEntity(const nlohmann::json& entityJson);
+        Entity LoadEntity(const nlohmann::json& entityJson, bool readUUID);
 
         template <typename... ComponentTypes>
         Signature CreateSignature(Signature oldSignature = 0) const;

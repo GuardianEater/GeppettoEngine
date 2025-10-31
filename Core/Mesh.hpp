@@ -48,7 +48,7 @@ namespace Gep
         glm::vec3 normal{};
         glm::vec2 texCoord{};
         std::array<uint32_t, 4> boneIndices{ INVALID_INDEX , INVALID_INDEX, INVALID_INDEX, INVALID_INDEX };
-        std::array<float, 4> boneWeights{ 0.0f, 0.0f, 0.0f, 0.0f };
+        std::array<float, 4> boneWeights{ 0.25f, 0.25f, 0.25f, 0.25f };
     };
 
     struct Mesh
@@ -92,10 +92,12 @@ namespace Gep
     {
         std::string name = "Unnamed";
 
-        std::vector<uint16_t> childrenIndices;
+        std::vector<uint32_t> childrenIndices;
         VQS transformation;
         VQS inverseBind;
-        uint16_t parentIndex;
+        uint32_t parentIndex;
+
+        bool isRealBone = false; // wether or not this bone was a bone inside of assimp
     };
 
     struct Skeleton
@@ -112,7 +114,7 @@ namespace Gep
 
     struct Track
     {
-        uint16_t boneIndex; // refers to a specific bone
+        uint32_t boneIndex; // refers to a specific bone
 
         std::vector<KeyFrame<glm::vec3>> positionKeyFrames;
         std::vector<KeyFrame<glm::quat>> rotationKeyFrames;

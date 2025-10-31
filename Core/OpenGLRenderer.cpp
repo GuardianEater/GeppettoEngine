@@ -880,19 +880,19 @@ namespace Gep
         glBindVertexArray(mVertexArrayObject);
 
         glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, position));
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
         glEnableVertexAttribArray(0);
 
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
         glEnableVertexAttribArray(1);
 
-        glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
         glEnableVertexAttribArray(2);
 
         glVertexAttribIPointer(3, 4, GL_UNSIGNED_INT, sizeof(Vertex), (void*)offsetof(Vertex, boneIndices));
         glEnableVertexAttribArray(3);
 
-        glVertexAttribPointer(4, 4, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, boneWeights));
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, boneWeights));
         glEnableVertexAttribArray(4);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer);
@@ -915,9 +915,8 @@ namespace Gep
 
     struct BoneInfo
     {
-        uint32_t id = 0;
-        Gep::VQS offset;
-        Gep::VQS transform;
+        uint32_t index = 0;
+        Gep::VQS offset{};
     };
 
     static std::unordered_map<std::string, BoneInfo> gBoneData;
@@ -982,7 +981,7 @@ namespace Gep
 
         animation.tracks.reserve(assimpAnimation->mNumChannels);
 
-        for (unsigned int i = 0; i < assimpAnimation->mNumChannels; i++)
+        for (uint32_t i = 0; i < assimpAnimation->mNumChannels; i++)
         {
             const aiNodeAnim* channel = assimpAnimation->mChannels[i];
 
@@ -998,7 +997,7 @@ namespace Gep
                 continue;
             }
 
-            uint16_t boneIndex = static_cast<uint16_t>(std::distance(skeleton.bones.begin(), it));
+            uint32_t boneIndex = static_cast<uint32_t>(std::distance(skeleton.bones.begin(), it));
 
             Track& track = animation.tracks.emplace_back();
             track.boneIndex = boneIndex;
@@ -1020,7 +1019,7 @@ namespace Gep
                 auto& keyFrame = track.rotationKeyFrames.emplace_back();
 
                 keyFrame.time = static_cast<float>(channel->mRotationKeys[k].mTime);
-                keyFrame.transform = ToQuat(channel->mRotationKeys[k].mValue);
+                keyFrame.transform = glm::normalize(ToQuat(channel->mRotationKeys[k].mValue));
             }
             for (size_t k = 0; k < channel->mNumScalingKeys; k++)
             {
@@ -1035,7 +1034,7 @@ namespace Gep
     glm::quat OpenGLRenderer::InterpolateRotation(const Track& track, float time)
     {
         if (track.rotationKeyFrames.empty())
-            return glm::vec3{}; // identity
+            return glm::quat(1.0f, 0.0f, 0.0f, 0.0f); // identity
 
         // if time is before the first key
         if (time <= track.rotationKeyFrames.front().time || track.rotationKeyFrames.size() == 1)
@@ -1047,7 +1046,7 @@ namespace Gep
 
         // find the two keys around `time`
         size_t i = 0;
-        while (i < track.rotationKeyFrames.size() - 1 && time > track.rotationKeyFrames[i + 1].time)
+        while (i < track.rotationKeyFrames.size() - 1 && time >= track.rotationKeyFrames[i + 1].time)
             i++;
 
         const auto& k1 = track.rotationKeyFrames[i];
@@ -1061,7 +1060,7 @@ namespace Gep
     glm::vec3 OpenGLRenderer::InterpolateScale(const Track& track, float time)
     {
         if (track.scaleKeyFrames.empty())
-            return glm::vec3{}; // identity
+            return glm::vec3(1.0f); // identity
 
         // if time is before the first key
         if (time <= track.scaleKeyFrames.front().time || track.scaleKeyFrames.size() == 1)
@@ -1073,7 +1072,7 @@ namespace Gep
         
         // find the two keys around `time`
         size_t i = 0;
-        while (i < track.scaleKeyFrames.size() - 1 && time > track.scaleKeyFrames[i + 1].time)
+        while (i < track.scaleKeyFrames.size() - 1 && time >= track.scaleKeyFrames[i + 1].time)
             i++;
 
         const auto& k1 = track.scaleKeyFrames[i];
@@ -1099,7 +1098,7 @@ namespace Gep
 
         // find the two keys around `time`
         size_t i = 0;
-        while (i < track.positionKeyFrames.size() - 1 && time > track.positionKeyFrames[i + 1].time)
+        while (i < track.positionKeyFrames.size() - 1 && time >= track.positionKeyFrames[i + 1].time)
             i++;
 
         const auto& k1 = track.positionKeyFrames[i];
@@ -1155,54 +1154,6 @@ namespace Gep
         }
     }
 
-    static void SetVertexBoneData(Vertex& vertex, uint32_t boneID, float weight)
-    {
-        for (size_t i = 0; i < vertex.boneIndices.size(); ++i)
-        {
-            if (vertex.boneIndices[i] == Vertex::INVALID_INDEX)
-            {
-                vertex.boneWeights[i] = weight;
-                vertex.boneIndices[i] = boneID;
-                break;
-            }
-        }
-    }
-
-    static void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, const aiMesh* mesh, const aiScene* scene)
-    {
-        for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
-        {
-            uint32_t boneID = Vertex::INVALID_INDEX;
-            std::string boneName = mesh->mBones[boneIndex]->mName.C_Str();
-
-            if (!gBoneData.contains(boneName))
-            {
-                BoneInfo newBoneInfo;
-                newBoneInfo.id = static_cast<uint32_t>(gBoneData.size()); // Assign ID before inserting
-                newBoneInfo.offset = ToVQS(mesh->mBones[boneIndex]->mOffsetMatrix);
-                //newBoneInfo.transform = ToVQS(mesh->mBones[boneIndex]->mTra)
-                gBoneData[boneName] = newBoneInfo;
-                boneID = newBoneInfo.id;
-            }
-            else
-            {
-                boneID = gBoneData[boneName].id;
-            }
-
-            auto weights = mesh->mBones[boneIndex]->mWeights;
-            uint32_t numWeights = mesh->mBones[boneIndex]->mNumWeights;
-
-            for (uint32_t weightIndex = 0; weightIndex < numWeights; ++weightIndex)
-            {
-                uint32_t vertexId = weights[weightIndex].mVertexId;
-                float weight = weights[weightIndex].mWeight;
-
-                SetVertexBoneData(vertices[vertexId], boneID, weight);
-            }
-        }
-    }
-
-
     static void LoadVertices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
     {
         mesh.vertices.reserve(assimpMesh->mNumVertices);
@@ -1233,36 +1184,42 @@ namespace Gep
     }
 
     // returns the index of the node just created
-    static size_t LoadHierarchyStep(Gep::Model& model, size_t parentIndex, const aiNode* node, const VQS& accumulatedTransform = VQS{})
+    static uint32_t LoadHierarchyStep(Gep::Model& model, const uint32_t parentIndex, const aiNode* node)
     {
-        if (!node) return num_max<size_t>();
-
-        // convert current node's transformation to VQS and combine with accumulated transform
-        VQS currentTransform = ToVQS(node->mTransformation);
+        // if the passed node is null return num max signaling that this is a leaf
+        if (!node) 
+            return num_max<uint32_t>();
 
         auto it = gBoneData.find(node->mName.C_Str());
 
-        // if node is not a bone, skip adding it but accumulate its transform
+        // if node is a bone sets it inverse bind otherwise leave as identity
         VQS inverseBind{};
-        if (it != gBoneData.end())
-        {
+        const bool isRealBone = it != gBoneData.end();
+        if (isRealBone)
             inverseBind = it->second.offset;
-        }
+        
+        // create an entry in the heirarchy. 
+        uint32_t index = model.skeleton.bones.size();
+        Gep::Bone& bone = model.skeleton.bones.emplace_back();
+        bone.name = node->mName.C_Str();
+        bone.parentIndex = parentIndex;
+        bone.transformation = ToVQS(node->mTransformation);
+        bone.inverseBind = inverseBind;
+        bone.isRealBone = isRealBone;
 
-        // this is a bone, so add it, note cannot get a reference here because it could be stale
-        size_t index = model.skeleton.bones.size();
-        model.skeleton.bones.emplace_back();
-        model.skeleton.bones.at(index).name = node->mName.C_Str();
-        model.skeleton.bones.at(index).parentIndex = parentIndex;
-        model.skeleton.bones.at(index).transformation = currentTransform; // use combined transform
-        model.skeleton.bones.at(index).inverseBind = inverseBind;
+        // if its a bone add the index to the name association. Used when extracting vertex weights
+        if (isRealBone) 
+            it->second.index = index;
 
-        for (size_t i = 0; i < node->mNumChildren; ++i)
+        // do the same thing for each child
+        for (const aiNode* childNode : std::span(node->mChildren, node->mNumChildren))
         {
-            // reset accumulated transform for children since this bone will handle the transform hierarchy
-            size_t childIndex = LoadHierarchyStep(model, index, node->mChildren[i]);
-            if (childIndex != num_max<size_t>())
+            uint32_t childIndex = LoadHierarchyStep(model, index, childNode);
+            if (childIndex != num_max<uint32_t>())
+            {
+                //note: cant get a reference here because it could be stale after recursive calls
                 model.skeleton.bones.at(index).childrenIndices.push_back(childIndex);
+            }
         }
 
         return index;
@@ -1271,28 +1228,68 @@ namespace Gep
     // create hierary
     static void LoadHierarchy(Gep::Model& model, const aiScene* scene)
     {
-        LoadHierarchyStep(model, num_max<size_t>(), scene->mRootNode);
+        LoadHierarchyStep(model, num_max<uint32_t>(), scene->mRootNode);
+    }
+
+    static void SetVertexBoneData(Vertex& vertex, uint32_t boneID, float weight)
+    {
+        for (int i = 0; i < vertex.boneIndices.size(); ++i)
+        {
+            if (vertex.boneIndices[i] == Vertex::INVALID_INDEX)
+            {
+                vertex.boneWeights[i] = weight;
+                vertex.boneIndices[i] = boneID;
+                break;
+            }
+        }
+    }
+
+    static void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, const aiMesh* assimpMesh, const aiScene* scene)
+    {
+        for (const aiBone* assimpBone : std::span(assimpMesh->mBones, assimpMesh->mNumBones))
+        {
+            const std::string boneName = assimpBone->mName.C_Str();
+            const uint32_t boneID = gBoneData.at(boneName).index; // index into the final bone heirarchy
+
+            for (const aiVertexWeight assimpWeight : std::span(assimpBone->mWeights, assimpBone->mNumWeights))
+            {
+                const uint32_t vertexId = assimpWeight.mVertexId;
+                const float weight = assimpWeight.mWeight;
+                
+                SetVertexBoneData(vertices[vertexId], boneID, weight);
+            }
+        }
     }
 
     static void LoadMeshes(Gep::Model& model, const aiScene* scene)
     {
         model.meshes.reserve(scene->mNumMeshes);
 
-        for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
+        for (const aiMesh* assimpMesh : std::span(scene->mMeshes, scene->mNumMeshes))
         {
-            const aiMesh* assimpMesh = scene->mMeshes[i];
-            std::string meshName = assimpMesh->mName.length > 0 ? assimpMesh->mName.C_Str() : ("UnnamedMesh_" + std::to_string(i));
-
             Mesh& mesh = model.meshes.emplace_back();
-            mesh.name = meshName;
+            mesh.name = assimpMesh->mName.C_Str();
 
             LoadVertices(mesh, assimpMesh);
             LoadIndices(mesh, assimpMesh);
             mesh.CalculateBoundingBox(); //must be done after vertices are loaded
 
             mesh.materialIndex = gAssimpMaterialIndexToMaterialIndex.at(assimpMesh->mMaterialIndex);
-
             ExtractBoneWeightForVertices(mesh.vertices, assimpMesh, scene);
+        }
+    }
+
+    // maps the name of every bone to its inverse bind transformation
+    // also used for checking existance of a bone
+    static void LoadBoneData(const aiScene* scene)
+    {
+        for (const aiMesh* mesh : std::span(scene->mMeshes, scene->mNumMeshes))
+        {
+            for (const aiBone* bone : std::span(mesh->mBones, mesh->mNumBones))
+            {
+                const std::string name = bone->mName.C_Str();
+                gBoneData[name].offset = ToVQS(bone->mOffsetMatrix);
+            }
         }
     }
 
@@ -1322,8 +1319,14 @@ namespace Gep
         // loads all of the materials out of this scene
         LoadMaterials(path, scene);
 
-        LoadMeshes(model, scene);
+        // loads every bone name to its offset matrix in gBoneData
+        LoadBoneData(scene);
+
+        // fills in the skeleton of the model and the index field in gBoneData
         LoadHierarchy(model, scene);
+
+        LoadMeshes(model, scene);
+
         LoadAnimations(path.string(), model, scene);
 
         return model;

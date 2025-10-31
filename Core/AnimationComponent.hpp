@@ -24,6 +24,6 @@ namespace Client
         bool looping = false; // whether or not the animation will loop
         float speed = 1.0f; // the playback multiplier of the animation
 
-        std::vector<Gep::VQS> pose; // the current pose of the animation, in global space
+        std::vector<Gep::VQS> pose; // stores all bones local transforms
     };
 }

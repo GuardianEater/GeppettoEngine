@@ -1,15 +1,15 @@
 #include "Common.glsl"
 
 // in variables ////////////////////////////////////////////////////////////////
-layout(location=0) in vec4 position;    // surface point
-layout(location=1) in vec4 normal;      // normal at position
+layout(location=0) in vec3 position;    // surface point
+layout(location=1) in vec3 normal;      // normal at position
 layout(location=2) in vec2 uv;          // texture coordinates
 layout(location=3) in uvec4 boneIndexs; // indices of bones affecting this vertex
 layout(location=4) in vec4 boneWeights; // weights of bones affecting this vertex
 
 // out to fragment shader //////////////////////////////////////////////////////
-layout(location=0) out vec4 worldPosition;    // surface point
-layout(location=1) out vec4 worldNormal;      // normal at position
+layout(location=0) out vec3 worldPosition;    // surface point
+layout(location=1) out vec3 worldNormal;      // normal at position
 layout(location=2) out vec2 uvOut;            // texture coordinates
 layout(location=3) flat out uint vObjectIndex; // the current objects index into object uniforms
 layout(location=4) flat out uint vMeshIndex;   // the current mesh index into mesh uniforms
@@ -21,11 +21,11 @@ void main(void)
   vMeshIndex     = gl_InstanceID + meshBaseInstance;
   vMaterialIndex = meshUniforms[vMeshIndex].materialIndex;
 
-  worldPosition = objectUniforms[vObjectIndex].modelMatrix * position;
+  vec4 pos4 = objectUniforms[vObjectIndex].modelMatrix * vec4(position, 1.0);
 
-  worldNormal = vec4(normalize(objectUniforms[vObjectIndex].normalMatrix * vec3(normal)), 0.0);
-
+  worldNormal = normalize(objectUniforms[vObjectIndex].normalMatrix * normal);
   uvOut = uv;
+  worldPosition = vec3(pos4);
 
-  gl_Position = cameraUniforms[cameraIndex].perspectiveMatrix * cameraUniforms[cameraIndex].viewMatrix * worldPosition;
+  gl_Position = cameraUniforms[cameraIndex].perspectiveMatrix * cameraUniforms[cameraIndex].viewMatrix * pos4;
 }

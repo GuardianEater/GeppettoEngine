@@ -17,9 +17,11 @@ namespace Client
 {
     struct PathFollowerComponent
     {
-        Gep::UUID targetPathEntity; // the entity that is currently being followed
+        Gep::UUID targetPathEntity{}; // the entity that is currently being followed
 
-        float distanceAlongPath = 0.0f;
+        double distanceAlongPath = 0.0;
+        float speed = 0.0f; // determines how fast to move down the path
+        bool looping = false; // whether or not the entity should wrap to the other end of the path or stop
     };
 }
 

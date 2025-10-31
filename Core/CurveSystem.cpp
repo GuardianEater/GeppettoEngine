@@ -52,7 +52,9 @@ namespace Client
     void CurveSystem::Update(float dt)
     { 
         UpdateFunctionLine(); // completes all curve components
-        UpdatePathFollowers(); // path followers are updated to the location on the curve
+
+        if (mManager.IsState(Gep::EngineState::Play))
+            UpdatePathFollowers(dt); // path followers are updated to the location on the curve
     }
 
 
@@ -127,9 +129,12 @@ namespace Client
         {
             const auto[ua, ub] = curveSegments.top();// note copy by value so the references dont go stale
             const float um = (ua + ub) / 2.0f;
-            const float A = glm::length(curve.spline.Evaluate(ua) - curve.spline.Evaluate(um));
-            const float B = glm::length(curve.spline.Evaluate(um) - curve.spline.Evaluate(ub));
-            const float C = glm::length(curve.spline.Evaluate(ua) - curve.spline.Evaluate(ub));
+            const glm::vec3 uaPos = curve.spline.Evaluate(ua);
+            const glm::vec3 umPos = curve.spline.Evaluate(um);
+            const glm::vec3 ubPos = curve.spline.Evaluate(ub);
+            const float A = glm::length(uaPos - umPos);
+            const float B = glm::length(umPos - ubPos);
+            const float C = glm::length(uaPos - ubPos);
             const float D = abs(A + B - C);
 
             if (D > glm::epsilon<float>())
@@ -149,7 +154,7 @@ namespace Client
         }
     }
 
-    void CurveSystem::UpdatePathFollowers()
+    void CurveSystem::UpdatePathFollowers(float dt)
     {
         mManager.ForEachArchetype<Client::Transform, Client::PathFollowerComponent>(
         [&](Gep::Entity ent, Client::Transform& transform, Client::PathFollowerComponent& pfc)
@@ -160,6 +165,28 @@ namespace Client
             if (!mManager.EntityExists(targetEntity)) return;
             if (!mManager.HasComponent<Client::CurveComponent>(targetEntity)) return;
             if (!mManager.HasComponent<Client::Transform>(targetEntity)) return;
+
+            CurveComponent& curve = mManager.GetComponent<CurveComponent>(targetEntity);
+
+            // progess down the path
+            pfc.distanceAlongPath += dt * pfc.speed;
+
+            // clamp time / if looping is on loop
+            if (pfc.distanceAlongPath > curve.arcLength)
+            {
+                if (pfc.looping)
+                    pfc.distanceAlongPath = 0.0f;
+                else
+                    pfc.distanceAlongPath = curve.arcLength;
+            }
+            else if (pfc.distanceAlongPath < 0.0f)
+            {
+                if (pfc.looping)
+                    pfc.distanceAlongPath = curve.arcLength;
+                else
+                    pfc.distanceAlongPath = 0.0f;
+            }
+
 
             CurveComponent& path = mManager.GetComponent<Client::CurveComponent>(targetEntity);
             Transform& pathTransform = mManager.GetComponent<Client::Transform>(targetEntity);
@@ -172,6 +199,34 @@ namespace Client
             
             glm::mat4 model = pathTransform.GetModelMatrix();
             transform.position = model * glm::vec4(EvaluateAtDistance(path, pfc.distanceAlongPath), 1.0f);
+            glm::vec3 nextPoint = EvaluateAtDistance(path, pfc.distanceAlongPath + 1.0f);
+            nextPoint = model * glm::vec4(nextPoint, 1.0f);
+
+            glm::vec3 lookVector = nextPoint - transform.position;
+
+            // Orient transform so its local forward (+Z) points toward the look vector.
+            // Skip if the look vector is degenerate.
+            if (glm::dot(lookVector, lookVector) > glm::epsilon<float>())
+            {
+                glm::vec3 forward = glm::normalize(lookVector);
+
+                // Choose a world-up; avoid near-parallel up/forward which would cause a degenerate basis.
+                glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+                if (std::abs(glm::dot(forward, worldUp)) > 0.9999f)
+                    worldUp = glm::vec3(1.0f, 0.0f, 0.0f);
+
+                // Build an orthonormal basis: right, up, forward (columns)
+                glm::vec3 right = glm::normalize(glm::cross(worldUp, forward));
+                glm::vec3 up = glm::cross(forward, right);
+
+                glm::mat3 rotMat(right, up, forward); // columns -> local axes aligned with world-space basis
+                glm::quat orientation = glm::quat_cast(rotMat);
+
+                // Store Euler angles in degrees so existing Gep::rotation(rotation) (which expects degrees)
+                // produces the correct model matrix in GetModelMatrix().
+                transform.rotation = glm::degrees(glm::eulerAngles(orientation));
+            }
+
         });
     }
 
@@ -181,30 +236,30 @@ namespace Client
         for (uint32_t i = 0; i < curve.subdivisions; ++i)
         {
             // note: one less control point and add it after to be exatcly at the end
-            const float t = (float)i / curve.subdivisions;
+            const double t = (double)i / curve.subdivisions;
             curve.points.push_back(curve.spline.Evaluate(t));
         }
         // ensure the end point is exact
         curve.points.push_back(curve.controlPoints.back());
     }
 
-    glm::vec3 CurveSystem::EvaluateAtDistance(const Client::CurveComponent& curve, float distance) const
+    glm::vec3 CurveSystem::EvaluateAtDistance(const Client::CurveComponent& curve, double distance) const
     {
         // noop if there is nothing in the lookup table
         if (curve.lookUpTable.empty())
             return {};
 
         // clamp before
-        if (distance <= 0.0f)
-            return curve.spline.Evaluate(0.0f);
+        if (distance <= 0.0)
+            return curve.spline.Evaluate(0.0);
 
         // clamp after
         if (distance >= curve.arcLength)
-            return curve.spline.Evaluate(1.0f);
+            return curve.spline.Evaluate(1.0);
 
         // std::lower_bound is a binary search, finds the first item greater than the key
         auto it = std::lower_bound(curve.lookUpTable.begin(), curve.lookUpTable.end(), distance, 
-        [](const auto& entry, float value) 
+        [](const auto& entry, double value) 
         {
             return entry.arcLength < value;
         });
@@ -215,8 +270,8 @@ namespace Client
         const auto& [t1, d1] = *it;
 
         // interpolate parameter t based on how far between the two distances we are
-        float alpha = (distance - d0) / (d1 - d0);
-        float t = t0 + alpha * (t1 - t0);
+        double alpha = (distance - d0) / (d1 - d0);
+        double t = t0 + alpha * (t1 - t0);
 
         // evaluate the spline at this normalized parameter
         return curve.spline.Evaluate(t);
@@ -273,18 +328,43 @@ namespace Client
         Gep::Entity targetEntity = mManager.FindEntity(event.component.targetPathEntity);
         std::string uuidString = event.component.targetPathEntity.ToString();
 
-        ImGui::BeginGroup();
-        if (mManager.EntityExists(targetEntity))
+        ImGui::BeginGroup(); // group for drag drop
+
+        ImGui::TextDisabled(uuidString.c_str());
+
+        bool entityExists = mManager.EntityExists(targetEntity);
+
+        // checks if the followed entity exists
+        if (!entityExists)
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Not Following an entity");
+            return;
+        }
+
+        bool hasPath = mManager.HasComponent<CurveComponent>(targetEntity);
+        bool hasTransform = mManager.HasComponent<Transform>(targetEntity);
+
+        // checks if the followed entity has the need components
+        if (!hasPath || !hasTransform)
         {
             ImGui::Text("Following Entity:");
             ImGui::SameLine();
-            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), mManager.GetName(targetEntity).c_str());
-            //ImGui::TextDisabled(uuidString.c_str());
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), mManager.GetName(targetEntity).c_str());
+
+            if (!hasPath)
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Curve Component");
+            if (!hasTransform)
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Transform");
+
+            return;
         }
-        else
-        {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Not Following an entity");
-        }
+
+        CurveComponent& curve = mManager.GetComponent<CurveComponent>(targetEntity);
+
+        // conditions met display the entity and continue with the inspector items
+        ImGui::Text("Following Entity:");
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), mManager.GetName(targetEntity).c_str());
         ImGui::EndGroup();
 
         mEditor.EntityDragDropTarget([&](Gep::Entity e)
@@ -292,7 +372,18 @@ namespace Client
             event.component.targetPathEntity = mManager.GetUUID(e);
         });
 
-        ImGui::DragFloat("Distance Along Path", &event.component.distanceAlongPath);
+        const double min = 0.0;
+        const double max = curve.arcLength;
+        ImGui::DragScalar("Distance Along Path", ImGuiDataType_Double, &event.component.distanceAlongPath, 0.5, &min, &max);
+        ImGui::DragFloat("Speed Down Path", &event.component.speed);
+        ImGui::Checkbox("Looping", &event.component.looping);
+
+        bool hasAnimation = mManager.HasComponent<Transform>(event.entity);
+        if (hasAnimation)
+        {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Animation Component Found");
+
+        }
     }
 
 }
