@@ -713,6 +713,8 @@ namespace Gep
             chunk.componentOffsets.at(data.index) = chunk.stride;
             chunk.stride += data.size; // size of each component
         });
+
+        chunk.data.reserve(chunk.stride * 128);
     }
 
     void EngineManager::ArchetypeChunkMove(ArchetypeChunk& oldChunk, ArchetypeChunk& targetChunk, uint64_t oldChunkIndex, uint64_t targetChunkIndex) const

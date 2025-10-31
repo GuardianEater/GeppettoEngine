@@ -499,7 +499,9 @@ namespace Gep
         // this writes each type inside of the component
         view.apply([&](const auto& f)
         {
-            Json::WriteType(componentDataJson[f.name()], *f.value());
+            std::string_view fieldName = f.name();
+            const auto& value = *f.value();
+            Json::WriteType(componentDataJson[fieldName], value);
         });
 
         nlohmann::json componentJson = nlohmann::json::object();
@@ -652,7 +654,7 @@ namespace Gep
             return;
         }
 
-        chunk.data.resize(chunk.data.size() + chunk.stride);
+        chunk.data.resize(chunk.data.size() + chunk.stride); // need to fix this resize: make a type erase vector class that takes template parameters for its resize
 
         uint8_t* byteEntityDestination = chunk.data.data() + (chunk.entityCount * chunk.stride);
         Entity* entityDestination = reinterpret_cast<Entity*>(byteEntityDestination);
