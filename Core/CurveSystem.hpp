@@ -47,7 +47,12 @@ namespace Client
         void UpdateArcLengthTable(Client::CurveComponent& curve);
         void UpdatePathFollowers(float dt);
         void EvaluateCubicSplinePoints(Client::CurveComponent& curve);
-        glm::vec3 EvaluateAtDistance(const Client::CurveComponent& curve, double distance) const;
+
+        // takes a distance and returns a t value from 0-1
+        double GetTFromDistance(const Client::CurveComponent& curve, double distance) const;
+
+        double ParabolicEase(double t, double t1, double t2) const;
+        float ParabolicEaseVelocity(float t, float t1, float t2) const;
 
         void OnCurveEditorRender(const Gep::Event::ComponentEditorRender<Client::CurveComponent>& cc);
         void OnCurveAdded(const Gep::Event::ComponentAdded<Client::CurveComponent>& event);

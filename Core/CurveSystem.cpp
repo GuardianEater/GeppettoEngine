@@ -53,8 +53,7 @@ namespace Client
     { 
         UpdateFunctionLine(); // completes all curve components
 
-        if (mManager.IsState(Gep::EngineState::Play))
-            UpdatePathFollowers(dt); // path followers are updated to the location on the curve
+        UpdatePathFollowers(dt); // path followers are updated to the location on the curve
     }
 
 
@@ -167,9 +166,14 @@ namespace Client
             if (!mManager.HasComponent<Client::Transform>(targetEntity)) return;
 
             CurveComponent& curve = mManager.GetComponent<CurveComponent>(targetEntity);
+            Transform& pathTransform = mManager.GetComponent<Client::Transform>(targetEntity);
 
-            // progess down the path
-            pfc.distanceAlongPath += dt * pfc.speed;
+            // ensure the correct amount of t values
+            //pfc.easeTs.resize(curve.controlPoints.size());
+
+            // progess down the path on if playing
+            if (mManager.IsState(Gep::EngineState::Play))
+                pfc.distanceAlongPath += dt * pfc.speed;
 
             // clamp time / if looping is on loop
             if (pfc.distanceAlongPath > curve.arcLength)
@@ -187,10 +191,6 @@ namespace Client
                     pfc.distanceAlongPath = 0.0f;
             }
 
-
-            CurveComponent& path = mManager.GetComponent<Client::CurveComponent>(targetEntity);
-            Transform& pathTransform = mManager.GetComponent<Client::Transform>(targetEntity);
-
             // if the current entity has an animation component
             if (mManager.HasComponent<Client::AnimationComponent>(ent))
             {
@@ -198,32 +198,34 @@ namespace Client
             }
             
             glm::mat4 model = pathTransform.GetModelMatrix();
-            transform.position = model * glm::vec4(EvaluateAtDistance(path, pfc.distanceAlongPath), 1.0f);
-            glm::vec3 nextPoint = EvaluateAtDistance(path, pfc.distanceAlongPath + 1.0f);
-            nextPoint = model * glm::vec4(nextPoint, 1.0f);
 
-            glm::vec3 lookVector = nextPoint - transform.position;
+            double t = 0.0;
+            t = GetTFromDistance(curve, pfc.distanceAlongPath);
+            transform.position = model * glm::vec4(curve.spline.Evaluate(t), 1.0f);
 
-            // Orient transform so its local forward (+Z) points toward the look vector.
-            // Skip if the look vector is degenerate.
+            t = GetTFromDistance(curve, pfc.distanceAlongPath + 1.0);
+            const glm::vec3 nextPoint = model * glm::vec4(curve.spline.Evaluate(t), 1.0f);
+
+            const glm::vec3 lookVector = nextPoint - transform.position;
+
+            // orient transform so its points toward the look vector.
+            // skip if the look vector is degenerate.
             if (glm::dot(lookVector, lookVector) > glm::epsilon<float>())
             {
                 glm::vec3 forward = glm::normalize(lookVector);
 
-                // Choose a world-up; avoid near-parallel up/forward which would cause a degenerate basis.
+                // world-up: avoid near-parallel up/forward
                 glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
-                if (std::abs(glm::dot(forward, worldUp)) > 0.9999f)
+                if (std::abs(glm::dot(forward, worldUp)) > 1.0f - glm::epsilon<float>())
                     worldUp = glm::vec3(1.0f, 0.0f, 0.0f);
 
-                // Build an orthonormal basis: right, up, forward (columns)
+                // orthonormal basis: right, up, forward
                 glm::vec3 right = glm::normalize(glm::cross(worldUp, forward));
                 glm::vec3 up = glm::cross(forward, right);
 
                 glm::mat3 rotMat(right, up, forward); // columns -> local axes aligned with world-space basis
                 glm::quat orientation = glm::quat_cast(rotMat);
 
-                // Store Euler angles in degrees so existing Gep::rotation(rotation) (which expects degrees)
-                // produces the correct model matrix in GetModelMatrix().
                 transform.rotation = glm::degrees(glm::eulerAngles(orientation));
             }
 
@@ -243,19 +245,19 @@ namespace Client
         curve.points.push_back(curve.controlPoints.back());
     }
 
-    glm::vec3 CurveSystem::EvaluateAtDistance(const Client::CurveComponent& curve, double distance) const
+    double CurveSystem::GetTFromDistance(const Client::CurveComponent& curve, double distance) const
     {
         // noop if there is nothing in the lookup table
         if (curve.lookUpTable.empty())
-            return {};
+            return 0.0;
 
         // clamp before
         if (distance <= 0.0)
-            return curve.spline.Evaluate(0.0);
+            return 0.0;
 
         // clamp after
         if (distance >= curve.arcLength)
-            return curve.spline.Evaluate(1.0);
+            return 1.0;
 
         // std::lower_bound is a binary search, finds the first item greater than the key
         auto it = std::lower_bound(curve.lookUpTable.begin(), curve.lookUpTable.end(), distance, 
@@ -273,8 +275,91 @@ namespace Client
         double alpha = (distance - d0) / (d1 - d0);
         double t = t0 + alpha * (t1 - t0);
 
-        // evaluate the spline at this normalized parameter
-        return curve.spline.Evaluate(t);
+        return t;
+    }
+
+    double CurveSystem::ParabolicEase(double t, double t1, double t2) const
+    {
+        // dont attemp ease if t1 is less than t2
+        if (t1 < t2) std::swap(t1, t2);
+
+        // make sure all t values are from 0 -> 1
+        //t = glm::clamp(t, 0.0f, 1.0f);
+        //t1 = glm::clamp(t1, 0.0f, 1.0f);
+        //t2= glm::clamp(t2, 0.0f, 1.0f);
+
+        // naming convention follows notes
+
+        const double v0 = 2.0 / ((1.0 - t1) + t2);
+
+        // section 1 if between 0 and t1
+        if (0.0 <= t && t <= t1)
+        {
+            double s1 = (v0 / (2.0 * t1)) * t * t;
+
+            return s1;
+        }
+
+        // section 2 if between t1 and t2
+        if (t1 <= t && t <= t2)
+        {
+            double s2 = v0 * (t - (t1 / 2.0));
+
+            return s2;
+        }
+
+        // section 3 if between t2 and 1
+        if (t2 <= t && t <= 1.0)
+        {
+            double s3_1 = (v0 * (t - t2)) / (2.0 * (1.0 - t2));
+            double s3_2 = ((2.0 - t) - t2);
+            double s3_3 = v0 * (t2 - (t1 / 2.0));
+
+            double s3 = s3_1 * s3_2 + s3_3;
+
+            return s3;
+        }
+
+        return 0.0; // this shouldn't be possible. the last if check is for completeness
+    }
+
+    float CurveSystem::ParabolicEaseVelocity(float t, float t1, float t2) const
+    {
+        // dont attemp ease if t1 is less than t2
+        if (t1 < t2) std::swap(t1, t2);
+
+        // make sure all t values are from 0 -> 1
+        t = glm::clamp(t, 0.0f, 1.0f);
+        t1 = glm::clamp(t1, 0.0f, 1.0f);
+        t2 = glm::clamp(t2, 0.0f, 1.0f);
+
+        // naming convention follows notes
+
+        // section 1 if between 0 and t1
+        if (0.0f <= t && t <= t1)
+        {
+            float v1 = t / t1;
+
+            return v1;
+        }
+
+        // section 2 if between t1 and t2
+        if (t1 <= t && t <= t2)
+        {
+            float v2 = 1.0f;
+
+            return v2;
+        }
+
+        // section 3 if between t2 and 1
+        if (t2 <= t && t <= 1.0f)
+        {
+            float v3 = (1.0f - t) / (1.0f - t2);
+
+            return v3;
+        }
+
+        return 0.0f; // this shouldn't be possible. the last if check is for completeness
     }
 
     void CurveSystem::OnCurveEditorRender(const Gep::Event::ComponentEditorRender<CurveComponent>& cc)
@@ -325,8 +410,8 @@ namespace Client
 
     void CurveSystem::OnPathFollowerEditorRender(const Gep::Event::ComponentEditorRender<Client::PathFollowerComponent>& event)
     {
-        Gep::Entity targetEntity = mManager.FindEntity(event.component.targetPathEntity);
-        std::string uuidString = event.component.targetPathEntity.ToString();
+        const Gep::Entity targetEntity = mManager.FindEntity(event.component.targetPathEntity);
+        const std::string uuidString = event.component.targetPathEntity.ToString();
 
         ImGui::BeginGroup(); // group for drag drop
 
@@ -377,6 +462,71 @@ namespace Client
         ImGui::DragScalar("Distance Along Path", ImGuiDataType_Double, &event.component.distanceAlongPath, 0.5, &min, &max);
         ImGui::DragFloat("Speed Down Path", &event.component.speed);
         ImGui::Checkbox("Looping", &event.component.looping);
+        
+        if (ImGui::TreeNode("Control Points"))
+        {
+            //for (auto& ts : event.component.easeTs)
+            //{
+            //    ImGui::DragFloat2("##", &ts.t0);
+            //}
+
+            ImGui::Spacing();
+            ImGui::TreePop();
+        }
+
+        // --- Parabolic easing visualization ---
+        if (ImGui::TreeNode("Parabolic Easing Preview"))
+        {
+            constexpr int numSamples = 200;
+            static float values[numSamples];
+            static float t0 = 0.25f;
+            static float t1 = 0.75f;
+
+            ImGui::DragFloat("t0", &t0, 0.01f, 0.0f, 1.0f);
+            ImGui::DragFloat("t1", &t1, 0.01f, 0.0f, 1.0f);
+
+            // Compute values
+            for (int i = 0; i < numSamples; ++i)
+            {
+                float t = i / float(numSamples - 1); // [0, 1]
+                values[i] = ParabolicEase(t, t0, t1);
+            }
+
+            // Plot
+            ImVec2 graphSize = ImVec2(0, 100);
+            ImGui::PlotLines("##8", values, numSamples, 0, nullptr, 0.0f, 1.0f, graphSize);
+
+            // --- Add dotted lines ---
+            // Get draw list and plot region
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            ImVec2 plotMin = ImGui::GetItemRectMin();
+            ImVec2 plotMax = ImGui::GetItemRectMax();
+
+            const float plotWidth = plotMax.x - plotMin.x;
+            const float plotHeight = plotMax.y - plotMin.y;
+
+            // Helper lambda to draw a dotted vertical line
+            auto drawDottedLine = [&](float t, ImU32 color)
+            {
+                float x = plotMin.x + t * plotWidth;
+                float yTop = plotMin.y;
+                float yBottom = plotMax.y;
+
+                const float segmentLength = 4.0f;
+                for (float y = yTop; y < yBottom; y += segmentLength * 2.0f)
+                {
+                    drawList->AddLine(ImVec2(x, y), ImVec2(x, y + segmentLength), color, 1.0f);
+                }
+            };
+
+            // Draw t0 and t1 markers
+            drawDottedLine(t0, IM_COL32(255, 100, 100, 255)); // red line
+            drawDottedLine(t1, IM_COL32(100, 255, 100, 255)); // green line
+
+            ImGui::TreePop();
+        }
+        // --- end visualization ---
+
 
         bool hasAnimation = mManager.HasComponent<Transform>(event.entity);
         if (hasAnimation)
