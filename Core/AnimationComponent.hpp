@@ -23,6 +23,7 @@ namespace Client
         float currentTime = 0.0f; // note this is stored in ticks
         bool looping = false; // whether or not the animation will loop
         float speed = 1.0f; // the playback multiplier of the animation
+		float speedModifier = 1.0f; // current velocity of the animation in ticks per second
 
         std::vector<Gep::VQS> pose; // stores all bones local transforms
     };

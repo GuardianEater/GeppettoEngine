@@ -192,19 +192,24 @@ namespace Client
             }
 
             // if the current entity has an animation component
-            if (mManager.HasComponent<Client::AnimationComponent>(ent))
-            {
-                AnimationComponent& animation = mManager.GetComponent<AnimationComponent>(ent);
-            }
             
             glm::mat4 model = pathTransform.GetModelMatrix();
 
             double t = 0.0;
             t = GetTFromDistance(curve, pfc.distanceAlongPath);
+			t = ParabolicEase(t, 0.25, 0.75); // ease the t value for smoother movement
             transform.position = model * glm::vec4(curve.spline.Evaluate(t), 1.0f);
 
+            if (mManager.HasComponent<Client::AnimationComponent>(ent))
+            {
+                AnimationComponent& animation = mManager.GetComponent<AnimationComponent>(ent);
+				animation.speedModifier = static_cast<float>(ParabolicEaseVelocity(t, 0.25, 0.75));
+            }
+
             t = GetTFromDistance(curve, pfc.distanceAlongPath + 1.0);
+			t = ParabolicEase(t, 0.25, 0.75); // ease the t value for smoother movement
             const glm::vec3 nextPoint = model * glm::vec4(curve.spline.Evaluate(t), 1.0f);
+
 
             const glm::vec3 lookVector = nextPoint - transform.position;
 
@@ -281,12 +286,12 @@ namespace Client
     double CurveSystem::ParabolicEase(double t, double t1, double t2) const
     {
         // dont attemp ease if t1 is less than t2
-        if (t1 < t2) std::swap(t1, t2);
+        if (t1 > t2) std::swap(t1, t2);
 
         // make sure all t values are from 0 -> 1
-        //t = glm::clamp(t, 0.0f, 1.0f);
-        //t1 = glm::clamp(t1, 0.0f, 1.0f);
-        //t2= glm::clamp(t2, 0.0f, 1.0f);
+        t = glm::clamp(t, 0.0, 1.0);
+        t1 = glm::clamp(t1, 0.0, 1.0);
+        t2= glm::clamp(t2, 0.0, 1.0);
 
         // naming convention follows notes
 
@@ -323,43 +328,40 @@ namespace Client
         return 0.0; // this shouldn't be possible. the last if check is for completeness
     }
 
-    float CurveSystem::ParabolicEaseVelocity(float t, float t1, float t2) const
+    double CurveSystem::ParabolicEaseVelocity(double t, double t1, double t2) const
     {
         // dont attemp ease if t1 is less than t2
-        if (t1 < t2) std::swap(t1, t2);
+        if (t1 > t2) std::swap(t1, t2);
 
         // make sure all t values are from 0 -> 1
-        t = glm::clamp(t, 0.0f, 1.0f);
-        t1 = glm::clamp(t1, 0.0f, 1.0f);
-        t2 = glm::clamp(t2, 0.0f, 1.0f);
+        t = glm::clamp(t, 0.0, 1.0);
+        t1 = glm::clamp(t1, 0.0, 1.0);
+        t2 = glm::clamp(t2, 0.0, 1.0);
 
         // naming convention follows notes
 
         // section 1 if between 0 and t1
-        if (0.0f <= t && t <= t1)
+        if (0.0 <= t && t <= t1)
         {
             float v1 = t / t1;
-
             return v1;
         }
 
         // section 2 if between t1 and t2
         if (t1 <= t && t <= t2)
         {
-            float v2 = 1.0f;
-
+            float v2 = 1.0;
             return v2;
         }
 
         // section 3 if between t2 and 1
-        if (t2 <= t && t <= 1.0f)
+        if (t2 <= t && t <= 1.0)
         {
-            float v3 = (1.0f - t) / (1.0f - t2);
-
+            float v3 = (1.0 - t) / (1.0 - t2);
             return v3;
         }
 
-        return 0.0f; // this shouldn't be possible. the last if check is for completeness
+        return 0.0; // this shouldn't be possible. the last if check is for completeness
     }
 
     void CurveSystem::OnCurveEditorRender(const Gep::Event::ComponentEditorRender<CurveComponent>& cc)

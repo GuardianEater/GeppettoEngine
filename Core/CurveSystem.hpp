@@ -52,7 +52,7 @@ namespace Client
         double GetTFromDistance(const Client::CurveComponent& curve, double distance) const;
 
         double ParabolicEase(double t, double t1, double t2) const;
-        float ParabolicEaseVelocity(float t, float t1, float t2) const;
+        double ParabolicEaseVelocity(double t, double t1, double t2) const;
 
         void OnCurveEditorRender(const Gep::Event::ComponentEditorRender<Client::CurveComponent>& cc);
         void OnCurveAdded(const Gep::Event::ComponentAdded<Client::CurveComponent>& event);

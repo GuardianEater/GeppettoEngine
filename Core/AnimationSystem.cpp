@@ -75,7 +75,7 @@ namespace Client
             const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.name);
 
             // progress the animation
-            animationComponent.currentTime += dt * animationComponent.speed * animation.ticksPerSecond;
+            animationComponent.currentTime += dt * animationComponent.speed * animationComponent.speedModifier *  animation.ticksPerSecond;
 
             // clamp time / if looping is on loop
             if (animationComponent.currentTime > animation.duration)
