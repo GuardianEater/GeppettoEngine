@@ -65,7 +65,6 @@ int main()
     Gep::EngineManager em;
 
     // register all resources ////////////////////////////////////////////////////////////////////////
-    em.RegisterResource<Client::ScriptingResource>();
     em.RegisterResource<Client::SoundResource>();
     em.RegisterResource<Client::CollisionResource>();
     em.RegisterResource<Client::SerializationResource>();
@@ -77,7 +76,6 @@ int main()
         Client::Transform,
         Client::RigidBody,
         Client::ModelComponent,
-        Client::Script,
         Client::ActiveCamera,
         Client::Camera,
         Client::Texture,
@@ -98,7 +96,6 @@ int main()
         Client::AnimationSystem, // must happen before the render system
         Client::CurveSystem,
         Client::RenderSystem,
-        Client::ScriptingSystem,
         Client::PhysicsSystem,
         Client::SerializationSystem,
         Client::RelationSystem,
@@ -110,7 +107,6 @@ int main()
     em.RegisterTypes(componentTypes, systemTypes);
 
     em.SetSystemExecutionPolicy<Client::PhysicsSystem>(Gep::EngineState::Play);
-    em.SetSystemExecutionPolicy<Client::ScriptingSystem>(Gep::EngineState::Play);
     em.SetSystemExecutionPolicy<Client::AnimationSystem>(Gep::EngineState::Play);
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
