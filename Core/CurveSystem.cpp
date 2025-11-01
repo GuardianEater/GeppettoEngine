@@ -168,9 +168,6 @@ namespace Client
             CurveComponent& curve = mManager.GetComponent<CurveComponent>(targetEntity);
             Transform& pathTransform = mManager.GetComponent<Client::Transform>(targetEntity);
 
-            // ensure the correct amount of t values
-            //pfc.easeTs.resize(curve.controlPoints.size());
-
             // progess down the path on if playing
             if (mManager.IsState(Gep::EngineState::Play))
                 pfc.distanceAlongPath += dt * pfc.speed;
@@ -193,21 +190,24 @@ namespace Client
 
             // if the current entity has an animation component
             
-            glm::mat4 model = pathTransform.GetModelMatrix();
+            const glm::mat4 model = pathTransform.GetModelMatrix();
+
+            const double t0 = pfc.easeTimes.first;
+            const double t1 = pfc.easeTimes.second;
 
             double t = 0.0;
             t = GetTFromDistance(curve, pfc.distanceAlongPath);
-			t = ParabolicEase(t, 0.25, 0.75); // ease the t value for smoother movement
+			t = ParabolicEase(t, t0, t1); // ease the t value for smoother movement
             transform.position = model * glm::vec4(curve.spline.Evaluate(t), 1.0f);
 
             if (mManager.HasComponent<Client::AnimationComponent>(ent))
             {
                 AnimationComponent& animation = mManager.GetComponent<AnimationComponent>(ent);
-				animation.speedModifier = static_cast<float>(ParabolicEaseVelocity(t, 0.25, 0.75));
+				animation.speedModifier = static_cast<float>(ParabolicEaseVelocity(t, t0, t1));
             }
 
             t = GetTFromDistance(curve, pfc.distanceAlongPath + 1.0);
-			t = ParabolicEase(t, 0.25, 0.75); // ease the t value for smoother movement
+			t = ParabolicEase(t, t0, t1); // ease the t value for smoother movement
             const glm::vec3 nextPoint = model * glm::vec4(curve.spline.Evaluate(t), 1.0f);
 
 
@@ -290,8 +290,8 @@ namespace Client
 
         // make sure all t values are from 0 -> 1
         t = glm::clamp(t, 0.0, 1.0);
-        t1 = glm::clamp(t1, 0.0, 1.0);
-        t2= glm::clamp(t2, 0.0, 1.0);
+        t1 = glm::clamp(t1, 0.0 + glm::epsilon<double>(), 1.0); // clamp from zero to one, preventing division by zero
+        t2 = glm::clamp(t2, 0.0, 1.0 - glm::epsilon<double>()); // clamp from zero to one, preventing division by zero
 
         // naming convention follows notes
 
@@ -335,8 +335,8 @@ namespace Client
 
         // make sure all t values are from 0 -> 1
         t = glm::clamp(t, 0.0, 1.0);
-        t1 = glm::clamp(t1, 0.0, 1.0);
-        t2 = glm::clamp(t2, 0.0, 1.0);
+        t1 = glm::clamp(t1, 0.0 + glm::epsilon<double>(), 1.0); // clamp from zero to one, preventing division by zero
+        t2 = glm::clamp(t2, 0.0, 1.0 - glm::epsilon<double>()); // clamp from zero to one, preventing division by zero
 
         // naming convention follows notes
 
@@ -465,68 +465,73 @@ namespace Client
         ImGui::DragFloat("Speed Down Path", &event.component.speed);
         ImGui::Checkbox("Looping", &event.component.looping);
         
-        if (ImGui::TreeNode("Control Points"))
-        {
-            //for (auto& ts : event.component.easeTs)
-            //{
-            //    ImGui::DragFloat2("##", &ts.t0);
-            //}
-
-            ImGui::Spacing();
-            ImGui::TreePop();
-        }
-
         // --- Parabolic easing visualization ---
-        if (ImGui::TreeNode("Parabolic Easing Preview"))
+        constexpr int numSamples = 100;
+        static float positionValues[numSamples];
+        static float velocityValues[numSamples];
+        float& t0 = event.component.easeTimes.first;
+        float& t1 = event.component.easeTimes.second;
+
+        ImGui::SliderFloat("t0", &t0, 0.0f, 1.0f);
+        ImGui::SliderFloat("t1", &t1, 0.0f, 1.0f);
+
+        // evaluate positions
+        for (int i = 0; i < numSamples; ++i)
         {
-            constexpr int numSamples = 200;
-            static float values[numSamples];
-            static float t0 = 0.25f;
-            static float t1 = 0.75f;
-
-            ImGui::DragFloat("t0", &t0, 0.01f, 0.0f, 1.0f);
-            ImGui::DragFloat("t1", &t1, 0.01f, 0.0f, 1.0f);
-
-            // Compute values
-            for (int i = 0; i < numSamples; ++i)
-            {
-                float t = i / float(numSamples - 1); // [0, 1]
-                values[i] = ParabolicEase(t, t0, t1);
-            }
-
-            // Plot
-            ImVec2 graphSize = ImVec2(0, 100);
-            ImGui::PlotLines("##8", values, numSamples, 0, nullptr, 0.0f, 1.0f, graphSize);
-
-            // --- Add dotted lines ---
-            // Get draw list and plot region
-            ImDrawList* drawList = ImGui::GetWindowDrawList();
-            ImVec2 plotMin = ImGui::GetItemRectMin();
-            ImVec2 plotMax = ImGui::GetItemRectMax();
-
-            const float plotWidth = plotMax.x - plotMin.x;
-            const float plotHeight = plotMax.y - plotMin.y;
-
-            // Helper lambda to draw a dotted vertical line
-            auto drawDottedLine = [&](float t, ImU32 color)
-            {
-                float x = plotMin.x + t * plotWidth;
-                float yTop = plotMin.y;
-                float yBottom = plotMax.y;
-
-                const float segmentLength = 4.0f;
-                for (float y = yTop; y < yBottom; y += segmentLength * 2.0f)
-                {
-                    drawList->AddLine(ImVec2(x, y), ImVec2(x, y + segmentLength), color, 1.0f);
-                }
-            };
-
-            // Draw t0 and t1 markers
-            drawDottedLine(t0, IM_COL32(255, 100, 100, 255)); // red line
-            drawDottedLine(t1, IM_COL32(100, 255, 100, 255)); // green line
-
-            ImGui::TreePop();
+            float t = i / float(numSamples - 1); // [0, 1]
+            positionValues[i] = ParabolicEase(t, t0, t1);
         }
+
+        // evaluate velocity
+        for (int i = 0; i < numSamples; ++i)
+        {
+            float t = i / float(numSamples - 1); // [0, 1]
+            velocityValues[i] = ParabolicEaseVelocity(t, t0, t1);
+        }
+
+        // Plot
+        ImGui::Text("Position-Time");
+        ImGui::PlotLines("##pos", positionValues, numSamples, 0, nullptr, 0.0f, 1.0f, ImVec2(0, 100));
+
+        // --- Add dotted lines ---
+        // Get draw list and plot region
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        ImVec2 plotMin = ImGui::GetItemRectMin();
+        ImVec2 plotMax = ImGui::GetItemRectMax();
+
+        float plotWidth = plotMax.x - plotMin.x;
+        float plotHeight = plotMax.y - plotMin.y;
+
+        // Helper lambda to draw a dotted vertical line
+        auto drawDottedLine = [&](float t, ImU32 color)
+        {
+            float x = plotMin.x + t * plotWidth;
+            float yTop = plotMin.y;
+            float yBottom = plotMax.y;
+
+            const float segmentLength = 4.0f;
+            for (float y = yTop; y < yBottom; y += segmentLength * 2.0f)
+            {
+                drawList->AddLine(ImVec2(x, y), ImVec2(x, y + segmentLength), color, 1.0f);
+            }
+        };
+
+        // Draw t0 and t1 markers
+        drawDottedLine(t0, IM_COL32(255, 100, 100, 255)); // red line
+        drawDottedLine(t1, IM_COL32(100, 255, 100, 255)); // green line
+
+        ImGui::Text("Velocity-Time");
+        ImGui::PlotLines("##vel", velocityValues, numSamples, 0, nullptr, 0.0f, 1.0f, ImVec2(0, 100));
+
+        plotMin = ImGui::GetItemRectMin();
+        plotMax = ImGui::GetItemRectMax();
+
+        plotWidth = plotMax.x - plotMin.x;
+        plotHeight = plotMax.y - plotMin.y;
+
+        drawDottedLine(t0, IM_COL32(255, 100, 100, 255)); // red line
+        drawDottedLine(t1, IM_COL32(100, 255, 100, 255)); // green line
+
         // --- end visualization ---
 
 

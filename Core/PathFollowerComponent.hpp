@@ -19,14 +19,7 @@ namespace Client
     {
         Gep::UUID targetPathEntity{}; // the entity that is currently being followed
 
-        struct EaseTimes
-        {
-            float t0 = 0.25f;
-            float t1 = 0.75f;
-        };
-
-        //std::vector<EaseTimes> easeTs; // t values used in easing
-
+        std::pair<float, float> easeTimes = { 0.25f, 0.75f };
         double distanceAlongPath = 0.0;
         float speed = 0.0f; // determines how fast to move down the path
         bool looping = false; // whether or not the entity should wrap to the other end of the path or stop
