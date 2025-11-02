@@ -511,10 +511,11 @@ namespace Client
                 .boneOffset = previousBoneOffset // only used in the skinned pbr shader
             };
 
-            Gep::RenderFlags flags = Gep::RenderFlags::None;
-            if (model.selected) flags |= Gep::RenderFlags::Highlight; // add highlight flag if selected
+            if (model.selected) // no highlighting for now
+            {
+            }
 
-            mRenderer.AddObject(targetShader, model.name, uniforms, flags);
+            mRenderer.AddObject(targetShader, model.name, uniforms);
         });
 
         mRenderer.AddLine(skeletonLines);
