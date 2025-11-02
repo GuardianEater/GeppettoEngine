@@ -69,7 +69,7 @@ namespace Client
                 curveComponent.points.clear();
 
                 EvaluateCubicSplinePoints(curveComponent); // fills the points variable with points allong the line
-                UpdateArcLengthTable(curveComponent); // fills the arc length table
+                UpdateArcLengthTable(curveComponent);      // fills the arc length table
 
                 curveComponent.dirty = false;
             }
@@ -97,6 +97,7 @@ namespace Client
                 mRenderer.AddObject("PBR-Static", "Icosphere", uniformsCP);
             }
 
+            // adds a line segment for all evaluated points
             for (size_t i = 0; i + 1 < curveComponent.points.size(); ++i)
             {
                 const glm::vec3 p0 = glm::vec3(model * glm::vec4(curveComponent.points[i], 1.0f));
@@ -173,13 +174,14 @@ namespace Client
             const double t0 = pfc.easeTimes.first;
             const double t1 = pfc.easeTimes.second;
 
-            // progess down the path on if playing
+            // progess down the path, only if playing
             if (mManager.IsState(Gep::EngineState::Play))
-                pfc.linearDistance += dt * pfc.speed * pfc.pace;
+                pfc.linearDistance += dt * pfc.speedAdjust * pfc.pace;
 
             // clamp time, if looping is on: loop
             pfc.linearDistance = Gep::WrapOrClamp(pfc.linearDistance, 0.0, curve.arcLength, pfc.looping);
 
+            // updated the eased distance
             const double percentageDownPath = pfc.linearDistance / curve.arcLength;
             double easedPercentage = ParabolicEase(percentageDownPath, t0, t1);
             pfc.distanceAlongPath = easedPercentage * curve.arcLength;
@@ -187,26 +189,33 @@ namespace Client
             // go a little into the future to see where we should look
             const double nextPos = Gep::WrapOrClamp(pfc.distanceAlongPath + 1.0, 0.0, curve.arcLength, pfc.looping);
 
-            // get the current t value along the curve and get the position at it
-            const double t = GetTFromDistance(curve, pfc.distanceAlongPath);
-            transform.position = model * glm::vec4(curve.spline.Evaluate(t), 1.0f);
-
-            // same for the next
+            // get the current t value along the curve 
+            const double thisT = GetTFromDistance(curve, pfc.distanceAlongPath);
             const double nextT = GetTFromDistance(curve, nextPos);
+
+            // and get the position at it
+            const glm::vec3 thisPoint = model * glm::vec4(curve.spline.Evaluate(thisT), 1.0f);
             const glm::vec3 nextPoint = model * glm::vec4(curve.spline.Evaluate(nextT), 1.0f);
 
-            // if this entity has an animation set its animation speed to 
+            // if this entity has an animation set its animation speed
             if (mManager.HasComponent<Client::AnimationComponent>(ent))
             {
-                const double v0 = 2.0 / ((1.0 - t0) + t1);
-                const double easedVelocity = ParabolicEaseVelocity(percentageDownPath, t0, t1);
                 AnimationComponent& animation = mManager.GetComponent<AnimationComponent>(ent);
-                animation.speedModifier = static_cast<float>(easedVelocity * v0 * pfc.pace);
+
+                const double easedVelocity = ParabolicEaseVelocity(percentageDownPath, t0, t1);
+                animation.speedModifier = easedVelocity * pfc.pace;
             }
 
-            const glm::vec3 lookVector = nextPoint - transform.position;
+            // get where the object should be looking
+            const glm::vec3 lookVector = nextPoint - thisPoint;
+            const glm::vec3 eulerAngle = Gep::EulerFromLook(lookVector);
 
-            transform.rotation = Gep::EulerFromLook(lookVector);
+            // update this objects transform
+            transform.position = thisPoint;
+
+            // prevents edge case if looping is off. Makes objects look direction not snap to 0,0,0
+            if (glm::dot(lookVector, lookVector) > 0.001) 
+                transform.rotation = eulerAngle;
         });
     }
 
@@ -312,26 +321,27 @@ namespace Client
         t2 = glm::clamp(t2, 0.0, 1.0 - glm::epsilon<double>()); // clamp from zero to one, preventing division by zero
 
         // naming convention follows notes
+        const double v0 = 2.0 / ((1.0 - t1) + t2);
 
         // section 1 if between 0 and t1
         if (0.0 <= t && t <= t1)
         {
             float v1 = t / t1;
-            return v1;
+            return v1 * v0;
         }
 
         // section 2 if between t1 and t2
         if (t1 <= t && t <= t2)
         {
             float v2 = 1.0;
-            return v2;
+            return v2 * v0;
         }
 
         // section 3 if between t2 and 1
         if (t2 <= t && t <= 1.0)
         {
             float v3 = (1.0 - t) / (1.0 - t2);
-            return v3;
+            return v3 * v0;
         }
 
         return 0.0; // this shouldn't be possible. the last if check is for completeness
@@ -432,12 +442,12 @@ namespace Client
             event.component.targetPathEntity = mManager.GetUUID(e);
         });
 
-        ImGui::DragFloat("Movement Speed Offset", &event.component.speed);
+        ImGui::DragFloat("Movement Speed Offset", &event.component.speedAdjust);
         ImGui::DragFloat("Pace", &event.component.pace);
         ImGui::Checkbox("Looping", &event.component.looping);
         
         // --- Parabolic easing visualization ---
-        constexpr int numSamples = 100;
+        constexpr int numSamples = 200;
         static float positionValues[numSamples];
         static float velocityValues[numSamples];
         float& t0 = event.component.easeTimes.first;
@@ -463,7 +473,7 @@ namespace Client
 
         // Plot
         ImGui::Text("Position-Time");
-        ImGui::PlotLines("##pos", positionValues, numSamples, 0, nullptr, 0.0f, 1.0f, ImVec2(0, 100));
+        ImGui::PlotLines("##pos", positionValues, numSamples, 0, nullptr, 0.0f, 2.0f, ImVec2(0, 100));
 
         // --- Add dotted lines ---
         // Get draw list and plot region
@@ -494,7 +504,7 @@ namespace Client
         drawDottedLine(t, IM_COL32(255, 255, 255, 255)); // green line
 
         ImGui::Text("Velocity-Time");
-        ImGui::PlotLines("##vel", velocityValues, numSamples, 0, nullptr, 0.0f, 1.0f, ImVec2(0, 100));
+        ImGui::PlotLines("##vel", velocityValues, numSamples, 0, nullptr, 0.0f, 2.0f, ImVec2(0, 100));
 
         plotMin = ImGui::GetItemRectMin();
         plotMax = ImGui::GetItemRectMax();

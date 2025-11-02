@@ -6,6 +6,8 @@
  * \date   October 2025
  *********************************************************************/
 
+#pragma once
+
 #include <vector>
 #include <glm/glm.hpp>
 #include <Eigen/Core>
@@ -33,7 +35,5 @@ namespace Gep
         void ComputeAandB(const std::vector<glm::vec3>& controlPoints);
         void ComputeCoeffs();
     };
-
 }
 
-#pragma once

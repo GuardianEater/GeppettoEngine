@@ -17,14 +17,14 @@ namespace Client
 {
     struct PathFollowerComponent
     {
-        Gep::UUID targetPathEntity{}; // the entity that is currently being followed
+        Gep::UUID targetPathEntity{}; // the entity that is currently being followed, it must have a curve and a transform.
 
-        std::pair<float, float> easeTimes = { 0.25f, 0.75f };
-        double distanceAlongPath = 0.0; // distance along the target path in units
-        double linearDistance = 0.0;
-        float pace = 1.0f; // speed adjust to sync with animation
-        float speed = 0.0f; // determines how fast to move down the path
-        bool looping = false; // whether or not the entity should wrap to the other end of the path or stop
+        std::pair<float, float> easeTimes = { 0.25f, 0.75f }; // ease start and ease end times
+
+        double distanceAlongPath = 0.0; // visual distance along the target path in units
+        double linearDistance = 0.0;    // effectively unnormalized t value. always increases and is not effected by easing
+        float pace = 1.0f;              // have fast the object should move down the path. Effects animation playback speed.
+        float speedAdjust = 0.0f;       // speed adjust to sync with animation
+        bool looping = false;           // whether or not the entity should wrap to the other end of the path or stop
     };
 }
-

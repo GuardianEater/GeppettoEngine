@@ -43,9 +43,16 @@ namespace Client
         void Update(float dt) override;
 
     private:
+        // evaluates all curve components
         void UpdateFunctionLine();
+
+        // fills in the lookUpTable in the curve component 
         void UpdateArcLengthTable(Client::CurveComponent& curve);
+
+        // moves all path followers down their path
         void UpdatePathFollowers(float dt);
+        
+        // fills the curve compoennt with points along the curve for drawing
         void EvaluateCubicSplinePoints(Client::CurveComponent& curve);
 
         // takes a distance and returns a t value from 0-1
