@@ -479,7 +479,7 @@ namespace Client
 
             // if the model also has an animation compute its final pose and pass all bone info to the gpu
             int previousBoneOffset = boneOffset;
-            if (mManager.HasComponent<AnimationComponent>(entity) && mManager.IsState(Gep::EngineState::Play))
+            if (mManager.HasComponent<AnimationComponent>(entity))
             {
                 AnimationComponent& ac = mManager.GetComponent<AnimationComponent>(entity);
 

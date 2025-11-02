@@ -107,7 +107,6 @@ int main()
     em.RegisterTypes(componentTypes, systemTypes);
 
     em.SetSystemExecutionPolicy<Client::PhysicsSystem>(Gep::EngineState::Play);
-    em.SetSystemExecutionPolicy<Client::AnimationSystem>(Gep::EngineState::Play);
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.SetState(Gep::EngineState::Edit);

@@ -168,72 +168,45 @@ namespace Client
             CurveComponent& curve = mManager.GetComponent<CurveComponent>(targetEntity);
             Transform& pathTransform = mManager.GetComponent<Client::Transform>(targetEntity);
 
-            // progess down the path on if playing
-            if (mManager.IsState(Gep::EngineState::Play))
-                pfc.distanceAlongPath += dt * pfc.speed;
-
-            // clamp time / if looping is on loop
-            if (pfc.distanceAlongPath > curve.arcLength)
-            {
-                if (pfc.looping)
-                    pfc.distanceAlongPath = 0.0f;
-                else
-                    pfc.distanceAlongPath = curve.arcLength;
-            }
-            else if (pfc.distanceAlongPath < 0.0f)
-            {
-                if (pfc.looping)
-                    pfc.distanceAlongPath = curve.arcLength;
-                else
-                    pfc.distanceAlongPath = 0.0f;
-            }
-
-            // if the current entity has an animation component
-            
             const glm::mat4 model = pathTransform.GetModelMatrix();
 
             const double t0 = pfc.easeTimes.first;
             const double t1 = pfc.easeTimes.second;
 
-            double t = 0.0;
-            t = GetTFromDistance(curve, pfc.distanceAlongPath);
-			t = ParabolicEase(t, t0, t1); // ease the t value for smoother movement
+            // progess down the path on if playing
+            if (mManager.IsState(Gep::EngineState::Play))
+                pfc.linearDistance += dt * pfc.speed * pfc.pace;
+
+            // clamp time, if looping is on: loop
+            pfc.linearDistance = Gep::WrapOrClamp(pfc.linearDistance, 0.0, curve.arcLength, pfc.looping);
+
+            const double percentageDownPath = pfc.linearDistance / curve.arcLength;
+            double easedPercentage = ParabolicEase(percentageDownPath, t0, t1);
+            pfc.distanceAlongPath = easedPercentage * curve.arcLength;
+
+            // go a little into the future to see where we should look
+            const double nextPos = Gep::WrapOrClamp(pfc.distanceAlongPath + 1.0, 0.0, curve.arcLength, pfc.looping);
+
+            // get the current t value along the curve and get the position at it
+            const double t = GetTFromDistance(curve, pfc.distanceAlongPath);
             transform.position = model * glm::vec4(curve.spline.Evaluate(t), 1.0f);
 
+            // same for the next
+            const double nextT = GetTFromDistance(curve, nextPos);
+            const glm::vec3 nextPoint = model * glm::vec4(curve.spline.Evaluate(nextT), 1.0f);
+
+            // if this entity has an animation set its animation speed to 
             if (mManager.HasComponent<Client::AnimationComponent>(ent))
             {
+                const double v0 = 2.0 / ((1.0 - t0) + t1);
+                const double easedVelocity = ParabolicEaseVelocity(percentageDownPath, t0, t1);
                 AnimationComponent& animation = mManager.GetComponent<AnimationComponent>(ent);
-				animation.speedModifier = static_cast<float>(ParabolicEaseVelocity(t, t0, t1));
+                animation.speedModifier = static_cast<float>(easedVelocity * v0 * pfc.pace);
             }
-
-            t = GetTFromDistance(curve, pfc.distanceAlongPath + 1.0);
-			t = ParabolicEase(t, t0, t1); // ease the t value for smoother movement
-            const glm::vec3 nextPoint = model * glm::vec4(curve.spline.Evaluate(t), 1.0f);
-
 
             const glm::vec3 lookVector = nextPoint - transform.position;
 
-            // orient transform so its points toward the look vector.
-            // skip if the look vector is degenerate.
-            if (glm::dot(lookVector, lookVector) > glm::epsilon<float>())
-            {
-                glm::vec3 forward = glm::normalize(lookVector);
-
-                // world-up: avoid near-parallel up/forward
-                glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
-                if (std::abs(glm::dot(forward, worldUp)) > 1.0f - glm::epsilon<float>())
-                    worldUp = glm::vec3(1.0f, 0.0f, 0.0f);
-
-                // orthonormal basis: right, up, forward
-                glm::vec3 right = glm::normalize(glm::cross(worldUp, forward));
-                glm::vec3 up = glm::cross(forward, right);
-
-                glm::mat3 rotMat(right, up, forward); // columns -> local axes aligned with world-space basis
-                glm::quat orientation = glm::quat_cast(rotMat);
-
-                transform.rotation = glm::degrees(glm::eulerAngles(orientation));
-            }
-
+            transform.rotation = Gep::EulerFromLook(lookVector);
         });
     }
 
@@ -459,10 +432,8 @@ namespace Client
             event.component.targetPathEntity = mManager.GetUUID(e);
         });
 
-        const double min = 0.0;
-        const double max = curve.arcLength;
-        ImGui::DragScalar("Distance Along Path", ImGuiDataType_Double, &event.component.distanceAlongPath, 0.5, &min, &max);
-        ImGui::DragFloat("Speed Down Path", &event.component.speed);
+        ImGui::DragFloat("Movement Speed Offset", &event.component.speed);
+        ImGui::DragFloat("Pace", &event.component.pace);
         ImGui::Checkbox("Looping", &event.component.looping);
         
         // --- Parabolic easing visualization ---
@@ -471,6 +442,7 @@ namespace Client
         static float velocityValues[numSamples];
         float& t0 = event.component.easeTimes.first;
         float& t1 = event.component.easeTimes.second;
+        float t = event.component.linearDistance / curve.arcLength;
 
         ImGui::SliderFloat("t0", &t0, 0.0f, 1.0f);
         ImGui::SliderFloat("t1", &t1, 0.0f, 1.0f);
@@ -519,6 +491,7 @@ namespace Client
         // Draw t0 and t1 markers
         drawDottedLine(t0, IM_COL32(255, 100, 100, 255)); // red line
         drawDottedLine(t1, IM_COL32(100, 255, 100, 255)); // green line
+        drawDottedLine(t, IM_COL32(255, 255, 255, 255)); // green line
 
         ImGui::Text("Velocity-Time");
         ImGui::PlotLines("##vel", velocityValues, numSamples, 0, nullptr, 0.0f, 1.0f, ImVec2(0, 100));
@@ -531,8 +504,20 @@ namespace Client
 
         drawDottedLine(t0, IM_COL32(255, 100, 100, 255)); // red line
         drawDottedLine(t1, IM_COL32(100, 255, 100, 255)); // green line
+        drawDottedLine(t, IM_COL32(255, 255, 255, 255)); // green line
 
-        // --- end visualization ---
+        const double min = 0.0;
+        const double max = curve.arcLength;
+
+        // progress bar
+        ImGui::Text("Linear Distance");
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 1)); // Reduce vertical padding
+        ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 5.0f); // Set grab size to 5px
+        ImGui::SliderScalar("##linearDistance", ImGuiDataType_Double, &event.component.linearDistance, &min, &max, "");
+        ImGui::PopStyleVar(2);
+
+        // progress bar time in seconds
+        ImGui::Text("%.2f / %.2f", event.component.linearDistance, curve.arcLength);
 
 
         bool hasAnimation = mManager.HasComponent<Transform>(event.entity);
