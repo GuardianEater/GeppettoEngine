@@ -136,7 +136,7 @@ namespace Client
             const float C = glm::length(uaPos - ubPos);
             const float D = abs(A + B - C);
 
-            if (D > 0.01)
+            if (D > 0.01f)
             {
                 curveSegments.pop();
                 curveSegments.emplace(um, ub);
