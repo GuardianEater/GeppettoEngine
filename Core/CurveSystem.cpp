@@ -396,51 +396,47 @@ namespace Client
     void CurveSystem::OnPathFollowerEditorRender(const Gep::Event::ComponentEditorRender<Client::PathFollowerComponent>& event)
     {
         const Gep::Entity targetEntity = mManager.FindEntity(event.component.targetPathEntity);
-        const std::string uuidString = event.component.targetPathEntity.ToString();
 
         ImGui::BeginGroup(); // group for drag drop
 
-        ImGui::TextDisabled(uuidString.c_str());
+        bool valid = false;
 
-        bool entityExists = mManager.EntityExists(targetEntity);
-
-        // checks if the followed entity exists
-        if (!entityExists)
+        // Check entity existence and required components, but avoid early returns.
+        if (!mManager.EntityExists(targetEntity))
         {
             ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Not Following an entity");
-            return;
         }
-
-        bool hasPath = mManager.HasComponent<CurveComponent>(targetEntity);
-        bool hasTransform = mManager.HasComponent<Transform>(targetEntity);
-
-        // checks if the followed entity has the need components
-        if (!hasPath || !hasTransform)
+        else
         {
+            bool hasPath = mManager.HasComponent<CurveComponent>(targetEntity);
+            bool hasTransform = mManager.HasComponent<Transform>(targetEntity);
+
             ImGui::Text("Following Entity:");
             ImGui::SameLine();
-            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), mManager.GetName(targetEntity).c_str());
+            // display yellow if its missing a needed component
+            ImGui::TextColored((hasPath && hasTransform) ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f) : ImVec4(1.0f, 1.0f, 0.0f, 1.0f), mManager.GetName(targetEntity).c_str());
 
+            // display the missing components
             if (!hasPath)
                 ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Curve Component");
             if (!hasTransform)
                 ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Transform");
 
-            return;
+            valid = hasPath && hasTransform;
         }
 
-        CurveComponent& curve = mManager.GetComponent<CurveComponent>(targetEntity);
-
-        // conditions met display the entity and continue with the inspector items
-        ImGui::Text("Following Entity:");
-        ImGui::SameLine();
-        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), mManager.GetName(targetEntity).c_str());
         ImGui::EndGroup();
 
+        // drag drop for the entire group
         mEditor.EntityDragDropTarget([&](Gep::Entity e)
         {
             event.component.targetPathEntity = mManager.GetUUID(e);
         });
+
+        // if the needed checks failed dont continue with the ui
+        if (!valid) return;
+
+        CurveComponent& curve = mManager.GetComponent<CurveComponent>(targetEntity);
 
         ImGui::DragFloat("Movement Speed Offset", &event.component.speedAdjust);
         ImGui::DragFloat("Pace", &event.component.pace);

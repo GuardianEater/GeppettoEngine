@@ -50,7 +50,9 @@ namespace Client
                 {
                     ComponentType& component = mManager.GetComponent<ComponentType>(entity);
 
+                    ImGui::PushID(&component);
                     mManager.SignalEvent(Gep::Event::ComponentEditorRender<ComponentType>({ entity, component }));
+                    ImGui::PopID();
 
                     ImGui::Spacing();
                     ImGui::Separator();

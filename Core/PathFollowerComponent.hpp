@@ -24,7 +24,7 @@ namespace Client
         double distanceAlongPath = 0.0; // visual distance along the target path in units
         double linearDistance = 0.0;    // effectively unnormalized t value. always increases and is not effected by easing
         float pace = 1.0f;              // have fast the object should move down the path. Effects animation playback speed.
-        float speedAdjust = 0.0f;       // speed adjust to sync with animation
+        float speedAdjust = 1.0f;       // speed adjust to sync with animation
         bool looping = false;           // whether or not the entity should wrap to the other end of the path or stop
     };
 }

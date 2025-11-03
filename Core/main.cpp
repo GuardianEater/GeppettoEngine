@@ -111,7 +111,6 @@ int main()
 
     em.SetSystemExecutionPolicy<Client::PhysicsSystem>(Gep::EngineState::Play);
     em.SetSystemExecutionPolicy<Client::ScriptingSystem>(Gep::EngineState::Play);
-    em.SetSystemExecutionPolicy<Client::AnimationSystem>(Gep::EngineState::Play);
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.SetState(Gep::EngineState::Edit);
