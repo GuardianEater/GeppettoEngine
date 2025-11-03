@@ -12,6 +12,7 @@
  // gep
 #include "EngineManager.hpp"
 #include "Mesh.hpp"
+#include "STLHelp.hpp"
 
 // client
 #include "AnimationSystem.hpp"
@@ -75,23 +76,11 @@ namespace Client
             const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.name);
 
             // progress the animation
-            animationComponent.currentTime += dt * animationComponent.speed * animation.ticksPerSecond;
+            if (mManager.IsState(Gep::EngineState::Play))
+                animationComponent.currentTime += dt * animationComponent.speed * animationComponent.speedModifier *  animation.ticksPerSecond;
 
             // clamp time / if looping is on loop
-            if (animationComponent.currentTime > animation.duration)
-            {
-                if (animationComponent.looping)
-                    animationComponent.currentTime = 0.0f;
-                else
-                    animationComponent.currentTime = animation.duration;
-            }
-            else if (animationComponent.currentTime < 0.0f)
-            {
-                if (animationComponent.looping)
-                    animationComponent.currentTime = animation.duration;
-                else
-                    animationComponent.currentTime = 0.0f;
-            }
+            animationComponent.currentTime = Gep::WrapOrClamp(animationComponent.currentTime, 0.0f, animation.duration, animationComponent.looping);
 
             // I dont really understand why the clear has to be here but if I remove it there are strange anomalies sometimes.
             const uint32_t boneCount = static_cast<uint32_t>(model.skeleton.bones.size());

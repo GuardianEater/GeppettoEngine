@@ -43,11 +43,23 @@ namespace Client
         void Update(float dt) override;
 
     private:
+        // evaluates all curve components
         void UpdateFunctionLine();
+
+        // fills in the lookUpTable in the curve component 
         void UpdateArcLengthTable(Client::CurveComponent& curve);
+
+        // moves all path followers down their path
         void UpdatePathFollowers(float dt);
+        
+        // fills the curve compoennt with points along the curve for drawing
         void EvaluateCubicSplinePoints(Client::CurveComponent& curve);
-        glm::vec3 EvaluateAtDistance(const Client::CurveComponent& curve, double distance) const;
+
+        // takes a distance and returns a t value from 0-1
+        double GetTFromDistance(const Client::CurveComponent& curve, double distance) const;
+
+        double ParabolicEase(double t, double t1, double t2) const;
+        double ParabolicEaseVelocity(double t, double t1, double t2) const;
 
         void OnCurveEditorRender(const Gep::Event::ComponentEditorRender<Client::CurveComponent>& cc);
         void OnCurveAdded(const Gep::Event::ComponentAdded<Client::CurveComponent>& event);

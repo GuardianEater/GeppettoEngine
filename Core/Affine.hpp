@@ -28,4 +28,7 @@ namespace Gep
     void yaw(float angle, glm::vec3& right, glm::vec3& back, const glm::vec3& up);
     void pitch(float angle, const glm::vec3& right, glm::vec3& back, glm::vec3& up);
     void roll(float angle, glm::vec3& right, const glm::vec3& back, glm::vec3& up);
+
+    // given a look vector returns the euler angles, assumes up.
+    glm::vec3 EulerFromLook(const glm::vec3& look);
 }

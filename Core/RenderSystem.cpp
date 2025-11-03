@@ -479,7 +479,7 @@ namespace Client
 
             // if the model also has an animation compute its final pose and pass all bone info to the gpu
             int previousBoneOffset = boneOffset;
-            if (mManager.HasComponent<AnimationComponent>(entity) && mManager.IsState(Gep::EngineState::Play))
+            if (mManager.HasComponent<AnimationComponent>(entity))
             {
                 AnimationComponent& ac = mManager.GetComponent<AnimationComponent>(entity);
 
@@ -511,10 +511,11 @@ namespace Client
                 .boneOffset = previousBoneOffset // only used in the skinned pbr shader
             };
 
-            Gep::RenderFlags flags = Gep::RenderFlags::None;
-            if (model.selected) flags |= Gep::RenderFlags::Highlight; // add highlight flag if selected
+            if (model.selected) // no highlighting for now
+            {
+            }
 
-            mRenderer.AddObject(targetShader, model.name, uniforms, flags);
+            mRenderer.AddObject(targetShader, model.name, uniforms);
         });
 
         mRenderer.AddLine(skeletonLines);

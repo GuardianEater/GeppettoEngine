@@ -117,4 +117,29 @@ namespace Gep
         right = rotate * glm::vec4(right, 0);
         up = rotate * glm::vec4(up, 0);
     }
+    glm::vec3 EulerFromLook(const glm::vec3& look)
+    {
+        // orient transform so its points toward the look vector.
+        // skip if the look vector is degenerate.
+        if (glm::dot(look, look) > glm::epsilon<float>())
+        {
+            glm::vec3 forward = glm::normalize(look);
+
+            // world-up: avoid near-parallel up/forward
+            glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+            if (std::abs(glm::dot(forward, worldUp)) > 1.0f - glm::epsilon<float>())
+                worldUp = glm::vec3(1.0f, 0.0f, 0.0f);
+
+            // orthonormal basis: right, up, forward
+            glm::vec3 right = glm::normalize(glm::cross(worldUp, forward));
+            glm::vec3 up = glm::cross(forward, right);
+
+            glm::mat3 rotMat(right, up, forward); // columns -> local axes aligned with world-space basis
+            glm::quat orientation = glm::quat_cast(rotMat);
+
+            return glm::degrees(glm::eulerAngles(orientation));
+        }
+
+        return glm::vec3(0.0f);
+    }
 }
