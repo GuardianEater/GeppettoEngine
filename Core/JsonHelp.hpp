@@ -54,7 +54,7 @@ namespace Gep
             // catch all applied to all types that are not supprted by nlohmann
             // do nothing if the type is not writable
 
-            Gep::Log::Warning("Attempting to write an unsupported type to json. Type was: [", Gep::GetTypeInfo<T>().Name(), "]");
+            //Gep::Log::Warning("Attempting to write an unsupported type to json. Type was: [", Gep::GetTypeInfo<T>().Name(), "]");
         }
 
         template <typename T>
@@ -70,7 +70,7 @@ namespace Gep
             // catch all applied to all types that are not supprted by nlohmann
             // do nothing if the type is not readable
 
-            Gep::Log::Warning("Attempting to read an unsupported type from json. Type was: [", Gep::GetTypeInfo<T>().Name(), "]");
+            //Gep::Log::Warning("Attempting to read an unsupported type from json. Type was: [", Gep::GetTypeInfo<T>().Name(), "]");
         }
 
         template <typename T>
