@@ -483,7 +483,7 @@ namespace Client
             {
                 AnimationComponent& ac = mManager.GetComponent<AnimationComponent>(entity);
 
-                for (uint32_t i = 0; i < ac.pose.size(); ++i)
+                for (uint32_t i = 0; i < ac.pose.size() && i < internalModel.skeleton.bones.size(); ++i)
                 {
                     Gep::BoneGPUData bone{
                         .offsetMatrix = Gep::ToMat4(ac.pose[i] * internalModel.skeleton.bones[i].inverseBind)
