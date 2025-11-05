@@ -57,7 +57,7 @@ namespace Client
         void DrawInspectorPanel();
         void DrawInfoPanel();
         void DrawExtras();
-        bool DrawEntityNode(Gep::Entity entity);
+        bool DrawEntityNode(Gep::Entity entity, const std::string& displayName, bool selected, const ImVec4& defaultColor);
         void DrawQuickTest();
 
         std::vector<Gep::Entity> SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm);

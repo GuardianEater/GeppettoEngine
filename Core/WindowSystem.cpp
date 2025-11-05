@@ -369,8 +369,11 @@ namespace Client
     {
         if (glfwWindowShouldClose(mPrimaryWindow))
         {
+            // begin the shutdown process for the engine
             mManager.Shutdown();
+            mManager.SignalEvent<Gep::Event::WindowClosing>({});
         }
+
         glfwSwapBuffers(mPrimaryWindow);
     }
 

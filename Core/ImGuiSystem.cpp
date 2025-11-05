@@ -188,7 +188,7 @@ namespace Client
             ImGui::TableSetupColumn("Stride", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableHeadersRow();
 
-            for (const auto& [signature, chunk] : archetypes)
+            for (const auto& [signature, archetype] : archetypes)
             {
                 ImGui::TableNextRow();
                 std::string archetypeContents = "<";
@@ -202,9 +202,9 @@ namespace Client
                 ImGui::TableNextColumn();
                 ImGui::Text("%s", archetypeContents.c_str());
                 ImGui::TableNextColumn();
-                ImGui::Text("%u", chunk.entityCount);
+                ImGui::Text("%u", archetype.EntityCount());
                 ImGui::TableNextColumn();
-                ImGui::Text("%u", chunk.stride);
+                ImGui::Text("%u", archetype.stride);
             }
 
             ImGui::EndTable();
@@ -278,37 +278,176 @@ namespace Client
         ImGui::End(); // Extra
     }
 
-    bool ImGuiSystem::DrawEntityNode(Gep::Entity entity)
+    bool ImGuiSystem::DrawEntityNode(Gep::Entity entity, const std::string& displayName, bool selected, const ImVec4& defaultColor)
     {
-        // the identification component aquired here returns the wrong name
-        std::string displayName = GetEntityDisplayName(entity);
-
-        ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f)); // Increase padding
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10.0f, 7.0f)); // Increase vertical padding
-
-        // change the color of tree node selected
-        ImVec4 selectedColor = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
-        ImVec4 defaultColor = ImGui::GetStyleColorVec4(ImGuiCol_Header);
-        ImVec4 color = mEditorResource.mSelectedEntities.contains(entity) ? selectedColor : defaultColor;
-        ImVec4 hoverColor = ImVec4(color.x + 0.1f, color.y + 0.1f, color.z + 0.1f, 1.0f);
+        // Minimal work here: only compute hover color from provided default or selected color
+        const ImVec4 selectedColor = ImVec4(0.6f,0.6f,0.6f,1.0f);
+        const ImVec4 color = selected ? selectedColor : defaultColor;
+        const ImVec4 hoverColor = ImVec4(color.x +0.1f, color.y +0.1f, color.z +0.1f,1.0f);
 
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, hoverColor);
-        ImGui::PushStyleColor(ImGuiCol_Header, mEditorResource.mSelectedEntities.contains(entity) ? selectedColor : defaultColor);
+        ImGui::PushStyleColor(ImGuiCol_Header, selected ? selectedColor : defaultColor);
 
         bool isOpen = ImGui::TreeNodeEx(displayName.c_str()
             , ImGuiTreeNodeFlags_OpenOnArrow
             | ImGuiTreeNodeFlags_SpanAvailWidth
             | (mManager.HasChild(entity) ? ImGuiTreeNodeFlags_None : ImGuiTreeNodeFlags_Leaf)
-            | (mEditorResource.mSelectedEntities.contains(entity) ? ImGuiTreeNodeFlags_Selected : ImGuiTreeNodeFlags_None));
+            | (selected ? ImGuiTreeNodeFlags_Selected : ImGuiTreeNodeFlags_None));
 
         ImGui::PopStyleColor(2);
-        ImGui::PopStyleVar(2);
 
         return isOpen;
     }
 
     void ImGuiSystem::DrawQuickTest()
     {
+        ImGui::Begin("Tests");
+
+        if (ImGui::TreeNode("Cubes"))
+        {
+            static std::vector<Gep::Entity> cubes;
+            static int width = 10;
+            static float spacing = 10;
+            static bool running = false;
+            static std::string buttonText;
+
+            buttonText = running ? "EndTest" : "StartTest";
+
+            ImGui::DragInt("Width", &width, 0.01f, 0.0f, 50.0f);
+            ImGui::DragFloat("Spacing", &spacing);
+
+            if (ImGui::Button(buttonText.c_str()))
+            {
+                if (running)
+                {
+                    running = false;
+                    for (auto e : cubes)
+                    {
+                        mManager.DestroyEntity(e);
+                    }
+
+                    cubes.clear();
+                }
+                else
+                {
+                    running = true;
+                    float halfExtent = (width - 1) * spacing * 0.5f;
+
+                    for (int x = 0; x < width; ++x)
+                    for (int y = 0; y < width; ++y)
+                    for (int z = 0; z < width; ++z)
+                    {
+                        std::string name = "Cube (" + std::to_string(x) + "," + std::to_string(y) + "," + std::to_string(z) + ")";
+                        glm::vec3 pos = {
+                            x * spacing - halfExtent,
+                            y * spacing - halfExtent,
+                            z * spacing - halfExtent
+                        };
+
+                        Gep::Entity e = mManager.CreateEntity(name);
+                        mManager.AddComponent(e, Client::Transform{ .position = pos },
+                                                    Client::ModelComponent{}); // defaults to cube
+
+                        cubes.push_back(e);
+                    }
+                }
+            }
+
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("Empties"))
+        {
+            static std::vector<Gep::Entity> empties;
+            static int count = 1000;
+            static bool running = false;
+            static std::string buttonText;
+
+            buttonText = running ? "EndTest" : "StartTest";
+
+            ImGui::DragInt("Count", &count);
+
+            if (ImGui::Button(buttonText.c_str()))
+            {
+                if (running)
+                {
+                    running = false;
+                    for (auto e : empties)
+                    {
+                        mManager.DestroyEntity(e);
+                    }
+
+                    empties.clear();
+                }
+                else
+                {
+                    running = true;
+
+                    for (int x = 0; x < count; ++x)
+                    {
+                        std::string name = "Empty (" + std::to_string(x) + ")";
+
+                        Gep::Entity e = mManager.CreateEntity(name);
+
+                        empties.push_back(e);
+                    }
+                }
+            }
+
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("Everythings"))
+        {
+            static std::vector<Gep::Entity> entities;
+            static int count = 1000;
+            static bool running = false;
+            static std::string buttonText;
+
+            buttonText = running ? "EndTest" : "StartTest";
+
+            ImGui::DragInt("Count", &count);
+
+            if (ImGui::Button(buttonText.c_str()))
+            {
+                if (running)
+                {
+                    running = false;
+                    for (auto e : entities)
+                    {
+                        mManager.DestroyEntity(e);
+                    }
+
+                    entities.clear();
+                }
+                else
+                {
+                    running = true;
+
+                    for (int x = 0; x < count; ++x)
+                    {
+                        std::string name = "Everything (" + std::to_string(x) + ")";
+
+                        Gep::Entity e = mManager.CreateEntity(name);
+                        entities.push_back(e);
+
+                        const auto& cds = mManager.GetComponentDatas();
+
+                        for (const auto& [i, cd] : cds)
+                        {
+                            if (cd.index == mManager.GetComponentIndex<Client::Camera>()) // dont add camera
+                                continue;
+
+                            cd.add(e);
+                        }
+                    }
+                }
+            }
+
+            ImGui::TreePop();
+        }
+
+        ImGui::End();
     }
 
     std::vector<Gep::Entity> ImGuiSystem::SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm)
@@ -660,8 +799,18 @@ namespace Client
         {
             ImGui::PushID(entity);
 
+            // Precompute display name and selection state to avoid repeated allocations and lookups
             const std::string displayName = GetEntityDisplayName(entity);
-            bool isOpen = DrawEntityNode(entity);
+            const bool selected = mEditorResource.mSelectedEntities.contains(entity);
+
+            // Push style vars once per node here (cheaper than pushing inside DrawEntityNode repeatedly)
+            ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, ImVec2(0.0f,0.0f)); // Increase padding
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10.0f,7.0f)); // Increase vertical padding
+
+            ImVec4 defaultColor = ImGui::GetStyleColorVec4(ImGuiCol_Header);
+            bool isOpen = DrawEntityNode(entity, displayName, selected, defaultColor);
+
+            ImGui::PopStyleVar(2);
 
             // Multi-selection logic (Ctrl or Shift key)
             const bool isCtrlPressed = ImGui::GetIO().KeyCtrl;

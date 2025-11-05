@@ -79,6 +79,7 @@
       <AdditionalDependencies>glfw3.lib;opengl32.lib;user32.lib;gdi32.lib;shell32.lib;glew32.lib;assimp-vc143-mtd.lib;soloud_static_x64_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
+      <Profile>false</Profile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -106,11 +107,13 @@
       <AdditionalDependencies>glfw3.lib;opengl32.lib;user32.lib;gdi32.lib;shell32.lib;glew32.lib;assimp-vc143-mt.lib;soloud_static_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
+      <Profile>false</Profile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Affine.cpp" />
     <ClCompile Include="AnimationSystem.cpp" />
+    <ClCompile Include="Archetypes.cpp" />
     <ClCompile Include="BinarySerialzer.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CollisionChecking.cpp" />

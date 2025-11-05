@@ -227,8 +227,10 @@ namespace Gep
 
         ForEachComponent(entity, [&](const ComponentData& componentData)
         {
-            componentData.remove(entity);
+            componentData.onRemove(entity);
         });
+
+        Archetype_Clear(entity);
 
         // note: this has to be a vector by value because detach changes the underlying storage
         std::vector<Entity> children = GetChildren(entity);
@@ -626,7 +628,7 @@ namespace Gep
         return mComponentDatas.contains(componentIndex);
     }
 
-    const std::unordered_map<Signature, ArchetypeChunk>& EngineManager::GetArchetypes() const
+    const std::unordered_map<Signature, Archetype>& EngineManager::GetArchetypes() const
     {
         return mArchetypes;
     }
@@ -696,14 +698,14 @@ namespace Gep
         return mSystems.at(systemIndex);
     }
 
-    void EngineManager::CreateArchetypeChunk(Signature signature)
+    void EngineManager::Archetype_Create(Signature signature)
     {
         if (mArchetypes.contains(signature))
         {
-            Log::Critical("Cannot create chunk the given signature already exists: [", signature.to_string(), "]");
+            Log::Critical("Cannot create archetype the given signature already exists: [", signature.to_string(), "]");
         }
 
-        ArchetypeChunk& chunk = mArchetypes[signature];
+        Archetype& chunk = mArchetypes[signature];
 
         chunk.signature = signature;
         chunk.stride += sizeof(Entity); // size of the entity
@@ -713,36 +715,34 @@ namespace Gep
             chunk.componentOffsets.at(data.index) = chunk.stride;
             chunk.stride += data.size; // size of each component
         });
-
-        chunk.data.reserve(chunk.stride * 128);
     }
 
-    void EngineManager::ArchetypeChunkMove(ArchetypeChunk& oldChunk, ArchetypeChunk& targetChunk, uint64_t oldChunkIndex, uint64_t targetChunkIndex) const
+    void EngineManager::Archetype_Move(Archetype& oldArchetype, Archetype& targetArchetype, glm::u64vec2 oldIndex, glm::u64vec2 targetIndex) const
     {
-        if (oldChunkIndex >= oldChunk.entityCount)
+        if (!oldArchetype.InBounds(oldIndex.x, oldIndex.y))
         {
-            Gep::Log::Critical("ArchetypeChunkMove() failed, the oldChunkIndex: [", oldChunkIndex, "] was outside of the capacity of the chunk, capacity: [", oldChunk.entityCount, "]");
+            Gep::Log::Critical("Archetype_Move() failed, the oldIndex: [", oldIndex, "] was outside of the capacity of the archetype, capacity: [", oldArchetype.EntityCount(), "]");
         }
-        if (targetChunkIndex >= targetChunk.entityCount)
+        if (!targetArchetype.InBounds(targetIndex.x, targetIndex.y))
         {
-            Gep::Log::Critical("ArchetypeChunkMove() failed, the oldChunkIndex: [", targetChunkIndex, "] was outside of the capacity of the chunk, capacity: [", targetChunk.entityCount, "]");
+            Gep::Log::Critical("Archetype_Move() failed, the oldIndex: [", targetIndex, "] was outside of the capacity of the archetype, capacity: [", targetArchetype.EntityCount(), "]");
         }
 
         // copy the entity
-        uint8_t* oldEntity = oldChunk.data.data() + (oldChunkIndex * oldChunk.stride);
-        uint8_t* targetEntity = targetChunk.data.data() + (targetChunkIndex * targetChunk.stride);
+        std::byte* oldEntity = oldArchetype.GetEntity(oldIndex.x, oldIndex.y);
+        std::byte* targetEntity = targetArchetype.GetEntity(targetIndex.x, targetIndex.y);
         *targetEntity = *oldEntity;
 
-        Signature similarSignature = oldChunk.signature & targetChunk.signature;
+        Signature similarSignature = oldArchetype.signature & targetArchetype.signature;
 
         // destruct the desination, move into the destination, then destruct the being moved from
         ForEachComponentBit(similarSignature, [&](const ComponentData& data)
         {
-            size_t oldComponentOffset = oldChunk.componentOffsets[data.index];
-            uint8_t* componentSource = oldEntity + oldComponentOffset;
+            size_t oldComponentOffset = oldArchetype.componentOffsets[data.index];
+            std::byte* componentSource = oldEntity + oldComponentOffset;
 
-            size_t targetComponentOffset = targetChunk.componentOffsets[data.index];
-            uint8_t* componentDestination = targetEntity + targetComponentOffset;
+            size_t targetComponentOffset = targetArchetype.componentOffsets[data.index];
+            std::byte* componentDestination = targetEntity + targetComponentOffset;
 
             data.move(componentDestination, componentSource);
             data.destruct(componentSource);
@@ -750,18 +750,15 @@ namespace Gep
 
     }
 
-    void EngineManager::ArchetypeChunkSwapPop(ArchetypeChunk& chunk, uint64_t chunkIndex)
+    void EngineManager::Archetype_SwapPop(Archetype& archetype, glm::u64vec2 chunkIndex)
     {
-        if (chunkIndex >= chunk.entityCount)
+        if (!archetype.InBounds(chunkIndex.x, chunkIndex.y))
         {
-            Gep::Log::Critical("ArchetypeChunkSwapPop() failed, the chunkIndex: [",chunkIndex,"] was outside of the capacity of the chunk, capacity: [", chunk.entityCount, "]");
+            Gep::Log::Critical("Archetype_SwapPop() failed, the chunkIndex: [",chunkIndex,"] was outside of the capacity of the archetype, capacity: [", archetype.EntityCount(), "]");
         }
 
-        --chunk.entityCount;
-
-        uint8_t* entityToErasePtr = chunk.data.data() + (chunkIndex * chunk.stride);
-        uint8_t* entityAtBackPtr = chunk.data.data() + (chunk.entityCount * chunk.stride);
-
+        std::byte* entityToErasePtr = archetype.GetEntity(chunkIndex.x, chunkIndex.y);
+        std::byte* entityAtBackPtr = archetype.GetEntityAtBack();
 
         if (entityToErasePtr != entityAtBackPtr) // if they are different swap with the back and remove the back
         {
@@ -770,12 +767,12 @@ namespace Gep
 
             *erasedEntity = *swappedEntity;
 
-            ForEachComponentBit(chunk.signature, [&](const ComponentData& data) 
+            ForEachComponentBit(archetype.signature, [&](const ComponentData& data) 
             {
-                uint64_t offset = chunk.componentOffsets[data.index];
+                uint64_t offset = archetype.componentOffsets[data.index];
 
-                uint8_t* componentToErase = entityToErasePtr + offset;
-                uint8_t* componentAtBack = entityAtBackPtr + offset;
+                std::byte* componentToErase = entityToErasePtr + offset;
+                std::byte* componentAtBack = entityAtBackPtr + offset;
 
                 data.destruct(componentToErase);
                 data.move(componentToErase, componentAtBack);
@@ -786,19 +783,19 @@ namespace Gep
         }
         else // must still call the destructors on the back components
         {
-            ForEachComponentBit(chunk.signature, [&](const ComponentData& data)
+            ForEachComponentBit(archetype.signature, [&](const ComponentData& data)
             {
-                uint64_t offset = chunk.componentOffsets[data.index];
-                uint8_t* componentAtBack = entityAtBackPtr + offset;
+                uint64_t offset = archetype.componentOffsets[data.index];
+                std::byte* componentAtBack = entityAtBackPtr + offset;
 
                 data.destruct(componentAtBack);
             });
         }
 
-        chunk.data.resize(chunk.data.size() - chunk.stride);
+        archetype.RemoveEntityAtBack();
     }
 
-    void EngineManager::SetArchetypeChunkIndex(Entity entity, uint64_t index)
+    void EngineManager::SetArchetypeChunkIndex(Entity entity, glm::u64vec2 index)
     {
         if (!EntityExists(entity))
         {
@@ -809,27 +806,27 @@ namespace Gep
         mEntityDatas.at(entity).archetypeIndex = index;
     }
 
-    uint64_t EngineManager::GetArchetypeChunkIndex(Entity entity) const
+    glm::u64vec2 EngineManager::GetArchetypeChunkIndex(Entity entity) const
     {
         if (!EntityExists(entity))
         {
             Log::Error("GetArchetypeChunkIndex() failed, Entity: [", entity, "] does not exist");
-            return INVALID_ENTITY;
+            return { INVALID_ENTITY, INVALID_ENTITY };
         }
 
         return mEntityDatas.at(entity).archetypeIndex;
     }
 
-    void EngineManager::ArchetypeChunkErase(Entity entity, uint64_t componentIndex)
+    void EngineManager::Archetype_Erase(Entity entity, uint64_t componentIndex)
     {
         if (!EntityExists(entity))
         {
-            Log::Error("ArchetypeChunkErase() failed, Entity: [", entity, "] does not exist");
+            Log::Error("Archetype_Erase() failed, Entity: [", entity, "] does not exist");
             return;
         }
         if (!ComponentIsRegistered(componentIndex))
         {
-            Log::Error("ArchetypeChunkErase() failed, component: [",componentIndex,"] is not registered");
+            Log::Error("Archetype_Erase() failed, component: [",componentIndex,"] is not registered");
             return;
         }
 
@@ -839,34 +836,55 @@ namespace Gep
 
         if (oldSignature == targetSignature)
         {
-            Log::Warning("ArchetypeChunkErase(): When removing a component, entity: [", entity ,"] did not have the component: [", componentIndex, "]");
+            Log::Warning("Archetype_Erase(): When removing a component, entity: [", entity ,"] did not have the component: [", componentIndex, "]");
             return;
         }
 
-        ArchetypeChunk& oldChunk = mArchetypes.at(oldSignature);
-        uint64_t oldChunkIndex = GetArchetypeChunkIndex(entity);
+        Archetype& oldArchetype = mArchetypes.at(oldSignature);
+        glm::u64vec2 oldIndex = GetArchetypeChunkIndex(entity);
 
         if (targetSignature == 0) // targeting a nothing archetype, dont do any moving or allocating
         {
-            ArchetypeChunkSwapPop(oldChunk, oldChunkIndex);
+            Archetype_SwapPop(oldArchetype, oldIndex);
         }
         else
         {
             bool targetChunkExists = mArchetypes.contains(targetSignature);
 
             if (!targetChunkExists)
-                CreateArchetypeChunk(targetSignature);
+                Archetype_Create(targetSignature);
 
-            ArchetypeChunk& targetChunk = mArchetypes.at(targetSignature);
+            Archetype& targetArchetype = mArchetypes.at(targetSignature);
 
-            ArchetypeChunkAppend(targetChunk, entity);
-            uint64_t targetChunkIndex = GetArchetypeChunkIndex(entity);
+            Archetype_Append(targetArchetype, entity);
+            glm::u64vec2 targetIndex = GetArchetypeChunkIndex(entity);
 
-            ArchetypeChunkMove(oldChunk, targetChunk, oldChunkIndex, targetChunkIndex);
-            ArchetypeChunkSwapPop(oldChunk, oldChunkIndex);
+            Archetype_Move(oldArchetype, targetArchetype, oldIndex, targetIndex);
+            Archetype_SwapPop(oldArchetype, oldIndex);
         }
 
-        if (oldChunk.entityCount == 0)
+        if (oldArchetype.EntityCount() == 0)
             mArchetypes.erase(oldSignature);
+
+        // update the entities signature
+        Signature signature = GetSignature(entity); // gets the existing signature of the entity
+        signature.reset(componentIndex);
+        SetSignature(entity, signature); // sets the signature of the entity to the signature with the newly removed component
+    }
+
+    void EngineManager::Archetype_Clear(Entity entity)
+    {
+        Signature signature = GetSignature(entity);
+
+        if (signature == 0) // if the entity has no components this function is a noop
+            return;
+
+        Archetype& archetype = mArchetypes.at(signature);
+        glm::u64vec2 index = GetArchetypeChunkIndex(entity);
+
+        Archetype_SwapPop(archetype, index);
+
+        if (archetype.EntityCount() == 0)
+            mArchetypes.erase(signature);
     }
 }

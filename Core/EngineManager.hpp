@@ -73,7 +73,7 @@ namespace Gep
     // per entity data
     struct EntityData
     {
-        uint64_t archetypeIndex{ INVALID_ENTITY }; // the index into the archetype chunk where this entity has its components stored
+        glm::u64vec2 archetypeIndex{ INVALID_ENTITY, INVALID_ENTITY }; // the index into the archetype chunk where this entity has its components stored
         Signature signature{}; // the signature of the entity
 
         Entity parent{ INVALID_ENTITY }; // the parent of the entity, if it doesnt have a parent it is INVALID_ENTITY
@@ -99,6 +99,9 @@ namespace Gep
         std::function<void(Entity)> add{}; // a function that adds this component to the given entity
         std::function<void(Entity)> remove{}; // a function that removes this component from the given entity
         std::function<void(Entity to, Entity from)> copy{}; // a function that copies this component from one entity to another
+
+        // event functions
+        std::function<void(Entity)> onRemove{}; // does not deallocate. Signals to the ecs that this component will be removed manually.
 
         // memory functions
         std::function<void(void* to, void* from)> move{}; // casts the given pointer to the component type and moves it to the new destination
@@ -315,9 +318,9 @@ namespace Gep
 
         // returns the index of the component. This functions return value will never change, it will always return the same value for each given type.
         template<typename ComponentType>
-        uint64_t GetComponentIndex() const;
+        uint8_t GetComponentIndex() const;
 
-        const std::unordered_map<Signature, ArchetypeChunk>& GetArchetypes() const;
+        const std::unordered_map<Signature, Archetype>& GetArchetypes() const;
 
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -367,20 +370,20 @@ namespace Gep
         // archetype helpers, should only be used inside of Primary Archetype Functions /////////////////
 
         // prepairs a chunk for use. extracts various type information from the signature. does not touch entityCount or data.
-        void CreateArchetypeChunk(Signature signature);
+        void Archetype_Create(Signature signature);
 
         // simply append the given entity and components to the end of the given chunk
         template <typename... ComponentTypes>
-        void ArchetypeChunkAppend(ArchetypeChunk& chunk, Entity entity, ComponentTypes... components);
+        void Archetype_Append(Archetype& chunk, Entity entity, ComponentTypes... components);
 
         // shifts components that are in similar in both chunks from old to new,
-        void ArchetypeChunkMove(ArchetypeChunk& oldChunk, ArchetypeChunk& newChunk, uint64_t oldChunkIndex, uint64_t newChunkIndex) const;
+        void Archetype_Move(Archetype& oldArchetype, Archetype& newArchetype, glm::u64vec2 oldIndex, glm::u64vec2 newIndex) const;
 
         // swaps the data associated with the given chunk index with the back, and removes the back of the chunk 
-        void ArchetypeChunkSwapPop(ArchetypeChunk& chunk, uint64_t chunkIndex);
+        void Archetype_SwapPop(Archetype& chunk, glm::u64vec2 index);
 
-        void SetArchetypeChunkIndex(Entity entity, uint64_t index);
-        uint64_t GetArchetypeChunkIndex(Entity entity) const;
+        void SetArchetypeChunkIndex(Entity entity, glm::u64vec2 index);
+        glm::u64vec2 GetArchetypeChunkIndex(Entity entity) const;
 
 
 
@@ -389,10 +392,20 @@ namespace Gep
 
         // the full insertion operation. will remove an entity from its previous archetype, copying all of each previous data, and add it to the new one automatically
         template <typename... ComponentTypes>
-        void ArchetypeChunkInsert(Entity entity, ComponentTypes... components);
+        void Archetype_Insert(Entity entity, ComponentTypes... components);
 
         // the full deletion operation. will remove an entity from its previous archetype and add it to its new one automatically.
-        void ArchetypeChunkErase(Entity entity, uint64_t componentIndex);
+        void Archetype_Erase(Entity entity, uint64_t componentIndex);
+
+        // deallocates all components on an entity a destroys it
+        void Archetype_Clear(Entity entity);
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////
+        // Compoennt helpers 
+
+        // does no deallocation. simply signals that this component is destroyed to engine itself.
+        template <typename ComponentType>
+        void OnComponentDestroyed(Gep::Entity entity);
 
 
     private:
@@ -406,14 +419,14 @@ namespace Gep
 
         // components
         Gep::keyed_vector<ComponentData> mComponentDatas; // maps from a component type -> all of the data
-        std::unordered_map<std::type_index, uint64_t> mComponentTypeToIndex; // maps a component type to its index
-        std::unordered_map<std::string, uint64_t> mComponentNameToIndex; // maps a component name to its index
+        std::unordered_map<std::type_index, uint8_t> mComponentTypeToIndex; // maps a component type to its index
+        std::unordered_map<std::string, uint8_t> mComponentNameToIndex; // maps a component name to its index
         ComponentBitPos mNextComponentBitPos = 0; // used for assigning bits in an entities signature
-        std::vector<std::pair<uint64_t, Entity>> mMarkedComponents;   // The entity and the Entities component type ids.
+        std::vector<std::pair<uint8_t, Entity>> mMarkedComponents;   // The entity and the Entities component type ids.
 
         // archetypes
         // probably need to turn this into a tree
-        std::unordered_map<Signature, ArchetypeChunk> mArchetypes; // maps the signature of an archetype to the archetype itself
+        std::unordered_map<Signature, Archetype> mArchetypes; // maps the signature of an archetype to the archetype itself
 
         // systems
         std::unordered_map<std::type_index, uint64_t> mSystemTypeToIndex; // given the type of the system finds the index; always prefer GetSystemIndex()

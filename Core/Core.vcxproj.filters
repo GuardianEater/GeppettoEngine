@@ -306,6 +306,9 @@
     <ClCompile Include="UUID.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="Archetypes.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">

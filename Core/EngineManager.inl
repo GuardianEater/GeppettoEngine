@@ -126,34 +126,31 @@ namespace Gep
 
         Signature targetSignature = CreateSignature<ComponentTypes...>();
 
-        for (auto& [signature, chunk] : mArchetypes)
+        for (auto& [signature, archetype] : mArchetypes)
         {
             // inside the matching-chunk branch
             if ((targetSignature & signature) == targetSignature)
             {
                 // cheap early-out
-                if (chunk.entityCount == 0) continue;
+                if (archetype.EntityCount() == 0) continue;
 
-                // cache chunk state
-                uint8_t* base = chunk.data.data();
-                size_t stride = chunk.stride;
+                size_t stride = archetype.stride;
 
                 // precompute component offsets once per chunk
-                auto offsetsTuple = std::make_tuple(chunk.componentOffsets[GetComponentIndex<ComponentTypes>()]...);
+                auto offsetsTuple = std::make_tuple(archetype.componentOffsets[GetComponentIndex<ComponentTypes>()]...);
 
-                // iterate with pointer arithmetic
-                for (size_t i = 0; i < chunk.entityCount; ++i, base += stride)
+                archetype.ForEachEntity([offsetsTuple, lambda](std::byte* entity)
                 {
-                    Entity& entityRef = *reinterpret_cast<Entity*>(base);
+                    Entity& entityRef = *reinterpret_cast<Entity*>(entity);
 
                     // expand offset tuple and call lambda with entity + components
                     std::apply([&](auto... offs) 
                     {
                         // offs are offsets for ComponentTypes in the same order
-                        lambda(entityRef, *reinterpret_cast<ComponentTypes*>(base + offs)...);
+                        lambda(entityRef, *reinterpret_cast<ComponentTypes*>(entity + offs)...);
                     }, 
                     offsetsTuple);
-                }
+                });
             }
         }
     }
@@ -278,6 +275,8 @@ namespace Gep
         newComponentData.copy = [&](Entity to, Entity from) { CopyComponent<ComponentType>(to, from); };
         newComponentData.has = [&](Entity entity) { return HasComponent(newComponentData.index, entity); };
 
+        newComponentData.onRemove = [&](Entity entity) { OnComponentDestroyed<ComponentType>(entity); };
+
         newComponentData.save = [&](Entity entity) { return SaveComponent<ComponentType>(entity); };
         newComponentData.load = [&](Entity entity, const nlohmann::json& componentJson) { LoadComponent<ComponentType>(entity, componentJson); };
 
@@ -312,7 +311,7 @@ namespace Gep
         Log::Trace("Adding Components: [", ss.str(), "] to entity: [", entity, "]...");
 
         // handle the memory of the componets
-        ArchetypeChunkInsert(entity, std::forward<ComponentTypes>(components)...);
+        Archetype_Insert(entity, std::forward<ComponentTypes>(components)...);
 
         // keeps track of the amount of components that exist
         (mComponentDatas.at(GetComponentIndex<ComponentTypes>()).count++, ...);
@@ -366,16 +365,11 @@ namespace Gep
             return;
         }
 
-        SignalEvent(Event::ComponentRemoved<ComponentType>{ entity, GetComponent<ComponentType>(entity) });
-
         const uint64_t componentIndex = GetComponentIndex<ComponentType>();
 
-        ArchetypeChunkErase(entity, componentIndex);
-        mComponentDatas.at(GetComponentIndex<ComponentType>()).count--;
+        OnComponentDestroyed<ComponentType>(entity);
 
-        Signature signature = GetSignature(entity); // gets the existing signature of the entity
-        signature.reset(componentIndex);
-        SetSignature(entity, signature); // sets the signature of the entity to the signature with the newly removed component
+        Archetype_Erase(entity, componentIndex);
     }
 
     template<typename ComponentType>
@@ -385,27 +379,25 @@ namespace Gep
         {
             Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not exist!");
         }
-
         if (!ComponentIsRegistered<ComponentType>())
         {
             Log::Critical("GetComponent() Failed, Component: [", GetTypeInfo<ComponentType>().PrettyName(), "] is not registered!");
         }
-
         if (!HasComponent<ComponentType>(entity))
         {
             Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not have Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
         }
 
-        uint64_t  componentIndex     = GetComponentIndex<ComponentType>(); // fast
-        Signature archetypeSignature = GetSignature(entity);                // fast
-        uint64_t  chunkIndex         = GetArchetypeChunkIndex(entity);      // fast
+        uint64_t componentIndex = GetComponentIndex<ComponentType>();                // fast
+        Signature archetypeSignature = GetSignature(entity);                         // fast
+        glm::u64vec2 index = GetArchetypeChunkIndex(entity);                         // fast
+                                                                                     
+        Archetype& archetype = mArchetypes.at(archetypeSignature);                   // slow
+                                                                                     
+        std::byte* entityPtr = archetype.GetEntity(index.x, index.y);                // fast
+        std::byte* componentPtr = archetype.GetComponent(entityPtr, componentIndex); // fast
 
-        ArchetypeChunk& chunk = mArchetypes.at(archetypeSignature);         // slow
-
-        uint64_t componentOffset  = chunk.componentOffsets[componentIndex]; // fast
-        uint8_t* byteComponentPtr = chunk.data.data() + (chunkIndex * chunk.stride) + componentOffset; // fast
-
-        return *reinterpret_cast<ComponentType*>(byteComponentPtr); 
+        return *reinterpret_cast<ComponentType*>(componentPtr);
     }
 
     template<typename ComponentType>
@@ -424,16 +416,16 @@ namespace Gep
             Log::Critical("GetComponent() Failed, Entity: [", entity, "] does not have Component: [", GetTypeInfo<ComponentType>().PrettyName(), "]");
         }
 
-        const uint64_t  componentIndex     = GetComponentIndex<ComponentType>(); // fast
-        const Signature archetypeSignature = GetSignature(entity);                // fast
-        const uint64_t  chunkIndex         = GetArchetypeChunkIndex(entity);      // fast
+        const uint64_t componentIndex = GetComponentIndex<ComponentType>();                // fast
+        const Signature archetypeSignature = GetSignature(entity);                         // fast
+        const glm::u64vec2 index = GetArchetypeChunkIndex(entity);                         // fast
 
-        const ArchetypeChunk& chunk = mArchetypes.at(archetypeSignature);         // slow
+        const Archetype& archetype = mArchetypes.at(archetypeSignature);                   // slow
 
-        const uint64_t componentOffset  = chunk.componentOffsets[componentIndex]; // fast
-        const uint8_t* byteComponentPtr = chunk.data.data() + (chunkIndex * chunk.stride) + componentOffset; // fast
+        const std::byte* entityPtr = archetype.GetEntity(index.x, index.y);                // fast
+        const std::byte* componentPtr = archetype.GetComponent(entityPtr, componentIndex); // fast
 
-        return *reinterpret_cast<const ComponentType*>(byteComponentPtr); 
+        return *reinterpret_cast<const ComponentType*>(componentPtr);
     }
 
     template <typename... ComponentTypes>
@@ -636,82 +628,94 @@ namespace Gep
     }
 
     template<typename ComponentType>
-    uint64_t EngineManager::GetComponentIndex() const
+    uint8_t EngineManager::GetComponentIndex() const
     {
         // note: there is no error check, if the below line crashes its because the component was not registered.
         // this is gross, however it needs to be done in a single line so its statically cached
-        static const uint64_t index = mComponentDatas.at(mComponentTypeToIndex.at(typeid(ComponentType))).index;
+        static const uint8_t index = mComponentDatas.at(mComponentTypeToIndex.at(typeid(ComponentType))).index;
         
         return index;
     }
 
     template<typename... ComponentTypes>
-    inline void EngineManager::ArchetypeChunkAppend(ArchetypeChunk& chunk, Entity entity, ComponentTypes... components)
+    inline void EngineManager::Archetype_Append(Archetype& archetype, Entity entity, ComponentTypes... components)
     {
         if (!EntityExists(entity))
         {
-            Log::Error("ArchetypeChunkAppend() Failed, Entity: [", entity, "] does not exist!");
+            Log::Error("Archetype_Append() Failed, Entity: [", entity, "] does not exist!");
             return;
         }
 
-        chunk.data.resize(chunk.data.size() + chunk.stride); // need to fix this resize: make a type erase vector class that takes template parameters for its resize
+        std::byte* byteEntityDestination = archetype.AllocateEntity();
 
-        uint8_t* byteEntityDestination = chunk.data.data() + (chunk.entityCount * chunk.stride);
         Entity* entityDestination = reinterpret_cast<Entity*>(byteEntityDestination);
         *entityDestination = entity;
 
         ([&](auto& component)
-            {
-                uint64_t bitPos = GetComponentIndex<ComponentTypes>();
-                uint64_t componentOffset = chunk.componentOffsets.at(bitPos);
-                uint8_t* byteComponentDestination = chunk.data.data() + componentOffset + (chunk.entityCount * chunk.stride);
-                ComponentTypes* componentDestination = reinterpret_cast<ComponentTypes*>(byteComponentDestination);
-                new (componentDestination) ComponentTypes(std::move(component));
-            }
+        {
+            uint64_t componentIndex = GetComponentIndex<ComponentTypes>();
+            ComponentTypes* componentDestination = reinterpret_cast<ComponentTypes*>(archetype.GetComponent(byteEntityDestination, componentIndex));
+            new (componentDestination) ComponentTypes(std::move(component));
+        }
         (components), ...);
 
-        uint64_t backIndex = chunk.entityCount;
-        ++chunk.entityCount;
+        glm::u64vec2 backIndex = archetype.GetBackEntityIndex();
         SetArchetypeChunkIndex(entity, backIndex);
     }
 
     template<typename ...ComponentTypes>
-    inline void EngineManager::ArchetypeChunkInsert(Entity entity, ComponentTypes... components)
+    inline void EngineManager::Archetype_Insert(Entity entity, ComponentTypes... components)
     {
         if (!EntityExists(entity))
         {
-            Log::Error("ArchetypeChunkInsert() Failed, Entity: [", entity, "] does not exist!");
+            Log::Error("Archetype_Insert() Failed, Entity: [", entity, "] does not exist!");
             return;
         }
 
-        Signature oldSignature = GetSignature(entity);
-        Signature newSignature = CreateSignature<ComponentTypes...>(oldSignature);
+        Signature oldSignature    = GetSignature(entity);
+        Signature targetSignature = CreateSignature<ComponentTypes...>(oldSignature);
 
-        bool hasOldArchetype = mArchetypes.contains(oldSignature);
-        bool hasNewArchetype = mArchetypes.contains(newSignature);
+        bool entityHasPreviousArchetype = mArchetypes.contains(oldSignature);
+        bool targetArchetypeExists      = mArchetypes.contains(targetSignature);
 
-        if (!hasNewArchetype)
-            CreateArchetypeChunk(newSignature);
+        if (!targetArchetypeExists)
+            Archetype_Create(targetSignature);
 
-        ArchetypeChunk& newChunk = mArchetypes.at(newSignature);
+        Archetype& targetArchetype = mArchetypes.at(targetSignature);
 
-        if (hasOldArchetype)
+        if (entityHasPreviousArchetype)
         {
-            ArchetypeChunk& oldChunk = mArchetypes.at(oldSignature);
+            Archetype& oldArchetype = mArchetypes.at(oldSignature);
 
-            uint64_t oldChunkIndex = GetArchetypeChunkIndex(entity);
-            ArchetypeChunkAppend(newChunk, entity, std::forward<ComponentTypes>(components)...);
-            uint64_t newChunkIndex = GetArchetypeChunkIndex(entity);
+            glm::u64vec2 oldIndex = GetArchetypeChunkIndex(entity);
+            Archetype_Append(targetArchetype, entity, std::forward<ComponentTypes>(components)...);
+            glm::u64vec2 targetIndex = GetArchetypeChunkIndex(entity);
 
-            ArchetypeChunkMove(oldChunk, newChunk, oldChunkIndex, newChunkIndex);
-            ArchetypeChunkSwapPop(oldChunk, oldChunkIndex);
+            Archetype_Move(oldArchetype, targetArchetype, oldIndex, targetIndex);
+            Archetype_SwapPop(oldArchetype, oldIndex);
 
-            if (oldChunk.entityCount == 0)
+            if (oldArchetype.EntityCount() == 0)
                 mArchetypes.erase(oldSignature);
         }
         else
         {
-            ArchetypeChunkAppend(newChunk, entity, components...);
+            Archetype_Append(targetArchetype, entity, components...);
         }
+    }
+
+    template<typename ComponentType>
+    inline void EngineManager::OnComponentDestroyed(Gep::Entity entity)
+    {
+        if (!EntityExists(entity))
+        {
+            Log::Error("DestroyComponent() failed, Entity: [", entity, "] does not exist");
+            return;
+        }
+
+        const uint64_t componentIndex = GetComponentIndex<ComponentType>();
+
+        SignalEvent(Event::ComponentRemoved<ComponentType>{ entity, GetComponent<ComponentType>(entity) });
+
+        mComponentDatas.at(GetComponentIndex<ComponentType>()).count--;
     }
 }
