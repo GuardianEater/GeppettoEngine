@@ -49,6 +49,14 @@
 
 // engine /////////////////////////////////////////////////////////////////////
 
+#ifdef _DEBUG
+    // in debug mode will evaluate as usual
+    #define debug_if(x) if(x)
+#else
+    // in release mode will get optimized out
+    #define debug_if(x) if (false)
+#endif
+
 namespace Gep
 {
     template <typename num>

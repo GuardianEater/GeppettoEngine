@@ -515,7 +515,11 @@ namespace Client
             {
             }
 
-            mRenderer.AddObject(targetShader, model.name, uniforms);
+            Gep::RenderFlags flags = Gep::RenderFlags::None;
+            if (mWireframeMode)
+                flags |= Gep::RenderFlags::Wireframe;
+
+            mRenderer.AddObject(targetShader, model.name, uniforms, flags);
         });
 
         mRenderer.AddLine(skeletonLines);

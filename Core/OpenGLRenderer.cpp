@@ -156,14 +156,14 @@ namespace Gep
 
     void OpenGLRenderer::AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& gpuData, RenderFlags flags)
     {
-        // fast existence checks
-        if (!IsMeshLoaded(modelName))
+        // these existance checks are very expensive so only perform in debug mode
+        debug_if (!IsMeshLoaded(modelName))
         {
             Gep::Log::Error("Failed to draw object. The model: [", modelName, "] doesn't exist");
             return;
         }
 
-        if (!IsShaderLoaded(shaderName))
+        debug_if (!IsShaderLoaded(shaderName))
         {
             Gep::Log::Error("Failed to draw object. The shader: [", shaderName, "] doesn't exist");
             return;
