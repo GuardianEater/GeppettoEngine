@@ -28,9 +28,9 @@ namespace Client
         glm::vec3 previousRotation{ rotation };
 
         // Cached model matrix (updated lazily on change)
-        glm::mat4 cachedModel{ 1.0f };
+        mutable glm::mat4 cachedModel{ 1.0f };
 
-        glm::mat4 GetModelMatrix()
+        glm::mat4 GetModelMatrix() const
         {
             //// Recompute only if something changed
             //if (position != previousPosition || rotation != previousRotation || scale != previousScale)

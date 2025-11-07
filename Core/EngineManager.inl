@@ -139,7 +139,7 @@ namespace Gep
                 // precompute component offsets once per chunk
                 auto offsetsTuple = std::make_tuple(archetype.componentOffsets[GetComponentIndex<ComponentTypes>()]...);
 
-                archetype.ForEachEntity([offsetsTuple, lambda](std::byte* entity)
+                archetype.ForEachEntity([&offsetsTuple, &lambda](std::byte* entity)
                 {
                     Entity& entityRef = *reinterpret_cast<Entity*>(entity);
 
