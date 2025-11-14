@@ -103,31 +103,45 @@ namespace Gep
 
             if (movementEnabled && ImGui::IsWindowFocused())
             {
-                // rotating the camera around
-                cameraTransform.rotation.y += mouseDelta.x * sensitivity;
-                cameraTransform.rotation.x += mouseDelta.y * sensitivity;
+                // Apply mouse rotation deltas
+                camera.rotation.y += -mouseDelta.y * sensitivity; // up/down
+                camera.rotation.x += -mouseDelta.x * sensitivity; // left/right
 
-                // dont go upside down camera
-                if (cameraTransform.rotation.x > 89.99f) cameraTransform.rotation.x = 89.99f;
-                if (cameraTransform.rotation.x < -89.99f) cameraTransform.rotation.x = -89.99f;
+                // Clamp vertical rotation to prevent flipping
+                camera.rotation.y = glm::clamp(camera.rotation.y, -89.99f, 89.99f);
 
-                // speed boost
+                // Build rotation quaternion from yaw (around Y) and pitch (around X)
+                glm::quat qPitch = glm::angleAxis(glm::radians(camera.rotation.y), glm::vec3(1, 0, 0));
+                glm::quat qYaw = glm::angleAxis(glm::radians(camera.rotation.x), glm::vec3(0, 1, 0));
+                cameraTransform.local.rotation = qYaw * qPitch; // yaw first, then pitch
+
+                // Compute direction vectors
+                camera.back = cameraTransform.local.rotation * glm::vec3(0, 0, 1);
+                camera.right = cameraTransform.local.rotation * glm::vec3(1, 0, 0);
+                camera.up = cameraTransform.local.rotation * glm::vec3(0, 1, 0); // local up
+
+                const glm::vec3 forward = glm::normalize(qYaw * glm::vec3(0, 0, -1));
+                const glm::vec3 left = glm::normalize(qYaw * glm::vec3(-1, 0, 0));
+                const glm::vec3 up = glm::vec3(0, 1, 0);
+
+                // Speed boost
+                float moveSpeed = movementSpeed;
                 if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
-                    movementSpeed *= boostMuliplier;
+                    moveSpeed *= boostMuliplier;
 
-                // controls for moveing the camera around
+                // Movement
                 if (glfwGetKey(window, GLFW_KEY_W))
-                    cameraTransform.position += forward * movementSpeed;
+                    cameraTransform.local.position += forward * moveSpeed;
                 if (glfwGetKey(window, GLFW_KEY_S))
-                    cameraTransform.position -= forward * movementSpeed;
+                    cameraTransform.local.position -= forward * moveSpeed;
                 if (glfwGetKey(window, GLFW_KEY_A))
-                    cameraTransform.position -= rightward * movementSpeed;
+                    cameraTransform.local.position += left * moveSpeed;
                 if (glfwGetKey(window, GLFW_KEY_D))
-                    cameraTransform.position += rightward * movementSpeed;
+                    cameraTransform.local.position -= left * moveSpeed;
                 if (glfwGetKey(window, GLFW_KEY_E))
-                    cameraTransform.position += glm::vec3(0.0f, movementSpeed, 0.0f);
+                    cameraTransform.local.position += up * moveSpeed;
                 if (glfwGetKey(window, GLFW_KEY_Q))
-                    cameraTransform.position -= glm::vec3(0.0f, movementSpeed, 0.0f);
+                    cameraTransform.local.position -= up * moveSpeed;
             }
 
             ImVec2 contentRegionSize = ImGui::GetContentRegionAvail();
@@ -181,7 +195,7 @@ namespace Gep
             ImGuizmo::SetDrawlist();
             ImGuizmo::SetRect(contentRegionPos.x, contentRegionPos.y, contentRegionSize.x, contentRegionSize.y);
             ImGuizmo::SetOrthographic(false);
-            glm::mat4 view = camera.GetViewMatrix(cameraTransform.position);
+            glm::mat4 view = camera.GetViewMatrix(cameraTransform.world.position);
             glm::mat4 pers = camera.GetProjectionMatrix();
 
             const auto& selectedEntities = editorResource.GetSelectedEntities();
@@ -195,7 +209,7 @@ namespace Gep
                 {
                     auto& tf = em.GetComponent<Client::Transform>(e);
                     selectedWithTransform.emplace_back(e, tf);
-                    avgPos += tf.position;
+                    avgPos += tf.world.position;
                 }
             }
 

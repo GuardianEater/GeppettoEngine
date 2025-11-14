@@ -26,6 +26,8 @@ namespace Client
         glm::vec3 right = glm::normalize(glm::cross(-back, glm::vec3(0, 1, 0))); // vector pointing to the right of the camera
         glm::vec3 up    = glm::cross(back, right);                               // vector pointer out the top of the camera
 
+        glm::vec3 rotation; // yaw pitch roll
+
         float nearPlane = 1.0f;    // how far away to start rendering
         float farPlane  = 1000.0f; // how far away to stop rendering
         float fov       = 80.0f;   // field of view
