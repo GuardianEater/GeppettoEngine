@@ -69,15 +69,13 @@ namespace Client
 
         ImGui::DragFloat3("Position", &transform.local.position.x, 0.1f);
         ImGui::DragFloat3("Scale", &transform.local.scale.x, 0.1f, 0.0f, Gep::num_max<float>());
-        ImGui::DragFloat4("Rotation", &transform.local.rotation.x, 0.1f, 0.0f, 360.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_WrapAround);
+        ImGui::DragFloat4("Rotation", &transform.local.rotation.x, 0.1f);
 
-        glm::vec3 pos = transform.world.position;
-        glm::vec3 scl = transform.world.scale;
-        glm::quat rot = transform.world.rotation;
-
-        ImGui::DragFloat3("World Position", &pos.x, 0.1f);
-        ImGui::DragFloat3("World Scale", &scl.x, 0.1f, 0.0f, Gep::num_max<float>());
-        ImGui::DragFloat4("World Rotation", glm::value_ptr(rot), 0.1f, 0.0f, 360.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_WrapAround);
+        ImGui::BeginDisabled();
+        ImGui::DragFloat3("World Position", glm::value_ptr(transform.world.position), 0.1f);
+        ImGui::DragFloat3("World Scale", glm::value_ptr(transform.world.scale), 0.1f, 0.0f, Gep::num_max<float>());
+        ImGui::DragFloat4("World Rotation", glm::value_ptr(transform.world.rotation), 0.1f);
+        ImGui::EndDisabled();
     }
 
     void PhysicsSystem::OnRigidBodyEditorRender(const Gep::Event::ComponentEditorRender<RigidBody>& event)
