@@ -221,11 +221,11 @@ namespace Gep
             // normal map
             gpuMaterial.normalTextureHandle = material.normalTexture.handle;
 
-            // NOTE: These debug overrides force materials; remove if undesired.
-            gpuMaterial.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-            gpuMaterial.ao = 0.8f;
-            gpuMaterial.metalness = 0.8f;
-            gpuMaterial.roughness = 0.8f;
+            // NOTE: These debug overrides force materials
+            //gpuMaterial.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+            //gpuMaterial.ao = 0.8f;
+            //gpuMaterial.metalness = 0.8f;
+            //gpuMaterial.roughness = 0.8f;
 
             materialMapping[id] = static_cast<uint32_t>(uniformIndex);
         }
