@@ -125,6 +125,7 @@
     <ClInclude Include="Algorithms.hpp" />
     <ClInclude Include="AnimationComponent.hpp" />
     <ClInclude Include="AnimationSystem.hpp" />
+    <ClInclude Include="BoneComponent.hpp" />
     <ClInclude Include="BVHTree.hpp" />
     <ClInclude Include="CollisionResource.hpp" />
     <ClInclude Include="Conversion.h" />
