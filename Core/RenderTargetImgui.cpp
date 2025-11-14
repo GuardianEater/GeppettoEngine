@@ -218,27 +218,31 @@ namespace Gep
             {
                 avgPos /= selectedWithTransform.size();
 
-                glm::mat4 avgModel = glm::translate(glm::mat4(1.0f), avgPos); // this only impacts the placement of the gizmo
-
-                constexpr float snap[3] = { 0.1f, 0.1f, 0.1f };
+                glm::mat4 gizmoTransform = glm::translate(glm::mat4(1.0f), avgPos);
                 glm::mat4 deltaMatrix(1.0f);
-                
-                if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(pers), currentOperation, currentMode, glm::value_ptr(avgModel), glm::value_ptr(deltaMatrix), snap))
+                constexpr float snap[3] = { 0.1f, 0.1f, 0.1f };
+
+                if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(pers),
+                    currentOperation, currentMode,
+                    glm::value_ptr(gizmoTransform),
+                    glm::value_ptr(deltaMatrix),
+                    snap))
                 {
-                    glm::vec3 pos{ 0 }, rot{ 0 }, scl{ 0 };
-                    ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMatrix), glm::value_ptr(pos), glm::value_ptr(rot), glm::value_ptr(scl));
-
-                    for (EntityTransformPair etp : selectedWithTransform)
+                    for (auto& [e, tf] : selectedWithTransform)
                     {
-                        auto& tf = etp.transform;
+                        // Get parent's world transform
+                        Gep::VQS parentWorld{};
+                        if (em.HasParent(e) && em.HasComponent<Client::Transform>(em.GetParent(e)))
+                        {
+                            auto& parentTf = em.GetComponent<Client::Transform>(em.GetParent(e));
+                            parentWorld = parentTf.world;
+                        }
 
-                        glm::mat4 model = Gep::translation_matrix(tf.position)
-                                        * Gep::rotation(tf.rotation)
-                                        * Gep::scale_matrix(tf.scale); // scale aafsgd
-                            
-                        glm::mat4 newModel = deltaMatrix * model;
+                        // Apply gizmo delta to *world matrix*
+                        tf.world = Gep::ToVQS(deltaMatrix) * tf.world;
 
-                        ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(newModel), glm::value_ptr(tf.position), glm::value_ptr(tf.rotation), glm::value_ptr(tf.scale));
+                        // Recalculate local
+                        tf.local = Gep::Inverse(parentWorld) * tf.world;
                     }
                 }
                 guizmoActive = true;
@@ -262,8 +266,8 @@ namespace Gep
                 Ray ray = Ray::FromMouse(
                     glm::vec2(mousePos.x - contentRegionPos.x, mousePos.y - contentRegionPos.y),
                     glm::vec2(contentRegionSize.x, contentRegionSize.y),
-                    cameraTransform.position,
-                    camera.GetViewMatrix(cameraTransform.position),
+                    cameraTransform.world.position,
+                    camera.GetViewMatrix(cameraTransform.world.position),
                     camera.GetProjectionMatrix()
                 );
 
@@ -289,45 +293,11 @@ namespace Gep
 
     void RenderTargetImgui::StartCameraFocus(EngineManager& em, Gep::Entity camera, const glm::vec3& targetPosition, float targetScale)
     {
-        Client::Transform& cameraTransform = em.GetComponent<Client::Transform>(camera);
-
-        cameraTransform.rotation = glm::mod(cameraTransform.rotation, glm::vec3(360.0f)); // prevents camera from unwinding
-        const glm::vec3 camPosition = cameraTransform.position;
-
-        glm::vec3 targetDirection;
-        if (targetPosition == camPosition)
-            targetDirection = { 0.333f, 0.333f, 0.333f };
-        else
-            targetDirection = glm::normalize(targetPosition - camPosition);
-
-        const float distance = glm::distance(targetPosition, camPosition);
-
-        // atan2 handles full 360-degree rotations
-        float pitch = glm::degrees(asin(glm::clamp(-targetDirection.y, -1.0f, 1.0f)));
-        float yaw = glm::degrees(atan2(targetDirection.x, -targetDirection.z));
-        float roll = 0.0f;
-
-        mCameraTargetPosition = camPosition + (targetDirection * (distance - (targetScale * 1.2f)));
-        mCameraTargetPosition -= targetDirection * 1.0f;
-        mCameraTargetRotation = glm::mod(glm::vec3{ pitch, yaw, roll }, 360.0f);
-        mCameraLerping = true;
     }
 
     void RenderTargetImgui::UpdateCameraFocus(EngineManager& em, Gep::Entity camera, float dt)
     {
-        if (!mCameraLerping) return;
 
-        glm::vec3& currentRotation = em.GetComponent<Client::Transform>(camera).rotation;
-        glm::vec3& currentPosition = em.GetComponent<Client::Transform>(camera).position;
-
-        currentRotation = glm::mix(currentRotation, mCameraTargetRotation, 0.01f);
-        currentPosition = glm::mix(currentPosition, mCameraTargetPosition, 0.01f);
-
-        if (glm::length(mCameraTargetRotation - currentRotation) < 0.01 &&
-            glm::length(mCameraTargetPosition - currentPosition) < 0.01)
-        {
-            mCameraLerping = false;
-        }
     }
 
     float RenderTargetImgui::ComputeContainingScale(const std::vector<EntityTransformPair>& etps, const glm::vec3& avgPos)
@@ -336,8 +306,8 @@ namespace Gep
 
         for (const EntityTransformPair& etp : etps)
         {
-            float distanceToCenter = glm::length(etp.transform.position - avgPos);
-            float totalDistance = distanceToCenter + std::max({ etp.transform.scale.x,etp.transform.scale.y,etp.transform.scale.z });
+            float distanceToCenter = glm::length(etp.transform.world.position - avgPos);
+            float totalDistance = distanceToCenter + std::max({ etp.transform.world.scale.x,etp.transform.world.scale.y,etp.transform.world.scale.z });
             maxDistance = std::max(maxDistance, totalDistance);
         }
 

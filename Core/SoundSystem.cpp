@@ -41,9 +41,9 @@ namespace Client
             Camera& cameraComponent = mManager.GetComponent<Camera>(camera);
 
             soundResource.mSoundEngine.set3dListenerPosition(
-                cameraTransform.position.x,
-                cameraTransform.position.y,
-                cameraTransform.position.z);
+                cameraTransform.world.position.x,
+                cameraTransform.world.position.y,
+                cameraTransform.world.position.z);
             soundResource.mSoundEngine.set3dListenerAt(
                 -cameraComponent.back.x,
                 -cameraComponent.back.y,
@@ -63,9 +63,9 @@ namespace Client
 
                 soundResource.mSoundEngine.set3dSourcePosition(
                     soundComponent.soundHandle,
-                    transform.position.x,
-                    transform.position.y,
-                    transform.position.z);
+                    transform.world.position.x,
+                    transform.world.position.y,
+                    transform.world.position.z);
 
                 soundResource.mSoundEngine.set3dSourceMinMaxDistance(
                     soundComponent.soundHandle,
