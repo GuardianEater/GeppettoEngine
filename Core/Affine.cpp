@@ -144,7 +144,26 @@ namespace Gep
         return glm::vec3(0.0f);
     }
 
+    glm::quat QuatFromLook(const glm::vec3& look)
+    {
+        // orient transform so its points toward the look vector.
+        // skip if the look vector is degenerate.
+        if (glm::dot(look, look) > glm::epsilon<float>())
+        {
+            glm::vec3 forward = glm::normalize(look);
+            glm::vec3 up = glm::vec3(0, 1, 0); // or your chosen up
+            glm::vec3 right = glm::normalize(glm::cross(up, forward));
+            up = glm::cross(forward, right);
+
+            glm::mat3 rotMat(right, up, forward); // columns are basis vectors
+            return glm::normalize(glm::quat_cast(rotMat));
+        }
+
+        return glm::vec3(0.0f);
+    }
+
     glm::mat3 NormalFromModel(const glm::mat4& modelMatrix)
     {
         return glm::transpose(glm::inverse(glm::mat3(modelMatrix)));
     }
+}

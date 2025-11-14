@@ -208,14 +208,14 @@ namespace Client
 
             // get where the object should be looking
             const glm::vec3 lookVector = nextPoint - thisPoint;
-            const glm::vec3 eulerAngle = Gep::EulerFromLook(lookVector);x
+            const glm::quat q = Gep::QuatFromLook(lookVector);
 
             // update this objects transform
             transform.local.position = thisPoint;
 
             // prevents edge case if looping is off. Makes objects look direction not snap to 0,0,0
             if (glm::dot(lookVector, lookVector) > 0.001) 
-                transform.local.rotation = eulerAngle;
+                transform.local.rotation = q;
         });
     }
 

@@ -431,14 +431,6 @@ namespace Client
                 .camPosition = glm::vec4(camTransform.world.position, 1.0f),
             };
 
-            // convert the camera's rotation to radians
-            glm::vec3 camRotation = glm::eulerAngles(camTransform.world.rotation);
-
-            // calculate the camera's right, up, and back vectors from the transforms rotation
-            cam.right = { cos(camRotation.y), 0, sin(camRotation.y) };
-            cam.up = { sin(camRotation.x) * sin(camRotation.y), cos(camRotation.x), -sin(camRotation.x) * cos(camRotation.y) };
-            cam.back = glm::normalize(glm::cross(cam.right, cam.up));
-
             mRenderer.AddCamera(uniforms);
         });
     }
