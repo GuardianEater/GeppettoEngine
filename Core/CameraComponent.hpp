@@ -43,7 +43,7 @@ namespace Client
 
         glm::mat4 GetViewMatrix(const glm::vec3& position)
         {
-            return glm::lookAt(position, position - back, up);
+            return glm::lookAt(position, position - glm::normalize(back), up);
         }
 
         glm::mat4 GetProjectionMatrix()

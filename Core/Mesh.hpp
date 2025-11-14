@@ -8,41 +8,17 @@
 
 #pragma once
 
-#include <glm/glm.hpp>
-#include <vector>
-
+#include "VQS.hpp"
 #include "Shapes.hpp"
-
 #include "Core.hpp"
+#include <limits>
+#include <array>
 
 namespace Gep
 {
-    // based on International Journal of Algebra, Vol. 2, 2008, no. 19,905 - 918
-    // VQS-transformation basically scales r by s, rotates the outcome by q, and then
-    // translates the latter by v.
-    struct VQS // VQM
-    {
-        glm::vec3 position{0,0,0}; // translation
-        glm::quat rotation{1,0,0,0}; // rotation
-        glm::vec3 scale{1.0f, 1.0f, 1.0f}; // uniform scaling factor
-
-        VQS operator*(const VQS& local) const 
-        {
-            VQS result{};
-            result.scale = scale * local.scale;
-            result.rotation = rotation * local.rotation;
-
-            glm::vec3 scaledLocalTrans = scale * local.position;
-            glm::vec3 rotatedLocalTrans = rotation * scaledLocalTrans;
-            result.position = position + rotatedLocalTrans;
-
-            return result;
-        }
-    };
-
     struct Vertex
     {
-        constexpr static const uint32_t INVALID_INDEX = num_max<uint32_t>();
+        constexpr static const uint32_t INVALID_INDEX = Gep::num_max<uint32_t>();
 
         glm::vec3 position{};
         glm::vec3 normal{};
@@ -93,8 +69,8 @@ namespace Gep
         std::string name = "Unnamed";
 
         std::vector<uint32_t> childrenIndices;
-        VQS transformation;
-        VQS inverseBind;
+        Gep::VQS transformation;
+        Gep::VQS inverseBind;
         uint32_t parentIndex;
 
         bool isRealBone = false; // wether or not this bone was a bone inside of assimp

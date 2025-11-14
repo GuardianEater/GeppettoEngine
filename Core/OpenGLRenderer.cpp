@@ -12,6 +12,7 @@
 #include "Model.hpp"
 #include "Conversion.h"
 #include "Algorithms.hpp"
+#include "VQS.hpp"
 
 #define WIN32_LEAN_AND_MEAN
 #include "Windows.h"

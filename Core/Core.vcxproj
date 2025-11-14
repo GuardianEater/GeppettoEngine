@@ -298,6 +298,7 @@
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="TypeID.cpp" />
     <ClCompile Include="UUID.cpp" />
+    <ClCompile Include="VQS.cpp" />
     <ClCompile Include="WindowSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -379,6 +380,7 @@
     <ClInclude Include="TypeID.hpp" />
     <ClInclude Include="TypeList.hpp" />
     <ClInclude Include="UUID.hpp" />
+    <ClInclude Include="VQS.hpp" />
     <ClInclude Include="WindowSystem.hpp" />
   </ItemGroup>
   <ItemGroup>

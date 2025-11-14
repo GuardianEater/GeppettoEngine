@@ -306,6 +306,7 @@ namespace Client
         if (ImGui::TreeNode("Cubes"))
         {
             static std::vector<Gep::Entity> cubes;
+            static Gep::Entity parent;
             static int width = 10;
             static float spacing = 10;
             static bool running = false;
@@ -326,6 +327,7 @@ namespace Client
                         mManager.DestroyEntity(e);
                     }
 
+                    mManager.DestroyEntity(parent);
                     cubes.clear();
                 }
                 else
@@ -333,6 +335,8 @@ namespace Client
                     running = true;
                     float halfExtent = (width - 1) * spacing * 0.5f;
 
+                    parent = mManager.CreateEntity("Cubes Test");
+                    mManager.AddComponent(parent, Transform{});
                     for (int x = 0; x < width; ++x)
                     for (int y = 0; y < width; ++y)
                     for (int z = 0; z < width; ++z)
@@ -344,9 +348,12 @@ namespace Client
                             z * spacing - halfExtent
                         };
 
+                        Client::Transform t;
+                        t.world.position = pos;
+
                         Gep::Entity e = mManager.CreateEntity(name);
-                        mManager.AddComponent(e, Client::Transform{ .local{.position = pos}},
-                                                 Client::ModelComponent{}); // defaults to cube
+                        mManager.AddComponent(e, t, Client::ModelComponent{}); // defaults to cube
+                        mManager.AttachEntity(parent, e);
 
                         cubes.push_back(e);
                     }

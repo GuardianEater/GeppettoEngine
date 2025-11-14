@@ -8,9 +8,6 @@
 
 #pragma once
 
-#include <glm/fwd.hpp>
-#include <assimp/matrix4x4.h>
-
 namespace Gep
 {
     struct VQS;

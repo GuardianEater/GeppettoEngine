@@ -12,6 +12,7 @@
 #include <assimp/matrix4x4.h>
 #include <glm/glm.hpp>
 #include "Mesh.hpp"
+#include "VQS.hpp"
 
 namespace Gep
 {

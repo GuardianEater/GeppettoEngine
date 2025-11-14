@@ -181,14 +181,14 @@ namespace Gep
             else if (ImGui::IsKeyDown(ImGuiKey_E))
             {
                 currentOperation = ImGuizmo::OPERATION::ROTATE;
-                currentMode = ImGuizmo::MODE::LOCAL;
+                currentMode = ImGuizmo::MODE::WORLD;
             }
             else if (ImGui::IsKeyPressed(ImGuiKey_R) && !ImGui::GetIO().KeyCtrl)
             {
                 Gep::Log::Error("Scale is not implemented");
 
                 //currentOperation = ImGuizmo::OPERATION::SCALE;
-                //currentMode = ImGuizmo::MODE::LOCAL;
+                //currentMode = ImGuizmo::MODE::WORLD;
             }
 
             // prepare gizmos for rendering
@@ -223,7 +223,8 @@ namespace Gep
                 constexpr float snap[3] = { 0.1f, 0.1f, 0.1f };
 
                 if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(pers),
-                    currentOperation, currentMode,
+                    currentOperation, 
+                    currentMode,
                     glm::value_ptr(gizmoTransform),
                     glm::value_ptr(deltaMatrix),
                     snap))

@@ -14,8 +14,7 @@
 #include <glm/glm.hpp>
 #include <TypeID.hpp>
 #include <UUID.hpp>
-#include "Mesh.hpp"
-
+#include "VQS.hpp"
 // adds overloads for nlohmann
 namespace nlohmann
 {
