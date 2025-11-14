@@ -21,34 +21,33 @@ namespace Client
     void RelationSystem::Update(float dt)
     {
         mManager.ForEachArchetype<Transform>([&](Gep::Entity entity, Transform& t)
+        {
+            // only root entities
+            if (!mManager.HasParent(entity))
             {
-                // only root entities
-                if (!mManager.HasParent(entity))
-                {
-                    UpdateRecursive(entity, t, glm::mat4(1.0f), false);
-                }
-            });
+                UpdateRecursive(entity, t, Gep::VQS{}, false);
+            }
+        });
 
     }
 
-    void RelationSystem::UpdateRecursive(const Gep::Entity e, Transform& t, const glm::mat4& parentWorld, bool parentDirty)
+    void RelationSystem::UpdateRecursive(const Gep::Entity e, Transform& t, const Gep::VQS& parentWorld, bool parentDirty)
     {
-        bool worldDirty = parentDirty || t.dirty;
+        //bool worldDirty = parentDirty || t.dirty;
 
-        if (worldDirty)
-        {
-            t.localM = Gep::ToMat4(t.local);
-            t.worldM = parentWorld * t.localM;
-        }
+        //if (worldDirty)
+        //{
+            t.world = parentWorld * t.local;
+        //}
 
-        t.dirty = false;
+        //t.dirty = false;
 
         if (mManager.HasChild(e))
         {
             for (Gep::Entity child : mManager.GetChildren(e))
             {
                 Transform& childT = mManager.GetComponent<Transform>(child);
-                UpdateRecursive(child, childT, t.worldM, worldDirty);
+                UpdateRecursive(child, childT, t.world, true);
             }
         }
     }
@@ -62,10 +61,9 @@ namespace Client
         Transform& childT = mManager.GetComponent<Transform>(child);
         Transform& parentT = mManager.GetComponent<Transform>(newParent);
 
-        childT.localM = Gep::Inverse(parentT.worldM) * childT.worldM;
-        childT.local = Gep::ToVQS(childT.localM);
+        childT.local = Gep::Inverse(parentT.world) * childT.world;
 
-        childT.dirty = true; // let Update() rebuild .world with new parent
+        //childT.dirty = true; // let Update() rebuild .world with new parent
     }
 
     void RelationSystem::OnEntityAttached(const Gep::Event::EntityAttached& event)
