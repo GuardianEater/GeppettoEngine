@@ -31,4 +31,7 @@ namespace Gep
 
     // given a look vector returns the euler angles, assumes up.
     glm::vec3 EulerFromLook(const glm::vec3& look);
+
+    // creates a normal matrix from a passed model matrix
+    glm::mat3 NormalFromModel(const glm::mat4& modelMatrix);
 }

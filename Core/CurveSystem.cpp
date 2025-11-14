@@ -74,8 +74,8 @@ namespace Client
                 curveComponent.dirty = false;
             }
 
-            const glm::mat4 model = transform.GetModelMatrix();
-            const glm::mat4 normal = transform.GetNormalMatrix(model);
+            const glm::mat4 model = Gep::ToMat4(transform.world);
+            const glm::mat4 normal = Gep::NormalFromModel(model);
 
             // Place a sphere on each control point
             for (const glm::vec3& cp : curveComponent.controlPoints)
@@ -169,7 +169,7 @@ namespace Client
             CurveComponent& curve = mManager.GetComponent<CurveComponent>(targetEntity);
             Transform& pathTransform = mManager.GetComponent<Client::Transform>(targetEntity);
 
-            const glm::mat4 model = pathTransform.GetModelMatrix();
+            const glm::mat4 model = Gep::ToMat4(pathTransform.local);
 
             const double t0 = pfc.easeTimes.first;
             const double t1 = pfc.easeTimes.second;
@@ -208,14 +208,14 @@ namespace Client
 
             // get where the object should be looking
             const glm::vec3 lookVector = nextPoint - thisPoint;
-            const glm::vec3 eulerAngle = Gep::EulerFromLook(lookVector);
+            const glm::vec3 eulerAngle = Gep::EulerFromLook(lookVector);x
 
             // update this objects transform
-            transform.position = thisPoint;
+            transform.local.position = thisPoint;
 
             // prevents edge case if looping is off. Makes objects look direction not snap to 0,0,0
             if (glm::dot(lookVector, lookVector) > 0.001) 
-                transform.rotation = eulerAngle;
+                transform.local.rotation = eulerAngle;
         });
     }
 

@@ -345,8 +345,8 @@ namespace Client
                         };
 
                         Gep::Entity e = mManager.CreateEntity(name);
-                        mManager.AddComponent(e, Client::Transform{ .position = pos },
-                                                    Client::ModelComponent{}); // defaults to cube
+                        mManager.AddComponent(e, Client::Transform{ .local{.position = pos}},
+                                                 Client::ModelComponent{}); // defaults to cube
 
                         cubes.push_back(e);
                     }

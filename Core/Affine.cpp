@@ -117,6 +117,7 @@ namespace Gep
         right = rotate * glm::vec4(right, 0);
         up = rotate * glm::vec4(up, 0);
     }
+
     glm::vec3 EulerFromLook(const glm::vec3& look)
     {
         // orient transform so its points toward the look vector.
@@ -142,4 +143,8 @@ namespace Gep
 
         return glm::vec3(0.0f);
     }
-}
+
+    glm::mat3 NormalFromModel(const glm::mat4& modelMatrix)
+    {
+        return glm::transpose(glm::inverse(glm::mat3(modelMatrix)));
+    }

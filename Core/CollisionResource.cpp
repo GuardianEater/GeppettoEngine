@@ -29,7 +29,7 @@ namespace Client
         em.ForEachArchetype<Client::Transform, Client::CubeCollider>([&](Gep::Entity entity, Client::Transform& transform, Client::CubeCollider& collider) 
         {
             float t;
-            if (Gep::RayCube(ray, Gep::Cube{ transform.position, transform.scale * 0.5f, transform.rotation }, t))
+            if (Gep::RayCube(ray, Gep::Cube{ transform.world.position, transform.world.scale * 0.5f, transform.world.rotation }, t))
             {
                 if (t > 0.0f) // only accept objects infront of the ray
                     hits.emplace_back(t, entity);
@@ -40,7 +40,7 @@ namespace Client
         em.ForEachArchetype<Client::Transform, Client::SphereCollider>([&](Gep::Entity entity, Client::Transform& transform, Client::SphereCollider& collider)
         {
             float t;
-            if (Gep::RaySphere(ray, Gep::Sphere{ transform.position, std::max({transform.scale.x, transform.scale.y, transform.scale.z}) * 0.5f }, t))
+            if (Gep::RaySphere(ray, Gep::Sphere{ transform.world.position, std::max({transform.world.scale.x, transform.world.scale.y, transform.world.scale.z}) * 0.5f }, t))
             {
                 if (t > 0.0f) // only accept objects infront of the ray
                     hits.emplace_back(t, entity);
@@ -52,7 +52,7 @@ namespace Client
             Gep::OpenGLRenderer& renderer = em.GetResource<Gep::OpenGLRenderer>();
             const Gep::Model& mdl = renderer.GetModel(model.name);
 
-            const glm::mat4 modelMtx = transform.GetModelMatrix();
+            const glm::mat4 modelMtx = Gep::ToMat4(transform.world);
 
             float closestT = std::numeric_limits<float>::max();
             bool   anyHit = false;

@@ -485,7 +485,7 @@ namespace Gep
         float tMin = -FLT_MAX;
         float tMax = FLT_MAX;
 
-        glm::mat3 rotationMatrix = glm::mat3(Gep::rotation(cube.rotation));
+        glm::mat3 rotationMatrix = glm::mat3_cast(cube.rotation);
 
         // Loop through OBB's local axes (columns of rotation matrix)
         for (int i = 0; i < 3; i++) 

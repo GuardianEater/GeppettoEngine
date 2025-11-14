@@ -10,6 +10,8 @@
 
 #include <glm\glm.hpp>
 #include "Affine.hpp"
+#include "Mesh.hpp"
+#include "Conversion.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm\gtx\matrix_decompose.hpp>
@@ -18,44 +20,7 @@ namespace Client
 {
     struct Transform
     {
-        glm::vec3 position{};
-        glm::vec3 scale{1.0f, 1.0f, 1.0f};
-        glm::vec3 rotation{};
-
-        // Cache previous state to avoid rebuilding matrices unnecessarily
-        glm::vec3 previousPosition{ position };
-        glm::vec3 previousScale{ scale };
-        glm::vec3 previousRotation{ rotation };
-
-        // Cached model matrix (updated lazily on change)
-        mutable glm::mat4 cachedModel{ 1.0f };
-
-        glm::mat4 GetModelMatrix() const
-        {
-            //// Recompute only if something changed
-            //if (position != previousPosition || rotation != previousRotation || scale != previousScale)
-            //{
-                cachedModel = Gep::translation_matrix(position)
-                            * Gep::rotation(rotation)
-                            * Gep::scale_matrix(scale);
-            //}
-
-            return cachedModel;
-        }
-
-
-        glm::mat3 GetNormalMatrix(const glm::mat4& model) const
-        {
-            return glm::transpose(glm::inverse(glm::mat3(model)));
-        }
-
-        void SetModelMatrix(const glm::mat4& modelMatrix)
-        {
-            glm::vec3 skew;
-            glm::vec4 perspective;
-            glm::quat rotationQ;
-            glm::decompose(modelMatrix, scale, rotationQ, position, skew, perspective);
-            rotation = glm::eulerAngles(rotationQ);
-        }
+        Gep::VQS local;
+        Gep::VQS world;
     };
 }

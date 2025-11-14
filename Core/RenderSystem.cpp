@@ -372,8 +372,8 @@ namespace Client
     {
         mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity entity, CubeCollider& collider, Transform& transform)
         {
-            glm::mat4 modelMatrix = transform.GetModelMatrix();
-            glm::mat3 normal = transform.GetNormalMatrix(modelMatrix);
+            const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
+            const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
 
             Gep::ObjectGPUData uniforms
             {
@@ -388,8 +388,8 @@ namespace Client
 
         mManager.ForEachArchetype<SphereCollider, Transform>([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
         {
-            glm::mat4 modelMatrix = transform.GetModelMatrix();
-            glm::mat3 normal = transform.GetNormalMatrix(modelMatrix);
+            const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
+            const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
 
             Gep::ObjectGPUData uniforms
             {
@@ -410,7 +410,7 @@ namespace Client
         {
             Gep::LightGPUData uniforms
             {
-                .position = t.position,
+                .position = t.world.position,
                 .color = l.color,
                 .intensity = l.intensity
             };
@@ -427,12 +427,12 @@ namespace Client
             Gep::CameraGPUData uniforms
             {
                 .perspectiveMatrix = cam.GetProjectionMatrix(),
-                .viewMatrix = cam.GetViewMatrix(camTransform.position),
-                .camPosition = glm::vec4(camTransform.position, 1.0f),
+                .viewMatrix = cam.GetViewMatrix(camTransform.world.position),
+                .camPosition = glm::vec4(camTransform.world.position, 1.0f),
             };
 
             // convert the camera's rotation to radians
-            glm::vec3 camRotation = glm::radians(camTransform.rotation);
+            glm::vec3 camRotation = glm::eulerAngles(camTransform.world.rotation);
 
             // calculate the camera's right, up, and back vectors from the transforms rotation
             cam.right = { cos(camRotation.y), 0, sin(camRotation.y) };
@@ -466,8 +466,8 @@ namespace Client
 
         mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
         {
-            const glm::mat4 modelMatrix = transform.GetModelMatrix();
-            const glm::mat4 normal = transform.GetNormalMatrix(modelMatrix);
+            const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
+            const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
             const Gep::Model& internalModel = mRenderer.GetModel(model.name);
 
             if (mManager.HasComponent<Light>(entity))

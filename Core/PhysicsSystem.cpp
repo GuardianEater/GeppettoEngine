@@ -43,11 +43,11 @@ namespace Client
             Transform& transform = mManager.GetComponent<Transform>(entity);
             RigidBody& rigidBody = mManager.GetComponent<RigidBody>(entity);
 
-            transform.position += rigidBody.velocity * dt;
-            rigidBody.velocity += rigidBody.acceleration * dt;
+            //transform.local.position += rigidBody.velocity * dt;
+            //rigidBody.velocity += rigidBody.acceleration * dt;
 
-            transform.rotation += rigidBody.rotationalVelocity * dt;
-            rigidBody.rotationalVelocity += rigidBody.rotationalAcceleration * dt;
+            //transform.local.rotation += rigidBody.rotationalVelocity * dt;
+            //rigidBody.rotationalVelocity += rigidBody.rotationalAcceleration * dt;
         }
     }
 
@@ -59,9 +59,6 @@ namespace Client
         std::for_each(entities.begin(), entities.end(), [&](Gep::Entity entity)
         {
             Transform& transform = mManager.GetComponent<Transform>(entity);
-            transform.previousPosition = transform.position;
-            transform.previousRotation = transform.rotation;
-            transform.previousScale = transform.scale;
         });
     }
 
@@ -70,9 +67,17 @@ namespace Client
         Transform& transform = event.component;
         EditorResource& er = mManager.GetResource<EditorResource>();
 
-        er.LabledInput_Float3("Position", &transform.position.x, 100.0f, 0.1f);
-        er.LabledInput_Float3("Scale", &transform.scale.x, 100.0f, 0.1f, 0.0f, Gep::num_max<float>());
-        er.LabledInput_Float3("Rotation", &transform.rotation.x, 100.0f, 0.1f, 0.0f, 360.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_WrapAround);
+        ImGui::DragFloat3("Position", &transform.local.position.x, 0.1f);
+        ImGui::DragFloat3("Scale", &transform.local.scale.x, 0.1f, 0.0f, Gep::num_max<float>());
+        ImGui::DragFloat4("Rotation", &transform.local.rotation.x, 0.1f, 0.0f, 360.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_WrapAround);
+
+        glm::vec3 pos = transform.world.position;
+        glm::vec3 scl = transform.world.scale;
+        glm::quat rot = transform.world.rotation;
+
+        ImGui::DragFloat3("World Position", &pos.x, 0.1f);
+        ImGui::DragFloat3("World Scale", &scl.x, 0.1f, 0.0f, Gep::num_max<float>());
+        ImGui::DragFloat4("World Rotation", glm::value_ptr(rot), 0.1f, 0.0f, 360.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_WrapAround);
     }
 
     void PhysicsSystem::OnRigidBodyEditorRender(const Gep::Event::ComponentEditorRender<RigidBody>& event)

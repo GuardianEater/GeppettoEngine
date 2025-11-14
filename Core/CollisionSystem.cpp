@@ -45,9 +45,9 @@ namespace Client
 
         mManager.ForEachArchetype<Transform, SphereCollider>([&](Gep::Entity entity, Transform& t, SphereCollider& s)
         {
-            float radius = std::max({ t.scale.x, t.scale.y, t.scale.z }) / 2.0f;
-            float minX = t.position.x - radius;
-            float maxX = t.position.x + radius;
+            float radius = std::max({ t.world.scale.x, t.world.scale.y, t.world.scale.z }) / 2.0f;
+            float minX = t.world.position.x - radius;
+            float maxX = t.world.position.x + radius;
 
             sphereEntities.push_back({ minX, maxX, radius, entity, &t, &s });
         });
@@ -68,8 +68,8 @@ namespace Client
                 SphereEntity& view0 = sphereEntities[i];
                 SphereEntity& view1 = sphereEntities[j];
 
-                if (Gep::SphereSphere({ view0.transform->position, view0.radius },
-                                      { view1.transform->position, view1.radius }))
+                if (Gep::SphereSphere({ view0.transform->world.position, view0.radius },
+                                      { view1.transform->world.position, view1.radius }))
                 {
                     ////Gep::Log::Info("Collision detected between entity ", view0.entity, " and entity ", view1.entity);
                     //mManager.SignalEvent(Gep::Event::CollisionStay{});
@@ -81,9 +81,9 @@ namespace Client
 
         mManager.ForEachArchetype<Transform, CubeCollider>([&](Gep::Entity entity, Transform& t, CubeCollider& c)
         {
-            glm::mat3 axes = Gep::rotation(t.rotation);
+            glm::mat3 axes = glm::mat3_cast(t.world.rotation);
 
-            cubes.push_back({ t.position, t.scale * 0.5f, t.rotation, axes });
+            cubes.push_back({ t.world.position, t.world.scale * 0.5f, t.world.rotation, axes });
         });
 
         // Cube-Cube collisions
@@ -107,7 +107,7 @@ namespace Client
         {
             for (const SphereEntity& view1 : sphereEntities)
             {
-                if (Gep::CubeSphere(cube, { view1.transform->position, view1.radius }))
+                if (Gep::CubeSphere(cube, { view1.transform->world.position, view1.radius }))
                 {
                     //Gep::Log::Info("Collision detected between cube and sphere!");
                     //mManager.SignalEvent(Gep::Event::CollisionStay{});
