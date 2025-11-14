@@ -14,6 +14,7 @@
 #include <glm/glm.hpp>
 #include <TypeID.hpp>
 #include <UUID.hpp>
+#include "Mesh.hpp"
 
 // adds overloads for nlohmann
 namespace nlohmann
@@ -30,6 +31,8 @@ namespace nlohmann
     void from_json(const json& j, glm::mat4& v);
     void to_json(json& j, const Gep::UUID& v);
     void from_json(const json& j, Gep::UUID& v);
+    void to_json(json& j, const Gep::VQS& v);
+    void from_json(const json& j, Gep::VQS& v);
 }
 
 namespace Gep

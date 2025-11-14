@@ -84,4 +84,18 @@ namespace nlohmann
     {
         v = Gep::UUID::FromString(j); // json implicit conversion to string
     }
+
+    void to_json(json& j, const Gep::VQS& v)
+    {
+        j["v"] = v.position;
+        j["q"] = v.rotation;
+        j["s"] = v.scale;
+    }
+
+    void from_json(const json& j, Gep::VQS& v)
+    {
+        v.position = j.at("v").get<glm::vec3>();
+        v.rotation = j.at("q").get<glm::quat>();
+        v.scale = j.at("s").get<glm::vec3>();
+    }
 }
