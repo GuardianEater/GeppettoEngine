@@ -145,7 +145,7 @@ namespace Gep
         return mAnimations.contains(name);
     }
 
-    bool OpenGLRenderer::IsMeshLoaded(const std::string& name) const
+    bool OpenGLRenderer::IsModelLoaded(const std::string& name) const
     {
         return mModels.contains(name);
     }
@@ -158,7 +158,7 @@ namespace Gep
     void OpenGLRenderer::AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& gpuData, RenderFlags flags)
     {
         // these existance checks are very expensive so only perform in debug mode
-        debug_if (!IsMeshLoaded(modelName))
+        debug_if (!IsModelLoaded(modelName))
         {
             Gep::Log::Error("Failed to draw object. The model: [", modelName, "] doesn't exist");
             return;

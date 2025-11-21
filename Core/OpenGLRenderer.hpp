@@ -158,7 +158,7 @@ namespace Gep
         const Gep::Animation& GetAnimation(const std::string& name);
 
         bool IsAnimationLoaded(const std::string& name) const;
-        bool IsMeshLoaded(const std::string& name) const;
+        bool IsModelLoaded(const std::string& name) const;
         bool IsShaderLoaded(const std::string& name) const;
 
         // adds an object to be drawn by 

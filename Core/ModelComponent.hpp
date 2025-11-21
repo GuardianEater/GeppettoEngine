@@ -18,8 +18,10 @@ namespace Client
 {
     struct ModelComponent
     {
-        std::string name{ "Cube" };
+        std::string name{ "Cube" }; // name of the model that is currently in use
         bool selected = false;
         bool ignoreLight = false;
+
+        std::vector<Gep::VQS> pose; // the bone offsets of the current model 
     };
 }

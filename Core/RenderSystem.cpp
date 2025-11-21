@@ -213,7 +213,7 @@ namespace Client
             isF4 = false; // Reset when key is released
 
 
-        // for bones
+        // for shader reloading
         if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL))
         {
             if (!isShaderReload)
@@ -241,7 +241,8 @@ namespace Client
 
         ModelComponent& model = event.component;
 
-        if (!renderer.IsMeshLoaded(model.name))
+        // if the model is not loaded when this component is added attempt load it
+        if (!renderer.IsModelLoaded(model.name))
         {
             if (std::filesystem::exists(model.name))
             {
@@ -253,6 +254,13 @@ namespace Client
                 Gep::Log::Warning("A model component was created with an invalid name/location: [", model.name, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
                 model.name = defaultName;
             }
+        }
+
+        if (renderer.IsModelLoaded(model.name))
+        {
+            const Gep::Model& internalModel = mRenderer.GetModel(model.name);
+
+
         }
     }
 
@@ -271,7 +279,7 @@ namespace Client
 
         er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
         {
-            if (!renderer.IsMeshLoaded(droppedPath.string()))
+            if (!renderer.IsModelLoaded(droppedPath.string()))
             {
                 renderer.AddModelFromFile(droppedPath.string());
             }
@@ -312,9 +320,9 @@ namespace Client
         const std::vector<std::string>& supportedTextures = renderer.GetSupportedTextureFormats();
 
         er.AssetBrowserDropTarget(supportedTextures, [&](const std::filesystem::path& droppedPath)
-            {
-                texture.texturePath = droppedPath;
-            });
+        {
+            texture.texturePath = droppedPath;
+        });
 
         if (texturesOpen)
         {
@@ -437,9 +445,10 @@ namespace Client
 
     static void DrawSkeleton(const Gep::Skeleton& skeleton, const glm::mat4& modelMatrix, const std::vector<Gep::VQS>& globalPose, Gep::LineGPUData& line)
     {
-        for (int i = 1; i < skeleton.bones.size(); i++)
+        // note skipping 0 because zero is guarenteed to be the root node
+        for (size_t i = 1; i < skeleton.bones.size() && i < globalPose.size(); i++)
         {
-            int parent = skeleton.bones[i].parentIndex;
+            uint32_t parent = skeleton.bones[i].parentIndex;
             glm::vec4 a = glm::vec4(globalPose[parent].position, 1.0f);
             glm::vec4 b = glm::vec4(globalPose[i].position, 1.0f);
 
@@ -471,27 +480,24 @@ namespace Client
 
             // if the model also has an animation compute its final pose and pass all bone info to the gpu
             int previousBoneOffset = boneOffset;
-            if (mManager.HasComponent<AnimationComponent>(entity))
+
+            for (uint32_t i = 0; i < model.pose.size() && i < internalModel.skeleton.bones.size(); ++i)
             {
-                AnimationComponent& ac = mManager.GetComponent<AnimationComponent>(entity);
+                Gep::BoneGPUData bone{
+                    .offsetMatrix = Gep::ToMat4(model.pose[i] * internalModel.skeleton.bones[i].inverseBind)
+                };
 
-                for (uint32_t i = 0; i < ac.pose.size() && i < internalModel.skeleton.bones.size(); ++i)
-                {
-                    Gep::BoneGPUData bone{
-                        .offsetMatrix = Gep::ToMat4(ac.pose[i] * internalModel.skeleton.bones[i].inverseBind)
-                    };
-
-                    mRenderer.AddBone(bone);
-                    ++boneOffset;
-                }
-
-                if (mDrawBones)
-                {
-                    DrawSkeleton(internalModel.skeleton, modelMatrix, ac.pose, skeletonLines);
-                }
-
+                mRenderer.AddBone(bone);
+                ++boneOffset;
                 targetShader = "PBR-Skinned";
             }
+
+
+            if (mDrawBones)
+            {
+                DrawSkeleton(internalModel.skeleton, modelMatrix, model.pose, skeletonLines);
+            }
+
 
             Gep::ObjectGPUData uniforms
             {
@@ -503,13 +509,12 @@ namespace Client
                 .boneOffset = previousBoneOffset // only used in the skinned pbr shader
             };
 
-            if (model.selected) // no highlighting for now
-            {
-            }
-
             Gep::RenderFlags flags = Gep::RenderFlags::None;
             if (mWireframeMode)
                 flags |= Gep::RenderFlags::Wireframe;
+
+            if (model.selected)
+                flags |= Gep::RenderFlags::Highlight;
 
             mRenderer.AddObject(targetShader, model.name, uniforms, flags);
         });

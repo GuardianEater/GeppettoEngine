@@ -63,7 +63,7 @@ namespace Client
 
     void AnimationSystem::Update(float dt)
     {
-        mManager.ForEachArchetype<AnimationComponent, ModelComponent, Transform>([&](Gep::Entity entity, AnimationComponent& animationComponent, const ModelComponent& modelComponent, const Transform& transform)
+        mManager.ForEachArchetype<AnimationComponent, ModelComponent, Transform>([&](Gep::Entity entity, AnimationComponent& animationComponent, ModelComponent& modelComponent, const Transform& transform)
         {
             if (!mRenderer.IsAnimationLoaded(animationComponent.name))
                 return; // return is continue in for_each loop
@@ -84,14 +84,12 @@ namespace Client
 
             // I dont really understand why the clear has to be here but if I remove it there are strange anomalies sometimes.
             const uint32_t boneCount = static_cast<uint32_t>(model.skeleton.bones.size());
-            animationComponent.pose.clear();
-            animationComponent.pose.resize(boneCount);
-            //for (uint32_t i = 0; i < boneCount; ++i)
-            //    animationComponent.pose[i] = model.skeleton.bones[i].transformation;
+            modelComponent.pose.clear();
+            modelComponent.pose.resize(boneCount);
 
-            EvaluateAnimation(animation, animationComponent.currentTime, animationComponent.pose);
+            EvaluateAnimation(animation, animationComponent.currentTime, modelComponent.pose);
 
-            CalculateGlobalPose(model.skeleton, animationComponent.pose);
+            CalculateGlobalPose(model.skeleton, modelComponent.pose);
         });
     }
 
@@ -109,7 +107,7 @@ namespace Client
 
         er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
         {
-            if (!mRenderer.IsMeshLoaded(droppedPath.string()))
+            if (!mRenderer.IsModelLoaded(droppedPath.string()))
             {
                 mRenderer.AddModelFromFile(droppedPath.string());
             }
