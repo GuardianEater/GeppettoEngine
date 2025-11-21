@@ -260,7 +260,31 @@ namespace Client
         {
             const Gep::Model& internalModel = mRenderer.GetModel(model.name);
 
+            model.pose.clear();
+            model.pose.resize(internalModel.skeleton.bones.size());
 
+            // initialize with the default skeleton
+            for (size_t i = 0; i < model.pose.size(); ++i)
+            {
+                model.pose[i] = internalModel.skeleton.bones[i].transformation;
+            }
+
+            const size_t okayuArmIndex = 120;
+            if (model.pose.size() > 200)
+            {
+                glm::mat4 m = Gep::ToMat4(model.pose[okayuArmIndex]);
+                if (model.pose.size() > 200)
+                    m = glm::rotate(m, glm::radians(70.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+                model.pose[okayuArmIndex] = Gep::ToVQS(m);
+            }
+
+            // calculate the global pose
+            for (uint32_t i = 1; i < internalModel.skeleton.bones.size(); i++) // note skip the root bone
+            {
+                uint32_t parent = internalModel.skeleton.bones[i].parentIndex;
+
+                model.pose[i] = model.pose[parent] * model.pose[i];
+            }
         }
     }
 
