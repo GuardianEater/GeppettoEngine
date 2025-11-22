@@ -10,9 +10,6 @@
 
 #include <glm\glm.hpp>
 #include <EngineManager.hpp>
-#include <imgui.h>
-#include "OpenGLRenderer.hpp"
-#include "EditorResource.hpp"
 
 namespace Client
 {

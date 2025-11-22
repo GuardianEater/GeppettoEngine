@@ -33,6 +33,9 @@
 
 #include "ISystem.hpp"
 
+#include "OpenGLRenderer.hpp"
+#include "EditorResource.hpp"
+
 namespace Client
 {
     RenderSystem::RenderSystem(Gep::EngineManager& em)
@@ -267,15 +270,6 @@ namespace Client
             for (size_t i = 0; i < model.pose.size(); ++i)
             {
                 model.pose[i] = internalModel.skeleton.bones[i].transformation;
-            }
-
-            const size_t okayuArmIndex = 120;
-            if (model.pose.size() > 200)
-            {
-                glm::mat4 m = Gep::ToMat4(model.pose[okayuArmIndex]);
-                if (model.pose.size() > 200)
-                    m = glm::rotate(m, glm::radians(70.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-                model.pose[okayuArmIndex] = Gep::ToVQS(m);
             }
 
             // calculate the global pose

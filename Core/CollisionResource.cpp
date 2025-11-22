@@ -16,6 +16,7 @@
 #include "Transform.hpp"
 #include "ModelComponent.hpp"
 #include "MeshCollider.hpp"
+#include "OpenGLRenderer.hpp"
 
 namespace Client
 {

@@ -13,13 +13,6 @@
 #include "EngineManager.hpp"
 #include "Logger.hpp"
 
-// resources
-#include "ScriptingResource.hpp"
-#include "SoundResource.hpp"
-#include "CollisionResource.hpp"
-#include "SerializationResource.hpp"
-#include "EditorResource.hpp"
-
 // components
 #include "CameraComponent.hpp"
 #include "ActiveCameraComponent.hpp"
@@ -36,6 +29,15 @@
 #include "MeshCollider.hpp"
 #include "CurveComponent.hpp"
 #include "PathFollowerComponent.hpp"
+#include "IKTarget.hpp"
+
+// resources
+#include "ScriptingResource.hpp"
+#include "SoundResource.hpp"
+#include "CollisionResource.hpp"
+#include "SerializationResource.hpp"
+#include "EditorResource.hpp"
+#include "OpenGLRenderer.hpp"
 
  // systems
 #include "PhysicsSystem.hpp"
@@ -49,6 +51,7 @@
 #include "CollisionSystem.hpp"
 #include "AnimationSystem.hpp"
 #include "CurveSystem.hpp"
+#include "IKSystem.hpp"
 
 #include "OS.hpp"
 
@@ -88,7 +91,8 @@ int main()
         Client::AnimationComponent,
         Client::MeshCollider,
         Client::CurveComponent,
-        Client::PathFollowerComponent
+        Client::PathFollowerComponent,
+        Client::IKTarget
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////
@@ -96,6 +100,7 @@ int main()
         Client::WindowSystem,
         Client::ImGuiSystem,
         Client::AnimationSystem, // must happen before the render system
+        Client::IKSystem,
         Client::CurveSystem,
         Client::RenderSystem,
         Client::ScriptingSystem,

@@ -18,6 +18,7 @@ namespace Gep
     struct VQS;
     class OpenGLRenderer;
     struct LineGPUData;
+    struct Animation;
 }
 
 namespace Client

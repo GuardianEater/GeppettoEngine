@@ -238,6 +238,7 @@
     <ClCompile Include="FileHelp.cpp" />
     <ClCompile Include="GetCallerInfo_Windows.cpp" />
     <ClCompile Include="IcosphereMesh.cpp" />
+    <ClCompile Include="IKSystem.cpp" />
     <ClCompile Include="ImGuiSystem.cpp" />
     <ClCompile Include="ImGuizmoSystem.cpp" />
     <ClCompile Include="JsonHelp.cpp" />
@@ -273,6 +274,8 @@
     <ClInclude Include="Archetypes.h" />
     <ClInclude Include="GPUVector.hpp" />
     <ClInclude Include="HeirarchyStorage.hpp" />
+    <ClInclude Include="IKSystem.hpp" />
+    <ClInclude Include="IKTarget.hpp" />
     <ClInclude Include="JsonHelp.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="MeshCollider.hpp" />

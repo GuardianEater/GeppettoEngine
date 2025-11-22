@@ -309,6 +309,12 @@
     <ClCompile Include="Archetypes.cpp">
       <Filter>Backend</Filter>
     </ClCompile>
+    <ClCompile Include="VQS.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IKSystem.cpp">
+      <Filter>Client\Systems</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -643,6 +649,18 @@
     </ClInclude>
     <ClInclude Include="UUID.hpp">
       <Filter>Backend\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="BoneComponent.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="VQS.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="IKTarget.hpp">
+      <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="IKSystem.hpp">
+      <Filter>Client\Systems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

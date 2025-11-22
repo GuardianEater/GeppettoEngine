@@ -21,6 +21,7 @@
  //#include "ImGuizmo.h"
 #include "SerializationResource.hpp"
 #include "EditorResource.hpp"
+#include "OpenGLRenderer.hpp"
 
 #include "OS.hpp"
 
