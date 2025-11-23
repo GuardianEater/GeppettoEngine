@@ -21,23 +21,6 @@
 
 namespace Client
 {
-    // Helper: rebuild world-space bone chain from root up to targetBone (inclusive).
-    // Returns end-effector world transform.
-    static void RebuildBoneWorlds(
-        const Gep::VQS& rootWorld,
-        const std::vector<Gep::VQS>& pose,
-        uint32_t targetBone,
-        std::vector<Gep::VQS>& outWorlds)
-    {
-        outWorlds.resize(targetBone + 1);
-        Gep::VQS current = rootWorld;
-        for (uint32_t i = 0; i <= targetBone; ++i)
-        {
-            current = current * pose[i];
-            outWorlds[i] = current;
-        }
-    }
-
     IKSystem::IKSystem(Gep::EngineManager& em)
         : ISystem(em)
         , mEditor(em.GetResource<Client::EditorResource>())
@@ -61,61 +44,71 @@ namespace Client
         mManager.ForEachArchetype<Client::IKTarget, Client::Transform>(
         [&](Gep::Entity e, Client::IKTarget& iktarget, Client::Transform& transform)
         {
-            const Gep::Entity targetEntity = mManager.FindEntity(iktarget.targetEntity);
-            if (!mManager.EntityExists(targetEntity)) return;
-            if (!mManager.HasComponent<Client::ModelComponent>(targetEntity)) return;
-            if (!mManager.HasComponent<Client::Transform>(targetEntity)) return;
+            const Gep::Entity skeletonEntity = mManager.FindEntity(iktarget.targetEntity);
+            if (!mManager.EntityExists(skeletonEntity)) return;
+            if (!mManager.HasComponent<Client::ModelComponent>(skeletonEntity)) return;
+            if (!mManager.HasComponent<Client::Transform>(skeletonEntity)) return;
 
-            Client::Transform& targetTransform = mManager.GetComponent<Client::Transform>(targetEntity);
-            Client::ModelComponent& targetModel = mManager.GetComponent<Client::ModelComponent>(targetEntity);
+            Client::Transform& skeletonTransform = mManager.GetComponent<Client::Transform>(skeletonEntity);
+            Client::ModelComponent& skeletonModel = mManager.GetComponent<Client::ModelComponent>(skeletonEntity);
 
-            if (targetModel.pose.empty()) return;
+            if (skeletonModel.pose.empty()) return;
 
             // Validate bone indices
-            if (iktarget.endBone >= targetModel.pose.size()) return;
-            if (iktarget.startBone >= targetModel.pose.size()) return;
+            if (iktarget.endBone >= skeletonModel.pose.size()) return;
+            if (iktarget.startBone >= skeletonModel.pose.size()) return;
             if (iktarget.startBone > iktarget.endBone) return; // startBone must be ancestor (lower index) of endBone
 
             const uint32_t effectorBoneIdx = iktarget.endBone;
             const uint32_t anchorBoneIdx = iktarget.startBone;
             const uint32_t maxIteration = 15;
 
-            const glm::vec3 Pd = targetTransform.world.position; // destination position
-            glm::vec3& Pc = targetModel.pose[effectorBoneIdx].position; // current position
+            const glm::vec3 Pd = transform.world.position; // destination position
+
+            const Gep::VQS effectorWorldTransform = skeletonTransform.world * skeletonModel.pose[effectorBoneIdx];
+
+            glm::vec3 Pc = effectorWorldTransform.position; // current world position
             glm::vec3 Ppc = Pc; // position from the last iteration
 
             // (a) If the distance between Pd and Pc is small enough, exit
             if (glm::distance(Pd, Pc) < 0.001f)
                 return;
 
-            const Gep::Model& internalModel = mRenderer.GetModel(targetModel.name); // get the bone hierarchy
 
+            const Gep::Model& internalModel = mRenderer.GetModel(skeletonModel.name); // get the bone hierarchy
 
             for (uint32_t i = 0; i < maxIteration; i++)
             {
                 // (b) For each joint jk in the chain
-                for (uint32_t currentBoneIdx = effectorBoneIdx; currentBoneIdx == anchorBoneIdx; currentBoneIdx = internalModel.skeleton.bones[currentBoneIdx].parentIndex)
+                for (uint32_t currentBoneIdx = effectorBoneIdx; currentBoneIdx != anchorBoneIdx; currentBoneIdx = internalModel.skeleton.bones[currentBoneIdx].parentIndex)
                 {
-                    const Gep::VQS jk = targetModel.pose[currentBoneIdx];
+                    Gep::VQS jk = skeletonTransform.world * skeletonModel.pose[currentBoneIdx];
 
                     // Make two vectors: Vck from jk to Pc and Vdk from jk to Pd;
-                    const glm::vec3 Vck = Pc - jk.position;
-                    const glm::vec3 Vdk = Pd - jk.position;
+                    const glm::vec3 Vck = glm::normalize(Pc - jk.position);
+                    const glm::vec3 Vdk = glm::normalize(Pd - jk.position);
 
                     // Compute the angle between the vectors by dot product
-                    const float ak = acos((glm::dot(Vck, Vdk)) / (glm::dot(glm::normalize(Vck), glm::normalize(Vdk))));
+                    const float cosAngle = glm::dot(Vck, Vdk);
+                    const float ak = acos(glm::clamp(cosAngle, -1.0f, 1.0f));
 
                     // Compute the cross product of two vectors
                     const glm::vec3 Vk = glm::cross(Vck, Vdk);
 
                     // Rotate link lk at jk hierarchically around Vk by ak
-                    if (glm::dot(Vk, Vk) > glm::epsilon<float>())
+                    if (glm::length(Vk) > 0.001f)
                     {
                         glm::vec3 axis = glm::normalize(Vk);
-                        glm::quat deltaRot = glm::angleAxis(ak, axis);
 
-                        targetModel.pose[currentBoneIdx].rotation = glm::normalize(deltaRot * targetModel.pose[currentBoneIdx].rotation);
+                        glm::quat deltaRot = glm::angleAxis(ak, axis);
+                        glm::quat parentRot = skeletonTransform.world.rotation * skeletonModel.pose[internalModel.skeleton.bones[currentBoneIdx].parentIndex].rotation;
+                        glm::quat localDelta = glm::inverse(parentRot) * deltaRot * parentRot;
+
+                        // write back
+                        skeletonModel.pose[currentBoneIdx] = localDelta * skeletonModel.pose[currentBoneIdx];
                     }
+
+                    Pc = skeletonModel.pose[effectorBoneIdx].position;
 
                     // If distance between Pd and Pc is small enough, exit
                     if (glm::distance(Pd, Pc) < 0.001f)
