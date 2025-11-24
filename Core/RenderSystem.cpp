@@ -259,12 +259,9 @@ namespace Client
             }
         }
 
-        if (renderer.IsModelLoaded(model.name))
-        {
-            const Gep::Model& internalModel = mRenderer.GetModel(model.name);
+        const Gep::Model& internalModel = mRenderer.GetModel(model.name);
 
-            InitializeModelPose(model, internalModel);
-        }
+        InitializeModelPose(model, internalModel);
     }
 
     void RenderSystem::OnModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event)
@@ -287,6 +284,8 @@ namespace Client
             }
 
             model.name = droppedPath.string();
+            const Gep::Model& internalModel = mRenderer.GetModel(model.name);
+            InitializeModelPose(model, internalModel);
         });
 
         if (modelsOpen)
@@ -484,17 +483,26 @@ namespace Client
 
             // if the model also has an animation compute its final pose and pass all bone info to the gpu
             int previousBoneOffset = boneOffset;
+            bool hasRealBones = false;
 
             for (uint32_t i = 0; i < model.pose.size() && i < internalModel.skeleton.bones.size(); ++i)
             {
-                Gep::BoneGPUData bone{
-                    .offsetMatrix = Gep::ToMat4(model.pose[i] * internalModel.skeleton.bones[i].inverseBind)
+                const Gep::Bone& b = internalModel.skeleton.bones[i];
+
+                // if any bone is real switch to skinned shader
+                if (b.isRealBone)
+                    hasRealBones = true;
+
+                Gep::BoneGPUData boneData{
+                    .offsetMatrix = Gep::ToMat4(model.pose[i] * b.inverseBind)
                 };
 
-                mRenderer.AddBone(bone);
+                mRenderer.AddBone(boneData);
                 ++boneOffset;
-                targetShader = "PBR-Skinned";
             }
+
+            if (hasRealBones)
+                targetShader = "PBR-Skinned";
 
 
             if (mDrawBones)
@@ -510,7 +518,7 @@ namespace Client
                 .normalMatrixCol1 = normal[1],
                 .normalMatrixCol2 = normal[2],
 
-                .boneOffset = previousBoneOffset // only used in the skinned pbr shader
+                .boneOffset = previousBoneOffset // only used in the PBR-Skinned shader
             };
 
             Gep::RenderFlags flags = Gep::RenderFlags::None;
@@ -539,7 +547,7 @@ namespace Client
         }
 
         // calculate the global pose
-        for (uint32_t i = 1; i < internalModel.skeleton.bones.size(); i++) // note skip the root bone
+        for (uint32_t i = 1; i < internalModel.skeleton.bones.size(); ++i) // note skip the root bone
         {
             uint32_t parent = internalModel.skeleton.bones[i].parentIndex;
 

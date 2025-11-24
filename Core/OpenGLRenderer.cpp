@@ -1229,6 +1229,15 @@ namespace Gep
     // create hierary
     static void LoadHierarchy(Gep::Model& model, const aiScene* scene)
     {
+        // on the off chance a model doesn't have a root node?
+        //uint32_t index = model.skeleton.bones.size();
+        //Gep::Bone& bone = model.skeleton.bones.emplace_back();
+        //bone.name = "Root";
+        //bone.parentIndex = num_max<uint32_t>();
+        //bone.transformation = Gep::VQS{};
+        //bone.inverseBind = Gep::VQS{};
+        //bone.isRealBone = false;
+
         LoadHierarchyStep(model, num_max<uint32_t>(), scene->mRootNode);
     }
 
