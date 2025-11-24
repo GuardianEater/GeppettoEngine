@@ -263,56 +263,42 @@ namespace Client
         {
             const Gep::Model& internalModel = mRenderer.GetModel(model.name);
 
-            model.pose.clear();
-            model.pose.resize(internalModel.skeleton.bones.size());
-
-            // initialize with the default skeleton
-            for (size_t i = 0; i < model.pose.size(); ++i)
-            {
-                model.pose[i] = internalModel.skeleton.bones[i].transformation;
-            }
-
-            // calculate the global pose
-            for (uint32_t i = 1; i < internalModel.skeleton.bones.size(); i++) // note skip the root bone
-            {
-                uint32_t parent = internalModel.skeleton.bones[i].parentIndex;
-
-                model.pose[i] = model.pose[parent] * model.pose[i];
-            }
+            InitializeModelPose(model, internalModel);
         }
     }
 
     void RenderSystem::OnModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event)
     {
-        ModelComponent& mesh = event.component;
+        ModelComponent& model = event.component;
 
-        Gep::OpenGLRenderer& renderer = mRenderer;
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
-        std::vector<std::string> loadedMeshes = renderer.GetLoadedMeshes();
+        std::vector<std::string> loadedModels = mRenderer.GetLoadedModels();
 
         // drop down for selecting a model
-        bool meshesOpen = ImGui::BeginCombo("Models", mesh.name.c_str());
+        bool modelsOpen = ImGui::BeginCombo("Models", model.name.c_str());
 
-        const std::vector<std::string>& allowedExtensions = renderer.GetSupportedModelFormats();
+        const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
 
         er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
         {
-            if (!renderer.IsModelLoaded(droppedPath.string()))
+            if (!mRenderer.IsModelLoaded(droppedPath.string()))
             {
-                renderer.AddModelFromFile(droppedPath.string());
+                mRenderer.AddModelFromFile(droppedPath.string());
             }
 
-            mesh.name = droppedPath.string();
+            model.name = droppedPath.string();
         });
 
-        if (meshesOpen)
+        if (modelsOpen)
         {
-            for (const std::string& meshName : loadedMeshes)
+            for (const std::string& modelName : loadedModels)
             {
-                bool isSelected = (meshName == mesh.name);
-                if (ImGui::Selectable(meshName.c_str(), isSelected))
+                bool isSelected = (modelName == model.name);
+                if (ImGui::Selectable(modelName.c_str(), isSelected))
                 {
-                    mesh.name = meshName;
+                    model.name = modelName;
+                    const Gep::Model& internalModel = mRenderer.GetModel(model.name);
+                    InitializeModelPose(model, internalModel);
                 }
                 if (isSelected)
                 {
@@ -322,7 +308,7 @@ namespace Client
             ImGui::EndCombo();
         }
 
-        ImGui::Checkbox("Ignore Light", &mesh.ignoreLight);
+        ImGui::Checkbox("Ignore Light", &model.ignoreLight);
     }
 
     void RenderSystem::OnTextureEditorRender(const Gep::Event::ComponentEditorRender<Texture>& event)
@@ -539,6 +525,26 @@ namespace Client
 
         mRenderer.AddLine(skeletonLines);
 
+    }
+
+    void RenderSystem::InitializeModelPose(ModelComponent& modelComponent, const Gep::Model& internalModel)
+    {
+        modelComponent.pose.clear();
+        modelComponent.pose.resize(internalModel.skeleton.bones.size());
+
+        // initialize with the default skeleton
+        for (size_t i = 0; i < modelComponent.pose.size(); ++i)
+        {
+            modelComponent.pose[i] = internalModel.skeleton.bones[i].transformation; // at this point .pose is in local space
+        }
+
+        // calculate the global pose
+        for (uint32_t i = 1; i < internalModel.skeleton.bones.size(); i++) // note skip the root bone
+        {
+            uint32_t parent = internalModel.skeleton.bones[i].parentIndex;
+
+            modelComponent.pose[i] = modelComponent.pose[parent] * modelComponent.pose[i];
+        }
     }
 }
 

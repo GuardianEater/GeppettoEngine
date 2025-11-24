@@ -180,7 +180,7 @@ namespace Gep
         void SetCameraIndex(uint32_t index);
         void SetLightCount(uint32_t count);
 
-        std::vector<std::string> GetLoadedMeshes() const;
+        std::vector<std::string> GetLoadedModels() const;
         std::vector<std::filesystem::path> GetLoadedTextures() const;
         std::vector<std::string> GetLoadedAnimations() const;
 
