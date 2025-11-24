@@ -218,6 +218,7 @@ namespace Client
         if (!valid) return;
 
         ModelComponent& targetModel = mManager.GetComponent<ModelComponent>(targetEntity);
+        const Gep::Model& internalModel = mRenderer.GetModel(targetModel.name);
 
         if (targetModel.pose.empty())
         {
@@ -226,10 +227,10 @@ namespace Client
         }
 
 
-        uint32_t startBone = event.component.startBone;
-        if (ImGui::InputScalar("Start Bone (Anchor)", ImGuiDataType_U32, &startBone, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
+        uint32_t startBoneIdx = event.component.startBone;
+        if (ImGui::InputScalar("Start Bone (Anchor)", ImGuiDataType_U32, &startBoneIdx, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
         {
-            event.component.startBone = startBone;
+            event.component.startBone = startBoneIdx;
 
             event.component.startBone = glm::clamp<uint32_t>(event.component.startBone, 0, targetModel.pose.size() - 1);
             if (event.component.startBone > event.component.endBone)
@@ -245,6 +246,28 @@ namespace Client
             if (event.component.startBone > event.component.endBone)
                 event.component.startBone = event.component.endBone;
         }
-    }
+
+    //    // drop down for selecting a model
+    //    const Gep::Bone& startBone = internalModel.skeleton.bones[startBoneIdx];
+
+    //    if (ImGui::BeginCombo("Start Bone", startBone.name.c_str()))
+    //    {
+    //        for (uint32_t currentBoneIdx = 0; currentBoneIdx < internalModel.skeleton.bones.size(); currentBoneIdx++)
+    //        {
+    //            const Gep::Bone& currentBone = internalModel.skeleton.bones.at(currentBoneIdx);
+
+    //            bool isSelected = (currentBoneIdx == startBoneIdx);
+    //            if (ImGui::Selectable(currentBone.name.c_str(), isSelected))
+    //            {
+    //                event.component.startBone = currentBoneIdx;
+    //            }
+    //            if (isSelected)
+    //            {
+    //                ImGui::SetItemDefaultFocus();
+    //            }
+    //        }
+    //        ImGui::EndCombo();
+    //    }
+    //}
 }
 
