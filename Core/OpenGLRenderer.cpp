@@ -178,9 +178,14 @@ namespace Gep
         mCameraUniforms.push_back(uniforms);
     }
 
-    void OpenGLRenderer::AddLight(const LightGPUData& uniforms)
+    void OpenGLRenderer::AddPointLight(const LightGPUData& uniforms)
     {
-        mLightUniforms.push_back(uniforms);
+        mPointLightUniforms.push_back(uniforms);
+    }
+
+    void OpenGLRenderer::AddDirectionalLight(const DirectionalLightGPUData& uniforms)
+    {
+        mDirectionalLightUniforms.push_back(uniforms);
     }
 
     void OpenGLRenderer::AddBone(const BoneGPUData& boneData)
@@ -279,8 +284,11 @@ namespace Gep
 
     void OpenGLRenderer::CommitLights()
     {
-        SetLightCount(mLightUniforms.size());
-        mLightUniforms.commit();
+        SetPointLightCount(mPointLightUniforms.size());
+        mPointLightUniforms.commit();
+
+        SetDirectionalLightCount(mDirectionalLightUniforms.size());
+        mDirectionalLightUniforms.commit();
     }
 
     void OpenGLRenderer::CommitMeshes()
@@ -301,11 +309,19 @@ namespace Gep
         }
     }
 
-    void OpenGLRenderer::SetLightCount(uint32_t count)
+    void OpenGLRenderer::SetPointLightCount(uint32_t count)
     {
         for (const auto& [shaderName, shader] : mShaders)
         {
             shader->SetUniform(2, count);
+        }
+    }
+
+    void OpenGLRenderer::SetDirectionalLightCount(uint32_t count)
+    {
+        for (const auto& [shaderName, shader] : mShaders)
+        {
+            shader->SetUniform(6, count);
         }
     }
 
@@ -625,7 +641,7 @@ namespace Gep
         mLineUniforms.clear();
         mObjectDatas.clear();
 
-        mLightUniforms.clear();
+        mPointLightUniforms.clear();
         mObjectUniforms.clear();
         mCameraUniforms.clear();
         mBoneUniforms.clear();

@@ -89,6 +89,17 @@ namespace Gep
         float intensity; // intensity of the light
     };
 
+    struct DirectionalLightGPUData
+    {
+        glm::vec3 position; // location of the light in world space
+        float pad;
+
+        glm::vec3 color; // color of the light
+        float intensity; // intensity of the light
+
+        glm::vec3 direction; // the direction of the light
+    };
+
     struct BoneGPUData
     {
         glm::mat4 offsetMatrix; // how the bone should move; used for animation
@@ -164,7 +175,8 @@ namespace Gep
         // adds an object to be drawn by 
         void AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& objectData, RenderFlags flags = RenderFlags::None);
         void AddCamera(const CameraGPUData& cameraData);
-        void AddLight(const LightGPUData& lightData); // adds a light to the renderered, will be sent to the shader when DrawLights is called
+        void AddPointLight(const LightGPUData& lightData); // adds a light to the renderered, will be sent to the shader when DrawLights is called
+        void AddDirectionalLight(const DirectionalLightGPUData& uniforms);
         void AddBone(const BoneGPUData& boneData);
         void AddLine(const LineGPUData& lines); // adds a line set to be drawn
 
@@ -178,7 +190,9 @@ namespace Gep
         void CommitMaterials(); // moves all of the added materials from the cpu to the gpu
 
         void SetCameraIndex(uint32_t index);
-        void SetLightCount(uint32_t count);
+        void SetPointLightCount(uint32_t count);
+        void SetDirectionalLightCount(uint32_t count);
+
 
         std::vector<std::string> GetLoadedModels() const;
         std::vector<std::filesystem::path> GetLoadedTextures() const;
@@ -309,11 +323,12 @@ namespace Gep
         std::mutex mTextureLoadingMutex{};
     
         Gep::gpu_vector<ObjectGPUData,   0> mObjectUniforms;   // this vector is perfectly copied onto the gpu into the objectUniforms array
-        Gep::gpu_vector<LightGPUData,    1> mLightUniforms;    // this vector is perfectly copied onto the gpu into the lights array
+        Gep::gpu_vector<LightGPUData,    1> mPointLightUniforms;    // this vector is perfectly copied onto the gpu into the lights array
         Gep::gpu_vector<CameraGPUData,   2> mCameraUniforms;   // this vector is perfectly copied onto the gpu into the cameraUniforms array
         Gep::gpu_vector<BoneGPUData,     3> mBoneUniforms;     // this vector is perfectly copied onto the gpu into the boneUniforms array
         Gep::gpu_vector<MaterialGPUData, 4> mMaterialUniforms; // this vector is perfectly copied onto the gpu into the materialUniforms array
         Gep::gpu_vector<MeshGPUData,     5> mMeshUniforms;     // this vector is perfectly copied onto the gpu into the meshUniforms array
+        Gep::gpu_vector<DirectionalLightGPUData, 6> mDirectionalLightUniforms;     // this vector is perfectly copied onto the gpu into the meshUniforms array
 
         // shader -> model -> flags -> objects
         std::map<std::string, std::map<std::string, std::map<RenderFlags, std::vector<ObjectGPUData>>>> mObjectDatas;

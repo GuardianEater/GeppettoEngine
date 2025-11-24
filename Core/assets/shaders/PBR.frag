@@ -85,7 +85,7 @@ float GGXDistribution(float nDotH)
 }
 
 // only for point lights
-vec3 CalculatePBRLighting(LightUniforms light, vec3 n, vec3 objectColor)
+vec3 CalculatePBRPoint(PointLightUniforms light, vec3 n, vec3 objectColor)
 {
   vec3 l = vec3(0.0);
 
@@ -124,12 +124,12 @@ vec3 CalculatePBRLighting(LightUniforms light, vec3 n, vec3 objectColor)
 }
 
 // Simple global directional light (hardcoded for quick testing)
-vec3 CalculatePBRDirectional(vec3 n, vec3 objectColor)
+vec3 CalculatePBRDirectional(DirectionalLightUniforms light, vec3 n, vec3 objectColor)
 {
   // Direction points from light toward the scene; light comes FROM -dir
-  const vec3 dir = normalize(vec3(0.3, -1.0, 0.2));
-  const vec3 lightColor = vec3(1.0, 1.0, 1.0);
-  const float intensity = 2.0; // tweak as needed
+  const vec3 dir = normalize(light.direction);
+  const vec3 lightColor = light.color;
+  const float intensity = light.intensity;
 
   vec3 l = normalize(-dir);
   vec3 v = normalize(cameraUniforms[cameraIndex].camPosition.xyz - worldPosition);
@@ -193,15 +193,19 @@ vec3 CalculatePBRLightingTotal()
   vec3 n = ComputeShadedNormal();
   vec3 color = vec3(0.0); // the final color of the fragment
 
-  // loop over each light.
-  for (int i = 0; i < lightCount; i++) 
+  // point lights
+  for (int i = 0; i < pointLightCount; i++) 
   {
-    color += CalculatePBRLighting(lights[i], n, currentSample.color.rgb);
+    color += CalculatePBRPoint(pointLightUniforms[i], n, currentSample.color.rgb);
   }
 
-  // add one global directional light
-  color += CalculatePBRDirectional(n, currentSample.color.rgb);
+  // directional lights
+  for (int i = 0; i < directionalLightCount; i++) 
+  {
+    color += CalculatePBRDirectional(directionalLightUniforms[i], n, currentSample.color.rgb);
+  }
 
+  // ambient lighting
   vec3 ambient = vec3(0.8) * currentSample.color.rgb * currentSample.ao;
   color += ambient;
 

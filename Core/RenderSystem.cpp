@@ -426,7 +426,21 @@ namespace Client
                 .intensity = l.intensity
             };
 
-            mRenderer.AddLight(uniforms);
+            mRenderer.AddPointLight(uniforms);
+        });
+
+        // prepares all of the directional light uniform values
+        mManager.ForEachArchetype<DirectionalLight, Transform>([&](Gep::Entity e, DirectionalLight& l, Transform& t)
+        {
+            Gep::DirectionalLightGPUData uniforms
+            {
+                .position = t.world.position,
+                .color = l.color,
+                .intensity = l.intensity,
+                .direction = t.world.rotation * glm::vec3(0, -1, 0)
+            };
+
+            mRenderer.AddDirectionalLight(uniforms);
         });
     }
 
