@@ -35,4 +35,11 @@ namespace Gep
     }
 
     VQS Inverse(const VQS& t);
+
+    template <typename T>
+        requires std::is_floating_point_v<T>
+    T AngleBetween(const glm::vec<3, T>& a, const glm::vec<3, T> b)
+    {
+        return glm::acos(glm::dot(a, b) / (glm::length(a) * glm::length(b)));
+    }
 }

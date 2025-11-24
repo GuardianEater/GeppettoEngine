@@ -23,18 +23,9 @@ namespace Gep
         VQS operator*(const VQS& local) const;
         auto operator<=>(const VQS&) const = default;
 
-        friend VQS operator*(const glm::quat& q, const VQS& v);
         friend VQS operator*(const Gep::VQS& v, const glm::quat& q);
+        friend glm::vec3 operator*(const VQS& vqs, const glm::vec3& p);
     };
-
-    inline VQS operator*(const glm::quat& q, const VQS& v)
-    {
-        return {
-            .position = q * v.position,
-            .rotation = q * v.rotation,
-            .scale = v.scale
-        };
-    }
 
     inline Gep::VQS operator*(const Gep::VQS& v, const glm::quat& q)
     {
@@ -43,5 +34,10 @@ namespace Gep
             .rotation = v.rotation * q,
             .scale = v.scale
         };
+    }
+
+    inline glm::vec3 operator*(const VQS& vqs, const glm::vec3& p)
+    {
+        return vqs.position + (vqs.rotation * (vqs.scale * p));
     }
 }

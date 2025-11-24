@@ -37,12 +37,11 @@ namespace Client
     void IKSystem::Update(float dt)
     {
         // CCD parameters
-        constexpr uint32_t kMaxIterations = 15;
-        constexpr float kDistanceEpsilon = 0.001f; // acceptable distance to target
-        constexpr float kDeltaEpsilon = 0.0001f;   // improvement threshold
+        constexpr uint32_t kMaxIterations = 50;
+        constexpr float    epsilon = 0.001f;
 
         mManager.ForEachArchetype<Client::IKTarget, Client::Transform>(
-        [&](Gep::Entity e, Client::IKTarget& iktarget, Client::Transform& transform)
+        [&](Gep::Entity e, Client::IKTarget& iktarget, Client::Transform& attractorTransform)
         {
             const Gep::Entity skeletonEntity = mManager.FindEntity(iktarget.targetEntity);
             if (!mManager.EntityExists(skeletonEntity)) return;
@@ -50,78 +49,127 @@ namespace Client
             if (!mManager.HasComponent<Client::Transform>(skeletonEntity)) return;
 
             Client::Transform& skeletonTransform = mManager.GetComponent<Client::Transform>(skeletonEntity);
-            Client::ModelComponent& skeletonModel = mManager.GetComponent<Client::ModelComponent>(skeletonEntity);
+            Client::ModelComponent& modelComponent = mManager.GetComponent<Client::ModelComponent>(skeletonEntity);
 
-            if (skeletonModel.pose.empty()) return;
+            if (modelComponent.pose.empty()) return;
 
             // Validate bone indices
-            if (iktarget.endBone >= skeletonModel.pose.size()) return;
-            if (iktarget.startBone >= skeletonModel.pose.size()) return;
-            if (iktarget.startBone > iktarget.endBone) return; // startBone must be ancestor (lower index) of endBone
+            if (iktarget.endBone >= modelComponent.pose.size()) return;
+            if (iktarget.startBone >= modelComponent.pose.size()) return;
 
-            const uint32_t effectorBoneIdx = iktarget.endBone;
             const uint32_t anchorBoneIdx = iktarget.startBone;
-            const uint32_t maxIteration = 15;
+            const uint32_t effectorBoneIdx = iktarget.endBone;
+            if (anchorBoneIdx > effectorBoneIdx) 
+                return; // the anchor should never appear after the child
 
-            const glm::vec3 Pd = transform.world.position; // destination position
+            if (!mRenderer.IsModelLoaded(modelComponent.name)) return;
 
-            const Gep::VQS effectorWorldTransform = skeletonTransform.world * skeletonModel.pose[effectorBoneIdx];
+            const Gep::Model& internalModel = mRenderer.GetModel(modelComponent.name);
+            const Gep::Skeleton& skeleton = internalModel.skeleton;
 
-            glm::vec3 Pc = effectorWorldTransform.position; // current world position
-            glm::vec3 Ppc = Pc; // position from the last iteration
-
-            // (a) If the distance between Pd and Pc is small enough, exit
-            if (glm::distance(Pd, Pc) < 0.001f)
-                return;
-
-
-            const Gep::Model& internalModel = mRenderer.GetModel(skeletonModel.name); // get the bone hierarchy
-
-            for (uint32_t i = 0; i < maxIteration; i++)
+            if (skeleton.bones.size() != modelComponent.pose.size())
             {
-                // (b) For each joint jk in the chain
-                for (uint32_t currentBoneIdx = effectorBoneIdx; currentBoneIdx != anchorBoneIdx; currentBoneIdx = internalModel.skeleton.bones[currentBoneIdx].parentIndex)
+                Gep::Log::Error("Skeleton bones and model pose size do not match");
+                return;
+            }
+
+            // convert target position into model-space (same space as pose)
+            glm::vec3 targetPos = Gep::Inverse(skeletonTransform.world) * attractorTransform.world.position;
+
+            // the models pose is in global space, this is a copy in local space. static for working memory reducing the excess amounts of allocations
+            static std::vector<Gep::VQS> localPose; 
+            localPose.clear(); 
+            localPose.resize(modelComponent.pose.size());
+            {
+                localPose[0] = modelComponent.pose[0];
+                for (size_t i = 1; i < modelComponent.pose.size(); ++i)
                 {
-                    Gep::VQS jk = skeletonTransform.world * skeletonModel.pose[currentBoneIdx];
+                    uint32_t parent = skeleton.bones[i].parentIndex;
 
-                    // Make two vectors: Vck from jk to Pc and Vdk from jk to Pd;
-                    const glm::vec3 Vck = glm::normalize(Pc - jk.position);
-                    const glm::vec3 Vdk = glm::normalize(Pd - jk.position);
+                    localPose[i] = Gep::Inverse(modelComponent.pose[parent]) * modelComponent.pose[i];
+                }
+            }
 
-                    // Compute the angle between the vectors by dot product
-                    const float cosAngle = glm::dot(Vck, Vdk);
-                    const float ak = acos(glm::clamp(cosAngle, -1.0f, 1.0f));
+            // this takes the current local pose and converts it back to global
+            auto RecalculateGlobal = [&](std::vector<Gep::VQS>& outGlobal)
+            {
+                outGlobal[0] = localPose[0];
+                for (uint32_t i = 1; i < skeleton.bones.size(); ++i)
+                {
+                    uint32_t parent = skeleton.bones[i].parentIndex;
+                    outGlobal[i] = outGlobal[parent] * localPose[i];
+                }
+            };
 
-                    // Compute the cross product of two vectors
-                    const glm::vec3 Vk = glm::cross(Vck, Vdk);
+            float previousDistance = std::numeric_limits<float>::max();
 
-                    // Rotate link lk at jk hierarchically around Vk by ak
-                    if (glm::length(Vk) > 0.001f)
+            for (uint32_t iteration = 0; iteration < kMaxIterations; ++iteration)
+            {
+                glm::vec3 effectorPos = modelComponent.pose[effectorBoneIdx].position;
+                float distanceToTarget = glm::distance(effectorPos, targetPos);
+                if (distanceToTarget <= epsilon) break;
+
+                float improvement = previousDistance - distanceToTarget;
+                if (improvement >= 0.0f && improvement < epsilon) break;
+                previousDistance = distanceToTarget;
+
+                uint32_t jointIdx = effectorBoneIdx;
+
+                while (jointIdx != anchorBoneIdx) 
+                {
+                    jointIdx = skeleton.bones[jointIdx].parentIndex;
+                        
+                    glm::vec3 jointPos = modelComponent.pose[jointIdx].position;
+
+                    glm::vec3 toEffector = modelComponent.pose[effectorBoneIdx].position - jointPos;
+                    glm::vec3 toTarget = targetPos - jointPos;
+
+                    toEffector = glm::normalize(toEffector);
+                    toTarget   = glm::normalize(toTarget);
+
+                    float d = glm::clamp(glm::dot(toEffector, toTarget), -1.0f, 1.0f);
+
+                    // stable quaternion for rotating from toEffector to toTarget
+                    glm::quat deltaRot{};
+                    if (d >= 1.0f - 1e-3)
                     {
-                        glm::vec3 axis = glm::normalize(Vk);
-
-                        glm::quat deltaRot = glm::angleAxis(ak, axis);
-                        glm::quat parentRot = skeletonTransform.world.rotation * skeletonModel.pose[internalModel.skeleton.bones[currentBoneIdx].parentIndex].rotation;
-                        glm::quat localDelta = glm::inverse(parentRot) * deltaRot * parentRot;
-
-                        // write back
-                        skeletonModel.pose[currentBoneIdx] = localDelta * skeletonModel.pose[currentBoneIdx];
+                        // already aligned
+                        continue;
+                    }
+                    else if (d <= -1.0f + epsilon)
+                    {
+                        // 180 degree turn, use an perpendicular stable axis
+                        glm::vec3 axis = glm::cross(glm::vec3(1, 0, 0), toEffector);
+                        if (glm::dot(axis, axis) < epsilon)
+                            axis = glm::cross(glm::vec3(0, 1, 0), toEffector);
+                        axis = glm::normalize(axis);
+                        deltaRot = glm::angleAxis(glm::pi<float>(), axis);
+                    }
+                    else
+                    {
+                        glm::vec3 c = glm::cross(toEffector, toTarget);
+                        float s = std::sqrt((1.0f + d) * 2.0f);
+                        float invs = 1.0f / s;
+                        deltaRot = glm::quat(s * 0.5f, c.x * invs, c.y * invs, c.z * invs);
+                        deltaRot = glm::normalize(deltaRot);
                     }
 
-                    Pc = skeletonModel.pose[effectorBoneIdx].position;
+                    // apply rotation in joint local space
+                    // convert global delta into local frame so don't accumulate drift
+                    glm::quat parentGlobalRot = (jointIdx == 0)
+                        ? glm::quat(1, 0, 0, 0)
+                        : modelComponent.pose[skeleton.bones[jointIdx].parentIndex].rotation;
 
-                    // If distance between Pd and Pc is small enough, exit
-                    if (glm::distance(Pd, Pc) < 0.001f)
-                        return;
+                    glm::quat localDelta = glm::inverse(parentGlobalRot) * deltaRot * parentGlobalRot;
+
+                    glm::quat newLocalRot = glm::normalize(localDelta * localPose[jointIdx].rotation);
+
+                    // add constraints
+
+                    localPose[jointIdx].rotation = newLocalRot;
+
+                    RecalculateGlobal(modelComponent.pose);
                 }
-
-                // (c) If the change of current end-effector locations from two consecutive iterations is small enough, quit(no solution).
-                if (glm::distance(Ppc, Pc) < 0.001f)
-                    return;
-
-                Ppc = Pc;
-
-                // (d) Otherwise, repeat from step (b).
             }
         });
     }
@@ -177,21 +225,26 @@ namespace Client
             return;
         }
 
-        if (ImGui::InputScalar("Start Bone (Anchor)", ImGuiDataType_U32, &event.component.startBone))
+
+        uint32_t startBone = event.component.startBone;
+        if (ImGui::InputScalar("Start Bone (Anchor)", ImGuiDataType_U32, &startBone, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
         {
+            event.component.startBone = startBone;
+
             event.component.startBone = glm::clamp<uint32_t>(event.component.startBone, 0, targetModel.pose.size() - 1);
             if (event.component.startBone > event.component.endBone)
                 event.component.startBone = event.component.endBone;
         }
-        if (ImGui::InputScalar("End Bone (Effector)", ImGuiDataType_U32, &event.component.endBone))
+
+        uint32_t endBone = event.component.endBone;
+        if (ImGui::InputScalar("End Bone (Effector)", ImGuiDataType_U32, &endBone, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
         {
+            event.component.endBone = endBone;
+
             event.component.endBone = glm::clamp<uint32_t>(event.component.endBone, 0, targetModel.pose.size() - 1);
             if (event.component.startBone > event.component.endBone)
                 event.component.startBone = event.component.endBone;
         }
-
-        ImGui::Text("Chain Length: %u", event.component.endBone - event.component.startBone + 1);
-
     }
 }
 
