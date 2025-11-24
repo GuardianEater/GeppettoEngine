@@ -178,7 +178,7 @@ namespace Gep
         mCameraUniforms.push_back(uniforms);
     }
 
-    void OpenGLRenderer::AddPointLight(const LightGPUData& uniforms)
+    void OpenGLRenderer::AddPointLight(const PointLightGPUData& uniforms)
     {
         mPointLightUniforms.push_back(uniforms);
     }
@@ -321,7 +321,7 @@ namespace Gep
     {
         for (const auto& [shaderName, shader] : mShaders)
         {
-            shader->SetUniform(6, count);
+            shader->SetUniform(4, count);
         }
     }
 
@@ -642,6 +642,7 @@ namespace Gep
         mObjectDatas.clear();
 
         mPointLightUniforms.clear();
+        mDirectionalLightUniforms.clear();
         mObjectUniforms.clear();
         mCameraUniforms.clear();
         mBoneUniforms.clear();

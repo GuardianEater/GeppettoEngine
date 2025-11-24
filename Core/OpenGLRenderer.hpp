@@ -80,7 +80,7 @@ namespace Gep
         glm::vec4 camPosition; // position of the camera in world space
     };
 
-    struct LightGPUData
+    struct PointLightGPUData
     {
         glm::vec3 position; // location of the light in world space
         float pad; 
@@ -98,6 +98,7 @@ namespace Gep
         float intensity; // intensity of the light
 
         glm::vec3 direction; // the direction of the light
+        float pad0;
     };
 
     struct BoneGPUData
@@ -175,7 +176,7 @@ namespace Gep
         // adds an object to be drawn by 
         void AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& objectData, RenderFlags flags = RenderFlags::None);
         void AddCamera(const CameraGPUData& cameraData);
-        void AddPointLight(const LightGPUData& lightData); // adds a light to the renderered, will be sent to the shader when DrawLights is called
+        void AddPointLight(const PointLightGPUData& lightData); // adds a light to the renderered, will be sent to the shader when DrawLights is called
         void AddDirectionalLight(const DirectionalLightGPUData& uniforms);
         void AddBone(const BoneGPUData& boneData);
         void AddLine(const LineGPUData& lines); // adds a line set to be drawn
@@ -323,7 +324,7 @@ namespace Gep
         std::mutex mTextureLoadingMutex{};
     
         Gep::gpu_vector<ObjectGPUData,   0> mObjectUniforms;   // this vector is perfectly copied onto the gpu into the objectUniforms array
-        Gep::gpu_vector<LightGPUData,    1> mPointLightUniforms;    // this vector is perfectly copied onto the gpu into the lights array
+        Gep::gpu_vector<PointLightGPUData,    1> mPointLightUniforms;    // this vector is perfectly copied onto the gpu into the lights array
         Gep::gpu_vector<CameraGPUData,   2> mCameraUniforms;   // this vector is perfectly copied onto the gpu into the cameraUniforms array
         Gep::gpu_vector<BoneGPUData,     3> mBoneUniforms;     // this vector is perfectly copied onto the gpu into the boneUniforms array
         Gep::gpu_vector<MaterialGPUData, 4> mMaterialUniforms; // this vector is perfectly copied onto the gpu into the materialUniforms array

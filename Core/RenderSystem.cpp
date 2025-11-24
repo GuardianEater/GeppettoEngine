@@ -54,7 +54,8 @@ namespace Client
         mManager.SubscribeToEvent<Gep::Event::ComponentAdded<ModelComponent>>(this, &RenderSystem::OnModelAdded);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<ModelComponent>>(this, &RenderSystem::OnModelEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Texture>>(this, &RenderSystem::OnTextureEditorRender);
-        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Light>>(this, &RenderSystem::OnLightEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Light>>(this, &RenderSystem::OnPointLightEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<DirectionalLight>>(this, &RenderSystem::OnDirectionalLightEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Camera>>(this, &RenderSystem::OnCameraEditorRender);
 
         Gep::OpenGLRenderer& renderer = mRenderer;
@@ -345,9 +346,17 @@ namespace Client
         }
     }
 
-    void RenderSystem::OnLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event)
+    void RenderSystem::OnPointLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event)
     {
         Light& light = event.component;
+
+        ImGui::ColorEdit3("Color", &light.color[0]);
+        ImGui::DragFloat("Intensity", &light.intensity, 1.0f, 0.001f, Gep::num_max<float>());
+    }
+
+    void RenderSystem::OnDirectionalLightEditorRender(const Gep::Event::ComponentEditorRender<DirectionalLight>& event)
+    {
+        DirectionalLight& light = event.component;
 
         ImGui::ColorEdit3("Color", &light.color[0]);
         ImGui::DragFloat("Intensity", &light.intensity, 1.0f, 0.001f, Gep::num_max<float>());
@@ -419,7 +428,7 @@ namespace Client
         // prepares all of the light uniform values
         mManager.ForEachArchetype<Light, Transform>([&](Gep::Entity e, Light& l, Transform& t)
         {
-            Gep::LightGPUData uniforms
+            Gep::PointLightGPUData uniforms
             {
                 .position = t.world.position,
                 .color = l.color,
@@ -437,7 +446,7 @@ namespace Client
                 .position = t.world.position,
                 .color = l.color,
                 .intensity = l.intensity,
-                .direction = t.world.rotation * glm::vec3(0, -1, 0)
+                .direction = t.world.rotation * glm::vec3(0, 1, 0)
             };
 
             mRenderer.AddDirectionalLight(uniforms);

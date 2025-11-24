@@ -36,6 +36,7 @@ namespace Client
     struct Texture;
     struct Light;
     struct Camera;
+    struct DirectionalLight;
 }
 
 // client
@@ -65,7 +66,8 @@ namespace Client
         void OnModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event);
         void OnModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event);
         void OnTextureEditorRender(const Gep::Event::ComponentEditorRender<Texture>& event);
-        void OnLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event);
+        void OnPointLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event);
+        void OnDirectionalLightEditorRender(const Gep::Event::ComponentEditorRender<DirectionalLight>& event);
         void OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event);
 
         // helpers

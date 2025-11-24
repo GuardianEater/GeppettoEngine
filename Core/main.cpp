@@ -85,6 +85,7 @@ int main()
         Client::Camera,
         Client::Texture,
         Client::Light,
+        Client::DirectionalLight,
         Client::SpatialSoundEmitter,
         Client::SphereCollider,
         Client::CubeCollider,

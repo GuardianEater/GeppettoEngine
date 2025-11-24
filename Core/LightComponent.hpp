@@ -18,8 +18,9 @@ namespace Client
         float intensity{1.0f};
     };
 
-    struct DirectionalLight : public Light
+    struct DirectionalLight
     {
-        // direction is implied to be down, adjusted by the transform
+        glm::vec3 color{ 1.0f, 1.0f, 1.0f };
+        float intensity{ 1.0f };
     };
 }

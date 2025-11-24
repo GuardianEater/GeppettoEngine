@@ -206,7 +206,7 @@ vec3 CalculatePBRLightingTotal()
   }
 
   // ambient lighting
-  vec3 ambient = vec3(0.8) * currentSample.color.rgb * currentSample.ao;
+  vec3 ambient = vec3(0.8) * currentSample.color.rgb;// * currentSample.ao;
   color += ambient;
 
   // HDR tone mapping
