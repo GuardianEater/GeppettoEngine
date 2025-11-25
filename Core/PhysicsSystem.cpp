@@ -37,29 +37,10 @@ namespace Client
 
     void PhysicsSystem::Update(float dt)
     {
-        const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform, RigidBody>();
-        for (Gep::Entity entity : entities)
-        {
-            Transform& transform = mManager.GetComponent<Transform>(entity);
-            RigidBody& rigidBody = mManager.GetComponent<RigidBody>(entity);
-
-            //transform.local.position += rigidBody.velocity * dt;
-            //rigidBody.velocity += rigidBody.acceleration * dt;
-
-            //transform.local.rotation += rigidBody.rotationalVelocity * dt;
-            //rigidBody.rotationalVelocity += rigidBody.rotationalAcceleration * dt;
-        }
     }
 
     void PhysicsSystem::FrameEnd()
     {
-        const std::vector<Gep::Entity>& entities = mManager.GetEntities<Transform>();
-
-        // make this unsequenced
-        std::for_each(entities.begin(), entities.end(), [&](Gep::Entity entity)
-        {
-            Transform& transform = mManager.GetComponent<Transform>(entity);
-        });
     }
 
     void PhysicsSystem::OnTransformEditorRender(const Gep::Event::ComponentEditorRender<Transform>& event)
