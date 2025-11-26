@@ -45,11 +45,11 @@ namespace Client
         {
             const Gep::Entity skeletonEntity = mManager.FindEntity(iktarget.targetEntity);
             if (!mManager.EntityExists(skeletonEntity)) return;
-            if (!mManager.HasComponent<Client::ModelComponent>(skeletonEntity)) return;
+            if (!mManager.HasComponent<Client::RiggedModelComponent>(skeletonEntity)) return;
             if (!mManager.HasComponent<Client::Transform>(skeletonEntity)) return;
 
             Client::Transform& skeletonTransform = mManager.GetComponent<Client::Transform>(skeletonEntity);
-            Client::ModelComponent& modelComponent = mManager.GetComponent<Client::ModelComponent>(skeletonEntity);
+            Client::RiggedModelComponent& modelComponent = mManager.GetComponent<Client::RiggedModelComponent>(skeletonEntity);
 
             if (modelComponent.pose.empty()) return;
 
@@ -189,7 +189,7 @@ namespace Client
         }
         else
         {
-            bool hasModel = mManager.HasComponent<ModelComponent>(targetEntity);
+            bool hasModel = mManager.HasComponent<RiggedModelComponent>(targetEntity);
             bool hasTransform = mManager.HasComponent<Transform>(targetEntity);
 
             ImGui::Text("Follower:");
@@ -199,7 +199,7 @@ namespace Client
 
             // display the missing components
             if (!hasModel)
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Model Component");
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Rigged Model Component");
             if (!hasTransform)
                 ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Transform");
 
@@ -217,7 +217,7 @@ namespace Client
         // if the needed checks failed dont continue with the ui
         if (!valid) return;
 
-        ModelComponent& targetModel = mManager.GetComponent<ModelComponent>(targetEntity);
+        RiggedModelComponent& targetModel = mManager.GetComponent<RiggedModelComponent>(targetEntity);
         const Gep::Model& internalModel = mRenderer.GetModel(targetModel.name);
 
         if (targetModel.pose.empty())

@@ -79,7 +79,8 @@ int main()
     Gep::type_list <
         Client::Transform,
         Client::RigidBody,
-        Client::ModelComponent,
+        Client::RiggedModelComponent,
+        Client::StaticModelComponent,
         Client::Script,
         Client::ActiveCamera,
         Client::Camera,

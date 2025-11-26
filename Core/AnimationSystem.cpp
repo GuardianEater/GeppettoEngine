@@ -63,7 +63,7 @@ namespace Client
 
     void AnimationSystem::Update(float dt)
     {
-        mManager.ForEachArchetype<AnimationComponent, ModelComponent, Transform>([&](Gep::Entity entity, AnimationComponent& animationComponent, ModelComponent& modelComponent, const Transform& transform)
+        mManager.ForEachArchetype<AnimationComponent, RiggedModelComponent, Transform>([&](Gep::Entity entity, AnimationComponent& animationComponent, RiggedModelComponent& modelComponent, const Transform& transform)
         {
             if (!mRenderer.IsAnimationLoaded(animationComponent.name))
                 return; // return is continue in for_each loop

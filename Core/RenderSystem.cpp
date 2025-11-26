@@ -35,6 +35,7 @@
 
 #include "OpenGLRenderer.hpp"
 #include "EditorResource.hpp"
+#include "PhysicsSystem.hpp"
 
 namespace Client
 {
@@ -51,9 +52,11 @@ namespace Client
 
     void RenderSystem::Initialize()
     {
-        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<ModelComponent>>(this, &RenderSystem::OnModelAdded);
-        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<ModelComponent>>(this, &RenderSystem::OnModelEditorRender);
-        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Texture>>(this, &RenderSystem::OnTextureEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<RiggedModelComponent>>(this, &RenderSystem::OnRiggedModelAdded);
+        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<RawModelComponent>>(this, &RenderSystem::OnRawModelAdded);
+
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<RiggedModelComponent>>(this, &RenderSystem::OnRiggedModelEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<StaticModelComponent>>(this, &RenderSystem::OnStaticModelEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Light>>(this, &RenderSystem::OnPointLightEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<DirectionalLight>>(this, &RenderSystem::OnDirectionalLightEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Camera>>(this, &RenderSystem::OnCameraEditorRender);
@@ -143,19 +146,18 @@ namespace Client
             cam.renderTarget->Unbind();
         });
 
-        mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
+        mManager.ForEachArchetype<RiggedModelComponent, Transform>([&](Gep::Entity entity, RiggedModelComponent& model, Transform& transform)
+        {
+            model.selected = false;
+        });
+
+        mManager.ForEachArchetype<StaticModelComponent, Transform>([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
         {
             model.selected = false;
         });
 
         renderer.End();
         HandleInputs(dt);
-    }
-
-    void RenderSystem::FrameEnd()
-    {
-        // opengl clear
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
     void RenderSystem::HandleInputs(float dt)
@@ -233,17 +235,11 @@ namespace Client
 
     }
 
-    void RenderSystem::RenderImGui(float dt)
-    {
-        ImGui::Begin("Render System");
-        ImGui::End();
-    }
-
-    void RenderSystem::OnModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event)
+    void RenderSystem::OnRiggedModelAdded(const Gep::Event::ComponentAdded<RiggedModelComponent>& event)
     {
         Gep::OpenGLRenderer& renderer = mRenderer;
 
-        ModelComponent& model = event.component;
+        RiggedModelComponent& model = event.component;
 
         // if the model is not loaded when this component is added attempt load it
         if (!renderer.IsModelLoaded(model.name))
@@ -254,7 +250,7 @@ namespace Client
             }
             else
             {
-                const std::string defaultName = ModelComponent{}.name; // re-initializes the meshname to the default value
+                const std::string defaultName = RiggedModelComponent{}.name; // re-initializes the meshname to the default value
                 Gep::Log::Warning("A model component was created with an invalid name/location: [", model.name, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
                 model.name = defaultName;
             }
@@ -265,9 +261,36 @@ namespace Client
         InitializeModelPose(model, internalModel);
     }
 
-    void RenderSystem::OnModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event)
+    void RenderSystem::OnStaticModelAdded(const Gep::Event::ComponentAdded<StaticModelComponent>& event)
     {
-        ModelComponent& model = event.component;
+        Gep::OpenGLRenderer& renderer = mRenderer;
+
+        StaticModelComponent& model = event.component;
+
+        // if the model is not loaded when this component is added attempt load it
+        if (!renderer.IsModelLoaded(model.name))
+        {
+            if (std::filesystem::exists(model.name))
+            {
+                renderer.AddModelFromFile(model.name);
+            }
+            else
+            {
+                const std::string defaultName = RiggedModelComponent{}.name; // re-initializes the meshname to the default value
+                Gep::Log::Warning("A model component was created with an invalid name/location: [", model.name, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
+                model.name = defaultName;
+            }
+        }
+    }
+
+    void RenderSystem::OnRawModelAdded(const Gep::Event::ComponentAdded<RawModelComponent>& event)
+    {
+
+    }
+
+    void RenderSystem::OnRiggedModelEditorRender(const Gep::Event::ComponentEditorRender<RiggedModelComponent>& event)
+    {
+        RiggedModelComponent& model = event.component;
 
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
         std::vector<std::string> loadedModels = mRenderer.GetLoadedModels();
@@ -307,35 +330,38 @@ namespace Client
             }
             ImGui::EndCombo();
         }
-
-        ImGui::Checkbox("Ignore Light", &model.ignoreLight);
     }
 
-    void RenderSystem::OnTextureEditorRender(const Gep::Event::ComponentEditorRender<Texture>& event)
+    void RenderSystem::OnStaticModelEditorRender(const Gep::Event::ComponentEditorRender<StaticModelComponent>& event)
     {
-        Texture& texture = event.component;
+        StaticModelComponent& model = event.component;
 
-        const Gep::OpenGLRenderer& renderer = mRenderer;
-        const Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
-        std::vector<std::filesystem::path> loadedTextures = renderer.GetLoadedTextures();
+        Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
+        std::vector<std::string> loadedModels = mRenderer.GetLoadedModels();
 
-        bool texturesOpen = ImGui::BeginCombo("Textures", texture.texturePath.string().c_str());
+        // drop down for selecting a model
+        bool modelsOpen = ImGui::BeginCombo("Models", model.name.c_str());
 
-        const std::vector<std::string>& supportedTextures = renderer.GetSupportedTextureFormats();
+        const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
 
-        er.AssetBrowserDropTarget(supportedTextures, [&](const std::filesystem::path& droppedPath)
+        er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
         {
-            texture.texturePath = droppedPath;
+            if (!mRenderer.IsModelLoaded(droppedPath.string()))
+            {
+                mRenderer.AddModelFromFile(droppedPath.string());
+            }
+
+            model.name = droppedPath.string();
         });
 
-        if (texturesOpen)
+        if (modelsOpen)
         {
-            for (const auto& loadedTexturePath : loadedTextures)
+            for (const std::string& modelName : loadedModels)
             {
-                bool isSelected = loadedTexturePath == texture.texturePath;
-                if (ImGui::Selectable(loadedTexturePath.string().c_str(), isSelected))
+                bool isSelected = (modelName == model.name);
+                if (ImGui::Selectable(modelName.c_str(), isSelected))
                 {
-                    texture.texturePath = loadedTexturePath;
+                    model.name = modelName;
                 }
                 if (isSelected)
                 {
@@ -491,16 +517,11 @@ namespace Client
         skeletonLines.color = { 1.0f, 0.5f, 0.5f };
         int boneOffset = 0;
 
-        mManager.ForEachArchetype<ModelComponent, Transform>([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
+        mManager.ForEachArchetype<RiggedModelComponent, Transform>([&](Gep::Entity entity, RiggedModelComponent& model, Transform& transform)
         {
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
             const Gep::Model& internalModel = mRenderer.GetModel(model.name);
-
-            if (mManager.HasComponent<Light>(entity))
-            {
-                model.ignoreLight = true;
-            }
 
             std::string targetShader = "PBR-Static";
 
@@ -554,11 +575,39 @@ namespace Client
             mRenderer.AddObject(targetShader, model.name, uniforms, flags);
         });
 
+        mManager.ForEachArchetype<StaticModelComponent, Transform>([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
+        {
+            const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
+            const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
+            const Gep::Model& internalModel = mRenderer.GetModel(model.name);
+
+            std::string targetShader = "PBR-Static";
+
+            Gep::ObjectGPUData uniforms
+            {
+                .modelMatrix = modelMatrix,
+                .normalMatrixCol0 = normal[0],
+                .normalMatrixCol1 = normal[1],
+                .normalMatrixCol2 = normal[2],
+
+                .boneOffset = 0 // this is not used when using the static shader
+            };
+
+            Gep::RenderFlags flags = Gep::RenderFlags::None;
+            if (mWireframeMode)
+                flags |= Gep::RenderFlags::Wireframe;
+
+            if (model.selected)
+                flags |= Gep::RenderFlags::Highlight;
+
+            mRenderer.AddObject(targetShader, model.name, uniforms, flags);
+        });
+
         mRenderer.AddLine(skeletonLines);
 
     }
 
-    void RenderSystem::InitializeModelPose(ModelComponent& modelComponent, const Gep::Model& internalModel)
+    void RenderSystem::InitializeModelPose(RiggedModelComponent& modelComponent, const Gep::Model& internalModel)
     {
         modelComponent.pose.clear();
         modelComponent.pose.resize(internalModel.skeleton.bones.size());

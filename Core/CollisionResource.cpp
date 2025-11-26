@@ -48,7 +48,7 @@ namespace Client
             }
         });
 
-        em.ForEachArchetype<Client::Transform, Client::ModelComponent, Client::MeshCollider>([&](Gep::Entity entity, Client::Transform& transform, Client::ModelComponent& model, Client::MeshCollider& collider)
+        em.ForEachArchetype<Client::Transform, Client::StaticModelComponent, Client::MeshCollider>([&](Gep::Entity entity, Client::Transform& transform, Client::StaticModelComponent& model, Client::MeshCollider& collider)
         {
             Gep::OpenGLRenderer& renderer = em.GetResource<Gep::OpenGLRenderer>();
             const Gep::Model& mdl = renderer.GetModel(model.name);

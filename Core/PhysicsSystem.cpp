@@ -14,12 +14,14 @@
  // components
 #include <Transform.hpp>
 #include <RigidBody.hpp>
+#include <ModelComponent.hpp>
 
 // resouce
 #include <EditorResource.hpp>
 
 // engine
 #include <EngineManager.hpp>
+#include <Events.hpp>
 
 // std
 #include <iostream>
@@ -31,16 +33,24 @@ namespace Client
     {
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Transform>>(this, &PhysicsSystem::OnTransformEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<RigidBody>>(this, &PhysicsSystem::OnRigidBodyEditorRender);
+
+        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<RawModelComponent>>(this, &PhysicsSystem::OnRawModelAdded);
+        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<RigidBody>>(this, &PhysicsSystem::OnRigidBodyAdded);
     }
 
     PhysicsSystem::~PhysicsSystem() = default;
 
     void PhysicsSystem::Update(float dt)
     {
+        mManager.ForEachArchetype<RigidBody, Transform>([&](Gep::Entity entity, RigidBody& rb, Transform& t)
+        {
+
+        });
     }
 
     void PhysicsSystem::FrameEnd()
     {
+
     }
 
     void PhysicsSystem::OnTransformEditorRender(const Gep::Event::ComponentEditorRender<Transform>& event)
@@ -67,6 +77,16 @@ namespace Client
         ImGui::DragFloat3("Acceleration", &rigidBody.acceleration.x, 0.1f);
         ImGui::DragFloat3("Angular Velocity", &rigidBody.rotationalVelocity.x, 0.1f);
         ImGui::DragFloat3("Angular Acceleration", &rigidBody.rotationalAcceleration.x, 0.1f);
+    }
+
+    void PhysicsSystem::OnRigidBodyAdded(const Gep::Event::ComponentAdded<RigidBody>& event)
+    {
+
+    }
+
+    void PhysicsSystem::OnRawModelAdded(const Gep::Event::ComponentAdded<RawModelComponent>& event)
+    {
+
     }
 }
 

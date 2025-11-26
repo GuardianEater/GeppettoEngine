@@ -32,7 +32,9 @@ namespace Gep::Event
 // fwd
 namespace Client
 {
-    struct ModelComponent;
+    struct RiggedModelComponent;
+    struct StaticModelComponent;
+    struct RawModelComponent;
     struct Texture;
     struct Light;
     struct Camera;
@@ -48,36 +50,39 @@ namespace Client
         RenderSystem(Gep::EngineManager& em);
         ~RenderSystem();
 
-        void Initialize();
-        void Update(float dt);
-        void FrameEnd() override;
+        void Initialize() override;
+        void Update(float dt) override;
         void HandleInputs(float dt);
-        void RenderImGui(float dt);
 
     private:
-        // flags
+        // flags ///////////
         bool mDrawColliders = false;
         bool mWireframeMode = false;
         bool mNoTextureMode = false;
         bool mDrawBones     = false;
         bool mDrawAABBs     = false;
 
-        // events
-        void OnModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event);
-        void OnModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event);
-        void OnTextureEditorRender(const Gep::Event::ComponentEditorRender<Texture>& event);
+        // events //////////
+        // on added
+        void OnRiggedModelAdded(const Gep::Event::ComponentAdded<RiggedModelComponent>& event);
+        void OnStaticModelAdded(const Gep::Event::ComponentAdded<StaticModelComponent>& event);
+        void OnRawModelAdded(const Gep::Event::ComponentAdded<RawModelComponent>& event);
+
+        // on editor render
+        void OnRiggedModelEditorRender(const Gep::Event::ComponentEditorRender<RiggedModelComponent>& event);
+        void OnStaticModelEditorRender(const Gep::Event::ComponentEditorRender<StaticModelComponent>& event);
         void OnPointLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event);
         void OnDirectionalLightEditorRender(const Gep::Event::ComponentEditorRender<DirectionalLight>& event);
         void OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event);
 
-        // helpers
+        // helpers /////////
         void AddColliders();
         void AddLights();
         void AddCameras();
         void AddObjects();
 
         // when a model is changed 
-        void InitializeModelPose(ModelComponent& modelComponent, const Gep::Model& internalModel);
+        void InitializeModelPose(RiggedModelComponent& modelComponent, const Gep::Model& internalModel);
 
         // resources
         Gep::OpenGLRenderer& mRenderer;
