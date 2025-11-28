@@ -264,14 +264,8 @@
     <ClCompile Include="CollisionResource.cpp">
       <Filter>Client\Resources</Filter>
     </ClCompile>
-    <ClCompile Include="FileHelp.cpp">
-      <Filter>Backend</Filter>
-    </ClCompile>
     <ClCompile Include="OS_Windows.cpp">
       <Filter>Backend\OS</Filter>
-    </ClCompile>
-    <ClCompile Include="StringHelp.cpp">
-      <Filter>Backend</Filter>
     </ClCompile>
     <ClCompile Include="SkyboxMesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
@@ -306,14 +300,20 @@
     <ClCompile Include="UUID.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="Archetypes.cpp">
-      <Filter>Backend</Filter>
-    </ClCompile>
     <ClCompile Include="VQS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="IKSystem.cpp">
       <Filter>Client\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Archetypes.cpp">
+      <Filter>Backend\ECS</Filter>
+    </ClCompile>
+    <ClCompile Include="FileHelp.cpp">
+      <Filter>Backend\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="StringHelp.cpp">
+      <Filter>Backend\Tools</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -569,32 +569,20 @@
     <ClInclude Include="CollisionResource.hpp">
       <Filter>Client\Resources</Filter>
     </ClInclude>
-    <ClInclude Include="Archetypes.h">
-      <Filter>Backend</Filter>
-    </ClInclude>
     <ClInclude Include="FunctionTraits.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
     <ClInclude Include="EditorResource.hpp">
       <Filter>Client\Resources</Filter>
     </ClInclude>
-    <ClInclude Include="FileHelp.hpp">
-      <Filter>Backend</Filter>
-    </ClInclude>
     <ClInclude Include="OS.hpp">
       <Filter>Backend\OS</Filter>
-    </ClInclude>
-    <ClInclude Include="StringHelp.hpp">
-      <Filter>Backend</Filter>
     </ClInclude>
     <ClInclude Include="SkyboxMesh.hpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
     <ClInclude Include="HeirarchyStorage.hpp">
       <Filter>Client\Editor</Filter>
-    </ClInclude>
-    <ClInclude Include="STLHelp.hpp">
-      <Filter>Backend</Filter>
     </ClInclude>
     <ClInclude Include="Shader.hpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
@@ -661,6 +649,18 @@
     </ClInclude>
     <ClInclude Include="IKSystem.hpp">
       <Filter>Client\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Archetypes.h">
+      <Filter>Backend\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="FileHelp.hpp">
+      <Filter>Backend\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="STLHelp.hpp">
+      <Filter>Backend\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="StringHelp.hpp">
+      <Filter>Backend\Tools</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
