@@ -59,7 +59,7 @@ namespace Client
         void DrawExtras();
         bool DrawEntityNode(Gep::Entity entity, const std::string& displayName, bool selected, const ImVec4& defaultColor);
         void DrawQuickTest();
-
+        void DrawChatBox();
         std::vector<Gep::Entity> SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm);
         void SetAssetBrowserPath(const std::filesystem::path& newPath);
         void ReloadAssetBrowser();
@@ -89,6 +89,7 @@ namespace Client
         // game loop //
         void Initialize() override;
         void Update(float dt) override;
+        void Exit() override;
 
         // helpers //
         void DrawEntities(const std::vector<Gep::Entity>& entities, float dt);

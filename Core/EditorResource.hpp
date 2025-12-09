@@ -10,9 +10,18 @@
 
 #include "Core.hpp"
 #include "StringHelp.hpp"
+#include "NetworkingHelp.hpp"
 
 namespace Client
 {
+	struct ChatBox
+	{
+		std::vector<std::string> messages;
+		std::string currentMessage;
+
+		bool goToBottom = true;
+	};
+
 	class EditorResource
 	{
 	public:
@@ -64,6 +73,13 @@ namespace Client
 		friend class ImGuiSystem;
 		std::unordered_set<Gep::Entity> mSelectedEntities;
 		size_t mLastSelectedIndex;
+
+		ENetHost* mClientHost = nullptr;
+		ENetPeer* mServerConnection = nullptr;
+
+		std::string mServerIP = "45.61.62.97";
+		uint16_t mServerPort = 7777;
+		ChatBox mChatBox;
 	};
 
 	template<typename Func>

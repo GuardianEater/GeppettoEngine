@@ -25,6 +25,8 @@
 
 #include "OS.hpp"
 
+#include "NetworkingHelp.hpp"
+
 namespace Client
 {
     ImGuiSystem::ImGuiSystem(Gep::EngineManager& em)
@@ -470,6 +472,91 @@ namespace Client
         ImGui::End();
     }
 
+    // add this helper function (e.g. after DrawAssetBrowser or at end of other draw helpers)
+
+    void ImGuiSystem::DrawChatBox()
+    {
+        ImGui::Begin("Chat", nullptr, ImGuiWindowFlags_NoCollapse);
+
+        Client::ChatBox& chat = mEditorResource.mChatBox;
+
+        // Header controls
+        //ImGui::Checkbox("Auto Scroll", &chat.goToBottom);
+        //ImGui::SameLine();
+        //if (ImGui::Button("Clear"))
+        //{
+        //    chat.messages.clear();
+        //}
+
+        
+        if (!mEditorResource.mServerConnection)
+        {
+            //ImGui::SameLine();
+            ImGui::TextColored({ 1.0f, 0.0f, 0.0f, 1.0f }, "No Connection");
+
+            ImGui::SameLine();
+            if (ImGui::Button("Retry Connection?"))
+            {
+                mEditorResource.mServerConnection = Gep::Net::ConnectToServer(mEditorResource.mClientHost, mEditorResource.mServerIP, mEditorResource.mServerPort);
+            }
+        }
+
+        ImGui::Separator();
+
+        // Messages region (reserve height for input area)
+        const float footerHeight = ImGui::GetFrameHeightWithSpacing() * 2.0f;
+        ImGui::BeginChild("MessagesRegion", ImVec2(0, -footerHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+        // Auto-trim to prevent unbounded growth (optional)
+        constexpr size_t MaxMessages = 500;
+        if (chat.messages.size() > MaxMessages)
+        {
+            chat.messages.erase(chat.messages.begin(), chat.messages.end() - MaxMessages);
+        }
+
+        // Track new messages to auto-scroll
+        static size_t lastMessageCount = 0;
+        bool newMessages = (chat.messages.size() != lastMessageCount);
+        lastMessageCount = chat.messages.size();
+
+        for (size_t i = 0; i < chat.messages.size(); ++i)
+            ImGui::TextWrapped("%s", chat.messages[i].c_str());
+
+        if (chat.goToBottom && newMessages)
+            ImGui::SetScrollHereY(1.0f);
+
+        ImGui::EndChild();
+
+        // Input line
+        static bool requestFocusNextFrame = true; // focus on first open
+        ImGuiInputTextFlags inputFlags = ImGuiInputTextFlags_EnterReturnsTrue;
+
+        ImGui::PushItemWidth(-ImGui::GetFrameHeight() * 2.5f);
+        if (requestFocusNextFrame)
+        {
+            ImGui::SetKeyboardFocusHere();
+            requestFocusNextFrame = false;
+        }
+        bool submitted = ImGui::InputText("##ChatInput", &chat.currentMessage, inputFlags);
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+
+        bool clickedSend = ImGui::Button("Send");
+        if ((clickedSend || submitted) && !chat.currentMessage.empty() && mEditorResource.mServerConnection)
+        {
+            Gep::Net::MessageSend(mEditorResource.mServerConnection, chat.currentMessage);
+            chat.messages.push_back(chat.currentMessage);
+            chat.currentMessage.clear();
+
+            if (chat.goToBottom)
+                ImGui::SetScrollHereY(1.0f);
+
+            requestFocusNextFrame = true; // re-focus input next frame
+        }
+
+        ImGui::End();
+    }
+
     std::vector<Gep::Entity> ImGuiSystem::SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm)
     {
         std::vector<Gep::Entity> result;
@@ -602,6 +689,13 @@ namespace Client
         mManager.SubscribeToEvent<Gep::Event::EntityAttached>(this, &ImGuiSystem::OnEntityAttached);
         mManager.SubscribeToEvent<Gep::Event::EntityDetached>(this, &ImGuiSystem::OnEntityDetached);
 
+        // Initialize ENet once (idempotent in your helper)
+        Gep::Net::InitializeENet();
+
+        // Create and keep the host so we can pump events every frame
+        mEditorResource.mClientHost = Gep::Net::CreateClient();
+        mEditorResource.mServerConnection = Gep::Net::ConnectToServer(mEditorResource.mClientHost, mEditorResource.mServerIP, mEditorResource.mServerPort);
+
         mAssetBrowserPath = std::filesystem::current_path() / "assets";
 
         for (const auto& entry : std::filesystem::directory_iterator(mAssetBrowserPath))
@@ -688,6 +782,21 @@ namespace Client
         DrawExtras();
         DrawToolbar();
         DrawQuickTest();
+
+        // if there is a connection with the server poll the connection
+        if (mEditorResource.mServerConnection)
+        {
+            ENetEvent event = Gep::Net::PollConnection(mEditorResource.mServerConnection);
+
+            Gep::Net::HandleEvent(event,
+            []{}, // on connection
+            []{}, // on disconnection
+            [&](const std::string& message)
+            {
+                Gep::Log::Important("Message recieved: ", message);
+                mEditorResource.mChatBox.messages.push_back(message);
+            });
+        }
 
         ImGui::Begin("Entities");
 
@@ -809,8 +918,14 @@ namespace Client
 
         DrawInspectorPanel();
         DrawAssetBrowser();
+        DrawChatBox();
 
         ImGui::End(); // Entities
+    }
+
+    void ImGuiSystem::Exit()
+    {
+        Gep::Net::ExitENet();
     }
 
     void ImGuiSystem::DrawEntities(const std::vector<Gep::Entity>& entities, float dt)
