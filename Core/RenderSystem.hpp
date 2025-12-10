@@ -34,7 +34,6 @@ namespace Client
 {
     struct RiggedModelComponent;
     struct StaticModelComponent;
-    struct RawModelComponent;
     struct Texture;
     struct Light;
     struct Camera;
@@ -66,7 +65,6 @@ namespace Client
         // on added
         void OnRiggedModelAdded(const Gep::Event::ComponentAdded<RiggedModelComponent>& event);
         void OnStaticModelAdded(const Gep::Event::ComponentAdded<StaticModelComponent>& event);
-        void OnRawModelAdded(const Gep::Event::ComponentAdded<RawModelComponent>& event);
 
         // on editor render
         void OnRiggedModelEditorRender(const Gep::Event::ComponentEditorRender<RiggedModelComponent>& event);

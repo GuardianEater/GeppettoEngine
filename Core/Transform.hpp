@@ -23,5 +23,7 @@ namespace Client
     {
         Gep::VQS local;
         Gep::VQS world;
+
+        Gep::VQS previousWorld; // the word space transform from last frame, ie the transform 1 dt ago
     };
 }

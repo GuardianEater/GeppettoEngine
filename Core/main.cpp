@@ -79,6 +79,7 @@ int main()
     Gep::type_list <
         Client::Transform,
         Client::RigidBody,
+        Client::Spring,
         Client::RiggedModelComponent,
         Client::StaticModelComponent,
         Client::Script,
@@ -106,9 +107,9 @@ int main()
         Client::CurveSystem,
         Client::RenderSystem,
         Client::ScriptingSystem,
-        Client::PhysicsSystem,
         Client::SerializationSystem,
         Client::RelationSystem,
+        Client::PhysicsSystem,
         Client::SoundSystem,
         Client::CollisionSystem
     > systemTypes;
@@ -116,7 +117,6 @@ int main()
     // register all types ////////////////////////////////////////////////////////////////////////////
     em.RegisterTypes(componentTypes, systemTypes);
 
-    em.SetSystemExecutionPolicy<Client::PhysicsSystem>(Gep::EngineState::Play);
     em.SetSystemExecutionPolicy<Client::ScriptingSystem>(Gep::EngineState::Play);
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////

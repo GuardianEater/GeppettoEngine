@@ -68,6 +68,14 @@ namespace Gep
         return ToVQS(ToMat4(m));
     }
 
+    glm::quat Derivative(const glm::quat& q, const glm::vec3& omega)
+    {
+        // q' = 0.5 * Omega(omega) * q where Omega is quaternion [0, wx, wy, wz]
+        glm::quat wq{ 0, omega.x, omega.y, omega.z };
+
+        return wq * q * 0.5f;
+    }
+
     VQS Inverse(const VQS& t)
     {
         VQS inv{};

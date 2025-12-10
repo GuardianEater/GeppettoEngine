@@ -29,7 +29,7 @@ namespace Client
 {
     struct Transform;
     struct RigidBody;
-    struct RawModelComponent;
+    struct Spring;
 }
 
 namespace Client
@@ -47,9 +47,21 @@ namespace Client
 
         void OnTransformEditorRender(const Gep::Event::ComponentEditorRender<Transform>& event);
         void OnRigidBodyEditorRender(const Gep::Event::ComponentEditorRender<RigidBody>& event);
+        void OnSpringEditorRender(const Gep::Event::ComponentEditorRender<Spring>& event);
 
-        void OnRawModelAdded(const Gep::Event::ComponentAdded<RawModelComponent>& event);
         void OnRigidBodyAdded(const Gep::Event::ComponentAdded<RigidBody>& event);
+        void OnSpringAdded(const Gep::Event::ComponentAdded<Spring>&event);
+
+        // physics computation
+
+        void Integrate_RungeKutta4(RigidBody& rb, Transform& t, float dt) const;
+        void Integrate_ExplicitEuler(RigidBody& rb, Transform& t, const Transform* parentT, float dt) const;
+        void Integrate_SemiImplicitEuler(RigidBody& rb, Transform& t, float dt) const;
+        void Integrate_Verlet(RigidBody& rb, Transform& t, float dt) const;
+
+        void ApplySpringForces();
+        void Integrate(float dt);
+        void DrawSprings();
     };
 }
 

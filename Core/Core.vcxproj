@@ -285,6 +285,7 @@
     <ClInclude Include="Quaternion.hpp" />
     <ClInclude Include="RenderTarget.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
+    <ClCompile Include="RigidBody.cpp" />
     <ClCompile Include="ScriptingResource.cpp" />
     <ClCompile Include="ScriptingSystem.cpp" />
     <ClCompile Include="SerializationResource.cpp" />

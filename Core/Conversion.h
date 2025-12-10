@@ -21,6 +21,8 @@ namespace Gep
     VQS ToVQS(const glm::mat4& matrix);
     VQS ToVQS(const aiMatrix4x4& m);
 
+    glm::quat Derivative(const glm::quat& q, const glm::vec3& omega);
+
     template <typename T>
     concept TypeIsGLMInversable = requires(const T & t)
     {
