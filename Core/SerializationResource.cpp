@@ -14,49 +14,55 @@ namespace Client
 {
     void SerializationResource::SaveScene(Gep::EngineManager& em, const std::filesystem::path& path) const
     {
-        Gep::Log::Trace("Saving scene to: ", path.string());
-
-        if (!std::filesystem::exists(path.parent_path()))
+        em.ExcludeFromDt([&] 
         {
-            Gep::Log::Error("Scene path does not exist: ", path.parent_path().string());
-            return;
-        }
+            Gep::Log::Trace("Saving scene to: ", path.string());
 
-        nlohmann::json sceneJson = SerializeScene(em);
-        std::ofstream file(path);
-        if (!file.is_open())
-        {
-            Gep::Log::Error("Failed to save current scene as [", path.string(), "]");
-            return;
-        }
-        file << sceneJson.dump();
+            if (!std::filesystem::exists(path.parent_path()))
+            {
+                Gep::Log::Error("Scene path does not exist: ", path.parent_path().string());
+                return;
+            }
 
-        Gep::Log::Info("Scene saved to: ", path.string());
+            nlohmann::json sceneJson = SerializeScene(em);
+            std::ofstream file(path);
+            if (!file.is_open())
+            {
+                Gep::Log::Error("Failed to save current scene as [", path.string(), "]");
+                return;
+            }
+            file << sceneJson.dump();
+
+            Gep::Log::Info("Scene saved to: ", path.string());
+        });
     }
 
     void SerializationResource::LoadScene(Gep::EngineManager& em, const std::filesystem::path& path) const
     {
-        Gep::Log::Trace("Loading scene from: ", path.string());
-
-        if (!std::filesystem::exists(path))
+        em.ExcludeFromDt([&]
         {
-            Gep::Log::Error("Scene file does not exist: ", path.string());
-            return;
-        }
+            Gep::Log::Trace("Loading scene from: ", path.string());
 
-        std::ifstream file(path);
+            if (!std::filesystem::exists(path))
+            {
+                Gep::Log::Error("Scene file does not exist: ", path.string());
+                return;
+            }
 
-        if (!file.is_open())
-        {
-            Gep::Log::Error("Failed to open: ", path.string());
-            return;
-        }
+            std::ifstream file(path);
 
-        nlohmann::json sceneJson;
-        file >> sceneJson;
-        DeserializeScene(em, sceneJson);
+            if (!file.is_open())
+            {
+                Gep::Log::Error("Failed to open: ", path.string());
+                return;
+            }
 
-        Gep::Log::Info("Scene loaded from: ", path.string());
+            nlohmann::json sceneJson;
+            file >> sceneJson;
+            DeserializeScene(em, sceneJson);
+
+            Gep::Log::Info("Scene loaded from: ", path.string());
+        });
     }
 
     void SerializationResource::SaveScene(Gep::EngineManager& em) const

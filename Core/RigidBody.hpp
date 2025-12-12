@@ -54,7 +54,7 @@ namespace Client
         glm::vec3 invInerita = { 1.0f, 1.0f, 1.0f }; // diagonal
 
         glm::vec3 LinearAcceleration() const;
-        glm::vec3 AngularAcceleration(const Transform& t) const;
+        glm::vec3 AngularAcceleration(const glm::quat& worldRotation) const;
         void ApplyForce(const glm::vec3& f);
         void ApplyTorque(const glm::vec3& t);
         void ApplyForceAtPoint(const Transform& t, const glm::vec3& f, const glm::vec3& pointWorld);

@@ -166,6 +166,10 @@ namespace Gep
 
         float GetDeltaTime() const;
 
+        // times a function and removes its execution time from effecting dt. Useful for very expensive functions that may cause a spike in dt
+        template <typename Func>
+        void ExcludeFromDt(Func&& func);
+
         // begins the shutdown process of the engine
         void Shutdown();
 
@@ -438,6 +442,7 @@ namespace Gep
 
         // dt
         float mDeltaTime = 0.016f; // the amount of time that passed over the course of the last frame
+        float mExcludedDeltaTime = 0.0f; // the amount of time to be subtracked from delta time
         std::chrono::high_resolution_clock::time_point mFrameStartTime{}; // the time when this frame started
         EngineState mState = EngineState::None; // the current state of the engine
         bool mIsRunning = true; // whether or not the engine is currently running. Is checked first thing at the beggining of every frame

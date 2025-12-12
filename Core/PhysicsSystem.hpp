@@ -23,6 +23,7 @@ namespace Gep::Event
 namespace Gep
 {
     class EngineManager;
+    class OpenGLRenderer;
 }
 
 namespace Client
@@ -55,13 +56,24 @@ namespace Client
         // physics computation
 
         void Integrate_RungeKutta4(RigidBody& rb, Transform& t, float dt) const;
-        void Integrate_ExplicitEuler(RigidBody& rb, Transform& t, const Transform* parentT, float dt) const;
-        void Integrate_SemiImplicitEuler(RigidBody& rb, Transform& t, float dt) const;
+        void Integrate_ExplicitEuler(RigidBody& rb, Transform& t, float dt) const;
+        void Integrate_SemiImplicitEuler(RigidBody& rb, Transform& t,  float dt) const;
         void Integrate_Verlet(RigidBody& rb, Transform& t, float dt) const;
 
         void ApplySpringForces();
         void Integrate(float dt);
         void DrawSprings();
+
+        void HandleInputs();
+
+    private:
+        Gep::OpenGLRenderer& mRenderer;
+
+        bool mRenderSprings = true;
+        uint8_t mCurrentPhysicsIntegration = 0;
+        const float mFixedTimeStep = 1.0f / 60.0f;
+        const float mMaxAccumulatedTime = 0.25f;
+        float mStepAccumulator = 0.0f;
     };
 }
 

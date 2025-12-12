@@ -73,7 +73,8 @@ namespace Gep
         }
 
         auto endTime = std::chrono::high_resolution_clock::now();
-        mDeltaTime = std::chrono::duration<float>(endTime - mFrameStartTime).count();
+        mDeltaTime = std::chrono::duration<float>(endTime - mFrameStartTime).count() - mExcludedDeltaTime;
+        mExcludedDeltaTime = 0.0f;
     }
 
     bool EngineManager::Running() const
@@ -194,7 +195,10 @@ namespace Gep
     {
         for (const Entity entity : mMarkedEntities)
         {
-            DestroyEntity(entity);
+            // the destroy of one entity could potentially destroy other entities so
+            // must check if the entitiy exists before destruction
+            if (EntityExists(entity))
+                DestroyEntity(entity);
         }
 
         mMarkedEntities.clear();
@@ -203,13 +207,15 @@ namespace Gep
     void EngineManager::DestroyAllEntities()
     {
         Gep::Log::Trace("Destroying all entities...");
-
-        for (const auto& [entity, entityData] : mEntityDatas)
+        ExcludeFromDt([&]
         {
-            MarkEntityForDestruction(entity);
-        }
+            for (const auto& [entity, entityData] : mEntityDatas)
+            {
+                MarkEntityForDestruction(entity);
+            }
 
-        DestroyMarkedEntities();
+            DestroyMarkedEntities();
+        });
 
         Gep::Log::Info("All entities destroyed");
     }
@@ -223,22 +229,25 @@ namespace Gep
             return;
         }
 
+        // because of ordering all events are signaled top down, and in those events the hierarchy is 100% valid
         SignalEvent(Event::EntityDestroyed{ entity });
 
+        // signal the event that these components are being destroyed
         ForEachComponent(entity, [&](const ComponentData& componentData)
         {
             componentData.onRemove(entity);
         });
 
-        Archetype_Clear(entity);
-
         // note: this has to be a vector by value because detach changes the underlying storage
         std::vector<Entity> children = GetChildren(entity);
         for (Entity child : children)
         {
-            DetachEntity(child);
+            DestroyEntity(child);
         }
-        
+
+        Archetype_Clear(entity);
+
+        // on detach event: the entity may have had all of its components and children removed, should probably seperate the signal and the 'do'
         if (HasParent(entity))
             DetachEntity(entity);
 

@@ -16,6 +16,7 @@
 #include "CubeCollider.hpp"
 #include "SphereCollider.hpp"
 #include "LightComponent.hpp"
+#include "RigidBody.hpp"
 
 #include "imgui_te_engine.h"
  //#include "ImGuizmo.h"
@@ -62,6 +63,21 @@ namespace Client
             ImGui::Text("%d Entities Selected", mEditorResource.mSelectedEntities.size());
 
             ImGui::Separator();
+
+            if (mEditorResource.mSelectedEntities.size() == 2)
+            {
+                Gep::Entity front = *mEditorResource.mSelectedEntities.begin();
+                Gep::Entity back = *std::prev(mEditorResource.mSelectedEntities.end());
+
+                if (mManager.HasComponent<Transform>(front) && mManager.HasComponent<Transform>(back))
+                {
+                    Transform& frontT = mManager.GetComponent<Transform>(front);
+                    Transform& backT = mManager.GetComponent<Transform>(back);
+
+                    float distance = glm::distance(frontT.world.position, backT.world.position);
+                    ImGui::Text("Distance: %f", distance);
+                }
+            }
 
             for (Gep::Entity entity : mEditorResource.mSelectedEntities)
             {
@@ -459,6 +475,179 @@ namespace Client
                                 continue;
 
                             cd.add(e);
+                        }
+                    }
+                }
+            }
+
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("Spring Cube"))
+        {
+            static std::vector<Gep::Entity> points;
+            static std::vector<Gep::Entity> springs;
+            static Gep::Entity parent;
+            static int width = 10;
+            static float spacing = 10.0f;
+            static float springStiffness = 50.0f;
+            static float springDamping = 1.0f;
+            static float pointMass = 1.0f;
+            static bool pinTopLayer = true;
+            static bool running = false;
+            static std::string buttonText;
+
+            buttonText = running ? "EndTest" : "StartTest";
+
+            ImGui::DragInt("Width", &width, 0.1f, 1, 20);
+            ImGui::DragFloat("Spacing", &spacing, 0.1f, 0.1f, 100.0f);
+            ImGui::DragFloat("Spring Stiffness", &springStiffness, 1.0f, 0.0f, 100000.0f);
+            ImGui::DragFloat("Spring Damping", &springDamping, 0.01f, 0.0f, 1000.0f);
+            ImGui::DragFloat("Point Mass", &pointMass, 0.1f, 0.1f, 1000.0f);
+            ImGui::Checkbox("Pin Top Layer", &pinTopLayer);
+            ImGui::Text("Points: %zu | Springs: %zu", points.size(), springs.size());
+
+            if (ImGui::Button(buttonText.c_str()))
+            {
+                if (running)
+                {
+                    running = false;
+                    for (auto spring : springs)  mManager.DestroyEntity(spring);
+                    for (auto point : points)    mManager.DestroyEntity(point);
+                    springs.clear();
+                    points.clear();
+                    if (mManager.EntityExists(parent))
+                        mManager.DestroyEntity(parent);
+                    parent = Gep::INVALID_ENTITY;
+                }
+                else
+                {
+                    running = true;
+
+                    width = std::max(1, width);
+                    spacing = std::max(0.1f, spacing);
+
+                    const float halfExtent = (width - 1) * spacing * 0.5f;
+
+                    parent = mManager.CreateEntity("Spring Cube Test");
+                    mManager.AddComponent(parent, Transform{});
+
+                    const int totalPoints = width * width * width;
+                    points.clear();
+                    points.reserve(totalPoints);
+                    springs.clear();
+                    std::vector<Gep::Entity> pointLookup(totalPoints, Gep::INVALID_ENTITY);
+
+                    const auto index3D = [](int x, int y, int z)
+                    {
+                        return x + y * width + z * width * width;
+                    };
+
+                    for (int x = 0; x < width; ++x)
+                    for (int y = 0; y < width; ++y)
+                    for (int z = 0; z < width; ++z)
+                    {
+                        const glm::vec3 position{
+                            x * spacing - halfExtent,
+                            y * spacing - halfExtent,
+                            z * spacing - halfExtent
+                        };
+
+                        Client::Transform t;
+                        t.world.position = position;
+
+                        Client::StaticModelComponent model{ .name = "Sphere" };
+                        const bool needsRigidBody = !(pinTopLayer && y == width - 1);
+
+                        Gep::Entity point = mManager.CreateEntity("Point (" + std::to_string(x) + "," + std::to_string(y) + "," + std::to_string(z) + ")");
+
+                        if (needsRigidBody)
+                        {
+                            Client::RigidBody rb{};
+                            rb.mass = std::max(pointMass, 0.01f);
+                            rb.invMass = 1.0f / rb.mass;
+                            mManager.AddComponent(point, t, SphereCollider{}, model, rb);
+                        }
+                        else
+                        {
+                            mManager.AddComponent(point, t, SphereCollider{}, model);
+                        }
+
+                        mManager.AttachEntity(parent, point);
+
+                        points.push_back(point);
+                        pointLookup[index3D(x, y, z)] = point;
+                    }
+
+                    const auto connectPoints = [&](int x, int y, int z, int nx, int ny, int nz)
+                    {
+                        if (nx < 0 || nx >= width ||
+                            ny < 0 || ny >= width ||
+                            nz < 0 || nz >= width)
+                            return;
+
+                        const Gep::Entity start = pointLookup[index3D(x, y, z)];
+                        const Gep::Entity end = pointLookup[index3D(nx, ny, nz)];
+
+                        if (start == Gep::INVALID_ENTITY || end == Gep::INVALID_ENTITY)
+                            return;
+
+                        Client::Spring spring{};
+                        spring.startEntity = mManager.GetUUID(start);
+                        spring.endEntity = mManager.GetUUID(end);
+                        spring.stiffness = springStiffness;
+
+                        const glm::vec3 startPos = mManager.GetComponent<Client::Transform>(start).world.position;
+                        const glm::vec3 endPos = mManager.GetComponent<Client::Transform>(end).world.position;
+                        spring.restLength = glm::distance(startPos, endPos);
+
+                        const std::string springName = "Spring (" + 
+                            std::to_string(x)  + "," + std::to_string(y)  + "," + std::to_string(z)  + ")-(" +
+                            std::to_string(nx) + "," + std::to_string(ny) + "," + std::to_string(nz) + ")";
+
+                        Gep::Entity springEntity = mManager.CreateEntity(springName);
+                        mManager.AddComponent(springEntity, spring);
+                        mManager.AttachEntity(parent, springEntity);
+                        springs.push_back(springEntity);
+                    };
+
+                    for (int x = 0; x < width; ++x)
+                    for (int y = 0; y < width; ++y)
+                    for (int z = 0; z < width; ++z)
+                    {
+                        connectPoints(x, y, z, x + 1, y, z);
+                        connectPoints(x, y, z, x, y + 1, z);
+                        connectPoints(x, y, z, x, y, z + 1);
+                    }
+
+                    static const std::array<glm::ivec3, 13> neighborOffsets{ {
+                        { 1, 0, 0 }, // axis-aligned
+                        { 0, 1, 0 },
+                        { 0, 0, 1 },
+                        { 1, 1, 0 }, // face diagonals
+                        { 1,-1, 0 },
+                        { 0, 1, 1 },
+                        { 0, 1,-1 },
+                        { 1, 0, 1 },
+                        { 1, 0,-1 },
+                        { 1, 1, 1 }, // body diagonals
+                        { 1, 1,-1 },
+                        { 1,-1, 1 },
+                        { 1,-1,-1 }
+                    }};
+                    
+                    for (int x = 0; x < width; ++x)
+                    for (int y = 0; y < width; ++y)
+                    for (int z = 0; z < width; ++z)
+                    {
+                        for (const auto& offset : neighborOffsets)
+                        {
+                           connectPoints(
+                               x, y, z,
+                               x + offset[0],
+                               y + offset[1],
+                               z + offset[2]
+                           );
                         }
                     }
                 }

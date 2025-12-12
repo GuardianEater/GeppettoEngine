@@ -10,9 +10,9 @@ namespace Client
         return forceAccumulator * invMass;
     }
 
-    glm::vec3 RigidBody::AngularAcceleration(const Transform& t) const
+    glm::vec3 RigidBody::AngularAcceleration(const glm::quat& worldRotation) const
     {
-        const glm::mat3 R = glm::mat3_cast(t.world.rotation);
+        const glm::mat3 R = glm::mat3_cast(worldRotation);
         const glm::mat3 Iinv_body = glm::diagonal3x3(invInerita);   // diag(invIx, invIy, invIz)
         const glm::mat3 Iinv_world = R * Iinv_body * glm::transpose(R);
 

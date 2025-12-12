@@ -30,6 +30,17 @@ namespace Gep
         });
     }
 
+    template<typename Func>
+    inline void EngineManager::ExcludeFromDt(Func&& func)
+    {
+        auto startTime = std::chrono::high_resolution_clock::now();
+
+        func();
+
+        auto endTime = std::chrono::high_resolution_clock::now();
+        mExcludedDeltaTime += std::chrono::duration<float>(endTime - startTime).count();
+    }
+
     template<typename ...ComponentTypes>
     inline Signature EngineManager::CreateSignature(Signature oldSignature) const
     {

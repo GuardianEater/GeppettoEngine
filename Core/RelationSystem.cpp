@@ -46,8 +46,16 @@ namespace Client
         {
             for (Gep::Entity child : mManager.GetChildren(e))
             {
-                Transform& childT = mManager.GetComponent<Transform>(child);
-                UpdateRecursive(child, childT, t.world, true);
+                // if the child doesn't have a transform use its parents transform instead
+                if (mManager.HasComponent<Transform>(child))
+                {
+                    Transform& childT = mManager.GetComponent<Transform>(child);
+                    UpdateRecursive(child, childT, t.world, true);
+                }
+                else
+                {
+                    UpdateRecursive(child, t, parentWorld, true);
+                }
             }
         }
     }
