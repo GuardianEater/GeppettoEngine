@@ -8,10 +8,7 @@
 
 #pragma once
 
-#include <string>
 #include "ScriptingResource.hpp"
-#include "EditorResource.hpp"
-#include "EngineManager.hpp"
 
 namespace Client
 {

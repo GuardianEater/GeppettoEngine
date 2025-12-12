@@ -315,6 +315,9 @@
     <ClCompile Include="StringHelp.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="RigidBody.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">

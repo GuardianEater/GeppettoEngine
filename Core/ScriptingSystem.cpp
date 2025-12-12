@@ -8,9 +8,11 @@
 
 #include "pch.hpp"
 
+// this
 #include "ScriptingSystem.hpp"
-#include <Transform.hpp>
-#include <RigidBody.hpp>
+
+// resources
+#include "EditorResource.hpp"
 
 namespace Client
 {
