@@ -25,6 +25,18 @@ namespace Gep
 namespace Gep
 {
     template<typename Type>
+    using NakedType = std::remove_cv_t<std::remove_pointer_t<std::remove_cvref_t<Type>>>;
+
+    template<typename T>
+    constexpr decltype(auto) DereferenceIfPointer(T&& value)
+    {
+        if constexpr (std::is_pointer_v<std::remove_reference_t<T>>)
+            return *value;
+        else
+            return std::forward<T>(value);
+    }
+
+    template<typename Type>
     void EraseRemove(std::vector<Type>& vec, const Type& value)
     {
         vec.erase(std::remove(vec.begin(), vec.end(), value), vec.end());
@@ -47,5 +59,46 @@ namespace Gep
         }
 
         return result;
+    }
+
+    template <typename Type, typename PointerToMemberType>
+    concept IsMemberOf = requires(Type&& obj, PointerToMemberType&& memberPtr)
+    {
+        { Gep::DereferenceIfPointer(obj).*memberPtr };
+    };
+
+    // given an array of objects, makes a vector of the given member
+    template <typename ObjectType, typename PointerToMemberType>
+        requires IsMemberOf<ObjectType, PointerToMemberType>
+    auto PackMembers(const std::span<ObjectType> vec, PointerToMemberType&& memberPtr)
+    {
+        using NakedType = Gep::NakedType<ObjectType>;
+        using MemberType = std::decay_t<decltype(std::declval<NakedType>().*memberPtr)>;
+
+        std::vector<MemberType> memberVec;
+        memberVec.reserve(vec.size());
+        for (const ObjectType& object : vec) // at this point object could be a pointer or a reference
+        {
+            const auto& ref = Gep::DereferenceIfPointer(object);
+            memberVec.push_back(ref.*memberPtr);
+        }
+
+        return memberVec;
+    }
+
+    // given an array of objects, applies the values to the location of the member pointer index by index
+    template <typename ObjectType, typename PointerToMemberType, typename MemberType>
+        requires IsMemberOf<ObjectType, PointerToMemberType>
+    void UnpackMembers(const std::span<ObjectType> vec, PointerToMemberType&& memberPtr, const std::vector<MemberType>& values)
+    {
+        // must be the same size
+        if (vec.size() != values.size())
+            return;
+
+        for (size_t i = 0; i < vec.size(); ++i)
+        {
+            auto& ref = Gep::DereferenceIfPointer(vec[i]);
+            ref.*memberPtr = values[i];
+        }
     }
 }

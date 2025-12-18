@@ -176,7 +176,9 @@ namespace Client
 
     void IKSystem::OnIKTargetEditorRender(const Gep::Event::ComponentEditorRender<Client::IKTarget>& event)
     {
-        const Gep::Entity targetEntity = mManager.FindEntity(event.component.targetEntity);
+        IKTarget& iktarget = *event.components[0];
+
+        const Gep::Entity targetEntity = mManager.FindEntity(iktarget.targetEntity);
 
         ImGui::BeginGroup(); // group for drag drop
 
@@ -211,7 +213,7 @@ namespace Client
         // drag drop for the entire group
         mEditor.EntityDragDropTarget([&](Gep::Entity e)
         {
-            event.component.targetEntity = mManager.GetUUID(e);
+            iktarget.targetEntity = mManager.GetUUID(e);
         });
 
         // if the needed checks failed dont continue with the ui
@@ -227,24 +229,24 @@ namespace Client
         }
 
 
-        uint32_t startBoneIdx = event.component.startBone;
+        uint32_t startBoneIdx = iktarget.startBone;
         if (ImGui::InputScalar("Start Bone (Anchor)", ImGuiDataType_U32, &startBoneIdx, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
         {
-            event.component.startBone = startBoneIdx;
+            iktarget.startBone = startBoneIdx;
 
-            event.component.startBone = glm::clamp<uint32_t>(event.component.startBone, 0, targetModel.pose.size() - 1);
-            if (event.component.startBone > event.component.endBone)
-                event.component.startBone = event.component.endBone;
+            iktarget.startBone = glm::clamp<uint32_t>(iktarget.startBone, 0, targetModel.pose.size() - 1);
+            if (iktarget.startBone > iktarget.endBone)
+                iktarget.startBone = iktarget.endBone;
         }
 
-        uint32_t endBone = event.component.endBone;
+        uint32_t endBone = iktarget.endBone;
         if (ImGui::InputScalar("End Bone (Effector)", ImGuiDataType_U32, &endBone, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
         {
-            event.component.endBone = endBone;
+            iktarget.endBone = endBone;
 
-            event.component.endBone = glm::clamp<uint32_t>(event.component.endBone, 0, targetModel.pose.size() - 1);
-            if (event.component.startBone > event.component.endBone)
-                event.component.startBone = event.component.endBone;
+            iktarget.endBone = glm::clamp<uint32_t>(iktarget.endBone, 0, targetModel.pose.size() - 1);
+            if (iktarget.startBone > iktarget.endBone)
+                iktarget.startBone = iktarget.endBone;
         }
 
     //    // drop down for selecting a model

@@ -347,28 +347,31 @@ namespace Client
         return 0.0; // this shouldn't be possible. the last if check is for completeness
     }
 
-    void CurveSystem::OnCurveEditorRender(const Gep::Event::ComponentEditorRender<CurveComponent>& cc)
+    void CurveSystem::OnCurveEditorRender(const Gep::Event::ComponentEditorRender<CurveComponent>& event)
     {
-        ImGui::PushID(cc.entity);
+        CurveComponent& cc = *event.components[0];
+        Gep::Entity e = event.entities[0];
 
-        if (ImGui::InputScalar("Segments", ImGuiDataType_U64, &cc.component.subdivisions))
-            cc.component.dirty = true;
+        ImGui::PushID(e);
+
+        if (ImGui::InputScalar("Segments", ImGuiDataType_U64, &cc.subdivisions))
+            cc.dirty = true;
 
         if (ImGui::TreeNode("Control Points"))
         {
-            for (int i = 0; i < cc.component.controlPoints.size(); ++i)
+            for (int i = 0; i < cc.controlPoints.size(); ++i)
             {
-                const size_t id = reinterpret_cast<const size_t>(glm::value_ptr(cc.component.controlPoints[i])); // interpret pointer as a number
+                const size_t id = reinterpret_cast<const size_t>(glm::value_ptr(cc.controlPoints[i])); // interpret pointer as a number
 
                 ImGui::PushID(id);
-                if (ImGui::DragFloat3("##", glm::value_ptr(cc.component.controlPoints[i])))
-                    cc.component.dirty = true;
+                if (ImGui::DragFloat3("##", glm::value_ptr(cc.controlPoints[i])))
+                    cc.dirty = true;
 
                 ImGui::SameLine();
                 if (ImGui::Button("X", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
                 {
-                    cc.component.controlPoints.erase(cc.component.controlPoints.begin() + i);
-                    cc.component.dirty = true;
+                    cc.controlPoints.erase(cc.controlPoints.begin() + i);
+                    cc.dirty = true;
                     --i;
                 }
                 ImGui::PopID();
@@ -377,8 +380,8 @@ namespace Client
 
             if (ImGui::Button("+", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
             {
-                cc.component.controlPoints.emplace_back(0.0f);
-                cc.component.dirty = true;
+                cc.controlPoints.emplace_back(0.0f);
+                cc.dirty = true;
             }
 
             ImGui::Spacing();
@@ -395,7 +398,10 @@ namespace Client
 
     void CurveSystem::OnPathFollowerEditorRender(const Gep::Event::ComponentEditorRender<Client::PathFollowerComponent>& event)
     {
-        const Gep::Entity targetEntity = mManager.FindEntity(event.component.targetPathEntity);
+        PathFollowerComponent& pfc = *event.components[0];
+        Gep::Entity e = event.entities[0];
+
+        const Gep::Entity targetEntity = mManager.FindEntity(pfc.targetPathEntity);
 
         ImGui::BeginGroup(); // group for drag drop
 
@@ -430,7 +436,7 @@ namespace Client
         // drag drop for the entire group
         mEditor.EntityDragDropTarget([&](Gep::Entity e)
         {
-            event.component.targetPathEntity = mManager.GetUUID(e);
+            pfc.targetPathEntity = mManager.GetUUID(e);
         });
 
         // if the needed checks failed dont continue with the ui
@@ -438,17 +444,17 @@ namespace Client
 
         CurveComponent& curve = mManager.GetComponent<CurveComponent>(targetEntity);
 
-        ImGui::DragFloat("Movement Speed Offset", &event.component.speedAdjust);
-        ImGui::DragFloat("Pace", &event.component.pace);
-        ImGui::Checkbox("Looping", &event.component.looping);
-        
+        ImGui::DragFloat("Movement Speed Offset", &pfc.speedAdjust);
+        ImGui::DragFloat("Pace", &pfc.pace);
+        ImGui::Checkbox("Looping", &pfc.looping);
+
         // --- Parabolic easing visualization ---
         constexpr int numSamples = 200;
         static float positionValues[numSamples];
         static float velocityValues[numSamples];
-        float& t0 = event.component.easeTimes.first;
-        float& t1 = event.component.easeTimes.second;
-        float t = event.component.linearDistance / curve.arcLength;
+        float& t0 = pfc.easeTimes.first;
+        float& t1 = pfc.easeTimes.second;
+        float t = pfc.linearDistance / curve.arcLength;
 
         ImGui::SliderFloat("t0", &t0, 0.0f, 1.0f);
         ImGui::SliderFloat("t1", &t1, 0.0f, 1.0f);
@@ -519,14 +525,14 @@ namespace Client
         ImGui::Text("Linear Distance");
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 1)); // Reduce vertical padding
         ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 5.0f); // Set grab size to 5px
-        ImGui::SliderScalar("##linearDistance", ImGuiDataType_Double, &event.component.linearDistance, &min, &max, "");
+        ImGui::SliderScalar("##linearDistance", ImGuiDataType_Double, &pfc.linearDistance, &min, &max, "");
         ImGui::PopStyleVar(2);
 
         // progress bar time in seconds
-        ImGui::Text("%.2f / %.2f", event.component.linearDistance, curve.arcLength);
+        ImGui::Text("%.2f / %.2f", pfc.linearDistance, curve.arcLength);
 
 
-        bool hasAnimation = mManager.HasComponent<Transform>(event.entity);
+        bool hasAnimation = mManager.HasComponent<Transform>(e);
         if (hasAnimation)
         {
             ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Animation Component Found");

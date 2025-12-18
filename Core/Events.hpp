@@ -138,8 +138,8 @@ namespace Gep
         template <typename ComponentType>
         struct ComponentEditorRender
         {
-            Entity entity;
-            ComponentType& component;
+            const std::span<Entity> entities;
+            const std::span<ComponentType*> components;
         };
 
         // event is called after the component has been serialized but before it has been commited to disk.

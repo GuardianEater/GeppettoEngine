@@ -16,6 +16,9 @@
 #include <RigidBody.hpp>
 #include <ModelComponent.hpp>
 
+// quaternion
+#include <glm/gtx/quaternion.hpp>
+
 // resouce
 #include "EditorResource.hpp"
 #include "OpenGLRenderer.hpp"
@@ -24,6 +27,8 @@
 #include <EngineManager.hpp>
 #include <Events.hpp>
 #include "Conversion.h"
+#include "STLHelp.hpp"
+#include "ImGuiHelp.hpp"
 
 // std
 #include <iostream>
@@ -73,31 +78,91 @@ namespace Client
         });
     }
 
+    
+
     void PhysicsSystem::OnTransformEditorRender(const Gep::Event::ComponentEditorRender<Transform>& event)
     {
-        Transform& transform = event.component;
-        EditorResource& er = mManager.GetResource<EditorResource>();
+        std::span<Transform*> transforms = event.components;
 
-        ImGui::DragFloat3("Position", &transform.local.position.x, 0.1f);
-        ImGui::DragFloat3("Scale", &transform.local.scale.x, 0.1f, 0.0f, Gep::num_max<float>());
-        ImGui::DragFloat4("Rotation", &transform.local.rotation.x, 0.1f);
+        Gep::ImGui::MultiDragFloat3("Position", transforms, 
+            [](Transform* t) -> float& { return t->local.position.x; },
+            [](Transform* t) -> float& { return t->local.position.y; },
+            [](Transform* t) -> float& { return t->local.position.z; }
+        );
+
+        Gep::ImGui::MultiDragFloat3("Scale", transforms,
+            [](Transform* t) -> float& { return t->local.scale.x; },
+            [](Transform* t) -> float& { return t->local.scale.y; },
+            [](Transform* t) -> float& { return t->local.scale.z; }
+        );
+
+        Gep::ImGui::MultiDragFloat4("Rotation", transforms,
+            [](Transform* t) -> float& { return t->local.rotation.x; },
+            [](Transform* t) -> float& { return t->local.rotation.y; },
+            [](Transform* t) -> float& { return t->local.rotation.z; },
+            [](Transform* t) -> float& { return t->local.rotation.w; }
+        );
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
 
         ImGui::BeginDisabled();
-        ImGui::DragFloat3("World Position", glm::value_ptr(transform.world.position), 0.1f);
-        ImGui::DragFloat3("World Scale", glm::value_ptr(transform.world.scale), 0.1f, 0.0f, Gep::num_max<float>());
-        ImGui::DragFloat4("World Rotation", glm::value_ptr(transform.world.rotation), 0.1f);
+        Gep::ImGui::MultiDragFloat3("World Position", transforms,
+            [](Transform* t) -> float& { return t->world.position.x; },
+            [](Transform* t) -> float& { return t->world.position.y; },
+            [](Transform* t) -> float& { return t->world.position.z; }
+        );
+        Gep::ImGui::MultiDragFloat3("World Scale", transforms,
+            [](Transform* t) -> float& { return t->world.scale.x; },
+            [](Transform* t) -> float& { return t->world.scale.y; },
+            [](Transform* t) -> float& { return t->world.scale.z; }
+        );
+        Gep::ImGui::MultiDragFloat4("World Rotation", transforms,
+            [](Transform* t) -> float& { return t->world.rotation.x; },
+            [](Transform* t) -> float& { return t->world.rotation.y; },
+            [](Transform* t) -> float& { return t->world.rotation.z; },
+            [](Transform* t) -> float& { return t->world.rotation.w; }
+        );
+
         ImGui::EndDisabled();
     }
 
     void PhysicsSystem::OnRigidBodyEditorRender(const Gep::Event::ComponentEditorRender<RigidBody>& event)
     {
-        RigidBody& rb = event.component;
+        std::span<RigidBody*> rbs = event.components;
 
-        ImGui::DragFloat3("Velocity", &rb.linearVelocity.x, 0.1f);
-        ImGui::DragFloat3("Angular Velocity", &rb.angularVelocity.x, 0.1f);
-        ImGui::DragFloat("Mass", &rb.mass, 1.0f, 1.0f, 100000.0f);
-        rb.mass = std::max(rb.mass, 1.0f);
-        rb.invMass = 1.0f / rb.mass;
+        Gep::ImGui::MultiDragFloat3("Velocity", rbs,
+            [](RigidBody* rb) -> float& { return rb->linearVelocity.x; },
+            [](RigidBody* rb) -> float& { return rb->linearVelocity.y; },
+            [](RigidBody* rb) -> float& { return rb->linearVelocity.z; }
+        );
+
+        Gep::ImGui::MultiDragFloat3("Angular Velocity", rbs,
+            [](RigidBody* rb) -> float& { return rb->angularVelocity.x; },
+            [](RigidBody* rb) -> float& { return rb->angularVelocity.y; },
+            [](RigidBody* rb) -> float& { return rb->angularVelocity.z; }
+        );
+
+        bool massChanged = Gep::ImGui::MultiDragFloat("Mass", rbs,
+            [](RigidBody* rb) -> float& { return rb->mass; }
+        );
+
+        if (massChanged)
+        {
+            for (RigidBody* rb : rbs)
+            {
+                rb->mass = std::max(rb->mass, 1.0f);
+                rb->invMass = 1.0f / rb->mass;
+            }
+        }
+
+        // the follow tools are only available when a single rigid body is selected
+        if (event.components.size() > 1)
+            return;
+
+        RigidBody& rb = *rbs[0];
+        Gep::Entity e = event.entities[0];
 
         if (ImGui::TreeNode("Testing"))
         {
@@ -119,9 +184,9 @@ namespace Client
                 rb.ApplyTorque(torque);
             }
 
-            if (mManager.HasComponent<Transform>(event.entity))
+            if (mManager.HasComponent<Transform>(e))
             {
-                Transform& t = mManager.GetComponent<Transform>(event.entity);
+                Transform& t = mManager.GetComponent<Transform>(e);
                 if (ImGui::Button("Apply Force at Point"))
                 {
                     rb.ApplyForceAtPoint(t, force, point);
@@ -395,7 +460,7 @@ namespace Client
 
     void PhysicsSystem::OnSpringEditorRender(const Gep::Event::ComponentEditorRender<Spring>&event)
     {
-        Spring& spring = event.component;
+        Spring& spring = *event.components[0];
         EditorResource& editor = mManager.GetResource<EditorResource>();
 
         Gep::Entity startEntity = mManager.FindEntity(spring.startEntity);
@@ -433,7 +498,7 @@ namespace Client
         // drag drop for the entire group
         editor.EntityDragDropTarget([&](Gep::Entity e)
         {
-            event.component.startEntity = mManager.GetUUID(e);
+            spring.startEntity = mManager.GetUUID(e);
         });
 
         // if the needed checks failed dont continue with the ui
@@ -468,7 +533,7 @@ namespace Client
         // drag drop for the entire group
         editor.EntityDragDropTarget([&](Gep::Entity e)
         {
-            event.component.endEntity = mManager.GetUUID(e);
+            spring.endEntity = mManager.GetUUID(e);
         });
 
         if (!endValid) return;

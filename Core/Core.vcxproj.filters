@@ -318,6 +318,9 @@
     <ClCompile Include="RigidBody.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ImGuiHelp.cpp">
+      <Filter>Backend\Tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -665,6 +668,9 @@
     <ClInclude Include="StringHelp.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
+    <ClInclude Include="ImGuiHelp.hpp">
+      <Filter>Backend\Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">
@@ -744,6 +750,9 @@
     </None>
     <None Include="GPUVector.inl">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
+    </None>
+    <None Include="ImGuiHelp.inl">
+      <Filter>Backend\Tools</Filter>
     </None>
   </ItemGroup>
 </Project>

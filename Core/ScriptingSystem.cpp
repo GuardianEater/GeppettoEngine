@@ -13,6 +13,7 @@
 
 // resources
 #include "EditorResource.hpp"
+#include "ISystem.hpp"
 
 namespace Client
 {
@@ -73,7 +74,7 @@ namespace Client
 
     void ScriptingSystem::OnScriptEditorRender(const Gep::Event::ComponentEditorRender<Script>& event)
     {
-        Script& script = event.component;
+        Script& script = *event.components[0];
 
         EditorResource& er = mManager.GetResource<EditorResource>();
         const std::set<std::filesystem::path>& knownScripts = mScriptingResource.GetKnownScripts();

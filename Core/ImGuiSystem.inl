@@ -30,7 +30,7 @@ namespace Client
     {
         componentTypes.for_each([&]<typename ComponentType>()
         {
-            mComponentInspectorPanels.push_back([&](Gep::Entity entity)
+            mComponentInspectorPanels.push_back([&](std::span<Gep::Entity> entities)
             {
                 std::string componentName = Gep::GetTypeInfo<ComponentType>().PrettyName();
 
@@ -40,7 +40,8 @@ namespace Client
                 {
                     if (ImGui::MenuItem("Delete"))
                     {
-                        mManager.DestroyComponent<ComponentType>(entity);
+                        for (auto entity : entities)
+                            mManager.DestroyComponent<ComponentType>(entity);
                     }
                     ImGui::EndPopup();
                     return;
@@ -48,11 +49,12 @@ namespace Client
 
                 if (open)
                 {
-                    ComponentType& component = mManager.GetComponent<ComponentType>(entity);
+                    // the entitiy must have the component, because the component count and entity count are must be the same
+                    std::vector<ComponentType*> components;
+                    for (auto entity : entities)
+                        components.push_back(&mManager.GetComponent<ComponentType>(entity));
 
-                    ImGui::PushID(&component);
-                    mManager.SignalEvent(Gep::Event::ComponentEditorRender<ComponentType>({ entity, component }));
-                    ImGui::PopID();
+                    mManager.SignalEvent(Gep::Event::ComponentEditorRender<ComponentType>({ entities, components }));
 
                     ImGui::Spacing();
                     ImGui::Separator();

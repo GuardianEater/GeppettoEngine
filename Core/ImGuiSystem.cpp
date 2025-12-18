@@ -105,6 +105,63 @@ namespace Client
                     mManager.SetName(entity, name);
                 }
             }
+
+            // get a signature that is all of the components that are common to all selected entities
+            Gep::Signature commonSignature; commonSignature.set(); // start with all bits set
+
+            // all components that are missing from any entity
+            size_t componentCount = mManager.GetComponentDatas().size();
+            Gep::Signature missingSignature; missingSignature.reset(); // start with no bits set
+            for (size_t i = 0; i < componentCount; ++i)
+                missingSignature.set(i);
+
+            for (Gep::Entity entity : mEditorResource.mSelectedEntities)
+            {
+                Gep::Signature entitySignature = mManager.GetSignature(entity);
+                commonSignature &= entitySignature;
+                missingSignature &= ~entitySignature;
+            }
+
+            mManager.ForEachComponentBit(commonSignature, [&](const Gep::ComponentData& componentData)
+            {
+                // gather all entities that have this component
+                std::vector<Gep::Entity> entitiesWithComponent;
+                for (Gep::Entity entity : mEditorResource.mSelectedEntities)
+                {
+                    if (componentData.has(entity))
+                    {
+                        entitiesWithComponent.push_back(entity);
+                    }
+                }
+                // draw the component inspector for all entities that have this component
+                mComponentInspectorPanels[componentData.index](std::span(entitiesWithComponent.data(), entitiesWithComponent.size()));
+            });
+
+            ImGui::Dummy({ 0.0f, 10.0f });
+
+            ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+            ImGui::PushStyleColor(ImGuiCol_Header, buttonColor);
+
+            // dropdown at the bottom of an entities panel that allows adding of components
+            if (ImGui::CollapsingHeader("Add Component"))
+            {
+                // iterate over the components that any entity DOESN'T have
+                mManager.ForEachComponentBit(missingSignature, [&](const Gep::ComponentData& componentData)
+                {
+                    // when the button is pressed, add the component to all selected entities
+                    if (ImGui::Button(componentData.name.c_str(), { ImGui::GetContentRegionAvail().x, 0.0f }))
+                    {
+                        for (Gep::Entity entity : mEditorResource.mSelectedEntities)
+                        {
+                            if (componentData.has(entity)) return; // return is continue in for each
+                            componentData.add(entity);
+                        }
+                    }
+                });
+            }
+
+            ImGui::PopStyleColor(); // button color
+
             ImGui::End(); // Inspector
             return;
         }
@@ -137,7 +194,7 @@ namespace Client
         // display the components imgui dropdown
         mManager.ForEachComponent(entity, [&](const Gep::ComponentData& componentData)
         {
-            mComponentInspectorPanels[componentData.index](entity);
+            mComponentInspectorPanels[componentData.index](std::span(&entity, 1));
         });
 
         ImGui::Dummy({ 0.0f, 10.0f });

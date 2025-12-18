@@ -95,7 +95,7 @@ namespace Client
 
     void AnimationSystem::OnAnimationEditorRender(const Gep::Event::ComponentEditorRender<AnimationComponent>& event)
     {
-        AnimationComponent& animationComponent = event.component;
+        AnimationComponent& animationComponent = *event.components[0];
 
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
         std::vector<std::string> loadedAnimations = mRenderer.GetLoadedAnimations();

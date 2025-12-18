@@ -99,7 +99,7 @@ namespace Client
 
     void SoundSystem::OnSpatialSoundEmitterEditorRender(const Gep::Event::ComponentEditorRender<SpatialSoundEmitter>& event)
     {
-        SpatialSoundEmitter& soundEmitter = event.component;
+        SpatialSoundEmitter& soundEmitter = *event.components[0];
 
         SoundResource& sr = mManager.GetResource<Client::SoundResource>();
         EditorResource& er = mManager.GetResource<Client::EditorResource>();

@@ -37,6 +37,9 @@
 #include "EditorResource.hpp"
 #include "PhysicsSystem.hpp"
 
+#include "ImGuiHelp.hpp"
+#include "STLHelp.hpp"
+
 namespace Client
 {
     RenderSystem::RenderSystem(Gep::EngineManager& em)
@@ -283,13 +286,26 @@ namespace Client
     }
     void RenderSystem::OnRiggedModelEditorRender(const Gep::Event::ComponentEditorRender<RiggedModelComponent>& event)
     {
-        RiggedModelComponent& model = event.component;
+        const std::span<RiggedModelComponent*> models = event.components;
 
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
         std::vector<std::string> loadedModels = mRenderer.GetLoadedModels();
 
+        std::string selectedModelName = models[0]->name; // in this event call there is guaranteed to be at least one component
+
+        // if all selected models have the same name, show it
+        bool allSame = true;
+        for (size_t i = 1; i < models.size(); ++i)
+        {
+            if (models[i]->name != selectedModelName)
+            {
+                allSame = false;
+                break;
+            }
+        }
+
         // drop down for selecting a model
-        bool modelsOpen = ImGui::BeginCombo("Models", model.name.c_str());
+        bool modelsOpen = ImGui::BeginCombo("Models", allSame ? selectedModelName.c_str() : "-");
 
         const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
 
@@ -300,22 +316,29 @@ namespace Client
                 mRenderer.AddModelFromFile(droppedPath.string());
             }
 
-            model.name = droppedPath.string();
-            const Gep::Model& internalModel = mRenderer.GetModel(model.name);
-            InitializeModelPose(model, internalModel);
+            for (RiggedModelComponent* model : models)
+            {
+                model->name = droppedPath.string();
+                const Gep::Model& internalModel = mRenderer.GetModel(model->name);
+                InitializeModelPose(*model, internalModel);
+            }
         });
 
         if (modelsOpen)
         {
             for (const std::string& modelName : loadedModels)
             {
-                bool isSelected = (modelName == model.name);
+                const bool isSelected = allSame && modelName == selectedModelName;
                 if (ImGui::Selectable(modelName.c_str(), isSelected))
                 {
-                    model.name = modelName;
-                    const Gep::Model& internalModel = mRenderer.GetModel(model.name);
-                    InitializeModelPose(model, internalModel);
+                    const Gep::Model& internalModel = mRenderer.GetModel(modelName);
+                    for (RiggedModelComponent* model : models)
+                    {
+                        model->name = modelName;
+                        InitializeModelPose(*model, internalModel);
+                    }
                 }
+
                 if (isSelected)
                 {
                     ImGui::SetItemDefaultFocus();
@@ -327,35 +350,55 @@ namespace Client
 
     void RenderSystem::OnStaticModelEditorRender(const Gep::Event::ComponentEditorRender<StaticModelComponent>& event)
     {
-        StaticModelComponent& model = event.component;
+        const std::span<StaticModelComponent*> models = event.components;
 
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
         std::vector<std::string> loadedModels = mRenderer.GetLoadedModels();
 
+        std::string selectedModelName = models[0]->name; // in this event call there is guaranteed to be at least one component
+
+        // if all selected models have the same name, show it
+        bool allSame = true;
+        for (size_t i = 1; i < models.size(); ++i)
+        {
+            if (models[i]->name != selectedModelName)
+            {
+                allSame = false;
+                break;
+            }
+        }
+
         // drop down for selecting a model
-        bool modelsOpen = ImGui::BeginCombo("Models", model.name.c_str());
+        bool modelsOpen = ImGui::BeginCombo("Models", allSame ? selectedModelName.c_str() : "-");
 
         const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
 
         er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
-        {
-            if (!mRenderer.IsModelLoaded(droppedPath.string()))
             {
-                mRenderer.AddModelFromFile(droppedPath.string());
-            }
+                if (!mRenderer.IsModelLoaded(droppedPath.string()))
+                {
+                    mRenderer.AddModelFromFile(droppedPath.string());
+                }
 
-            model.name = droppedPath.string();
-        });
+                for (StaticModelComponent* model : models)
+                {
+                    model->name = droppedPath.string();
+                }
+            });
 
         if (modelsOpen)
         {
             for (const std::string& modelName : loadedModels)
             {
-                bool isSelected = (modelName == model.name);
+                const bool isSelected = allSame && modelName == selectedModelName;
                 if (ImGui::Selectable(modelName.c_str(), isSelected))
                 {
-                    model.name = modelName;
+                    for (StaticModelComponent* model : models)
+                    {
+                        model->name = modelName;
+                    }
                 }
+
                 if (isSelected)
                 {
                     ImGui::SetItemDefaultFocus();
@@ -367,41 +410,74 @@ namespace Client
 
     void RenderSystem::OnPointLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event)
     {
-        Light& light = event.component;
+        const std::span<Light*> lights = event.components;
 
-        ImGui::ColorEdit3("Color", &light.color[0]);
-        ImGui::DragFloat("Intensity", &light.intensity, 1.0f, 0.001f, Gep::num_max<float>());
+        std::vector<glm::vec3> colors = Gep::PackMembers(lights, &Light::color);
+        std::vector<float> intensities = Gep::PackMembers(lights, &Light::intensity);
+
+        //Gep::ImGui::MultiColorEdit3("Color", glm::value_ptr(colors[0]), lights.size());
+        //Gep::ImGui::MultiDragFloat("Intensity", intensities.data(), lights.size(), 1.0f, 0.001f, Gep::num_max<float>());
+
+        Gep::UnpackMembers(lights, &Light::color, colors);
+        Gep::UnpackMembers(lights, &Light::intensity, intensities);
     }
 
     void RenderSystem::OnDirectionalLightEditorRender(const Gep::Event::ComponentEditorRender<DirectionalLight>& event)
     {
-        DirectionalLight& light = event.component;
+        const std::span<DirectionalLight*> lights = event.components;
 
-        ImGui::ColorEdit3("Color", &light.color[0]);
-        ImGui::DragFloat("Intensity", &light.intensity, 1.0f, 0.001f, Gep::num_max<float>());
+        std::vector<glm::vec3> colors = Gep::PackMembers(lights, &DirectionalLight::color);
+        std::vector<float> intensities = Gep::PackMembers(lights, &DirectionalLight::intensity);
+
+        //Gep::ImGui::MultiColorEdit3("Color", glm::value_ptr(colors[0]), lights.size());
+        //Gep::ImGui::MultiDragFloat("Intensity", intensities.data(), lights.size(), 1.0f, 0.001f, Gep::num_max<float>());
+
+        ImGui::ColorEdit3("Color", &lights[0]->color[0]);
+
+        Gep::UnpackMembers(lights, &DirectionalLight::color, colors);
+        Gep::UnpackMembers(lights, &DirectionalLight::intensity, intensities);
     }
 
     void RenderSystem::OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event)
     {
-        Camera& camera = event.component;
+        std::span<Camera*> cameras = event.components;
         EditorResource& er = mManager.GetResource<EditorResource>();
 
-        er.LabledInput_Float("Near Plane", &camera.nearPlane, 100.0f, 0.1f, 0.1f, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
-        er.LabledInput_Float("Far Plane", &camera.farPlane, 100.0f, 0.1f, camera.nearPlane, 10000.0f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
-        er.LabledInput_Float("FOV", &camera.fov, 100.0f, 0.1f, 0.001f, 179.999f, "%.3f", ImGuiSliderFlags_::ImGuiSliderFlags_AlwaysClamp);
+        Gep::ImGui::MultiDragFloat("Near Plane", cameras, [](Camera* cam) -> float& { return cam->nearPlane; });
+        Gep::ImGui::MultiDragFloat("Far Plane",  cameras, [](Camera* cam) -> float& { return cam->farPlane; });
+        Gep::ImGui::MultiDragFloat("FOV",        cameras, [](Camera* cam) -> float& { return cam->fov; });
+
+        // if all selected models have the same name, show it
+        size_t selectedCameraTargetHash = cameras[0]->renderTargetType.Hash(); // in this event call there is guaranteed to be at least one component
+
+        bool allSame = true;
+        for (size_t i = 1; i < cameras.size(); ++i)
+        {
+            if (cameras[i]->renderTargetType.Hash() != selectedCameraTargetHash)
+            {
+                allSame = false;
+                break;
+            }
+        }
 
         // drop down menu for render target
-        if (ImGui::BeginCombo("target", camera.renderTargetType.PrettyName().c_str()))
+        if (ImGui::BeginCombo("Target", allSame ? cameras[0]->renderTargetType.PrettyName().c_str() : "-"))
         {
             if (ImGui::Selectable("Imgui"))
             {
-                camera.renderTarget = std::make_shared<Gep::RenderTargetImgui>(500, 500);
-                camera.renderTargetType = Gep::GetTypeInfo<Gep::RenderTargetImgui>();
+                for (Camera* camera : cameras)
+                {
+                    camera->renderTarget = std::make_shared<Gep::RenderTargetImgui>(500, 500);
+                    camera->renderTargetType = Gep::GetTypeInfo<Gep::RenderTargetImgui>();
+                }
             }
             if (ImGui::Selectable("Window"))
             {
-                camera.renderTarget = std::make_shared<Gep::RenderTargetWindow>(500, 500);
-                camera.renderTargetType = Gep::GetTypeInfo<Gep::RenderTargetWindow>();
+                for (Camera* camera : cameras)
+                {
+                    camera->renderTarget = std::make_shared<Gep::RenderTargetWindow>(500, 500);
+                    camera->renderTargetType = Gep::GetTypeInfo<Gep::RenderTargetWindow>();
+                }
             }
             ImGui::EndCombo();
         }

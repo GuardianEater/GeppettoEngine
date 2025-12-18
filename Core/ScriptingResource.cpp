@@ -68,7 +68,8 @@ namespace Client
 
     void ScriptingResource::PyCall(py::function& func) const
     {
-        try
+        // atempt to call the python function, if the scripts function has an error disable it
+        try 
         {
             if (func)
                 func();
@@ -104,10 +105,10 @@ namespace Client
             script.on_start = module.attr("on_start");
 
         if (py::hasattr(module, "update"))
-            script.update = module.attr("update");
+            script.update = module.attr("on_update");
 
         if (py::hasattr(module, "late_update"))
-            script.late_update = module.attr("late_update");
+            script.late_update = module.attr("on_late_update");
 
         if (py::hasattr(module, "on_disable"))
             script.on_disable = module.attr("on_disable");

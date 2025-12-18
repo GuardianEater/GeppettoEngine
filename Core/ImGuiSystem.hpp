@@ -68,7 +68,7 @@ namespace Client
         EditorResource& mEditorResource;
         std::filesystem::path mAssetBrowserPath;
         std::vector<std::filesystem::directory_entry> mAssetBrowserEntries; // the files that are visible from the asset browser path
-        std::vector<std::function<void(Gep::Entity)>> mComponentInspectorPanels; // component index -> function to draw the inspector
+        std::vector<std::function<void(std::span<Gep::Entity>)>> mComponentInspectorPanels; // component index -> function to draw the inspector
 
     public:
 
