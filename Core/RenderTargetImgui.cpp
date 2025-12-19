@@ -201,6 +201,23 @@ namespace Gep
             const auto& selectedEntities = editorResource.GetSelectedEntities();
             std::vector<EntityTransformPair> selectedWithTransform;
             glm::vec3 avgPos(0.0f);
+            size_t avgCount = 0;
+            auto hasSelectedAncestor = [&](Entity entity) -> bool
+            {
+                while (em.HasParent(entity))
+                {
+                    Entity parent = em.GetParent(entity);
+                    if (selectedEntities.find(parent) != selectedEntities.end())
+                    {
+                        return true;
+                    }
+
+                    entity = parent;
+                }
+
+                return false;
+            };
+
 
             // get the averages of all selected entities
             for (Entity e : selectedEntities)
@@ -208,15 +225,19 @@ namespace Gep
                 if (em.HasComponent<Client::Transform>(e))
                 {
                     auto& tf = em.GetComponent<Client::Transform>(e);
-                    selectedWithTransform.emplace_back(e, tf);
                     avgPos += tf.world.position;
+                    avgCount++;
+                    if (hasSelectedAncestor(e))
+                        continue; // skip entities who's ancestors are also selected
+
+                    selectedWithTransform.emplace_back(e, tf);
                 }
             }
 
             // if any of the selected entities had a transform get the average model matrix
             if (!selectedWithTransform.empty())
             {
-                avgPos /= selectedWithTransform.size();
+                avgPos /= avgCount;
 
                 glm::mat4 gizmoTransform = glm::translate(glm::mat4(1.0f), avgPos);
                 glm::mat4 deltaMatrix(1.0f);

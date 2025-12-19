@@ -108,8 +108,8 @@ int main()
         Client::RenderSystem,
         Client::ScriptingSystem,
         Client::SerializationSystem,
-        Client::RelationSystem,
         Client::PhysicsSystem,
+        Client::RelationSystem,
         Client::SoundSystem,
         Client::CollisionSystem
     > systemTypes;

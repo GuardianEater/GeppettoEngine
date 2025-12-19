@@ -671,6 +671,9 @@
     <ClInclude Include="ImGuiHelp.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
+    <ClInclude Include="ActionHistoryResource.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\PhongRender.frag">

@@ -107,25 +107,43 @@ namespace Client
         ImGui::Separator();
         ImGui::Spacing();
 
-        ImGui::BeginDisabled();
-        Gep::ImGui::MultiDragFloat3("World Position", transforms,
+        bool worldPositionChanged = Gep::ImGui::MultiDragFloat3("World Position", transforms,
             [](Transform* t) -> float& { return t->world.position.x; },
             [](Transform* t) -> float& { return t->world.position.y; },
             [](Transform* t) -> float& { return t->world.position.z; }
         );
-        Gep::ImGui::MultiDragFloat3("World Scale", transforms,
+        bool worldScaleChanged = Gep::ImGui::MultiDragFloat3("World Scale", transforms,
             [](Transform* t) -> float& { return t->world.scale.x; },
             [](Transform* t) -> float& { return t->world.scale.y; },
             [](Transform* t) -> float& { return t->world.scale.z; }
         );
-        Gep::ImGui::MultiDragFloat4("World Rotation", transforms,
+        bool worldRotationChanged = Gep::ImGui::MultiDragFloat4("World Rotation", transforms,
             [](Transform* t) -> float& { return t->world.rotation.x; },
             [](Transform* t) -> float& { return t->world.rotation.y; },
             [](Transform* t) -> float& { return t->world.rotation.z; },
             [](Transform* t) -> float& { return t->world.rotation.w; }
         );
 
-        ImGui::EndDisabled();
+        if (worldPositionChanged || worldScaleChanged || worldRotationChanged)
+        {
+            for (size_t i = 0; i < transforms.size(); ++i)
+            {
+                Transform& t = *transforms[i];
+                Gep::Entity e = event.entities[i];
+                Gep::Entity p = mManager.GetParent(e);
+
+                // Get parent's world transform
+                if (mManager.EntityExists(p) && mManager.HasComponent<Client::Transform>(p))
+                {
+                    auto& pt = mManager.GetComponent<Client::Transform>(p);
+                    t.local = Gep::Inverse(pt.world) * t.world;
+                }
+                else
+                {
+                    t.local = t.world;
+                }
+            }
+        }
     }
 
     void PhysicsSystem::OnRigidBodyEditorRender(const Gep::Event::ComponentEditorRender<RigidBody>& event)
