@@ -321,6 +321,9 @@
     <ClCompile Include="ImGuiHelp.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="STLHelp.cpp">
+      <Filter>Backend\Tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">

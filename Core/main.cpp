@@ -82,10 +82,10 @@ int main()
         Client::Spring,
         Client::RiggedModelComponent,
         Client::StaticModelComponent,
-        Client::Script,
-        Client::ActiveCamera,
+        //Client::Script,
+        //Client::GameCamera,
         Client::Camera,
-        Client::Texture,
+        //Client::Texture,
         Client::Light,
         Client::DirectionalLight,
         Client::SpatialSoundEmitter,
@@ -106,7 +106,7 @@ int main()
         Client::IKSystem,
         Client::CurveSystem,
         Client::RenderSystem,
-        Client::ScriptingSystem,
+        //Client::ScriptingSystem,
         Client::SerializationSystem,
         Client::PhysicsSystem,
         Client::RelationSystem,
@@ -117,7 +117,7 @@ int main()
     // register all types ////////////////////////////////////////////////////////////////////////////
     em.RegisterTypes(componentTypes, systemTypes);
 
-    em.SetSystemExecutionPolicy<Client::ScriptingSystem>(Gep::EngineState::Play);
+    //em.SetSystemExecutionPolicy<Client::ScriptingSystem>(Gep::EngineState::Play);
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.SetState(Gep::EngineState::Edit);

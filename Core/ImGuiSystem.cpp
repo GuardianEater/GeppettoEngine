@@ -97,12 +97,16 @@ namespace Client
                 }
             }
 
-            std::string name = mManager.GetName(*mEditorResource.mSelectedEntities.begin());
+            static std::string name = "";
             if (ImGui::InputText("Batch Rename", &name))
             {
+                size_t index = 1;
                 for (Gep::Entity entity : mEditorResource.mSelectedEntities)
                 {
-                    mManager.SetName(entity, name);
+                    std::string newName = name;
+                    Gep::ReplaceAll(newName, "#i", std::to_string(index));
+                    mManager.SetName(entity, newName);
+                    ++index;
                 }
             }
 
@@ -111,16 +115,18 @@ namespace Client
 
             // all components that are missing from any entity
             size_t componentCount = mManager.GetComponentDatas().size();
-            Gep::Signature missingSignature; missingSignature.reset(); // start with no bits set
-            for (size_t i = 0; i < componentCount; ++i)
-                missingSignature.set(i);
+            Gep::Signature missingSignature;
 
             for (Gep::Entity entity : mEditorResource.mSelectedEntities)
             {
                 Gep::Signature entitySignature = mManager.GetSignature(entity);
                 commonSignature &= entitySignature;
-                missingSignature &= ~entitySignature;
+                missingSignature |= ~entitySignature;
             }
+
+            // clear all bits that are not in the range of registered components
+            for (size_t i = componentCount; i < missingSignature.size(); ++i)
+                missingSignature.reset(i);
 
             mManager.ForEachComponentBit(commonSignature, [&](const Gep::ComponentData& componentData)
             {
@@ -153,7 +159,9 @@ namespace Client
                     {
                         for (Gep::Entity entity : mEditorResource.mSelectedEntities)
                         {
-                            if (componentData.has(entity)) return; // return is continue in for each
+                            if (componentData.has(entity)) 
+                                return; // return is continue in for each
+
                             componentData.add(entity);
                         }
                     }

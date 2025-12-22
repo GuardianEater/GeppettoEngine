@@ -17,6 +17,7 @@
 #include "STLHelp.hpp"
 #include "JsonHelp.hpp"
 #include "CubicSpline.h"
+#include "ImGuiHelp.hpp"
 
 // component
 #include "CurveComponent.hpp"
@@ -398,66 +399,60 @@ namespace Client
 
     void CurveSystem::OnPathFollowerEditorRender(const Gep::Event::ComponentEditorRender<Client::PathFollowerComponent>& event)
     {
-        PathFollowerComponent& pfc = *event.components[0];
-        Gep::Entity e = event.entities[0];
-
-        const Gep::Entity targetEntity = mManager.FindEntity(pfc.targetPathEntity);
-
-        ImGui::BeginGroup(); // group for drag drop
-
-        bool valid = false;
-
-        // Check entity existence and required components, but avoid early returns.
-        if (!mManager.EntityExists(targetEntity))
-        {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Not Following an entity");
-        }
-        else
-        {
-            bool hasPath = mManager.HasComponent<CurveComponent>(targetEntity);
-            bool hasTransform = mManager.HasComponent<Transform>(targetEntity);
-
-            ImGui::Text("Following Entity:");
-            ImGui::SameLine();
-            // display yellow if its missing a needed component
-            ImGui::TextColored((hasPath && hasTransform) ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f) : ImVec4(1.0f, 1.0f, 0.0f, 1.0f), mManager.GetName(targetEntity).c_str());
-
-            // display the missing components
-            if (!hasPath)
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Curve Component");
-            if (!hasTransform)
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Transform");
-
-            valid = hasPath && hasTransform;
-        }
-
-        ImGui::EndGroup();
-
-        // drag drop for the entire group
-        mEditor.EntityDragDropTarget([&](Gep::Entity e)
-        {
-            pfc.targetPathEntity = mManager.GetUUID(e);
-        });
+        bool valid = mEditor.DrawEntityDragDropTarget<Client::CurveComponent, Client::Transform>(mManager, "Target Path Entity", event.components,
+            [&](Client::PathFollowerComponent* pfc) -> Gep::UUID& { return pfc->targetPathEntity; }
+        );
 
         // if the needed checks failed dont continue with the ui
         if (!valid) return;
 
-        CurveComponent& curve = mManager.GetComponent<CurveComponent>(targetEntity);
+        Gep::ImGui::MultiDragFloat("Animation Offset", event.components,
+            [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->speedAdjust; }
+        );
 
-        ImGui::DragFloat("Movement Speed Offset", &pfc.speedAdjust);
-        ImGui::DragFloat("Pace", &pfc.pace);
-        ImGui::Checkbox("Looping", &pfc.looping);
+        Gep::ImGui::MultiDragFloat("Pace", event.components,
+            [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->pace; }
+        );
+
+        Gep::ImGui::MultiCheckbox("Looping", event.components,
+            [&](Client::PathFollowerComponent* pfc) -> bool& { return pfc->looping; }
+        );
+
+        bool tChanged = false;
+
+        tChanged |= Gep::ImGui::MultiSliderScalar("t0", event.components, 0.0f, 1.0f,
+            [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->easeTimes.first; }
+        );
+
+        tChanged |= Gep::ImGui::MultiSliderScalar("t1", event.components, 0.0f, 1.0f,
+            [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->easeTimes.second; }
+        );
+
+        if (tChanged)
+        {
+            for (Client::PathFollowerComponent* pfc : event.components)
+            {
+                // clamp t0 and t1 to be valid
+                pfc->easeTimes.first = std::clamp(pfc->easeTimes.first, 0.0f, 1.0f);
+                pfc->easeTimes.second = std::clamp(pfc->easeTimes.second, 0.0f, 1.0f);
+            }
+        }
+
+        if (event.components.size() != 1)
+            return; // only support single selection for the rest of the ui
+
+        Client::PathFollowerComponent& pfc = *event.components[0];
+        Gep::Entity e = event.entities[0];
+        Gep::Entity targetEntity = mManager.FindEntity(pfc.targetPathEntity);
+        CurveComponent& curve = mManager.GetComponent<CurveComponent>(targetEntity);
 
         // --- Parabolic easing visualization ---
         constexpr int numSamples = 200;
         static float positionValues[numSamples];
         static float velocityValues[numSamples];
-        float& t0 = pfc.easeTimes.first;
-        float& t1 = pfc.easeTimes.second;
-        float t = pfc.linearDistance / curve.arcLength;
-
-        ImGui::SliderFloat("t0", &t0, 0.0f, 1.0f);
-        ImGui::SliderFloat("t1", &t1, 0.0f, 1.0f);
+        const float t0 = pfc.easeTimes.first;
+        const float t1 = pfc.easeTimes.second;
+        const float t = pfc.linearDistance / curve.arcLength;
 
         // evaluate positions
         for (int i = 0; i < numSamples; ++i)
@@ -503,7 +498,7 @@ namespace Client
         // Draw t0 and t1 markers
         drawDottedLine(t0, IM_COL32(255, 100, 100, 255)); // red line
         drawDottedLine(t1, IM_COL32(100, 255, 100, 255)); // green line
-        drawDottedLine(t, IM_COL32(255, 255, 255, 255)); // green line
+        drawDottedLine(t, IM_COL32(255, 255, 255, 255)); // current time line
 
         ImGui::Text("Velocity-Time");
         ImGui::PlotLines("##vel", velocityValues, numSamples, 0, nullptr, 0.0f, 2.0f, ImVec2(0, 100));
@@ -516,7 +511,7 @@ namespace Client
 
         drawDottedLine(t0, IM_COL32(255, 100, 100, 255)); // red line
         drawDottedLine(t1, IM_COL32(100, 255, 100, 255)); // green line
-        drawDottedLine(t, IM_COL32(255, 255, 255, 255)); // green line
+        drawDottedLine(t, IM_COL32(255, 255, 255, 255)); // current time line
 
         const double min = 0.0;
         const double max = curve.arcLength;
@@ -532,7 +527,7 @@ namespace Client
         ImGui::Text("%.2f / %.2f", pfc.linearDistance, curve.arcLength);
 
 
-        bool hasAnimation = mManager.HasComponent<Transform>(e);
+        bool hasAnimation = mManager.HasComponent<AnimationComponent>(e);
         if (hasAnimation)
         {
             ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Animation Component Found");

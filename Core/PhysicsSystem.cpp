@@ -411,7 +411,7 @@ namespace Client
 
             // update the entities local transformation
             Gep::Entity p = mManager.GetParent(e);
-            if (mManager.HasComponent<Transform>(p))
+            if (mManager.EntityExists(p) && mManager.HasComponent<Transform>(p))
             {
                 Transform& pt = mManager.GetComponent<Transform>(p);
                 t.local = Gep::Inverse(pt.world) * t.world;
@@ -478,100 +478,56 @@ namespace Client
 
     void PhysicsSystem::OnSpringEditorRender(const Gep::Event::ComponentEditorRender<Spring>&event)
     {
-        Spring& spring = *event.components[0];
         EditorResource& editor = mManager.GetResource<EditorResource>();
 
-        Gep::Entity startEntity = mManager.FindEntity(spring.startEntity);
-        Gep::Entity endEntity = mManager.FindEntity(spring.endEntity);
+        bool validStart = editor.DrawEntityDragDropTarget<Client::Transform>(mManager, "Start Entity", event.components,
+            [&](Spring* spring) -> Gep::UUID& { return spring->startEntity; }
+        );
 
-        const ImVec4 validColor{ 0.2f, 0.8f, 0.2f, 1.0f };
-        const ImVec4 invalidColor{ 0.9f, 0.2f, 0.2f, 1.0f };
-        
-        ImGui::BeginGroup(); // group for drag drop
-        bool startValid = false;
-
-        // Check entity existence and required components, but avoid early returns.
-        if (!mManager.EntityExists(startEntity))
-        {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Start Entity");
-        }
-        else
-        {
-            bool hasTransform = mManager.HasComponent<Transform>(startEntity);
-
-            ImGui::Text("Following Entity:");
-            ImGui::SameLine();
-            // display yellow if its missing a needed component
-            ImGui::TextColored(hasTransform ? validColor : invalidColor, mManager.GetName(startEntity).c_str());
-
-            // display the missing components
-            if (!hasTransform)
-                ImGui::TextColored(invalidColor, "Start Entity Missing Transform");
-
-            startValid = (hasTransform);
-        }
-
-        ImGui::EndGroup();
-
-        // drag drop for the entire group
-        editor.EntityDragDropTarget([&](Gep::Entity e)
-        {
-            spring.startEntity = mManager.GetUUID(e);
-        });
-
-        // if the needed checks failed dont continue with the ui
-
-
-        ImGui::BeginGroup(); // group for drag drop
-        bool endValid = false;
-
-        // Check entity existence and required components, but avoid early returns.
-        if (!mManager.EntityExists(endEntity))
-        {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing End Entity");
-        }
-        else
-        {
-            bool hasTransform = mManager.HasComponent<Transform>(endEntity);
-
-            ImGui::Text("Following Entity:");
-            ImGui::SameLine();
-            // display yellow if its missing a needed component
-            ImGui::TextColored(hasTransform ? validColor : invalidColor, mManager.GetName(endEntity).c_str());
-
-            // display the missing components
-            if (!hasTransform)
-                ImGui::TextColored(invalidColor, "End Entity Missing Transform");
-
-            endValid = (hasTransform);
-        }
-
-        ImGui::EndGroup();
-
-        // drag drop for the entire group
-        editor.EntityDragDropTarget([&](Gep::Entity e)
-        {
-            spring.endEntity = mManager.GetUUID(e);
-        });
-
-        if (!endValid) return;
-        if (!startValid) return;
-        
-        Transform& startTransform = mManager.GetComponent<Transform>(startEntity);
-        Transform& endTransform   = mManager.GetComponent<Transform>(endEntity);
+        //TODO make this give better error messages/feedback. ex: if transform is missing give a message
+        bool validEnd = editor.DrawEntityDragDropTarget<Client::Transform>(mManager, "End Entity", event.components,
+            [&](Spring* spring) -> Gep::UUID& { return spring->endEntity; }
+        );
 
         if (ImGui::Button("Match Rest Length"))
         {
-            spring.restLength = glm::distance(startTransform.world.position, endTransform.world.position);
+            for (Spring* s : event.components)
+            {
+                Transform& startT = mManager.GetComponent<Transform>(mManager.FindEntity(s->startEntity));
+                Transform& endT = mManager.GetComponent<Transform>(mManager.FindEntity(s->endEntity));
+                s->restLength = glm::distance(startT.world.position, endT.world.position);
+            }
         }
-        
-        ImGui::DragFloat("Rest Length", &spring.restLength);
-        ImGui::DragFloat("Stiffness", &spring.stiffness, 0.1f);
-        ImGui::DragFloat("Damping", &spring.damping, 0.01f);
-        
-        spring.restLength = std::max(0.0f, spring.restLength);
-        spring.stiffness = std::max(0.0f, spring.stiffness);
-        spring.damping = std::max(0.0f, spring.damping);
+
+        bool restLengthChanged = Gep::ImGui::MultiDragFloat("Rest Length", event.components,
+            [](Spring* s) -> float& { return s->restLength; }
+        );
+
+        bool stiffnessChanged = Gep::ImGui::MultiDragFloat("Stiffness", event.components,
+            [](Spring* s) -> float& { return s->stiffness; }
+        );
+
+        bool dampingChanged = Gep::ImGui::MultiDragFloat("Damping", event.components,
+            [](Spring* s) -> float& { return s->damping; }
+        );
+
+        if (restLengthChanged)
+        {
+            for (Spring* s : event.components)
+                s->restLength = std::max(0.0f, s->restLength);
+        }
+
+        if (stiffnessChanged)
+        {
+            for (Spring* s : event.components)
+                s->stiffness = std::clamp(s->stiffness, kMinSpringStiffness, kMaxSpringStiffness);
+        }
+
+        if (dampingChanged)
+        {
+            for (Spring* s : event.components)
+                s->damping = std::max(0.0f, s->damping);
+        }
     }
 
     void PhysicsSystem::OnSpringAdded(const Gep::Event::ComponentAdded<Spring>& event)

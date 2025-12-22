@@ -6,6 +6,7 @@
 #include "EngineManager.hpp"
 #include "Events.hpp"
 #include "Model.hpp"
+#include "ImGuiHelp.hpp"
 
 // this
 #include "IKSystem.hpp"
@@ -176,100 +177,61 @@ namespace Client
 
     void IKSystem::OnIKTargetEditorRender(const Gep::Event::ComponentEditorRender<Client::IKTarget>& event)
     {
-        IKTarget& iktarget = *event.components[0];
-
-        const Gep::Entity targetEntity = mManager.FindEntity(iktarget.targetEntity);
-
-        ImGui::BeginGroup(); // group for drag drop
-
-        bool valid = false;
-
-        // Check entity existence and required components, but avoid early returns.
-        if (!mManager.EntityExists(targetEntity))
-        {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Not Following an entity");
-        }
-        else
-        {
-            bool hasModel = mManager.HasComponent<RiggedModelComponent>(targetEntity);
-            bool hasTransform = mManager.HasComponent<Transform>(targetEntity);
-
-            ImGui::Text("Follower:");
-            ImGui::SameLine();
-            // display yellow if its missing a needed component
-            ImGui::TextColored((hasModel && hasTransform) ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f) : ImVec4(1.0f, 1.0f, 0.0f, 1.0f), mManager.GetName(targetEntity).c_str());
-
-            // display the missing components
-            if (!hasModel)
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Rigged Model Component");
-            if (!hasTransform)
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Transform");
-
-            valid = hasModel && hasTransform;
-        }
-
-        ImGui::EndGroup();
-
-        // drag drop for the entire group
-        mEditor.EntityDragDropTarget([&](Gep::Entity e)
-        {
-            iktarget.targetEntity = mManager.GetUUID(e);
-        });
+        bool valid = mEditor.DrawEntityDragDropTarget<Client::RiggedModelComponent, Client::Transform>(mManager, "Target Entity", event.components,
+            [&](Client::IKTarget* ikt) -> Gep::UUID& { return ikt->targetEntity; }
+        );
 
         // if the needed checks failed dont continue with the ui
         if (!valid) return;
+        
+        bool targetModelsUniform = Gep::IsUniform(event.components, 
+            [&](Client::IKTarget* ikt) -> const std::string& 
+            {
+                const Gep::Entity targetEntity = mManager.FindEntity(ikt->targetEntity);
+                const RiggedModelComponent& targetModel = mManager.GetComponent<RiggedModelComponent>(targetEntity);
+                return targetModel.name; 
+            }
+        );
 
-        RiggedModelComponent& targetModel = mManager.GetComponent<RiggedModelComponent>(targetEntity);
-        const Gep::Model& internalModel = mRenderer.GetModel(targetModel.name);
-
-        if (targetModel.pose.empty())
+        if (!targetModelsUniform)
         {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "The target has no bones!");
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Target Models are not the same");
             return;
         }
 
+        // get first target model for bone count reference
+        const Client::IKTarget& firstIKTarget = *event.components[0];
+        const Gep::Entity firstTargetEntity = mManager.FindEntity(firstIKTarget.targetEntity);
 
-        uint32_t startBoneIdx = iktarget.startBone;
-        if (ImGui::InputScalar("Start Bone (Anchor)", ImGuiDataType_U32, &startBoneIdx, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
+        bool startChanged = Gep::ImGui::MultiInputScalarX("Start Bone (Anchor)", event.components, 
+            [&](Client::IKTarget* ikt) -> uint32_t& { return ikt->startBone; }
+        );
+
+        if (startChanged)
         {
-            iktarget.startBone = startBoneIdx;
-
-            iktarget.startBone = glm::clamp<uint32_t>(iktarget.startBone, 0, targetModel.pose.size() - 1);
-            if (iktarget.startBone > iktarget.endBone)
-                iktarget.startBone = iktarget.endBone;
+            for (Client::IKTarget* iktarget : event.components)
+            {
+                Gep::Entity targetEntity = mManager.FindEntity(iktarget->targetEntity);
+                iktarget->startBone = glm::clamp<uint32_t>(iktarget->startBone, 0, mManager.GetComponent<RiggedModelComponent>(targetEntity).pose.size() - 1);
+                if (iktarget->startBone > iktarget->endBone)
+                    iktarget->startBone = iktarget->endBone;
+            }
         }
 
-        uint32_t endBone = iktarget.endBone;
-        if (ImGui::InputScalar("End Bone (Effector)", ImGuiDataType_U32, &endBone, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
+        bool endChanged = Gep::ImGui::MultiInputScalarX("End Bone (Effector)", event.components,
+            [&](Client::IKTarget* ikt) -> uint32_t& { return ikt->endBone; }
+        );
+
+        if (endChanged)
         {
-            iktarget.endBone = endBone;
-
-            iktarget.endBone = glm::clamp<uint32_t>(iktarget.endBone, 0, targetModel.pose.size() - 1);
-            if (iktarget.startBone > iktarget.endBone)
-                iktarget.startBone = iktarget.endBone;
+            for (Client::IKTarget* iktarget : event.components)
+            {
+                Gep::Entity targetEntity = mManager.FindEntity(iktarget->targetEntity);
+                iktarget->endBone = glm::clamp<uint32_t>(iktarget->endBone, 0, mManager.GetComponent<RiggedModelComponent>(targetEntity).pose.size() - 1);
+                if (iktarget->startBone > iktarget->endBone)
+                    iktarget->startBone = iktarget->endBone;
+            }
         }
-
-    //    // drop down for selecting a model
-    //    const Gep::Bone& startBone = internalModel.skeleton.bones[startBoneIdx];
-
-    //    if (ImGui::BeginCombo("Start Bone", startBone.name.c_str()))
-    //    {
-    //        for (uint32_t currentBoneIdx = 0; currentBoneIdx < internalModel.skeleton.bones.size(); currentBoneIdx++)
-    //        {
-    //            const Gep::Bone& currentBone = internalModel.skeleton.bones.at(currentBoneIdx);
-
-    //            bool isSelected = (currentBoneIdx == startBoneIdx);
-    //            if (ImGui::Selectable(currentBone.name.c_str(), isSelected))
-    //            {
-    //                event.component.startBone = currentBoneIdx;
-    //            }
-    //            if (isSelected)
-    //            {
-    //                ImGui::SetItemDefaultFocus();
-    //            }
-    //        }
-    //        ImGui::EndCombo();
-    //    }
     }
 }
 

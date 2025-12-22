@@ -20,6 +20,12 @@ namespace Gep
     template <typename Type>
         requires std::is_floating_point_v<Type>
     Type WrapOrClamp(const Type value, const Type min, const Type max, bool looping);
+
+    template <typename T, typename GetterFunction>
+        requires std::is_invocable_v<GetterFunction, const T&> && std::equality_comparable<std::invoke_result_t<GetterFunction, const T&>>
+    bool IsUniform(std::span<const T> values, GetterFunction&& get = [](const T& v) { return v; });
+
+    void ReplaceAll(std::string& str, const std::string& from, const std::string& to);
 }
 
 namespace Gep
@@ -100,5 +106,23 @@ namespace Gep
             auto& ref = Gep::DereferenceIfPointer(vec[i]);
             ref.*memberPtr = values[i];
         }
+    }
+
+    // simple checker that returns true if all values in the span are the same according to the getter function
+    template <typename T, typename GetterFunction>
+        requires std::is_invocable_v<GetterFunction, T&>
+    bool IsUniform(std::span<T> values, GetterFunction&& get)
+    {
+        if (values.size() <= 1)
+            return true;
+
+        const auto& first = get(values.front());
+        for (size_t i = 1; i < values.size(); ++i)
+        {
+            if (get(values[i]) != first)
+                return false;
+        }
+
+        return true;
     }
 }

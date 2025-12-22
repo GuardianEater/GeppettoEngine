@@ -302,6 +302,7 @@
     <ClCompile Include="SoundResource.cpp" />
     <ClCompile Include="SoundSystem.cpp" />
     <ClCompile Include="SphereMesh.cpp" />
+    <ClCompile Include="STLHelp.cpp" />
     <ClCompile Include="StringHelp.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="TypeID.cpp" />

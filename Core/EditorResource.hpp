@@ -10,6 +10,10 @@
 
 #include "Core.hpp"
 #include "StringHelp.hpp"
+#include "STLHelp.hpp"
+
+#include "EngineManager.hpp"
+#include "UUID.hpp"
 
 namespace Client
 {
@@ -44,6 +48,13 @@ namespace Client
 		template <typename FunctionType>
 			requires std::invocable<FunctionType, Gep::Entity>
 		void EntityDragDropTarget(FunctionType func);
+
+		// creates target 
+		template< typename... ComponentRequirements, typename T, typename Getter>
+			requires std::is_invocable_r_v<Gep::UUID&, Getter, T&>
+		bool DrawEntityDragDropTarget(Gep::EngineManager& em, const std::string& label, std::span<T> components, Getter&& get);
+
+
 
 		template <typename Func>
 		requires std::invocable<Func, const std::filesystem::path&>
@@ -171,5 +182,131 @@ namespace Client
 			}
 			ImGui::EndDragDropTarget();
 		}
+	}
+
+	template< typename... ComponentRequirements, typename T, typename Getter>
+		requires std::is_invocable_r_v<Gep::UUID&, Getter, T&>
+	inline bool EditorResource::DrawEntityDragDropTarget(Gep::EngineManager& em, const std::string& label, std::span<T> components, Getter&& get)
+	{
+        if (components.empty())
+            return false; // require at least one component to draw
+
+        const ImVec4 invalidColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+        const ImVec4 validColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+		const Gep::Signature requirements = em.CreateSignature<ComponentRequirements...>();
+
+
+		struct InvalidDetails
+		{
+			Gep::Entity entity = Gep::INVALID_ENTITY;
+			std::vector<std::string> missingComponentNames;
+            bool didExist = false;
+		};
+
+        static std::vector<InvalidDetails> invalidEntitiesDetails; invalidEntitiesDetails.clear();
+
+        // first check all entities for validity
+		for (T& c : components)
+		{
+            const Gep::UUID& uuid = get(c);
+
+			Gep::Entity e = em.FindEntity(uuid);
+			if (!em.EntityExists(e))
+			{
+				auto& back = invalidEntitiesDetails.emplace_back();
+                if (uuid.IsValid()) // entity doesnt exist but uuid is valid, so at one point it did exist
+                    back.didExist = true;
+			}
+			else if ((em.GetSignature(e) & requirements) != requirements)
+			{
+                const Gep::Signature missingComponents = requirements & (~em.GetSignature(e));
+                auto& invalidDetails = invalidEntitiesDetails.emplace_back();
+                invalidDetails.entity = e;
+				em.ForEachComponentBit(missingComponents, [&](const Gep::ComponentData& data)
+				{
+					invalidDetails.missingComponentNames.push_back(data.name);
+				});
+			}
+		}
+
+		// determine if all components have the same entity, if so display the name of any one of them
+		const bool uniform = Gep::IsUniform(components, [&](T& c) -> Gep::UUID& { return get(c); });
+		const Gep::Entity first = em.FindEntity(get(components[0]));
+        const Gep::UUID& firstUUID = get(components[0]);
+
+		ImGui::BeginGroup();
+		ImGui::Text("%s:", label.c_str());
+		ImGui::SameLine();
+
+		if (em.EntityExists(first))
+		{
+			ImGui::TextColored(invalidEntitiesDetails.empty() ? validColor : invalidColor, uniform ? em.GetName(first).c_str() : "-");
+		}
+		else
+		{
+            ImGui::TextColored(invalidColor, uniform ? "None" : "-");
+		}
+
+        ImGui::EndGroup();
+		this->EntityDragDropTarget([&](Gep::Entity e)
+		{
+			for (T& c : components)
+				get(c) = em.GetUUID(e);
+		});
+
+        // add a tool tip is there are any invalid entities and return false
+		if (invalidEntitiesDetails.size() > 0)
+		{
+			ImGui::SameLine();
+            ImGui::TextDisabled("(?)");
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::BeginTooltip();
+				for (size_t i = 0; i < invalidEntitiesDetails.size(); ++i)
+				{
+					const InvalidDetails& details = invalidEntitiesDetails[i];
+					if (em.EntityExists(details.entity))
+					{
+						ImGui::Text("Entity:");
+						ImGui::SameLine();
+                        ImGui::TextColored(validColor, "%s", em.GetName(details.entity).c_str());
+
+						if (!details.missingComponentNames.empty())
+						{
+							ImGui::Indent();
+							for (const std::string& name : details.missingComponentNames)
+							{
+								ImGui::BulletText("Missing:");
+                                ImGui::SameLine();
+                                ImGui::TextColored(invalidColor, "%s", name.c_str());
+							}
+                            ImGui::Unindent();
+						}
+					}
+                    else if (details.didExist)
+					{
+						ImGui::TextColored(invalidColor, "Entity was deleted");
+						ImGui::TextDisabled("Drag a new Entity from the hierarchy here to select");
+					}
+					else
+					{
+						ImGui::TextColored(invalidColor, "No entity selected");
+						ImGui::TextDisabled("Drag an Entity from the hierarchy here to select");
+					}
+
+					if (i < invalidEntitiesDetails.size() - 1)
+					{
+						ImGui::Spacing();
+						ImGui::Separator();
+                        ImGui::Spacing();
+					}
+				}
+                ImGui::EndTooltip();
+			}
+
+			return false;
+		}
+
+		return true;
 	}
 }

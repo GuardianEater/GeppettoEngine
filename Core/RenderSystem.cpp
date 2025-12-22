@@ -286,7 +286,7 @@ namespace Client
     }
     void RenderSystem::OnRiggedModelEditorRender(const Gep::Event::ComponentEditorRender<RiggedModelComponent>& event)
     {
-        const std::span<RiggedModelComponent*> models = event.components;
+        std::span<RiggedModelComponent*> models = event.components;
 
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
         std::vector<std::string> loadedModels = mRenderer.GetLoadedModels();
@@ -410,32 +410,32 @@ namespace Client
 
     void RenderSystem::OnPointLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event)
     {
-        const std::span<Light*> lights = event.components;
+        std::span<Light*> lights = event.components;
 
-        std::vector<glm::vec3> colors = Gep::PackMembers(lights, &Light::color);
-        std::vector<float> intensities = Gep::PackMembers(lights, &Light::intensity);
+        Gep::ImGui::MultiDragFloat3("Color", lights,
+            [](Light* light) -> float& { return light->color.r; },
+            [](Light* light) -> float& { return light->color.g; },
+            [](Light* light) -> float& { return light->color.b; }
+        );
 
-        //Gep::ImGui::MultiColorEdit3("Color", glm::value_ptr(colors[0]), lights.size());
-        //Gep::ImGui::MultiDragFloat("Intensity", intensities.data(), lights.size(), 1.0f, 0.001f, Gep::num_max<float>());
-
-        Gep::UnpackMembers(lights, &Light::color, colors);
-        Gep::UnpackMembers(lights, &Light::intensity, intensities);
+        Gep::ImGui::MultiDragFloat("Intensity", lights,
+            [](Light* light) -> float& { return light->intensity; }
+        );
     }
 
     void RenderSystem::OnDirectionalLightEditorRender(const Gep::Event::ComponentEditorRender<DirectionalLight>& event)
     {
-        const std::span<DirectionalLight*> lights = event.components;
+        std::span<DirectionalLight*> lights = event.components;
 
-        std::vector<glm::vec3> colors = Gep::PackMembers(lights, &DirectionalLight::color);
-        std::vector<float> intensities = Gep::PackMembers(lights, &DirectionalLight::intensity);
+        Gep::ImGui::MultiDragFloat3("Color", lights,
+            [](DirectionalLight* light) -> float& { return light->color.r; },
+            [](DirectionalLight* light) -> float& { return light->color.g; },
+            [](DirectionalLight* light) -> float& { return light->color.b; }
+        );
 
-        //Gep::ImGui::MultiColorEdit3("Color", glm::value_ptr(colors[0]), lights.size());
-        //Gep::ImGui::MultiDragFloat("Intensity", intensities.data(), lights.size(), 1.0f, 0.001f, Gep::num_max<float>());
-
-        ImGui::ColorEdit3("Color", &lights[0]->color[0]);
-
-        Gep::UnpackMembers(lights, &DirectionalLight::color, colors);
-        Gep::UnpackMembers(lights, &DirectionalLight::intensity, intensities);
+        Gep::ImGui::MultiDragFloat("Intensity", lights,
+            [](DirectionalLight* light) -> float& { return light->intensity; }
+        );
     }
 
     void RenderSystem::OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event)

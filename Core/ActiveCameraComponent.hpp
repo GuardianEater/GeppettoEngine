@@ -13,7 +13,7 @@
 
 namespace Client
 {
-    struct ActiveCamera
+    struct GameCamera
     {
     };
 } // namespace Gep
