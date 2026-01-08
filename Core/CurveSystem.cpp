@@ -406,13 +406,13 @@ namespace Client
         // if the needed checks failed dont continue with the ui
         if (!valid) return;
 
-        Gep::ImGui::MultiDragFloat("Animation Offset", event.components,
-            [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->speedAdjust; }
-        );
+        //Gep::ImGui::MultiDragFloat("Animation Offset", event.components,
+        //    [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->speedAdjust; }
+        //);
 
-        Gep::ImGui::MultiDragFloat("Pace", event.components,
-            [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->pace; }
-        );
+        //Gep::ImGui::MultiDragFloat("Pace", event.components,
+        //    [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->pace; }
+        //);
 
         Gep::ImGui::MultiCheckbox("Looping", event.components,
             [&](Client::PathFollowerComponent* pfc) -> bool& { return pfc->looping; }
