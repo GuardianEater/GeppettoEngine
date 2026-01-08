@@ -160,7 +160,7 @@ namespace Client
                         for (Gep::Entity entity : mEditorResource.mSelectedEntities)
                         {
                             if (componentData.has(entity)) 
-                                return; // return is continue in for each
+                                continue;
 
                             componentData.add(entity);
                         }
