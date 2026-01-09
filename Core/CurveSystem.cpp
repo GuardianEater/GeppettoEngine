@@ -411,11 +411,9 @@ namespace Client
             [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->speedAdjust; }
         );
 
-        //ImGui::DragFloat("Pace", &components[0]->pace, 0.1f, 0.1f, 10.0f);
-
-        //Gep::ImGui::MultiDragFloat("Pace", components,
-        //    [](Client::PathFollowerComponent* pfc) -> float& { return pfc->pace; }
-        //);
+        Gep::ImGui::MultiDragFloat("Pace", components,
+            [](Client::PathFollowerComponent* pfc) -> float& { return pfc->pace; }
+        );
 
         Gep::ImGui::MultiCheckbox("Looping", components,
             [](Client::PathFollowerComponent* pfc) -> bool& { return pfc->looping; }
