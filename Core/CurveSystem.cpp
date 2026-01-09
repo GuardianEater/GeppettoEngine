@@ -399,6 +399,7 @@ namespace Client
 
     void CurveSystem::OnPathFollowerEditorRender(const Gep::Event::ComponentEditorRender<Client::PathFollowerComponent>& event)
     {
+        auto components = event.components;
         bool valid = mEditor.DrawEntityDragDropTarget<Client::CurveComponent, Client::Transform>(mManager, "Target Path Entity", event.components,
             [&](Client::PathFollowerComponent* pfc) -> Gep::UUID& { return pfc->targetPathEntity; }
         );
@@ -406,16 +407,18 @@ namespace Client
         // if the needed checks failed dont continue with the ui
         if (!valid) return;
 
-        //Gep::ImGui::MultiDragFloat("Animation Offset", event.components,
-        //    [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->speedAdjust; }
+        Gep::ImGui::MultiDragFloat("Animation Offset", event.components,
+            [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->speedAdjust; }
+        );
+
+        //ImGui::DragFloat("Pace", &components[0]->pace, 0.1f, 0.1f, 10.0f);
+
+        //Gep::ImGui::MultiDragFloat("Pace", components,
+        //    [](Client::PathFollowerComponent* pfc) -> float& { return pfc->pace; }
         //);
 
-        //Gep::ImGui::MultiDragFloat("Pace", event.components,
-        //    [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->pace; }
-        //);
-
-        Gep::ImGui::MultiCheckbox("Looping", event.components,
-            [&](Client::PathFollowerComponent* pfc) -> bool& { return pfc->looping; }
+        Gep::ImGui::MultiCheckbox("Looping", components,
+            [](Client::PathFollowerComponent* pfc) -> bool& { return pfc->looping; }
         );
 
         bool tChanged = false;

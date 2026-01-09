@@ -18,7 +18,6 @@
 #include "LightComponent.hpp"
 #include "RigidBody.hpp"
 
-#include "imgui_te_engine.h"
  //#include "ImGuizmo.h"
 #include "SerializationResource.hpp"
 #include "EditorResource.hpp"
@@ -808,7 +807,7 @@ namespace Client
         {
             scale += event.yoffset * 0.1f;
             scale = glm::clamp(scale, 0.1f, 10.0f);
-            ImGui::GetIO().FontGlobalScale = scale;
+            ImGui::GetStyle().FontScaleMain = scale;
         }
     }
 
@@ -919,7 +918,6 @@ namespace Client
         colors[ImGuiCol_TextLink] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
         colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
         colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
-        colors[ImGuiCol_NavHighlight] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
         colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
         colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
         colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
@@ -1013,7 +1011,7 @@ namespace Client
         DrawEntities(roots, dt);
         // detach entities if they are dropped into any open space, adds a little bit of extra dropping space aswell
         ImVec2 size = ImGui::GetContentRegionAvail();
-        size.y = 200 * ImGui::GetIO().FontGlobalScale;
+        size.y = 200 * ImGui::GetStyle().FontScaleMain;
         ImGui::Dummy(size);
 
         mEditorResource.EntitiesDragDropTarget([&](Gep::Entity entity)
@@ -1208,7 +1206,7 @@ namespace Client
 
         static const std::filesystem::path workingDir = std::filesystem::current_path();
 
-        const float imageSize = 64.0f * ImGui::GetIO().FontGlobalScale;
+        const float imageSize = 64.0f * ImGui::GetStyle().FontScaleMain;
         const ImVec2 contentRegion = ImGui::GetContentRegionAvail();
         float spacing = ImGui::GetStyle().ItemSpacing.x;
         const int imagesPerRow = static_cast<int>((contentRegion.x - ImGui::GetStyle().ScrollbarSize) / (imageSize + spacing));
@@ -1271,7 +1269,7 @@ namespace Client
                 ImGui::SetDragDropPayload("ASSET_BROWSER", pathStr.c_str(), pathStr.size() + 1);
 
                 // Display the dragged item
-                ImGui::Image((void*)(intptr_t)texture.id, { imageSize * 2.0f, imageSize * 2.0f });
+                ImGui::Image(texture.id, { imageSize * 2.0f, imageSize * 2.0f });
                 ImGui::TextWrapped("%s", entry.path().filename().string().c_str());
                 ImGui::EndDragDropSource();
             }

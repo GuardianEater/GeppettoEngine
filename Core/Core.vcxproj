@@ -190,38 +190,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_capture_tool.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_context.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_coroutine.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_engine.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_exporters.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_perftool.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_ui.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_utils.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="dependencies\reflect-cpp\src\reflectcpp.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
@@ -324,18 +292,6 @@
     <ClInclude Include="dependencies\ImGuizmo\ImSequencer.h" />
     <ClInclude Include="dependencies\ImGuizmo\ImZoomSlider.h" />
     <ClInclude Include="dependencies\imgui\imgui_stdlib.h" />
-    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_capture_tool.h" />
-    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_context.h" />
-    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_coroutine.h" />
-    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_engine.h" />
-    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_exporters.h" />
-    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_imconfig.h" />
-    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_internal.h" />
-    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_perftool.h" />
-    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_ui.h" />
-    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\imgui_te_utils.h" />
-    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\thirdparty\stb\imstb_image_write.h" />
-    <ClInclude Include="dependencies\imgui_test_engine\imgui_test_engine\thirdparty\Str\Str.h" />
     <ClInclude Include="Events.hpp" />
     <ClInclude Include="IcosphereMesh.hpp" />
     <ClInclude Include="ImGuizmoSystem.hpp" />

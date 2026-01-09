@@ -158,7 +158,7 @@ namespace Gep
             }
 
             // draw to everything to the imgui texture
-            ImGui::Image((void*)(intptr_t)GetTexture(), contentRegionSize, ImVec2(0, 1), ImVec2(1, 0)); // flipped uvs
+            ImGui::Image(GetTexture(), contentRegionSize, ImVec2(0, 1), ImVec2(1, 0)); // flipped uvs
             drawFunction(); // user function might be useful
 
             // if movement is enabled do not do any gizmos
