@@ -401,14 +401,14 @@ namespace Client
     {
         auto components = event.components;
         bool valid = mEditor.DrawEntityDragDropTarget<Client::CurveComponent, Client::Transform>(mManager, "Target Path Entity", event.components,
-            [&](Client::PathFollowerComponent* pfc) -> Gep::UUID& { return pfc->targetPathEntity; }
+            [](Client::PathFollowerComponent* pfc) -> Gep::UUID& { return pfc->targetPathEntity; }
         );
 
         // if the needed checks failed dont continue with the ui
         if (!valid) return;
 
         Gep::ImGui::MultiDragFloat("Animation Offset", event.components,
-            [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->speedAdjust; }
+            [](Client::PathFollowerComponent* pfc) -> float& { return pfc->speedAdjust; }
         );
 
         Gep::ImGui::MultiDragFloat("Pace", components,
@@ -422,11 +422,11 @@ namespace Client
         bool tChanged = false;
 
         tChanged |= Gep::ImGui::MultiSliderScalar("t0", event.components, 0.0f, 1.0f,
-            [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->easeTimes.first; }
+            [](Client::PathFollowerComponent* pfc) -> float& { return pfc->easeTimes.first; }
         );
 
         tChanged |= Gep::ImGui::MultiSliderScalar("t1", event.components, 0.0f, 1.0f,
-            [&](Client::PathFollowerComponent* pfc) -> float& { return pfc->easeTimes.second; }
+            [](Client::PathFollowerComponent* pfc) -> float& { return pfc->easeTimes.second; }
         );
 
         if (tChanged)
