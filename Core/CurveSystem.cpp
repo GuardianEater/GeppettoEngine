@@ -399,7 +399,6 @@ namespace Client
 
     void CurveSystem::OnPathFollowerEditorRender(const Gep::Event::ComponentEditorRender<Client::PathFollowerComponent>& event)
     {
-        auto components = event.components;
         bool valid = mEditor.DrawEntityDragDropTarget<Client::CurveComponent, Client::Transform>(mManager, "Target Path Entity", event.components,
             [](Client::PathFollowerComponent* pfc) -> Gep::UUID& { return pfc->targetPathEntity; }
         );
@@ -411,11 +410,11 @@ namespace Client
             [](Client::PathFollowerComponent* pfc) -> float& { return pfc->speedAdjust; }
         );
 
-        Gep::ImGui::MultiDragFloat("Pace", components,
+        Gep::ImGui::MultiDragFloat("Pace", event.components,
             [](Client::PathFollowerComponent* pfc) -> float& { return pfc->pace; }
         );
 
-        Gep::ImGui::MultiCheckbox("Looping", components,
+        Gep::ImGui::MultiCheckbox("Looping", event.components,
             [](Client::PathFollowerComponent* pfc) -> bool& { return pfc->looping; }
         );
 
