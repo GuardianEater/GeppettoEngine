@@ -44,7 +44,7 @@ namespace Gep
     template<typename ...ComponentTypes>
     inline Signature EngineManager::CreateSignature(Signature oldSignature) const
     {
-
+        ValidateComponentTypes<ComponentTypes...>();
 
         (oldSignature.set(GetComponentIndex<ComponentTypes>()), ...);
 
@@ -140,7 +140,7 @@ namespace Gep
                 return;
             }
 
-            Signature targetSignature = CreateSignature<std::remove_reference_t<ComponentTypes>()...>();
+            Signature targetSignature = CreateSignature<ComponentTypes...>();
 
             for (auto& [signature, archetype] : mArchetypes)
             {
@@ -153,7 +153,7 @@ namespace Gep
                     size_t stride = archetype.stride;
 
                     // precompute component offsets once per chunk
-                    auto offsetsTuple = std::make_tuple(archetype.componentOffsets[GetComponentIndex<std::remove_reference_t<ComponentTypes>>()]...);
+                    auto offsetsTuple = std::make_tuple(archetype.componentOffsets[GetComponentIndex<ComponentTypes>()]...);
 
                     archetype.ForEachEntity([&offsetsTuple, &lambda](std::byte* entity)
                     {
@@ -255,7 +255,17 @@ namespace Gep
     template<typename ...ComponentTypes>
     inline bool EngineManager::ValidateComponentTypes() const
     {
-        return false;
+        bool allRegistered = true;
+        ([&]()
+            {
+                if (!ComponentIsRegistered<ComponentTypes>())
+                {
+                    Log::Error("Component Validation Failed, Component: [", GetTypeInfo<ComponentTypes>().Name(), "] is not registered!");
+                    allRegistered = false;
+                }
+            }
+        (), ...);
+        return allRegistered;
     }
 
     template<typename ComponentType>
