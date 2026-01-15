@@ -261,6 +261,10 @@ namespace Gep
         template <typename ResourceType>
         bool ResourceIsRegistered() const;
 
+        // checks if the given type is a resource
+        template <typename ResourceType>
+        bool IsResourceType() const;
+
 
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -328,6 +332,10 @@ namespace Gep
         uint8_t GetComponentIndex() const;
 
         const std::unordered_map<Signature, Archetype>& GetArchetypes() const;
+
+        // checks if the given type is a component
+        template <typename ComponentType>
+        bool IsComponentType() const;
 
 
         /////////////////////////////////////////////////////////////////////////////////////////////////

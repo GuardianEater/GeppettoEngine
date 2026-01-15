@@ -13,6 +13,7 @@
 #include "FunctionTraits.hpp"
 
 #include <new>
+#include <type_traits>
 
 namespace Gep
 {
@@ -119,6 +120,21 @@ namespace Gep
     template <typename T>
     struct TypeIsNotEntity : std::bool_constant<TypeIsNotEntityConcept<T>> {};
 
+    template <typename T>
+    using DecayedPtr = std::add_pointer_t<std::remove_cvref_t<T>>;
+
+    template <typename... Args, std::size_t... Is>
+    auto ArrayToTuple_Impl(const std::array<void*, sizeof...(Args)>& arr, std::index_sequence<Is...>)
+    {
+        return std::tuple<DecayedPtr<Args>...>{ static_cast<DecayedPtr<Args>>(arr[Is])... };
+    }
+
+    template <typename... Args>
+    auto ArrayToTuple(const std::array<void*, sizeof...(Args)>& arr)
+    {
+        return ArrayToTuple_Impl<Args...>(arr, std::index_sequence_for<Args...>{});
+    }
+
     template<typename Func>
     inline void EngineManager::ForEachArchetype(Func&& lambda)
     {
@@ -129,12 +145,34 @@ namespace Gep
         if constexpr (funcArgs.empty()) // if nothing is given in the query do nothing
             return;
 
-        auto componentParamTypes = funcArgs.filter<TypeIsNotEntity>();
+        auto resourceParamTypes = funcArgs.filter<TypeIsNotEntity>();
 
-        componentParamTypes.for_all([&]<typename... ComponentTypes>() mutable
+        std::array<void*, resourceParamTypes.count()> lookUpTable; // the type index in component param types -> the pointer to the resource
+
+        size_t currentIndex = 0;
+        resourceParamTypes.for_each([&]<typename ResourceType>() mutable
+        {
+            using RawResourceType = std::remove_cvref_t<ResourceType>;
+
+            if (IsResourceType<RawResourceType>())
+            {
+                lookUpTable[currentIndex] = static_cast<void*>(&GetResource<RawResourceType>());
+            }
+            else if (IsComponentType<RawResourceType>())
+            {
+                // do nothing yet component pointers are evaluated per-entity
+            }
+            else
+            {
+                Log::Error("ForEachArchetype() Failed, Type: [", GetTypeInfo<RawResourceType>().Name(), "] is not registered as a Component or Resource!");
+            }
+            ++currentIndex;
+        });
+
+        resourceParamTypes.for_all([&]<typename... ResourceTypes>() mutable
         {
             // if querying with no components iterate all entities instead
-            if constexpr (componentParamTypes.empty())
+            if constexpr (resourceParamTypes.empty())
             {
                 for (auto [entity, data] : mEntityDatas)
                 {
@@ -143,7 +181,7 @@ namespace Gep
                 return;
             }
 
-            Signature targetSignature = CreateSignature<ComponentTypes...>();
+            Signature targetSignature = CreateSignature<std::remove_cvref_t<ResourceTypes>...>();
 
             for (auto& [signature, archetype] : mArchetypes)
             {
@@ -156,19 +194,35 @@ namespace Gep
                     size_t stride = archetype.stride;
 
                     // precompute component offsets once per chunk
-                    auto offsetsTuple = std::make_tuple(archetype.componentOffsets[GetComponentIndex<ComponentTypes>()]...);
+                    auto offsetsTuple = std::make_tuple(archetype.componentOffsets[GetComponentIndex<std::remove_cvref_t<ResourceTypes>>()]...);
 
-                    archetype.ForEachEntity([&offsetsTuple, &lambda](std::byte* entity)
+                    archetype.ForEachEntity([&](std::byte* entity)
                     {
                         Entity& entityRef = *reinterpret_cast<Entity*>(entity);
 
-                        // expand offset tuple and call lambda with entity + components
-                        std::apply([&](auto... offs) 
+                        //maps component types to their pointers for this entity
+                        size_t componentIndex = 0;
+                        resourceParamTypes.for_each([&]<typename ResourceType>()
                         {
-                            // offs are offsets for ComponentTypes in the same order
-                            lambda(entityRef, *reinterpret_cast<std::remove_reference_t<ComponentTypes>*>(entity + offs)...);
+                            using RawResourceType = std::remove_cvref_t<ResourceType>;
+
+                            if (IsComponentType<RawResourceType>())
+                            {
+                                size_t componentOffset = archetype.componentOffsets[GetComponentIndex<RawResourceType>()];
+                                lookUpTable[componentIndex] = reinterpret_cast<void*>(entity + componentOffset);
+                            }
+                            ++componentIndex;
+                        });
+
+                        auto resourcePointersTuple = ArrayToTuple<std::remove_cvref_t<ResourceTypes>...>(lookUpTable); // turns the array into a tuple of correct types
+
+                        // expand offset tuple and call lambda with entity + components
+                        std::apply([&](auto... ptrs) 
+                        {
+                            // offs are offsets for ResourceTypes in the same order
+                            lambda(entityRef, *ptrs...);
                         }, 
-                        offsetsTuple);
+                        resourcePointersTuple);
                     });
                 }
             }
@@ -251,6 +305,12 @@ namespace Gep
 
     template<typename ResourceType>
     inline bool EngineManager::ResourceIsRegistered() const
+    {
+        return mResources.contains(typeid(ResourceType));;
+    }
+
+    template<typename ResourceType>
+    inline bool EngineManager::IsResourceType() const
     {
         return mResources.contains(typeid(ResourceType));
     }
@@ -671,6 +731,12 @@ namespace Gep
         static const uint8_t index = mComponentDatas.at(mComponentTypeToIndex.at(typeid(ComponentType))).index;
         
         return index;
+    }
+
+    template<typename ComponentType>
+    inline bool EngineManager::IsComponentType() const
+    {
+        return mComponentDatas.contains(mComponentTypeToIndex.at(typeid(ComponentType)));
     }
 
     template<typename... ComponentTypes>

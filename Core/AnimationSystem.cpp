@@ -63,17 +63,17 @@ namespace Client
 
     void AnimationSystem::Update(float dt)
     {
-        mManager.ForEachArchetype([&](Gep::Entity entity, AnimationComponent& animationComponent, RiggedModelComponent& modelComponent, const Transform& transform)
+        mManager.ForEachArchetype([&](Gep::Entity entity, AnimationComponent& animationComponent, RiggedModelComponent& modelComponent, const Transform& transform, Gep::OpenGLRenderer& renderer)
         {
-            if (!mRenderer.IsAnimationLoaded(animationComponent.name))
+            if (!renderer.IsAnimationLoaded(animationComponent.name))
                 return; // return is continue in for_each loop
 
-            const Gep::Model& model = mRenderer.GetModel(modelComponent.name);
+            const Gep::Model& model = renderer.GetModel(modelComponent.name);
 
             if (model.skeleton.bones.empty()) // do not operate on a skeleton with no bones
                 return;
 
-            const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.name);
+            const Gep::Animation& animation = renderer.GetAnimation(animationComponent.name);
 
             // progress the animation
             if (mManager.IsState(Gep::EngineState::Play))
