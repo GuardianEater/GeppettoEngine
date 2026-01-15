@@ -76,7 +76,7 @@ int main()
     em.RegisterResource<Gep::OpenGLRenderer>();
 
     // list of all components ///////////////////////////////////////////////////////////////////////
-    Gep::type_list <
+    Gep::TypeList <
         Client::Transform,
         Client::RigidBody,
         Client::Spring,
@@ -99,7 +99,7 @@ int main()
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////
-    Gep::type_list<
+    Gep::TypeList<
         Client::WindowSystem,
         Client::ImGuiSystem,
         Client::AnimationSystem, // must happen before the render system

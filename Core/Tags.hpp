@@ -26,7 +26,7 @@ namespace Gep
     namespace Tag
     {
         template <typename... TagTypes>
-        using TagList = Gep::type_list<TagTypes...>;
+        using TagList = Gep::TypeList<TagTypes...>;
 
         using DontShowInEditor = std::true_type;
         using DontSerialize    = std::true_type;

@@ -17,7 +17,7 @@
 namespace Gep
 {
     template<typename ...ComponentTypes, typename ...SystemTypes>
-    inline void EngineManager::RegisterTypes(Gep::type_list<ComponentTypes...> componentTypes, Gep::type_list<SystemTypes...> systemTypes)
+    inline void EngineManager::RegisterTypes(Gep::TypeList<ComponentTypes...> componentTypes, Gep::TypeList<SystemTypes...> systemTypes)
     {
         (RegisterComponent<ComponentTypes>(), ...);
         (RegisterSystem<SystemTypes>(), ...);
@@ -111,59 +111,55 @@ namespace Gep
         return entities;
     }
 
-    template<typename... ComponentTypes, typename Func>
+    template<typename Func>
     inline void EngineManager::ForEachArchetype(Func&& lambda)
     {
-        // checks to see if all components are regisitered
-        ([&]()
+        using ArgsList = typename Gep::FunctionTraits<Func>::ArgumentsTypeList;
+
+        ArgsList funcArgs;
+
+        funcArgs.for_all([]<typename... ComponentTypes>()
+        {
+            // if querying with no components iterate all entities instead
+            if constexpr (sizeof...(ComponentTypes) == 0)
             {
-                if (!ComponentIsRegistered<ComponentTypes>())
+                for (auto [entity, data] : mEntityDatas)
                 {
-                    Log::Error("ForEachArchetype() Failed, Component: [", GetTypeInfo<ComponentTypes>().PrettyName(), "] is not registered!");
-                    return;
+                    lambda(entity);
+                }
+                return;
+            }
+
+            Signature targetSignature = CreateSignature<ComponentTypes...>();
+
+            for (auto& [signature, archetype] : mArchetypes)
+            {
+                // inside the matching-chunk branch
+                if ((targetSignature & signature) == targetSignature)
+                {
+                    // cheap early-out
+                    if (archetype.EntityCount() == 0) continue;
+
+                    size_t stride = archetype.stride;
+
+                    // precompute component offsets once per chunk
+                    auto offsetsTuple = std::make_tuple(archetype.componentOffsets[GetComponentIndex<ComponentTypes>()]...);
+
+                    archetype.ForEachEntity([&offsetsTuple, &lambda](std::byte* entity)
+                    {
+                        Entity& entityRef = *reinterpret_cast<Entity*>(entity);
+
+                        // expand offset tuple and call lambda with entity + components
+                        std::apply([&](auto... offs) 
+                        {
+                            // offs are offsets for ComponentTypes in the same order
+                            lambda(entityRef, *reinterpret_cast<ComponentTypes*>(entity + offs)...);
+                        }, 
+                        offsetsTuple);
+                    });
                 }
             }
-        (), ...);
-        
-        // if querying with no components iterate all entities instead
-        if constexpr (sizeof...(ComponentTypes) == 0)
-        {
-            for (auto [entity, data] : mEntityDatas)
-            {
-                lambda(entity);
-            }
-            return;
-        }
-
-        Signature targetSignature = CreateSignature<ComponentTypes...>();
-
-        for (auto& [signature, archetype] : mArchetypes)
-        {
-            // inside the matching-chunk branch
-            if ((targetSignature & signature) == targetSignature)
-            {
-                // cheap early-out
-                if (archetype.EntityCount() == 0) continue;
-
-                size_t stride = archetype.stride;
-
-                // precompute component offsets once per chunk
-                auto offsetsTuple = std::make_tuple(archetype.componentOffsets[GetComponentIndex<ComponentTypes>()]...);
-
-                archetype.ForEachEntity([&offsetsTuple, &lambda](std::byte* entity)
-                {
-                    Entity& entityRef = *reinterpret_cast<Entity*>(entity);
-
-                    // expand offset tuple and call lambda with entity + components
-                    std::apply([&](auto... offs) 
-                    {
-                        // offs are offsets for ComponentTypes in the same order
-                        lambda(entityRef, *reinterpret_cast<ComponentTypes*>(entity + offs)...);
-                    }, 
-                    offsetsTuple);
-                });
-            }
-        }
+        });
     }
 
     template<typename ...ComponentTypes>
