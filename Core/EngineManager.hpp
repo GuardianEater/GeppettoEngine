@@ -41,7 +41,7 @@ namespace Gep
     }
 
     template <typename T>
-    concept TypeHasOnComponentsRegisteredConcept = requires(T t, Gep::TypeList<int> componentTypes)
+    concept TypeHasOnComponentsRegisteredConcept = requires(T t, TypeList<int> componentTypes)
     {
         { t.template OnComponentsRegistered<int>(componentTypes) } -> std::same_as<void>;
     };
@@ -265,6 +265,9 @@ namespace Gep
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // component functions //////////////////////////////////////////////////////////////////////////
+
+        template <typename... ComponentTypes>
+        bool ValidateComponentTypes() const;
 
         template <typename ComponentType>
         Signature GetComponentSignature() const;

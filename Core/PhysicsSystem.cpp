@@ -72,7 +72,7 @@ namespace Client
 
     void PhysicsSystem::FrameEnd()
     {
-        mManager.ForEachArchetype<Transform>([&](Gep::Entity entity, Transform& t)
+        mManager.ForEachArchetype([&](Gep::Entity entity, Transform& t)
         {
             t.previousWorld = t.world;
         });
@@ -330,7 +330,7 @@ namespace Client
 
     void PhysicsSystem::ApplySpringForces()
     {
-        mManager.ForEachArchetype<Spring>([&](Gep::Entity e, Spring& spring)
+        mManager.ForEachArchetype([&](Gep::Entity e, Spring& spring)
         {
             if (spring.stiffness <= 0.0f || !spring.startEntity.IsValid())
                  return;
@@ -397,7 +397,7 @@ namespace Client
     {
         ApplySpringForces();
 
-        mManager.ForEachArchetype<RigidBody, Transform>([&](Gep::Entity e, RigidBody& rb, Transform& t)
+        mManager.ForEachArchetype([&](Gep::Entity e, RigidBody& rb, Transform& t)
         {
             rb.ApplyForce({ 0.0f, -9.81f, 0.0f });
 
@@ -445,7 +445,7 @@ namespace Client
 
         Gep::LineGPUData line;
         line.color = { 0.0f, 0.0f, 1.0f };
-        mManager.ForEachArchetype<Spring>([&](Gep::Entity e, Spring& spring)
+        mManager.ForEachArchetype([&](Gep::Entity e, Spring& spring)
         {
 
             const Gep::Entity startEntity = mManager.FindEntity(spring.startEntity);

@@ -44,6 +44,8 @@ namespace Gep
     template<typename ...ComponentTypes>
     inline Signature EngineManager::CreateSignature(Signature oldSignature) const
     {
+
+
         (oldSignature.set(GetComponentIndex<ComponentTypes>()), ...);
 
         return oldSignature;
@@ -103,7 +105,7 @@ namespace Gep
 
         static std::vector<Entity> entities;
         entities.clear();
-        ForEachArchetype<ComponentTypes...>([&](Entity entity, ComponentTypes&... components) 
+        ForEachArchetype([&](Entity entity, ComponentTypes... components) 
         {
             entities.push_back(entity);
         });
@@ -111,17 +113,25 @@ namespace Gep
         return entities;
     }
 
+    template <typename T>
+    concept TypeIsNotEntityConcept = !std::same_as<T, Entity>;
+
+    template <typename T>
+    struct TypeIsNotEntity : std::bool_constant<TypeIsNotEntityConcept<T>> {};
+
     template<typename Func>
     inline void EngineManager::ForEachArchetype(Func&& lambda)
     {
         using ArgsList = typename Gep::FunctionTraits<Func>::ArgumentsTypeList;
 
-        ArgsList funcArgs;
+        ArgsList funcArgs; // potentially contains any of components, resources, or entity
 
-        funcArgs.for_all([]<typename... ComponentTypes>()
+        auto componentParamTypes = funcArgs.filter<TypeIsNotEntity>();
+
+        componentParamTypes.for_all([&]<typename... ComponentTypes>() mutable
         {
             // if querying with no components iterate all entities instead
-            if constexpr (sizeof...(ComponentTypes) == 0)
+            if constexpr (componentParamTypes.empty())
             {
                 for (auto [entity, data] : mEntityDatas)
                 {
@@ -130,7 +140,7 @@ namespace Gep
                 return;
             }
 
-            Signature targetSignature = CreateSignature<ComponentTypes...>();
+            Signature targetSignature = CreateSignature<std::remove_reference_t<ComponentTypes>()...>();
 
             for (auto& [signature, archetype] : mArchetypes)
             {
@@ -143,7 +153,7 @@ namespace Gep
                     size_t stride = archetype.stride;
 
                     // precompute component offsets once per chunk
-                    auto offsetsTuple = std::make_tuple(archetype.componentOffsets[GetComponentIndex<ComponentTypes>()]...);
+                    auto offsetsTuple = std::make_tuple(archetype.componentOffsets[GetComponentIndex<std::remove_reference_t<ComponentTypes>>()]...);
 
                     archetype.ForEachEntity([&offsetsTuple, &lambda](std::byte* entity)
                     {
@@ -153,7 +163,7 @@ namespace Gep
                         std::apply([&](auto... offs) 
                         {
                             // offs are offsets for ComponentTypes in the same order
-                            lambda(entityRef, *reinterpret_cast<ComponentTypes*>(entity + offs)...);
+                            lambda(entityRef, *reinterpret_cast<std::remove_reference_t<ComponentTypes>*>(entity + offs)...);
                         }, 
                         offsetsTuple);
                     });
@@ -240,6 +250,12 @@ namespace Gep
     inline bool EngineManager::ResourceIsRegistered() const
     {
         return mResources.contains(typeid(ResourceType));
+    }
+
+    template<typename ...ComponentTypes>
+    inline bool EngineManager::ValidateComponentTypes() const
+    {
+        return false;
     }
 
     template<typename ComponentType>
