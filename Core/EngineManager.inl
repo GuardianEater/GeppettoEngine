@@ -122,9 +122,12 @@ namespace Gep
     template<typename Func>
     inline void EngineManager::ForEachArchetype(Func&& lambda)
     {
-        using ArgsList = typename Gep::FunctionTraits<Func>::ArgumentsTypeList;
+        using FuncArgsType = typename Gep::FunctionTraits<Func>::ArgumentsTypeList;
 
-        ArgsList funcArgs; // potentially contains any of components, resources, or entity
+        FuncArgsType funcArgs; // potentially contains any of components, resources, or entity
+
+        if constexpr (funcArgs.empty()) // if nothing is given in the query do nothing
+            return;
 
         auto componentParamTypes = funcArgs.filter<TypeIsNotEntity>();
 
