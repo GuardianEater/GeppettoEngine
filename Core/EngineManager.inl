@@ -17,7 +17,7 @@
 namespace Gep
 {
     template<typename ...ComponentTypes, typename ...SystemTypes>
-    inline void EngineManager::RegisterTypes(Gep::type_list<ComponentTypes...> componentTypes, Gep::type_list<SystemTypes...> systemTypes)
+    inline void EngineManager::RegisterTypes(Gep::TypeList<ComponentTypes...> componentTypes, Gep::TypeList<SystemTypes...> systemTypes)
     {
         (RegisterComponent<ComponentTypes>(), ...);
         (RegisterSystem<SystemTypes>(), ...);
@@ -44,6 +44,8 @@ namespace Gep
     template<typename ...ComponentTypes>
     inline Signature EngineManager::CreateSignature(Signature oldSignature) const
     {
+        ValidateComponentTypes<ComponentTypes...>();
+
         (oldSignature.set(GetComponentIndex<ComponentTypes>()), ...);
 
         return oldSignature;
@@ -103,7 +105,7 @@ namespace Gep
 
         static std::vector<Entity> entities;
         entities.clear();
-        ForEachArchetype<ComponentTypes...>([&](Entity entity, ComponentTypes&... components) 
+        ForEachArchetype([&](Entity entity, ComponentTypes... components) 
         {
             entities.push_back(entity);
         });
@@ -111,59 +113,66 @@ namespace Gep
         return entities;
     }
 
-    template<typename... ComponentTypes, typename Func>
+    template <typename T>
+    concept TypeIsNotEntityConcept = !std::same_as<T, Entity>;
+
+    template <typename T>
+    struct TypeIsNotEntity : std::bool_constant<TypeIsNotEntityConcept<T>> {};
+
+    template<typename Func>
     inline void EngineManager::ForEachArchetype(Func&& lambda)
     {
-        // checks to see if all components are regisitered
-        ([&]()
+        using FuncArgsType = typename Gep::FunctionTraits<Func>::ArgumentsTypeList;
+
+        FuncArgsType funcArgs; // potentially contains any of components, resources, or entity
+
+        if constexpr (funcArgs.empty()) // if nothing is given in the query do nothing
+            return;
+
+        auto componentParamTypes = funcArgs.filter<TypeIsNotEntity>();
+
+        componentParamTypes.for_all([&]<typename... ComponentTypes>() mutable
+        {
+            // if querying with no components iterate all entities instead
+            if constexpr (componentParamTypes.empty())
             {
-                if (!ComponentIsRegistered<ComponentTypes>())
+                for (auto [entity, data] : mEntityDatas)
                 {
-                    Log::Error("ForEachArchetype() Failed, Component: [", GetTypeInfo<ComponentTypes>().PrettyName(), "] is not registered!");
-                    return;
+                    lambda(entity);
+                }
+                return;
+            }
+
+            Signature targetSignature = CreateSignature<ComponentTypes...>();
+
+            for (auto& [signature, archetype] : mArchetypes)
+            {
+                // inside the matching-chunk branch
+                if ((targetSignature & signature) == targetSignature)
+                {
+                    // cheap early-out
+                    if (archetype.EntityCount() == 0) continue;
+
+                    size_t stride = archetype.stride;
+
+                    // precompute component offsets once per chunk
+                    auto offsetsTuple = std::make_tuple(archetype.componentOffsets[GetComponentIndex<ComponentTypes>()]...);
+
+                    archetype.ForEachEntity([&offsetsTuple, &lambda](std::byte* entity)
+                    {
+                        Entity& entityRef = *reinterpret_cast<Entity*>(entity);
+
+                        // expand offset tuple and call lambda with entity + components
+                        std::apply([&](auto... offs) 
+                        {
+                            // offs are offsets for ComponentTypes in the same order
+                            lambda(entityRef, *reinterpret_cast<std::remove_reference_t<ComponentTypes>*>(entity + offs)...);
+                        }, 
+                        offsetsTuple);
+                    });
                 }
             }
-        (), ...);
-        
-        // if querying with no components iterate all entities instead
-        if constexpr (sizeof...(ComponentTypes) == 0)
-        {
-            for (auto [entity, data] : mEntityDatas)
-            {
-                lambda(entity);
-            }
-            return;
-        }
-
-        Signature targetSignature = CreateSignature<ComponentTypes...>();
-
-        for (auto& [signature, archetype] : mArchetypes)
-        {
-            // inside the matching-chunk branch
-            if ((targetSignature & signature) == targetSignature)
-            {
-                // cheap early-out
-                if (archetype.EntityCount() == 0) continue;
-
-                size_t stride = archetype.stride;
-
-                // precompute component offsets once per chunk
-                auto offsetsTuple = std::make_tuple(archetype.componentOffsets[GetComponentIndex<ComponentTypes>()]...);
-
-                archetype.ForEachEntity([&offsetsTuple, &lambda](std::byte* entity)
-                {
-                    Entity& entityRef = *reinterpret_cast<Entity*>(entity);
-
-                    // expand offset tuple and call lambda with entity + components
-                    std::apply([&](auto... offs) 
-                    {
-                        // offs are offsets for ComponentTypes in the same order
-                        lambda(entityRef, *reinterpret_cast<ComponentTypes*>(entity + offs)...);
-                    }, 
-                    offsetsTuple);
-                });
-            }
-        }
+        });
     }
 
     template<typename ...ComponentTypes>
@@ -244,6 +253,22 @@ namespace Gep
     inline bool EngineManager::ResourceIsRegistered() const
     {
         return mResources.contains(typeid(ResourceType));
+    }
+
+    template<typename ...ComponentTypes>
+    inline bool EngineManager::ValidateComponentTypes() const
+    {
+        bool allRegistered = true;
+        ([&]()
+            {
+                if (!ComponentIsRegistered<ComponentTypes>())
+                {
+                    Log::Error("Component Validation Failed, Component: [", GetTypeInfo<ComponentTypes>().Name(), "] is not registered!");
+                    allRegistered = false;
+                }
+            }
+        (), ...);
+        return allRegistered;
     }
 
     template<typename ComponentType>

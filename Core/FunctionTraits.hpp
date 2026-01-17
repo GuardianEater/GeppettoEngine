@@ -20,35 +20,35 @@ namespace Gep
     template<typename Ret, typename... Args>
     struct FunctionTraits<Ret(*)(Args...)> {
         using ReturnType = Ret;
-        using ArgumentsTypeList = Gep::type_list<Args...>;
+        using ArgumentsTypeList = Gep::TypeList<Args...>;
     };
 
     // Function reference
     template<typename Ret, typename... Args>
     struct FunctionTraits<Ret(Args...)> {
         using ReturnType = Ret;
-        using ArgumentsTypeList = Gep::type_list<Args...>;
+        using ArgumentsTypeList = Gep::TypeList<Args...>;
     };
 
     // std::function
     template<typename Ret, typename... Args>
     struct FunctionTraits<std::function<Ret(Args...)>> {
         using ReturnType = Ret;
-        using ArgumentsTypeList = Gep::type_list<Args...>;
+        using ArgumentsTypeList = Gep::TypeList<Args...>;
     };
 
     // Member function pointer
     template<typename Ret, typename ClassType, typename... Args>
     struct FunctionTraits<Ret(ClassType::*)(Args...)> {
         using ReturnType = Ret;
-        using ArgumentsTypeList = Gep::type_list<Args...>;
+        using ArgumentsTypeList = Gep::TypeList<Args...>;
     };
 
     // Const member function pointer
     template<typename Ret, typename ClassType, typename... Args>
     struct FunctionTraits<Ret(ClassType::*)(Args...) const> {
         using ReturnType = Ret;
-        using ArgumentsTypeList = Gep::type_list<Args...>;
+        using ArgumentsTypeList = Gep::TypeList<Args...>;
     };
 
     // Lambda or functor

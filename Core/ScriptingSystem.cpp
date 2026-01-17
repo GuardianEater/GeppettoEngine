@@ -38,13 +38,13 @@ namespace Client
     void ScriptingSystem::Update(float dt)
     {
         // on update
-        mManager.ForEachArchetype<Script>([&](Gep::Entity entity, Script& script)
+        mManager.ForEachArchetype([&](Gep::Entity entity, Script& script)
         {
             mScriptingResource.PyCall(script.update);
         });
 
         // on late update
-        mManager.ForEachArchetype<Script>([&](Gep::Entity entity, Script& script)
+        mManager.ForEachArchetype([&](Gep::Entity entity, Script& script)
         {
             mScriptingResource.PyCall(script.late_update);
         });
@@ -122,19 +122,19 @@ namespace Client
         {
             mScriptingResource.ReloadAllModules();
 
-            mManager.ForEachArchetype<Script>([&](Gep::Entity entity, Script& script)
+            mManager.ForEachArchetype([&](Gep::Entity entity, Script& script)
             {
                 py::module module = mScriptingResource.GetOrLoadModule(script.path.string());
                 mScriptingResource.BindScriptToModule(script, module);
             });
             
-            mManager.ForEachArchetype<Script>([&](Gep::Entity entity, Script& script) 
+            mManager.ForEachArchetype([&](Gep::Entity entity, Script& script) 
             {
                 if (mManager.IsEnabled(entity))
                     mScriptingResource.PyCall(script.on_enabled);
             });
 
-            mManager.ForEachArchetype<Script>([&](Gep::Entity entity, Script& script)
+            mManager.ForEachArchetype([&](Gep::Entity entity, Script& script)
             {
                 mScriptingResource.PyCall(script.on_start);
             });

@@ -784,7 +784,7 @@ namespace Gep
     }
     void OpenGLRenderer::DrawLines() const
     {
-        glDisable(GL_DEPTH_TEST);
+        //glDisable(GL_DEPTH_TEST);
         Shader& lineShader = *mShaders.at("Line");
         lineShader.Bind();
 
@@ -807,7 +807,7 @@ namespace Gep
         }
 
         lineShader.Unbind();
-        glEnable(GL_DEPTH_TEST);
+        //glEnable(GL_DEPTH_TEST);
     }
 
     void OpenGLRenderer::AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData)

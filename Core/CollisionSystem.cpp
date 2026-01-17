@@ -43,7 +43,7 @@ namespace Client
     {
         std::vector<SphereEntity> sphereEntities;
 
-        mManager.ForEachArchetype<Transform, SphereCollider>([&](Gep::Entity entity, Transform& t, SphereCollider& s)
+        mManager.ForEachArchetype([&](Gep::Entity entity, Transform& t, SphereCollider& s)
         {
             float radius = std::max({ t.world.scale.x, t.world.scale.y, t.world.scale.z }) / 2.0f;
             float minX = t.world.position.x - radius;
@@ -79,7 +79,7 @@ namespace Client
 
         std::vector<Gep::Cube> cubes;
 
-        mManager.ForEachArchetype<Transform, CubeCollider>([&](Gep::Entity entity, Transform& t, CubeCollider& c)
+        mManager.ForEachArchetype([&](Gep::Entity entity, Transform& t, CubeCollider& c)
         {
             glm::mat3 axes = glm::mat3_cast(t.world.rotation);
 

@@ -76,7 +76,7 @@ namespace Client
 
         // special events //
         template <typename... ComponentTypes>
-        void OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes);
+        void OnComponentsRegistered(Gep::TypeList<ComponentTypes...> componentTypes);
 
         // events //
         void OnEntityCreated(const Gep::Event::EntityCreated& event);

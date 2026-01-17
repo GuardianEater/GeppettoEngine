@@ -41,8 +41,7 @@ namespace Client
         constexpr uint32_t kMaxIterations = 50;
         constexpr float    epsilon = 0.001f;
 
-        mManager.ForEachArchetype<Client::IKTarget, Client::Transform>(
-        [&](Gep::Entity e, Client::IKTarget& iktarget, Client::Transform& attractorTransform)
+        mManager.ForEachArchetype([&](Gep::Entity e, IKTarget& iktarget, Transform& attractorTransform)
         {
             const Gep::Entity skeletonEntity = mManager.FindEntity(iktarget.targetEntity);
             if (!mManager.EntityExists(skeletonEntity)) return;

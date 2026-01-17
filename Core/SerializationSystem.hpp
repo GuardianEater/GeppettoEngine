@@ -31,7 +31,7 @@ namespace Client
         {}
 
         template <typename... ComponentTypes>
-        void OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes);
+        void OnComponentsRegistered(Gep::TypeList<ComponentTypes...> componentTypes);
 
         void OnAssetBrowserItemClicked(const Gep::Event::AssetBrowserItemClicked& event);
         void OnEngineStateChanged(const Gep::Event::EngineStateChanged& event);

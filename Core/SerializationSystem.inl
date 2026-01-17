@@ -41,7 +41,7 @@ namespace Client
     };
 
     template <typename... ComponentTypes>
-    void SerializationSystem::OnComponentsRegistered(Gep::type_list<ComponentTypes...> componentTypes)
+    void SerializationSystem::OnComponentsRegistered(Gep::TypeList<ComponentTypes...> componentTypes)
     {
     }
 }

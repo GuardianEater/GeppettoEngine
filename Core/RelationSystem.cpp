@@ -20,7 +20,7 @@ namespace Client
 
     void RelationSystem::Update(float dt)
     {
-        mManager.ForEachArchetype<Transform>([&](Gep::Entity entity, Transform& t)
+        mManager.ForEachArchetype([&](Gep::Entity entity, Transform& t)
         {
             // only root entities
             if (!mManager.HasParent(entity))

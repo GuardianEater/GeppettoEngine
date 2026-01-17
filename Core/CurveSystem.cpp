@@ -62,7 +62,7 @@ namespace Client
     {
         Gep::LineGPUData line;
         line.color = { 0.0f, 0.0f ,1.0f };
-        mManager.ForEachArchetype<Client::Transform, Client::CurveComponent>([&](Gep::Entity ent, const Client::Transform& transform, Client::CurveComponent& curveComponent)
+        mManager.ForEachArchetype([&](Gep::Entity ent, const Client::Transform& transform, Client::CurveComponent& curveComponent)
         {
             if (curveComponent.dirty)
             {
@@ -157,8 +157,7 @@ namespace Client
 
     void CurveSystem::UpdatePathFollowers(float dt)
     {
-        mManager.ForEachArchetype<Client::Transform, Client::PathFollowerComponent>(
-        [&](Gep::Entity ent, Client::Transform& transform, Client::PathFollowerComponent& pfc)
+        mManager.ForEachArchetype([&](Gep::Entity ent, Client::Transform& transform, Client::PathFollowerComponent& pfc)
         {
             Gep::Entity targetEntity = mManager.FindEntity(pfc.targetPathEntity);
 

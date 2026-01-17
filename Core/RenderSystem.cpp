@@ -133,7 +133,7 @@ namespace Client
 
         // main render passes
         size_t cameraIndex = 0;
-        mManager.ForEachArchetype<Transform, Camera>([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
+        mManager.ForEachArchetype([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
         {
             renderer.SetCameraIndex(cameraIndex++);
 
@@ -148,12 +148,12 @@ namespace Client
             cam.renderTarget->Unbind();
         });
 
-        mManager.ForEachArchetype<RiggedModelComponent, Transform>([&](Gep::Entity entity, RiggedModelComponent& model, Transform& transform)
+        mManager.ForEachArchetype([&](Gep::Entity entity, RiggedModelComponent& model, Transform& transform)
         {
             model.selected = false;
         });
 
-        mManager.ForEachArchetype<StaticModelComponent, Transform>([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
+        mManager.ForEachArchetype([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
         {
             model.selected = false;
         });
@@ -485,7 +485,7 @@ namespace Client
 
     void RenderSystem::AddColliders()
     {
-        mManager.ForEachArchetype<CubeCollider, Transform>([&](Gep::Entity entity, CubeCollider& collider, Transform& transform)
+        mManager.ForEachArchetype([&](Gep::Entity entity, CubeCollider& collider, Transform& transform)
         {
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
@@ -501,7 +501,7 @@ namespace Client
             mRenderer.AddObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
         });
 
-        mManager.ForEachArchetype<SphereCollider, Transform>([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
+        mManager.ForEachArchetype([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
         {
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
@@ -521,7 +521,7 @@ namespace Client
     void RenderSystem::AddLights()
     {
         // prepares all of the light uniform values
-        mManager.ForEachArchetype<Light, Transform>([&](Gep::Entity e, Light& l, Transform& t)
+        mManager.ForEachArchetype([&](Gep::Entity e, Light& l, Transform& t)
         {
             Gep::PointLightGPUData uniforms
             {
@@ -534,7 +534,7 @@ namespace Client
         });
 
         // prepares all of the directional light uniform values
-        mManager.ForEachArchetype<DirectionalLight, Transform>([&](Gep::Entity e, DirectionalLight& l, Transform& t)
+        mManager.ForEachArchetype([&](Gep::Entity e, DirectionalLight& l, Transform& t)
         {
             Gep::DirectionalLightGPUData uniforms
             {
@@ -551,7 +551,7 @@ namespace Client
     void RenderSystem::AddCameras()
     {
         // prepares the camera uniforms
-        mManager.ForEachArchetype<Transform, Camera>([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
+        mManager.ForEachArchetype([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
         {
             Gep::CameraGPUData uniforms
             {
@@ -586,7 +586,7 @@ namespace Client
         skeletonLines.color = { 1.0f, 0.5f, 0.5f };
         int boneOffset = 0;
 
-        mManager.ForEachArchetype<RiggedModelComponent, Transform>([&](Gep::Entity entity, RiggedModelComponent& model, Transform& transform)
+        mManager.ForEachArchetype([&](Gep::Entity entity, RiggedModelComponent& model, Transform& transform)
         {
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
@@ -644,7 +644,7 @@ namespace Client
             mRenderer.AddObject(targetShader, model.name, uniforms, flags);
         });
 
-        mManager.ForEachArchetype<StaticModelComponent, Transform>([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
+        mManager.ForEachArchetype([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
         {
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);

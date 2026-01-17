@@ -20,49 +20,22 @@
 
 namespace Client
 {
-    std::vector<Gep::Entity> CollisionResource::RayCast(Gep::EngineManager& em, const Gep::Ray& ray)
+    template <typename ModelComponentType>
+        requires requires (ModelComponentType& m) { m.name; }
+    static void ModelComponentTest(Gep::EngineManager& em, const Gep::Ray& ray, std::vector<std::pair<float, Gep::Entity>>& hits)
     {
-        std::vector<Gep::Entity> hitEntities;
-
-        std::vector<std::pair<float, Gep::Entity>> hits;
-
-        // loop over all cube colliders
-        em.ForEachArchetype<Client::Transform, Client::CubeCollider>([&](Gep::Entity entity, Client::Transform& transform, Client::CubeCollider& collider) 
-        {
-            float t;
-            if (Gep::RayCube(ray, Gep::Cube{ transform.world.position, transform.world.scale * 0.5f, transform.world.rotation }, t))
-            {
-                if (t > 0.0f) // only accept objects infront of the ray
-                    hits.emplace_back(t, entity);
-            }
-        });
-
-        // loop over all sphere colliders
-        em.ForEachArchetype<Client::Transform, Client::SphereCollider>([&](Gep::Entity entity, Client::Transform& transform, Client::SphereCollider& collider)
-        {
-            float t;
-            if (Gep::RaySphere(ray, Gep::Sphere{ transform.world.position, std::max({transform.world.scale.x, transform.world.scale.y, transform.world.scale.z}) * 0.5f }, t))
-            {
-                if (t > 0.0f) // only accept objects infront of the ray
-                    hits.emplace_back(t, entity);
-            }
-        });
-
-        em.ForEachArchetype<Client::Transform, Client::StaticModelComponent, Client::MeshCollider>([&](Gep::Entity entity, Client::Transform& transform, Client::StaticModelComponent& model, Client::MeshCollider& collider)
+        em.ForEachArchetype([&](Gep::Entity entity, Client::Transform& transform, ModelComponentType& model, Client::MeshCollider& collider)
         {
             Gep::OpenGLRenderer& renderer = em.GetResource<Gep::OpenGLRenderer>();
-            const Gep::Model& mdl = renderer.GetModel(model.name);
+            const Gep::Model& internalModel = renderer.GetModel(model.name);
 
             const glm::mat4 modelMtx = Gep::ToMat4(transform.world);
 
             float closestT = std::numeric_limits<float>::max();
             bool   anyHit = false;
 
-            for (const Gep::Mesh& mesh : mdl.meshes)
+            for (const Gep::Mesh& mesh : internalModel.meshes)
             {
-                // Coarse test: ray vs world-space AABB of this mesh
-                // If your loader guarantees mesh.boundingBox is populated, this is fast.
-                // Otherwise consider computing it here once.
                 Gep::AABB worldAABB = TransformAABB(mesh.boundingBox, modelMtx);
 
                 float taabb{};
@@ -96,9 +69,37 @@ namespace Client
 
             if (anyHit)
                 hits.emplace_back(closestT, entity);
+        });
+    }
 
+    std::vector<Gep::Entity> CollisionResource::RayCast(Gep::EngineManager& em, const Gep::Ray& ray)
+    {
+        std::vector<std::pair<float, Gep::Entity>> hits;
+
+        // loop over all cube colliders
+        em.ForEachArchetype([&](Gep::Entity entity, Client::Transform& transform, Client::CubeCollider& collider) 
+        {
+            float t;
+            if (Gep::RayCube(ray, Gep::Cube{ transform.world.position, transform.world.scale * 0.5f, transform.world.rotation }, t))
+            {
+                if (t > 0.0f) // only accept objects infront of the ray
+                    hits.emplace_back(t, entity);
+            }
         });
 
+        // loop over all sphere colliders
+        em.ForEachArchetype([&](Gep::Entity entity, Client::Transform& transform, Client::SphereCollider& collider)
+        {
+            float t;
+            if (Gep::RaySphere(ray, Gep::Sphere{ transform.world.position, std::max({transform.world.scale.x, transform.world.scale.y, transform.world.scale.z}) * 0.5f }, t))
+            {
+                if (t > 0.0f) // only accept objects infront of the ray
+                    hits.emplace_back(t, entity);
+            }
+        });
+
+        ModelComponentTest<Client::StaticModelComponent>(em, ray, hits);
+        ModelComponentTest<Client::RiggedModelComponent>(em, ray, hits);
 
         // sort by time hit
         std::sort(hits.begin(), hits.end(), [](const auto& a, const auto& b) 
@@ -107,6 +108,7 @@ namespace Client
         });
 
         // return only the hit entities
+        std::vector<Gep::Entity> hitEntities;
         hitEntities.reserve(hits.size());
         for (const auto& hit : hits)
         {

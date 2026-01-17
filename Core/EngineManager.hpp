@@ -41,7 +41,7 @@ namespace Gep
     }
 
     template <typename T>
-    concept TypeHasOnComponentsRegisteredConcept = requires(T t, Gep::type_list<int> componentTypes)
+    concept TypeHasOnComponentsRegisteredConcept = requires(T t, TypeList<int> componentTypes)
     {
         { t.template OnComponentsRegistered<int>(componentTypes) } -> std::same_as<void>;
     };
@@ -151,7 +151,7 @@ namespace Gep
         // foundational functions /////////////////////////////////////////////////////////////////
 
         template <typename... ComponentTypes, typename... SystemTypes>
-        void RegisterTypes(Gep::type_list<ComponentTypes...> componentTypes, Gep::type_list<SystemTypes...> systemTypes);
+        void RegisterTypes(Gep::TypeList<ComponentTypes...> componentTypes, Gep::TypeList<SystemTypes...> systemTypes);
 
         void Initialize();
 
@@ -236,7 +236,7 @@ namespace Gep
         std::vector<Entity> GetRoots();
 
         // iterates over entities with the given component types, also automatically gets the components from those entities
-        template<typename... ComponentTypes, typename Func>
+        template<typename Func>
         inline void ForEachArchetype(Func&& lambda);
 
         // counts the amount of entities with the matching components
@@ -265,6 +265,9 @@ namespace Gep
 
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // component functions //////////////////////////////////////////////////////////////////////////
+
+        template <typename... ComponentTypes>
+        bool ValidateComponentTypes() const;
 
         template <typename ComponentType>
         Signature GetComponentSignature() const;
