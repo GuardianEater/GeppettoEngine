@@ -73,9 +73,9 @@ namespace Gep
 
     enum class EngineState
     {
+        None,  // it is only this state when the engine is starting and when the engine is endings
         Play,  // the state when the game is playing
         Pause, // the state when the game is paused
         Edit,  // the state when in edit mode
-        None,  // it is only this state when the engine is starting and when the engine is endings
     };
 }

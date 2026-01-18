@@ -501,12 +501,12 @@ namespace Gep
         // loops through each bit on a signature, 
         // gets the bit position, which is also the component id 
         // and gets the component data from that id
-        while (signature.any())
+        uint64_t sig = signature.to_ullong();
+        while (sig)
         {
-            const size_t componentID = _tzcnt_u64(signature.to_ullong());
-            signature.reset(componentID);
-
-            lambda(mComponentDatas.at(componentID));
+            const int componentID = std::countr_zero(sig);
+            sig &= sig - 1; // sets the bit at componentID to 0
+            lambda(mComponentDatas[componentID]);
         }
     }
 

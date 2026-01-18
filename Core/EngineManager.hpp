@@ -431,7 +431,6 @@ namespace Gep
         std::vector<std::pair<uint8_t, Entity>> mMarkedComponents;   // The entity and the Entities component type ids.
 
         // archetypes
-        // probably need to turn this into a tree
         std::unordered_map<Signature, Archetype> mArchetypes; // maps the signature of an archetype to the archetype itself
 
         // systems
@@ -446,6 +445,8 @@ namespace Gep
         float mDeltaTime = 0.016f; // the amount of time that passed over the course of the last frame
         float mExcludedDeltaTime = 0.0f; // the amount of time to be subtracked from delta time
         std::chrono::high_resolution_clock::time_point mFrameStartTime{}; // the time when this frame started
+
+        // state
         EngineState mState = EngineState::None; // the current state of the engine
         bool mIsRunning = true; // whether or not the engine is currently running. Is checked first thing at the beggining of every frame
     };
