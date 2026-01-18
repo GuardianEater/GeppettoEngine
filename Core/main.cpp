@@ -62,9 +62,6 @@ int main()
     Gep::Log::SetOutputFile("log.txt");
     Gep::Log::Important("Welcome To The Gep Engine!");
 
-    // start the engine //////////////////////////////////////////////////////////////////////////////
-    Gep::EngineManager em;
-
     // register all resources ////////////////////////////////////////////////////////////////////////
     Gep::TypeList<
         Client::ScriptingResource,
@@ -111,7 +108,7 @@ int main()
     > systemTypes;
 
     // register all types ////////////////////////////////////////////////////////////////////////////
-    em.RegisterTypes(resourceTypes, componentTypes, systemTypes);
+    auto em = Gep::MakeEngine(resourceTypes, componentTypes, systemTypes);
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.SetState(Gep::EngineState::Edit);

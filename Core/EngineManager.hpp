@@ -140,16 +140,27 @@ namespace Gep
         std::deque<std::function<void(const void*)>> subscribers{}; // a list of all of the subscribers that will be called when this event happens
     };
 
-    class EngineManager
+    // type deduction wrapper to make engine construction easier
+    template <typename... ResourceTypes, typename... ComponentTypes, typename... SystemTypes>
+    auto MakeEngine(Gep::TypeList<ResourceTypes...> resourceTypes, Gep::TypeList<ComponentTypes...> componentTypes, Gep::TypeList<SystemTypes...> systemTypes)
+    {
+        return EngineManager<Gep::TypeList<ResourceTypes...>, Gep::TypeList<ComponentTypes...>, Gep::TypeList<SystemTypes...>>(resourceTypes, componentTypes, systemTypes);
+    }
+
+    template <typename ResourceTypeList, typename ComponentTypeList, typename SystemTypeList>
+    class EngineManager;
+
+    template <typename... ResourceTypes, typename ...ComponentTypes, typename ...SystemTypes>
+    class EngineManager<Gep::TypeList<ResourceTypes...>, Gep::TypeList<ComponentTypes...>, Gep::TypeList<SystemTypes...>>
     {
     public:
-        EngineManager();
+
+        EngineManager(Gep::TypeList<ResourceTypes...> resourceTypes, Gep::TypeList<ComponentTypes...> componentTypes, Gep::TypeList<SystemTypes...> systemTypes);
         ~EngineManager();
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         // foundational functions /////////////////////////////////////////////////////////////////
 
-        template<typename... ResourceTypes, typename ...ComponentTypes, typename ...SystemTypes>
         void RegisterTypes(Gep::TypeList<ResourceTypes...> resourceTypes, Gep::TypeList<ComponentTypes...> componentTypes, Gep::TypeList<SystemTypes...> systemTypes);
 
         void Initialize();

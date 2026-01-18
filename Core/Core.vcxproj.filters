@@ -105,9 +105,6 @@
     <ClCompile Include="dependencies\imgui\imgui_stdlib.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="EngineManager.cpp">
-      <Filter>Backend\ECS</Filter>
-    </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>Backend\Rendering</Filter>
     </ClCompile>
@@ -296,6 +293,9 @@
     </ClCompile>
     <ClCompile Include="STLHelp.cpp">
       <Filter>Backend\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineManager.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
