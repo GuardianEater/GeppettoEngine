@@ -74,55 +74,53 @@ namespace Gep
     struct EntityData
     {
         glm::u64vec2 archetypeIndex{ INVALID_ENTITY, INVALID_ENTITY }; // the index into the archetype chunk where this entity has its components stored
-        Signature signature{}; // the signature of the entity
+        Signature signature = 0; // the signature of the entity
 
-        Entity parent{ INVALID_ENTITY }; // the parent of the entity, if it doesnt have a parent it is INVALID_ENTITY
-        std::vector<Entity> children{}; // any children of the entity
+        Entity parent = INVALID_ENTITY; // the parent of the entity, if it doesnt have a parent it is INVALID_ENTITY
+        std::vector<Entity> children; // any children of the entity
 
         bool active = true; // TODO: whether or not this entity is aquired from a regular query
         std::string name = ""; // allows for user identification
-        UUID uuid{}; // a way to allways identify this specific entity
+        UUID uuid; // a way to allways identify this specific entity
     };
 
-    // static data for components
+    // static data for components, one is generated for each component that is registered.
     struct ComponentData
     {
-        // info
-        Signature signature{}; // the signature of the component
-        uint8_t index{}; // the position of the component in the signature
-        std::string name{}; // the name of the component
-        size_t size{}; // the size of the component in bytes
-        size_t count{}; // the amount of components of this type
+        // general info
+        Signature signature = 0; // the signature of the component
+        uint8_t index = 0;       // the position of the component in the signature
+        std::string name = "";   // the name of the component
+        size_t size = 0;         // the size of the component in bytes
+        size_t count = 0;        // the amount of components that are currently used of this type
 
-        // useful entity functions
-        std::function<bool(Entity)> has{}; // a function that checks if the entity has this component
-        std::function<void(Entity)> add{}; // a function that adds this component to the given entity
-        std::function<void(Entity)> remove{}; // a function that removes this component from the given entity
-        std::function<void(Entity to, Entity from)> copy{}; // a function that copies this component from one entity to another
+        // useful entity functions these are 
+        std::function<bool(Entity)> has;                  // a function that checks if the entity has this component type
+        std::function<void(Entity)> add;                  // a function that adds this component type to the given entity
+        std::function<void(Entity)> remove;               // a function that removes this component type from the given entity
+        std::function<void(Entity to, Entity from)> copy; // a function that copies this component type from one entity to another
 
         // event functions
-        std::function<void(Entity)> onRemove{}; // does not deallocate. Signals to the ecs that this component will be removed manually.
+        std::function<void(Entity)> onRemove; // this does not deallocate. Simply signals the event for component destruction component will be removed manually.
 
         // memory functions
-        std::function<void(void* to, void* from)> move{}; // casts the given pointer to the component type and moves it to the new destination
-        std::function<void(void*)> destruct{}; // casts the given pointer to the component type and calls the destructor
+        std::function<void(void* to, void* from)> move; // casts the given pointer to the component type and moves it to the new destination
+        std::function<void(void*)> destruct;            // casts the given pointer to the component type and calls the destructor
 
         // serialization functions
-        std::function<nlohmann::json(Gep::Entity)> save{}; // writes this component to json
-        std::function<void(Gep::Entity, const nlohmann::json&)> load{}; // adds the given component to the entity from json
+        std::function<nlohmann::json(Gep::Entity)> save;              // writes this component to json
+        std::function<void(Gep::Entity, const nlohmann::json&)> load; // adds the given component to the entity from json
     };
 
+    // one is generated for each system that is registered
     struct SystemData
     {
-        // the name of the system human readable
-        std::string name{};
+        // general info
+        std::string name = "";       // the name of the system
+        size_t size = 0;             // the amount of memory this system takes up. should always be 0 but is not enforced
+        uint64_t index = UINT64_MAX; // the index of this system into mSystems
 
-        // the amount of memory this system takes up
-        size_t size{};
-
-        // the index of this system into mSystems
-        uint64_t index{};
-
+        // used for dynamic profiling of the system
         float timeInFrameStart = 0.0f; // determines time spent in frame start call
         float timeInFrameEnd   = 0.0f; // determines time spent in frame end call
         float timeInUpdate     = 0.0f; // determines time spent in update call
@@ -131,7 +129,8 @@ namespace Gep
         
         EngineState executionPolicy = EngineState::Edit; // when the system should be executed. always runs by default
 
-        std::shared_ptr<ISystem> system; // point to the actual system
+        // the actual system instance.
+        std::unique_ptr<ISystem> system; // point to the actual system
     };
 
     // static event data. data that is per event type
@@ -150,8 +149,8 @@ namespace Gep
         ///////////////////////////////////////////////////////////////////////////////////////////
         // foundational functions /////////////////////////////////////////////////////////////////
 
-        template <typename... ComponentTypes, typename... SystemTypes>
-        void RegisterTypes(Gep::TypeList<ComponentTypes...> componentTypes, Gep::TypeList<SystemTypes...> systemTypes);
+        template<typename... ResourceTypes, typename ...ComponentTypes, typename ...SystemTypes>
+        void RegisterTypes(Gep::TypeList<ResourceTypes...> resourceTypes, Gep::TypeList<ComponentTypes...> componentTypes, Gep::TypeList<SystemTypes...> systemTypes);
 
         void Initialize();
 
@@ -162,7 +161,7 @@ namespace Gep
         // called on exit
         void Exit();
 
-        bool Running() const;
+        bool IsRunning() const;
 
         float GetDeltaTime() const;
 

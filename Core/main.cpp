@@ -57,35 +57,32 @@
 
 int main()  
 {
-    Gep::SetDynamicLibraryDirectory("lib");
-
+    // initialize logging ////////////////////////////////////////////////////////////////////////////
     Gep::Log::SetPrintLevel(Gep::Log::LogLevel::info);
     Gep::Log::SetOutputFile("log.txt");
-
     Gep::Log::Important("Welcome To The Gep Engine!");
 
     // start the engine //////////////////////////////////////////////////////////////////////////////
     Gep::EngineManager em;
 
     // register all resources ////////////////////////////////////////////////////////////////////////
-    em.RegisterResource<Client::ScriptingResource>();
-    em.RegisterResource<Client::SoundResource>();
-    em.RegisterResource<Client::CollisionResource>();
-    em.RegisterResource<Client::SerializationResource>();
-    em.RegisterResource<Client::EditorResource>();
-    em.RegisterResource<Gep::OpenGLRenderer>();
+    Gep::TypeList<
+        Client::ScriptingResource,
+        Client::SoundResource,
+        Client::CollisionResource,
+        Client::SerializationResource,
+        Client::EditorResource,
+        Gep::OpenGLRenderer
+    > resourceTypes;
 
     // list of all components ///////////////////////////////////////////////////////////////////////
-    Gep::TypeList <
+    Gep::TypeList<
         Client::Transform,
         Client::RigidBody,
         Client::Spring,
         Client::RiggedModelComponent,
         Client::StaticModelComponent,
-        //Client::Script,
-        //Client::GameCamera,
         Client::Camera,
-        //Client::Texture,
         Client::Light,
         Client::DirectionalLight,
         Client::SpatialSoundEmitter,
@@ -106,7 +103,6 @@ int main()
         Client::IKSystem,
         Client::CurveSystem,
         Client::RenderSystem,
-        //Client::ScriptingSystem,
         Client::SerializationSystem,
         Client::PhysicsSystem,
         Client::RelationSystem,
@@ -115,15 +111,13 @@ int main()
     > systemTypes;
 
     // register all types ////////////////////////////////////////////////////////////////////////////
-    em.RegisterTypes(componentTypes, systemTypes);
-
-    //em.SetSystemExecutionPolicy<Client::ScriptingSystem>(Gep::EngineState::Play);
+    em.RegisterTypes(resourceTypes, componentTypes, systemTypes);
 
     // initialize systems ////////////////////////////////////////////////////////////////////////////
     em.SetState(Gep::EngineState::Edit);
     em.Initialize();
 
-    while (em.Running())
+    while (em.IsRunning())
     {
         em.FrameStart();
         em.Update();

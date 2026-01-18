@@ -18,7 +18,7 @@ namespace Gep
 {
     struct Vertex
     {
-        constexpr static const uint32_t INVALID_INDEX = Gep::num_max<uint32_t>();
+        constexpr static const uint32_t INVALID_INDEX = Gep::NumMax<uint32_t>();
 
         glm::vec3 position{};
         glm::vec3 normal{};

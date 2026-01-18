@@ -36,7 +36,19 @@ namespace Gep
     template<typename... Params>
     constexpr size_t keyed_vector<T>::emplace(Params&&... params)
     {
-        return insert(T(std::forward<Params>(params)...));
+        if (mAvailableSlots.empty())
+        {
+            size_t backIndex = mData.size();
+            mData.emplace_back(std::in_place, std::forward<Params>(params)...);
+
+            return backIndex;
+        }
+
+        size_t openIndex = mAvailableSlots.back();
+        mAvailableSlots.pop_back();
+        mData.at(openIndex).emplace(std::forward<Params>(params)...);
+
+        return openIndex;
     }
 
     template<typename T>

@@ -77,7 +77,7 @@ namespace Gep
         mExcludedDeltaTime = 0.0f;
     }
 
-    bool EngineManager::Running() const
+    bool EngineManager::IsRunning() const
     {
         return mIsRunning;
     }

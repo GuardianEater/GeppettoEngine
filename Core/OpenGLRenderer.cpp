@@ -925,9 +925,9 @@ namespace Gep
         glDeleteVertexArrays(1, &mVertexArrayObject);
 
 #ifdef _DEBUG
-        mVertexArrayObject = num_max<GLuint>();
-        mVertexBuffer = num_max<GLuint>();
-        mIndexBuffer = num_max<GLuint>();
+        mVertexArrayObject = NumMax<GLuint>();
+        mVertexBuffer = NumMax<GLuint>();
+        mIndexBuffer = NumMax<GLuint>();
 #endif // _DEBUG
     }
 
@@ -1206,7 +1206,7 @@ namespace Gep
     {
         // if the passed node is null return num max signaling that this is a leaf
         if (!node) 
-            return num_max<uint32_t>();
+            return NumMax<uint32_t>();
 
         auto it = gBoneData.find(node->mName.C_Str());
 
@@ -1233,7 +1233,7 @@ namespace Gep
         for (const aiNode* childNode : std::span(node->mChildren, node->mNumChildren))
         {
             uint32_t childIndex = LoadHierarchyStep(model, index, childNode);
-            if (childIndex != num_max<uint32_t>())
+            if (childIndex != NumMax<uint32_t>())
             {
                 //note: cant get a reference here because it could be stale after recursive calls
                 model.skeleton.bones.at(index).childrenIndices.push_back(childIndex);
@@ -1250,12 +1250,12 @@ namespace Gep
         //uint32_t index = model.skeleton.bones.size();
         //Gep::Bone& bone = model.skeleton.bones.emplace_back();
         //bone.name = "Root";
-        //bone.parentIndex = num_max<uint32_t>();
+        //bone.parentIndex = NumMax<uint32_t>();
         //bone.transformation = Gep::VQS{};
         //bone.inverseBind = Gep::VQS{};
         //bone.isRealBone = false;
 
-        LoadHierarchyStep(model, num_max<uint32_t>(), scene->mRootNode);
+        LoadHierarchyStep(model, NumMax<uint32_t>(), scene->mRootNode);
     }
 
     static void SetVertexBoneData(Vertex& vertex, uint32_t boneID, float weight)

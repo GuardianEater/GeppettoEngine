@@ -238,10 +238,10 @@ namespace Gep
     private:
         struct MaterialGPUHandle
         {
-            GLuint diffuseTexture = num_max<GLuint>();
-            GLuint aoTexture = num_max<GLuint>();
-            GLuint metalnessTexture = num_max<GLuint>();
-            GLuint roughnessTexture = num_max<GLuint>();
+            GLuint diffuseTexture = NumMax<GLuint>();
+            GLuint aoTexture = NumMax<GLuint>();
+            GLuint metalnessTexture = NumMax<GLuint>();
+            GLuint roughnessTexture = NumMax<GLuint>();
         };
 
         struct MeshGPUHandle
@@ -252,9 +252,9 @@ namespace Gep
             void DeleteBuffers();
 
             // handles used by opengl
-            GLuint mVertexArrayObject = num_max<GLuint>();
-            GLuint mVertexBuffer = num_max<GLuint>();
-            GLuint mIndexBuffer = num_max<GLuint>();
+            GLuint mVertexArrayObject = NumMax<GLuint>();
+            GLuint mVertexBuffer = NumMax<GLuint>();
+            GLuint mIndexBuffer = NumMax<GLuint>();
             size_t mIndexCount{}; // the amount of indices in the index buffer
         };
 
@@ -296,7 +296,7 @@ namespace Gep
 
         void LoadAnimations(const std::string& name, Gep::Model& model, const aiScene* scene);
 
-        // given information, will load textures onto the gpu that are needed by the given material. will return num_max<GLuint>() if there is no texture loaded
+        // given information, will load textures onto the gpu that are needed by the given material. will return NumMax<GLuint>() if there is no texture loaded
         Texture LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type);
 
         void LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton);

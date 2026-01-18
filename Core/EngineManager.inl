@@ -16,9 +16,10 @@
 
 namespace Gep
 {
-    template<typename ...ComponentTypes, typename ...SystemTypes>
-    inline void EngineManager::RegisterTypes(Gep::TypeList<ComponentTypes...> componentTypes, Gep::TypeList<SystemTypes...> systemTypes)
+    template<typename... ResourceTypes, typename ...ComponentTypes, typename ...SystemTypes>
+    inline void EngineManager::RegisterTypes(Gep::TypeList<ResourceTypes...> resourceTypes, Gep::TypeList<ComponentTypes...> componentTypes, Gep::TypeList<SystemTypes...> systemTypes)
     {
+        (RegisterResource<ResourceTypes>(), ...);
         (RegisterComponent<ComponentTypes>(), ...);
         (RegisterSystem<SystemTypes>(), ...);
 
@@ -585,7 +586,7 @@ namespace Gep
         size_t systemIndex = mSystems.emplace();
         SystemData& sd = mSystems.at(systemIndex);
 
-        sd.system = std::make_shared<SystemType>(*this);
+        sd.system = std::make_unique<SystemType>(*this);
         sd.name   = GetTypeInfo<SystemType>().PrettyName();
         sd.size   = sizeof(SystemType);
         sd.index  = systemIndex;
@@ -652,7 +653,7 @@ namespace Gep
     {
         const uint64_t index = GetSystemIndex<SystemType>();
 
-        return *std::static_pointer_cast<SystemType>(mSystems.at(index).system);
+        return *dynamic_cast<SystemType*>(mSystems.at(index).system.get());
     }
 
     template<typename SystemType>
