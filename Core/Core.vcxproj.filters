@@ -73,6 +73,9 @@
     <Filter Include="Backend\Rendering\NewRenderAPI">
       <UniqueIdentifier>{b7ee87c3-26eb-4f55-bab6-214fce77edd0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Backend\NewRendering">
+      <UniqueIdentifier>{f8ccba76-0d13-47e3-98d6-baa264dd822e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -104,9 +107,6 @@
     </ClCompile>
     <ClCompile Include="dependencies\imgui\imgui_stdlib.cpp">
       <Filter>ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="EngineManager.cpp">
-      <Filter>Backend\ECS</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>Backend\Rendering</Filter>
@@ -252,9 +252,6 @@
     <ClCompile Include="Model.cpp">
       <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClCompile>
-    <ClCompile Include="RenderTarget.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Quaternion.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
@@ -296,6 +293,12 @@
     </ClCompile>
     <ClCompile Include="STLHelp.cpp">
       <Filter>Backend\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTarget.cpp">
+      <Filter>Backend\NewRendering</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

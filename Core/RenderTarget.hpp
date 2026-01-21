@@ -1,5 +1,5 @@
 /*****************************************************************//**
- * \file   RenderTarget.hpp
+ * \file   FrameBuffer.hpp
  * \brief  
  * 
  * \author Travis Gronvold (travis.gronvold@digipen.edu)
@@ -12,36 +12,38 @@
 
 namespace Gep
 {
-    class RenderTarget
+    class FrameBuffer
     {
     public:
-        static RenderTarget Generate(glm::ivec2 size);
+        static FrameBuffer Create(const glm::ivec2 size);
 
         void Bind() const;
         void Unbind() const;
-        void Clear(const glm::vec3& color = { 0.0f, 0.0f, 0.0f }) const;
+        void Clear(const glm::vec4& color = { 0.0f, 0.0f, 0.0f, 0.0f }) const;
         void Resize(glm::ivec2 newSize);
+        void UpdateViewport() const;
 
         glm::ivec2 GetSize() const { return mSize; }
 
     private:
         struct TargetData
         {
-            GLuint mFrameBuffer = 0;
-            GLuint mTexture = 0;
-            GLuint mRenderBuffer = 0;
+            GLuint frameBuffer = 0;
+            GLuint texture = 0;
+            GLuint depthBuffer = 0;
 
             ~TargetData()
             {
-                glDeleteFramebuffers(1, &mFrameBuffer);
-                glDeleteTextures(1, &mTexture);
-                glDeleteRenderbuffers(1, &mRenderBuffer);
+                glDeleteFramebuffers(1, &frameBuffer);
+                glDeleteTextures(1, &texture);
+                glDeleteRenderbuffers(1, &depthBuffer);
             }
         };
 
     private:
-        std::shared_ptr<TargetData> mTarget; 
+        // this is so if the frame buffer is copied it will still reference the same underlying data, also avoids delete issues
+        std::shared_ptr<TargetData> mTarget;
 
-        glm::ivec2 mSize = { 0.0f, 0.0f };
+        glm::ivec2 mSize = { 0, 0 };
     };
 }

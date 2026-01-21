@@ -56,6 +56,7 @@ namespace Client
     void RenderSystem::Initialize()
     {
         mManager.SubscribeToEvent<Gep::Event::ComponentAdded<RiggedModelComponent>>(this, &RenderSystem::OnRiggedModelAdded);
+        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<StaticModelComponent>>(this, &RenderSystem::OnStaticModelAdded);
 
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<RiggedModelComponent>>(this, &RenderSystem::OnRiggedModelEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<StaticModelComponent>>(this, &RenderSystem::OnStaticModelEditorRender);

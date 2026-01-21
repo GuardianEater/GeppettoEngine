@@ -11,19 +11,17 @@ layout(location=4) in vec4 boneWeights; // weights of bones affecting this verte
 layout(location=0) out vec3 worldPosition;    // surface point
 layout(location=1) out vec3 worldNormal;      // normal at position
 layout(location=2) out vec2 uvOut;            // texture coordinates
-layout(location=3) flat out uint vObjectIndex; // the current objects index into object uniforms
-layout(location=4) flat out uint vMeshIndex;   // the current mesh index into mesh uniforms
-layout(location=5) flat out uint vMaterialIndex;   // the current material index into material uniforms
+layout(location=3) flat out uint vMaterialIndex;   // the current material index into material uniforms
 
 void main(void)
 {
-  vObjectIndex   = gl_InstanceID + gl_BaseInstance;
-  vMeshIndex     = gl_InstanceID + meshBaseInstance;
-  vMaterialIndex = meshUniforms[vMeshIndex].materialIndex;
+  uint objectIndex   = gl_InstanceID + gl_BaseInstance;
+  uint meshIndex     = gl_InstanceID + meshBaseInstance;
+  vMaterialIndex = meshUniforms[meshIndex].materialIndex;
 
-  vec4 pos4 = objectUniforms[vObjectIndex].modelMatrix * vec4(position, 1.0);
+  vec4 pos4 = objectUniforms[objectIndex].modelMatrix * vec4(position, 1.0);
 
-  worldNormal = normalize(objectUniforms[vObjectIndex].normalMatrix * normal);
+  worldNormal = normalize(objectUniforms[objectIndex].normalMatrix * normal);
   uvOut = uv;
   worldPosition = vec3(pos4);
 

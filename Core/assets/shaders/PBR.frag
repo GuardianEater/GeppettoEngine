@@ -4,9 +4,7 @@
 layout(location=0) in vec3 worldPosition;    // the point that the light hits
 layout(location=1) in vec3 worldNormal;      // the normal vector of the surface hit
 layout(location=2) in vec2 uvOut;            // the uv coordinates of the surface hit
-layout(location=3) flat in uint vObjectIndex; // the index of the currently being drawn object
-layout(location=4) flat in uint vMeshIndex; // the index of the currently being drawn object
-layout(location=5) flat in uint vMaterialIndex;   // the current material index into material uniforms
+layout(location=3) flat in uint vMaterialIndex;   // the current material index into material uniforms
 
 // out /////////////////////////////////////////////////////////////////////////
 layout(location=0) out vec4 frag_color; // the resulting pixel color
@@ -27,8 +25,7 @@ CurrentSample currentSample;
 
 void main(void)
 {
-  const ObjectUniforms object = objectUniforms[vObjectIndex];
-  const PBRMaterial material  = materialUniforms[vMaterialIndex];
+  const PBRMaterial material = materialUniforms[vMaterialIndex];
 
   // if the texture handle is null, then use material.color else sample from the texture
   currentSample.ao        = material.aoTextureHandle        == uvec2(0,0) ? material.ao        : texture(sampler2D(material.aoTextureHandle), uvOut).r;

@@ -11,17 +11,15 @@ layout(location=4) in vec4 boneWeights; // weights of bones affecting this verte
 layout(location=0) out vec3 worldPosition;    // surface point
 layout(location=1) out vec3 worldNormal;      // normal at position
 layout(location=2) out vec2 uvOut;            // texture coordinates
-layout(location=3) flat out uint vObjectIndex; // the current objects index into object uniforms
-layout(location=4) flat out uint vMeshIndex;   // the current mesh index into mesh uniforms
-layout(location=5) flat out uint vMaterialIndex;   // the current material index into material uniforms
+layout(location=3) flat out uint vMaterialIndex;   // the current material index into material uniforms
 
 const uint INVALID_INDEX = 4294967295;
 
 void main(void)
 {
-  vObjectIndex   = gl_InstanceID + gl_BaseInstance;
-  vMeshIndex     = gl_InstanceID + meshBaseInstance;
-  vMaterialIndex = meshUniforms[vMeshIndex].materialIndex;
+  uint objectIndex = gl_InstanceID + gl_BaseInstance;
+  uint meshIndex   = gl_InstanceID + meshBaseInstance;
+  vMaterialIndex   = meshUniforms[meshIndex].materialIndex;
 
   // ---- skin the vertex using bone matrices ----
   vec4 totalPosition = vec4(0.0);
@@ -32,7 +30,7 @@ void main(void)
     if (boneIndexs[i] == INVALID_INDEX)
       continue; // do nothing if the bone index is not set
 
-    uint boneIndex = objectUniforms[vObjectIndex].boneOffset + boneIndexs[i];
+    uint boneIndex = objectUniforms[objectIndex].boneOffset + boneIndexs[i];
     float weight = boneWeights[i];
     if (weight > 0.0) 
     {
@@ -45,10 +43,10 @@ void main(void)
   }
 
   // ---- transform to world space ----
-  vec4 pos4 = objectUniforms[vObjectIndex].modelMatrix * totalPosition;
+  vec4 pos4 = objectUniforms[objectIndex].modelMatrix * totalPosition;
 
   // correct normal transform (TBN-safe)
-  mat3 normalMatrix = objectUniforms[vObjectIndex].normalMatrix;
+  mat3 normalMatrix = objectUniforms[objectIndex].normalMatrix;
 
   worldNormal = normalize(normalMatrix * totalNormal);
   worldPosition = vec3(pos4);
