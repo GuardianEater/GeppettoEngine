@@ -70,9 +70,6 @@
     <Filter Include="Client\Editor">
       <UniqueIdentifier>{99815ced-d820-40ab-abbb-52e71e26ea01}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Backend\Rendering\NewRenderAPI">
-      <UniqueIdentifier>{b7ee87c3-26eb-4f55-bab6-214fce77edd0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Backend\NewRendering">
       <UniqueIdentifier>{f8ccba76-0d13-47e3-98d6-baa264dd822e}</UniqueIdentifier>
     </Filter>
@@ -243,15 +240,6 @@
     <ClCompile Include="SkyboxMesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClCompile>
-    <ClCompile Include="Shader.cpp">
-      <Filter>Backend\Rendering\NewRenderAPI</Filter>
-    </ClCompile>
-    <ClCompile Include="Texture.cpp">
-      <Filter>Backend\Rendering\NewRenderAPI</Filter>
-    </ClCompile>
-    <ClCompile Include="Model.cpp">
-      <Filter>Backend\Rendering\NewRenderAPI</Filter>
-    </ClCompile>
     <ClCompile Include="Quaternion.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
@@ -297,8 +285,11 @@
     <ClCompile Include="EngineManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RenderTarget.cpp">
+    <ClCompile Include="FrameBuffer.cpp">
       <Filter>Backend\NewRendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>Backend\Rendering</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -533,21 +524,6 @@
     <ClInclude Include="HeirarchyStorage.hpp">
       <Filter>Client\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Shader.hpp">
-      <Filter>Backend\Rendering\NewRenderAPI</Filter>
-    </ClInclude>
-    <ClInclude Include="Texture.hpp">
-      <Filter>Backend\Rendering\NewRenderAPI</Filter>
-    </ClInclude>
-    <ClInclude Include="Model.hpp">
-      <Filter>Backend\Rendering\NewRenderAPI</Filter>
-    </ClInclude>
-    <ClInclude Include="Material.hpp">
-      <Filter>Backend\Rendering\NewRenderAPI</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderTarget.hpp">
-      <Filter>Backend\Rendering\NewRenderAPI</Filter>
-    </ClInclude>
     <ClInclude Include="Quaternion.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
@@ -565,9 +541,6 @@
     </ClInclude>
     <ClInclude Include="Algorithms.hpp">
       <Filter>Backend\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="GPUVector.hpp">
-      <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </ClInclude>
     <ClInclude Include="MeshCollider.hpp">
       <Filter>Client\Components</Filter>
@@ -616,6 +589,12 @@
     </ClInclude>
     <ClInclude Include="ActionHistoryResource.hpp">
       <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameBuffer.hpp">
+      <Filter>Backend\NewRendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.hpp">
+      <Filter>Backend\Rendering</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -693,9 +672,6 @@
     </None>
     <None Include="assets\shaders\Highlight.vert">
       <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="GPUVector.inl">
-      <Filter>Backend\Rendering\NewRenderAPI</Filter>
     </None>
     <None Include="ImGuiHelp.inl">
       <Filter>Backend\Tools</Filter>

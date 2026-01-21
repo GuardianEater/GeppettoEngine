@@ -7,7 +7,7 @@
  *********************************************************************/
 
 #include "pch.hpp"
-#include "RenderTarget.hpp"
+#include "FrameBuffer.hpp"
 
 namespace Gep
 {

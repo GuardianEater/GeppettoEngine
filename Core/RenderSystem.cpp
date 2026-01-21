@@ -66,10 +66,15 @@ namespace Client
 
         Gep::OpenGLRenderer& renderer = mRenderer;
 
-        renderer.LoadShader("Highlight", "assets\\shaders\\Highlight.vert", "assets\\shaders\\Highlight.frag");
-        renderer.LoadShader("Line", "assets\\shaders\\Line.vert", "assets\\shaders\\Line.frag");
-        renderer.LoadShader("PBR-Static", "assets\\shaders\\PBR-Static.vert", "assets\\shaders\\PBR.frag");
+        renderer.LoadShader("Highlight",   "assets\\shaders\\Highlight.vert",   "assets\\shaders\\Highlight.frag");
+        renderer.LoadShader("Line",        "assets\\shaders\\Line.vert",        "assets\\shaders\\Line.frag");
+        renderer.LoadShader("PBR-Static",  "assets\\shaders\\PBR-Static.vert",  "assets\\shaders\\PBR.frag");
         renderer.LoadShader("PBR-Skinned", "assets\\shaders\\PBR-Skinned.vert", "assets\\shaders\\PBR.frag");
+
+        renderer.LoadShader("Geometry-Static", "assets\\shaders\\PBR-Static.vert",  "assets\\shaders\\GBufferWrite.frag");
+        renderer.LoadShader("Geometry-Skinned", "assets\\shaders\\PBR-Skinned.vert", "assets\\shaders\\GBufferWrite.frag");
+
+        renderer.LoadShader("Lighting", "assets\\shaders\\Forward.vert",            "assets\\shaders\\PBR.frag");
 
         renderer.SetUpLineDrawing();
 
@@ -126,9 +131,9 @@ namespace Client
         }
 
         // send all things added to the gpu
-        renderer.CommitBones();
         renderer.CommitLights();
         renderer.CommitCameras();
+        renderer.CommitBones();
         renderer.CommitObjects();
 
 

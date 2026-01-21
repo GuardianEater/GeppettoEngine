@@ -28,6 +28,8 @@
 
 #include "GPUVector.hpp"
 
+#include "FrameBuffer.hpp"
+
  // fwd
 struct aiScene;
 struct aiMaterial;
@@ -283,6 +285,8 @@ namespace Gep
 
 
     private:
+        void DrawGeometry() const;
+        void DrawLighting() const;
         void DrawRegular() const;
         void DrawLines() const;
         void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
@@ -306,11 +310,6 @@ namespace Gep
 
         glm::vec3 mSolidColor{};
 
-        // camera
-        glm::mat4 mNextPerspective{};
-        glm::mat4 mNextView{};
-        glm::vec4 mNextEye{};
-
         std::unordered_map<std::string, std::pair<ModelGPUHandle, Gep::Model>> mModels; // model name -> its handle and data
         std::unordered_map<std::string, std::pair<AnimationGPUHandle, Gep::Animation>> mAnimations;
         Gep::keyed_vector<Material> mMaterials;
@@ -322,6 +321,8 @@ namespace Gep
         Material mErrorMaterial{};
 
         std::mutex mTextureLoadingMutex{};
+
+        FrameBuffer mGeometryFrameBuffer;
     
         Gep::gpu_vector<ObjectGPUData,   0> mObjectUniforms;   // this vector is perfectly copied onto the gpu into the objectUniforms array
         Gep::gpu_vector<PointLightGPUData,    1> mPointLightUniforms;    // this vector is perfectly copied onto the gpu into the lights array

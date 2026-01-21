@@ -663,6 +663,99 @@ namespace Gep
         glEnableVertexAttribArray(0);
     }
 
+    void OpenGLRenderer::DrawGeometry() const
+    {
+        mGeometryFrameBuffer.Bind();
+        mGeometryFrameBuffer.UpdateViewport();
+        mGeometryFrameBuffer.Clear();
+
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+        glDisable(GL_BLEND);
+
+        uint32_t baseInstance = 0;
+        uint32_t meshBaseInstance = 0;
+
+        Shader& geometryShader = *mShaders.at("Geometry-Static");
+        geometryShader.Bind();
+
+        for (const auto& [shaderName, modelToFlags] : mObjectDatas)
+        {
+            for (const auto& [modelName, flagsToObjects] : modelToFlags)
+            {
+                const auto& [modelHandle, model] = mModels.at(modelName);
+
+                for (const auto& [flags, objects] : flagsToObjects)
+                {
+                    if ((flags & RenderFlags::NoDepthTest) == RenderFlags::NoDepthTest)
+                        glDisable(GL_DEPTH_TEST);
+                    else
+                        glEnable(GL_DEPTH_TEST);
+
+                    if ((flags & RenderFlags::NoBackfaceCull) == RenderFlags::NoBackfaceCull)
+                        glDisable(GL_CULL_FACE);
+                    else
+                    {
+                        glEnable(GL_CULL_FACE);
+                        glCullFace(GL_BACK);
+                    }
+
+                    for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
+                    {
+                        glBindVertexArray(meshHandle.mVertexArrayObject);
+
+                        geometryShader.SetUniform(3, meshBaseInstance);
+
+                        glDrawElementsInstancedBaseInstance(
+                            GL_TRIANGLES,
+                            meshHandle.mIndexCount,
+                            GL_UNSIGNED_INT,
+                            0,
+                            objects.size(),
+                            baseInstance
+                        );
+
+                        meshBaseInstance += objects.size();
+                    }
+
+                    baseInstance += objects.size();
+                }
+            }
+        }
+
+        Shader::Unbind();
+        mGeometryFrameBuffer.Unbind();
+    }
+
+    void OpenGLRenderer::DrawLighting() const
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+
+        Shader& lightingShader = *mShaders.at("Lighting");
+        lightingShader.Bind();
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, mGBuffer.position);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, mGBuffer.normal);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, mGBuffer.albedo);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, mGBuffer.metalRough);
+        glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_2D, mGBuffer.ao);
+
+        lightingShader.SetUniform("gPosition", 0);
+        lightingShader.SetUniform("gNormal", 1);
+        lightingShader.SetUniform("gAlbedo", 2);
+        lightingShader.SetUniform("gMetalRough", 3);
+        lightingShader.SetUniform("gAO", 4);
+
+        DrawFullscreenTriangle();
+    }
+
     void OpenGLRenderer::DrawRegular() const
     {
         uint32_t baseInstance = 0;
