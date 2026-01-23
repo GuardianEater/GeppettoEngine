@@ -37,7 +37,10 @@ namespace Client
     struct Texture;
     struct Light;
     struct Camera;
+    struct Transform;
     struct DirectionalLight;
+    struct CollisionResource;
+    struct EditorResource;
 }
 
 // client
@@ -73,6 +76,8 @@ namespace Client
         void OnDirectionalLightEditorRender(const Gep::Event::ComponentEditorRender<DirectionalLight>& event);
         void OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event);
 
+        void DrawImGuiCameraWindow(Gep::Entity cameraEntity, Client::Camera& camera, Client::Transform& cameraTransform);
+
         // helpers /////////
         void AddColliders();
         void AddLights();
@@ -84,6 +89,8 @@ namespace Client
 
         // resources
         Gep::OpenGLRenderer& mRenderer;
+        Client::CollisionResource& mCollisionResource;
+        Client::EditorResource& mEditorResource;
     };
 }
 

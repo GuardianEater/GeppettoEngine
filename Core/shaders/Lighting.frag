@@ -1,10 +1,10 @@
 #include "Common.glsl"
 
 // in variables ////////////////////////////////////////////////////////////////
-layout(location=0) in vec3 worldPosition;    // the point that the light hits
-layout(location=1) in vec3 worldNormal;      // the normal vector of the surface hit
-layout(location=2) in vec2 uvOut;            // the uv coordinates of the surface hit
-layout(location=3) flat in uint vMaterialIndex;   // the current material index into material uniforms
+uniform sampler2D worldPositionTexture;
+uniform sampler2D worldNormalTexture;
+uniform sampler2D colorTexture;
+uniform sampler2D ao_rough_metal_Texture;
 
 // out /////////////////////////////////////////////////////////////////////////
 layout(location=0) out vec4 frag_color; // the resulting pixel color
@@ -22,22 +22,32 @@ struct CurrentSample
 };
 
 CurrentSample currentSample;
+vec3 worldNormal;
+vec3 worldPosition;
 
 void main(void)
 {
-  const PBRMaterial material = materialUniforms[vMaterialIndex];
+  // get the current pixel we are at and get the data at this position in the gbuffer
+  ivec2 pixel = ivec2(gl_FragCoord.xy);
 
-  // if the texture handle is null, then use material.color else sample from the texture
-  currentSample.ao        = material.aoTextureHandle        == uvec2(0,0) ? material.ao        : texture(sampler2D(material.aoTextureHandle), uvOut).r;
-  currentSample.roughness = material.roughnessTextureHandle == uvec2(0,0) ? material.roughness : texture(sampler2D(material.roughnessTextureHandle), uvOut).r;
-  currentSample.metallic  = material.metallicTextureHandle  == uvec2(0,0) ? material.metallic  : texture(sampler2D(material.metallicTextureHandle), uvOut).r;
-  currentSample.color     = material.colorTextureHandle     == uvec2(0,0) ? material.color     : texture(sampler2D(material.colorTextureHandle), uvOut);
+  // get position and normal
+  worldPosition = texelFetch(worldPositionTexture, pixel, 0).xyz;
+  worldNormal   = texelFetch(worldNormalTexture, pixel, 0).xyz;
 
+  // get material data
+  vec3 arm = texelFetch(ao_rough_metal_Texture, pixel, 0).xyz;
+  currentSample.ao        = arm.x;
+  currentSample.roughness = arm.y;
+  currentSample.metallic  = arm.z;
+  currentSample.color     = texelFetch(colorTexture, pixel, 0);
+
+  // discard alpha if its small
   float alpha = currentSample.color.a;
   const float ALPHA_CUTOFF = 0.02;
   if (alpha < ALPHA_CUTOFF)
     discard;
 
+  // compute pbr
   vec3 finalColor = CalculatePBRLightingTotal();
 
   // Output with alpha for blending
@@ -155,39 +165,9 @@ vec3 CalculatePBRDirectional(DirectionalLightUniforms light, vec3 n, vec3 object
   return (diffuseBRDF + specularBRDF) * radiance * nDotL;
 }
 
-// Builds a world-space normal using a tangent-space normal map if present.
-// Computes TBN per-fragment via derivatives to avoid requiring mesh tangents.
-vec3 ComputeShadedNormal()
-{
-  vec3 n = normalize(worldNormal);
-
-  const PBRMaterial material = materialUniforms[vMaterialIndex];
-  if (material.normalTextureHandle != uvec2(0,0))
-  {
-    // Sample and decode normal from [0,1] -> [-1,1]
-    vec3 mapN = texture(sampler2D(material.normalTextureHandle), uvOut).xyz * 2.0 - 1.0;
-
-    // Derivative-based TBN construction in world space
-    vec3 dp1 = dFdx(worldPosition);
-    vec3 dp2 = dFdy(worldPosition);
-    vec2 duv1 = dFdx(uvOut);
-    vec2 duv2 = dFdy(uvOut);
-
-    vec3 t = normalize(duv2.y * dp1 - duv1.y * dp2);
-    // Orthonormalize T against N, then derive B
-    t = normalize(t - n * dot(n, t));
-    vec3 b = normalize(cross(n, t));
-
-    mat3 tbn = mat3(t, b, n);
-    n = normalize(tbn * mapN);
-  }
-
-  return n;
-}
-
 vec3 CalculatePBRLightingTotal()
 {    
-  vec3 n = ComputeShadedNormal();
+  vec3 n = worldNormal;
   vec3 color = vec3(0.0); // the final color of the fragment
 
   // point lights

@@ -12,10 +12,18 @@
 
 namespace Gep
 {
+    // wrapper around an opengl framebuffer
     class FrameBuffer
     {
     public:
         static FrameBuffer Create(const glm::ivec2 size);
+        static const FrameBuffer& Default(); // returns the default frame buffer (the screen) its ok to copy this it will always reference the same underlying data
+
+        void AddTexture(GLint format, GLenum type); // adds a texture attachment to the framebuffer
+        GLuint GetTexture(size_t index) const; // gets the opengl texture id of the texture attachment at the given index
+
+
+        void BindTextures() const; // binds the texture attachments to the corresponding texture units
 
         void Bind() const;
         void Unbind() const;
@@ -26,17 +34,27 @@ namespace Gep
         glm::ivec2 GetSize() const { return mSize; }
 
     private:
+        struct TextureAttachment
+        {
+            GLuint id = 0;
+            GLint format = GL_RGBA32F;
+            GLenum type = GL_FLOAT;
+        };
+
         struct TargetData
         {
             GLuint frameBuffer = 0;
-            GLuint texture = 0;
             GLuint depthBuffer = 0;
+
+            std::vector<TextureAttachment> textures;
 
             ~TargetData()
             {
                 glDeleteFramebuffers(1, &frameBuffer);
-                glDeleteTextures(1, &texture);
                 glDeleteRenderbuffers(1, &depthBuffer);
+
+                for (const TextureAttachment& tex : textures)
+                    glDeleteTextures(1, &tex.id);
             }
         };
 

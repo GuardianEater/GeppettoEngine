@@ -159,6 +159,9 @@ namespace Gep
     class OpenGLRenderer
     {
     public:
+        // must be called after OpenGL context is created
+        void Initialize();
+
         // adds a model directly from a file using its path as its name. necessary textures
         void AddModelFromFile(const std::string& path);
 
@@ -173,7 +176,6 @@ namespace Gep
 
         bool IsAnimationLoaded(const std::string& name) const;
         bool IsModelLoaded(const std::string& name) const;
-        bool IsShaderLoaded(const std::string& name) const;
 
         // adds an object to be drawn by 
         void AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& objectData, RenderFlags flags = RenderFlags::None);
@@ -209,7 +211,8 @@ namespace Gep
         Texture GetOrLoadIconTexture(const std::filesystem::path& iconPath);
 
         void LoadTextureAsync(const std::filesystem::path& texturePath);
-        void LoadShader(const std::string& name, const std::filesystem::path& vert, const std::filesystem::path& frag);
+
+        // shaders ///////////////////////////////////////////////////////////////////////////////////////////
         void ReloadShaders(); // Recompiles all shaders.
 
         // loads a texture from disk
@@ -224,7 +227,8 @@ namespace Gep
         void LoadErrorTexture(const std::filesystem::path& texturePath);
         Texture GetErrorTexture() const;
 
-        void Draw() const;
+        // draws all added objects to the given target framebuffer
+        void Draw(Gep::FrameBuffer& targetFrameBuffer);
 
         void UnloadModel(const std::string& name);
 
@@ -265,30 +269,15 @@ namespace Gep
             std::vector<MeshGPUHandle> meshHandles;
         };
 
-        struct AnimationGPUHandle
+        auto GetAllShaders()
         {
-
-        };
-
-
-        struct ObjectCPUData // meta data for objects that is only needed on the cpu. corresponds to the gpu data variant
-        {
-            std::string shader;
-            std::string model;
-        };
-
-        struct ObjectData
-        {
-            ObjectGPUData gpuData;
-            ObjectCPUData cpuData;;
-        };
-
+            return std::tie(mGeometryShader_Static, mGeometryShader_Skinned, mLightingShader, mLineShader);
+        }
 
     private:
-        void DrawGeometry() const;
-        void DrawLighting() const;
-        void DrawRegular() const;
-        void DrawLines() const;
+        void DrawGeometry();
+        void DrawLighting(Gep::FrameBuffer& targetFrameBuffer);
+        void DrawLines();
         void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
 
         // pixel data loaded from stbimage, note pixel data must be freed after use
@@ -305,13 +294,16 @@ namespace Gep
 
         void LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton);
     private:
-        // name of the shader to the compiled shader
-        std::unordered_map<std::string, std::unique_ptr<Shader>> mShaders;
+        // when creating shaders make sure to add them to GetAllShaders
+        Shader mGeometryShader_Static;  // shader used for geometry pass of static models
+        Shader mGeometryShader_Skinned; // shader used for geometry pass of animated models
+        Shader mLightingShader;         // shader used for lighting pass
+        Shader mLineShader;             // shader used for drawing lines
 
         glm::vec3 mSolidColor{};
 
         std::unordered_map<std::string, std::pair<ModelGPUHandle, Gep::Model>> mModels; // model name -> its handle and data
-        std::unordered_map<std::string, std::pair<AnimationGPUHandle, Gep::Animation>> mAnimations;
+        std::unordered_map<std::string, Gep::Animation> mAnimations;
         Gep::keyed_vector<Material> mMaterials;
 
         std::unordered_map<std::string, Gep::Texture> mIconTextures;// icon extension -> texture
@@ -332,8 +324,8 @@ namespace Gep
         Gep::gpu_vector<MeshGPUData,     5> mMeshUniforms;     // this vector is perfectly copied onto the gpu into the meshUniforms array
         Gep::gpu_vector<DirectionalLightGPUData, 6> mDirectionalLightUniforms;     // this vector is perfectly copied onto the gpu into the meshUniforms array
 
-        // shader -> model -> flags -> objects
-        std::map<std::string, std::map<std::string, std::map<RenderFlags, std::vector<ObjectGPUData>>>> mObjectDatas;
+        // model -> flags -> objects
+        std::map<std::string, std::map<RenderFlags, std::vector<ObjectGPUData>>> mObjectDatas;
 
         // used to store vertices for drawing lines
         GLuint mLineVBO;

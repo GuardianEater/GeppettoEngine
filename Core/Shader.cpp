@@ -14,10 +14,32 @@ namespace Gep
 {
 	Shader Shader::FromFile(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
 	{
+		Shader newShader{};
+
+        if (!std::filesystem::exists(vertPath))
+		{
+			Gep::Log::Error("Vertex Shader file does not exist: ", vertPath);
+			return newShader;
+		}
+
+		if (!std::filesystem::exists(fragPath))
+		{
+			Gep::Log::Error("Fragment Shader file does not exist: ", fragPath);
+			return newShader;
+        }
+
 		std::string vertSrc = ReadShader(vertPath);
 		std::string fragSrc = ReadShader(fragPath);
 
-		Shader newShader = FromSource(vertSrc, fragSrc);
+		GLuint vertShader = Compile(GL_VERTEX_SHADER, vertSrc, vertPath.string());
+		GLuint fragShader = Compile(GL_FRAGMENT_SHADER, fragSrc, fragPath.string());
+
+
+		if (vertShader && fragShader)
+		{
+            std::string origin = "(" + vertPath.string() + " + " + fragPath.string() + ")";
+			newShader.mProgram = CreateProgram(vertShader, fragShader, origin);
+		}
 
 		newShader.mVertPath = vertPath;
 		newShader.mFragPath = fragPath;
@@ -151,7 +173,7 @@ namespace Gep
 		glUniformHandleui64ARB(location, v);
 	}
 
-    GLuint Shader::Compile(GLenum shaderType, const std::string& source)
+    GLuint Shader::Compile(GLenum shaderType, const std::string& source, const std::string& origin)
     {
 		GLuint shaderID = glCreateShader(shaderType);
 		const char* c_source = source.c_str();
@@ -167,7 +189,7 @@ namespace Gep
 			glGetShaderInfoLog(shaderID, message.capacity(), 0, message.data());
 
 			Gep::Log::Error("Failed to Compile Shader\n", message);
-			Gep::Log::Error("\n", source);
+            Gep::Log::Error("Origin: ", origin);
 
 			return 0; // failed to compile
 		}
@@ -175,7 +197,7 @@ namespace Gep
 		return shaderID;
     }
 
-	GLuint Shader::CreateProgram(GLuint vertShader, GLuint fragShader)
+	GLuint Shader::CreateProgram(GLuint vertShader, GLuint fragShader, const std::string& origin)
 	{
 		GLuint program = glCreateProgram();
 
@@ -196,6 +218,7 @@ namespace Gep
 			glGetProgramInfoLog(program, message.capacity(), 0, message.data());
 
 			Gep::Log::Error("Failed to Link OpenGL Program\n", message);
+            Gep::Log::Error("Origin: ", origin);
 
 			return 0; // failed to link
 		}
@@ -211,6 +234,7 @@ namespace Gep
 			glGetProgramInfoLog(program, message.capacity(), 0, message.data());
 
 			Gep::Log::Error("Failed to Validate OpenGL Program\n", message);
+            Gep::Log::Error("Origin: ", origin);
 
 			return 0; // failed to Validate
 		}

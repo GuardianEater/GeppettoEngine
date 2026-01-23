@@ -12,9 +12,7 @@
 
 #include <glm\glm.hpp>
 
-#include "IRenderTarget.hpp"
-#include "RenderTargetImgui.hpp"
-#include "RenderTargetWindow.hpp"
+#include "FrameBuffer.hpp"
 
 #include "TypeID.hpp"
 
@@ -33,8 +31,8 @@ namespace Client
         float fov       = 80.0f;   // field of view
         float aspect    = 1.0f;    // aspect ratio
 
-        std::shared_ptr<Gep::IRenderTarget> renderTarget = std::make_shared<Gep::RenderTargetImgui>(500, 500);
-        Gep::TypeInfo renderTargetType = Gep::GetTypeInfo<Gep::RenderTargetImgui>();
+        Gep::FrameBuffer renderTarget = Gep::FrameBuffer::Create({ 500, 500 }); // TODO: vthis is a problem because there are no texture attachments
+        bool renderToImGui = true; // if true renders to an imgui texture, otherwise renders to the main window
 
         void Resize(glm::vec2 size)
         {
