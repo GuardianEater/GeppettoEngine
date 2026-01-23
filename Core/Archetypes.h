@@ -72,19 +72,20 @@ namespace Gep
 
         template <typename Func>
         requires std::is_invocable_v<Func, std::byte*>
-        void ForEachEntity(Func&& func);
+        void ForEachEntity(const Func& func);
     };
 
     template<typename Func>
         requires std::is_invocable_v<Func, std::byte*>
-    inline void Archetype::ForEachEntity(Func&& func)
+    __forceinline void Archetype::ForEachEntity(const Func& func)
     {
-        for (size_t x = 0; x < chunks.size(); ++x)
+        for (Chunk& chunk : chunks) //iterate over all of the chunks
         {
-            Chunk& chunk = chunks[x];
-            for (size_t y = 0; y < chunk.count; ++y)
+            std::byte* entity = chunk.bytes.get();
+            std::byte* tail = entity + chunk.count * stride;
+
+            for (; entity != tail; entity += stride) // iterate over all entities in chunk
             {
-                std::byte* entity = GetEntity(x, y);
                 func(entity);
             }
         }
