@@ -54,6 +54,7 @@ namespace Client
 
         void Initialize() override;
         void Update(float dt) override;
+        void FrameEnd() override;
         void HandleInputs(float dt);
 
     private:

@@ -20,9 +20,12 @@ namespace Gep
         static FrameBuffer CreateWithTexture(const glm::ivec2 size);
         static const FrameBuffer& Default(); // returns the default frame buffer (the screen) its ok to copy this it will always reference the same underlying data
 
-        void AddTexture(GLint format, GLenum type); // adds a texture attachment to the framebuffer
+        void AddTexture(GLint internalFormat, GLint format, GLenum type); // adds a texture attachment to the framebuffer
         GLuint GetTexture(size_t index) const; // gets the opengl texture id of the texture attachment at the given index
-
+        GLint GetTextureInternalFormat(size_t index) const;
+        GLint GetTextureFormat(size_t index) const;
+        GLenum GetTextureType(size_t index) const;
+        size_t GetTextureCount() const { return mTarget ? mTarget->textures.size() : 0; }
 
         void BindTextures() const; // binds the texture attachments to the corresponding texture units
         void DrawBuffers() const; // sets the opengl draw buffers to the texture attachments
@@ -41,7 +44,8 @@ namespace Gep
         struct TextureAttachment
         {
             GLuint id = 0;
-            GLint format = GL_RGBA32F;
+            GLint internalFormat = GL_RGBA32F;
+            GLint format = GL_RGBA;
             GLenum type = GL_FLOAT;
         };
 

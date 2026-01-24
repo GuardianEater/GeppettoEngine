@@ -36,7 +36,7 @@ namespace Gep
     FrameBuffer FrameBuffer::CreateWithTexture(const glm::ivec2 size)
     {
         FrameBuffer fb = Create(size);
-        fb.AddTexture(GL_RGBA32F, GL_FLOAT);
+        fb.AddTexture(GL_RGBA32F, GL_RGBA, GL_FLOAT);
         return fb;
     }
 
@@ -66,7 +66,7 @@ namespace Gep
         return defaultBuffer;
     }
 
-    void FrameBuffer::AddTexture(GLint format, GLenum type)
+    void FrameBuffer::AddTexture(GLint internalFormat, GLint format, GLenum type)
     {
         if (!mTarget)
         {
@@ -81,12 +81,13 @@ namespace Gep
         }
 
         TextureAttachment& texture = mTarget->textures.emplace_back();
+        texture.internalFormat = internalFormat;
         texture.format = format;
         texture.type = type;
 
         glGenTextures(1, &texture.id);
         glBindTexture(GL_TEXTURE_2D, texture.id);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, mSize.x, mSize.y, 0, GL_RGBA, type, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, texture.internalFormat, mSize.x, mSize.y, 0, texture.format, texture.type, nullptr);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -113,6 +114,36 @@ namespace Gep
             return 0;
         }
         return mTarget->textures[index].id;
+    }
+
+    GLint FrameBuffer::GetTextureInternalFormat(size_t index) const
+    {
+        if (index >= mTarget->textures.size())
+        {
+            Log::Error("GetTexture() error: Texture index out of range!");
+            return 0;
+        }
+        return mTarget->textures[index].internalFormat;
+    }
+
+    GLint FrameBuffer::GetTextureFormat(size_t index) const
+    {
+        if (index >= mTarget->textures.size())
+        {
+            Log::Error("GetTexture() error: Texture index out of range!");
+            return 0;
+        }
+        return mTarget->textures[index].format;
+    }
+
+    GLenum FrameBuffer::GetTextureType(size_t index) const
+    {
+        if (index >= mTarget->textures.size())
+        {
+            Log::Error("GetTexture() error: Texture index out of range!");
+            return 0;
+        }
+        return mTarget->textures[index].type;
     }
 
     // takes the texture attachments and binds them to the corresponding texture units
@@ -172,7 +203,7 @@ namespace Gep
         for (const TextureAttachment& tex : mTarget->textures)
         {
             glBindTexture(GL_TEXTURE_2D, tex.id);
-            glTexImage2D(GL_TEXTURE_2D, 0, tex.format, size.x, size.y, 0, GL_RGBA, tex.type, nullptr);
+            glTexImage2D(GL_TEXTURE_2D, 0, tex.internalFormat, size.x, size.y, 0, tex.format, tex.type, nullptr);
         }
 
         // update depth buffer size

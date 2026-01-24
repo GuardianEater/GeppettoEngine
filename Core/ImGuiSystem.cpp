@@ -30,6 +30,7 @@ namespace Client
     ImGuiSystem::ImGuiSystem(Gep::EngineManager& em)
         : ISystem(em)
         , mEditorResource(em.GetResource<EditorResource>())
+        , mRenderer(em.GetResource<Gep::OpenGLRenderer>())
     {
     }
 
@@ -723,6 +724,56 @@ namespace Client
         ImGui::End();
     }
 
+    static std::string GetCurrentTime()
+    {
+        auto now = std::time(nullptr);
+        char buf[20];
+        std::strftime(buf, sizeof(buf), "%Y-%m-%d %H-%M-%S", std::localtime(&now));
+        return buf;
+    }
+
+    void ImGuiSystem::DrawGBufferTextures()
+    {
+        Gep::FrameBuffer& gBuffer = mRenderer.GetGeometryFrameBuffer();
+
+        ImGui::Begin("GBuffer Textures");
+        for (size_t i = 0; i < gBuffer.GetTextureCount(); ++i)
+        {
+            GLuint texID = gBuffer.GetTexture(i);
+            glm::ivec2 gBufferSize = gBuffer.GetSize();
+            ImVec2 size = { (float)gBufferSize.x, (float)gBufferSize.y };
+            ImGui::Text("GBuffer Texture %zu", i);
+            ImGui::Image(texID, size, ImVec2(0, 1), ImVec2(1, 0));
+        }
+        ImGui::End();
+
+        // if F11 is pressed output the gbuffer textures to disk
+        if (ImGui::IsKeyPressed(ImGuiKey_F11))
+        {
+            //Gep::FrameBuffer outputFrameBuffer = Gep::FrameBuffer::Create({ 3840, 2160 });
+            //outputFrameBuffer.AddTexture(GL_RGBA32F, GL_RGBA, GL_FLOAT); // Albedo
+            std::string folderName = "assets/screenshots/screenshot_" + GetCurrentTime();
+            std::filesystem::create_directories(folderName);
+
+            mManager.ForEachArchetype([&](Gep::Entity e, const Camera& cam)
+            {
+                std::string camName = mManager.GetName(e) + "_" + std::to_string(e);
+                const std::string path = folderName + "/" + camName + ".png";
+                const glm::ivec2 sz = cam.renderTarget.GetSize();
+                const GLuint texID = cam.renderTarget.GetTexture(0);
+                Gep::WritePNG(path, sz.x, sz.y, texID);
+            });
+
+            for (size_t i = 0; i < gBuffer.GetTextureCount(); ++i)
+            {
+                const std::string path = folderName + "/GBuffer_Texture_" + std::to_string(i) + ".png";
+                const glm::ivec2 sz = gBuffer.GetSize();
+                const GLuint texID = gBuffer.GetTexture(i);
+                Gep::WritePNG(path, sz.x, sz.y, texID);
+            }
+        }
+    }
+
     std::vector<Gep::Entity> ImGuiSystem::SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm)
     {
         std::vector<Gep::Entity> result;
@@ -940,6 +991,7 @@ namespace Client
         DrawExtras();
         DrawToolbar();
         DrawQuickTest();
+        DrawGBufferTextures();
 
         ImGui::Begin("Entities");
 

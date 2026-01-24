@@ -98,11 +98,11 @@ int main()
     // list of all systems //////////////////////////////////////////////////////////////////////////
     Gep::TypeList<
         Client::WindowSystem,
-        Client::ImGuiSystem,
         Client::AnimationSystem, // must happen before the render system
         Client::IKSystem,
         Client::CurveSystem,
-        Client::RenderSystem,
+        Client::RenderSystem, // must happen before the imgui system
+        Client::ImGuiSystem,
         Client::SerializationSystem,
         Client::PhysicsSystem,
         Client::RelationSystem,

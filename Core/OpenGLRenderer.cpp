@@ -60,10 +60,10 @@ namespace Gep
         SetUpLineDrawing();
 
         mGeometryFrameBuffer = FrameBuffer::Create({128, 128});
-        mGeometryFrameBuffer.AddTexture(GL_RGBA32F, GL_FLOAT); // position
-        mGeometryFrameBuffer.AddTexture(GL_RGBA16F, GL_FLOAT); // normal
-        mGeometryFrameBuffer.AddTexture(GL_RGBA32F, GL_FLOAT); // color
-        mGeometryFrameBuffer.AddTexture(GL_RGBA16F, GL_FLOAT); // ao + roughness + metalness
+        mGeometryFrameBuffer.AddTexture(GL_RGB16F, GL_RGB, GL_FLOAT); // position
+        mGeometryFrameBuffer.AddTexture(GL_RGB16F, GL_RGB, GL_FLOAT); // normal
+        mGeometryFrameBuffer.AddTexture(GL_RGBA8, GL_RGBA, GL_FLOAT); // color
+        mGeometryFrameBuffer.AddTexture(GL_RGB8, GL_RGB, GL_FLOAT); // ao + roughness + metalness
 
         mGeometryShader_Static  = Shader::FromFile("shaders/Geometry-Static.vert",  "shaders/Geometry.frag"); // shader used for geometry pass of static models
         mGeometryShader_Skinned = Shader::FromFile("shaders/Geometry-Skinned.vert", "shaders/Geometry.frag"); // shader used for geometry pass of animated models
@@ -516,6 +516,12 @@ namespace Gep
             ((shaders.Reload()), ...);
         }, 
         GetAllShaders());
+
+        mLightingShader.Bind();
+        mLightingShader.SetUniform("worldPositionTexture", 0);
+        mLightingShader.SetUniform("worldNormalTexture", 1);
+        mLightingShader.SetUniform("colorTexture", 2);
+        mLightingShader.SetUniform("ao_rough_metal_Texture", 3);
     }
 
     void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)

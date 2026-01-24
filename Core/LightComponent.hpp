@@ -16,11 +16,15 @@ namespace Client
     {
         glm::vec3 color{1.0f, 1.0f, 1.0f};
         float intensity{1.0f};
+
+        bool enabled = true;
     };
 
     struct DirectionalLight
     {
         glm::vec3 color{ 1.0f, 1.0f, 1.0f };
         float intensity{ 1.0f };
+
+        bool enabled = true;
     };
 }

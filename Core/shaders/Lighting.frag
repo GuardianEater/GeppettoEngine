@@ -41,17 +41,11 @@ void main(void)
   currentSample.metallic  = arm.z;
   currentSample.color     = texelFetch(colorTexture, pixel, 0);
 
-  // discard alpha if its small
-  float alpha = currentSample.color.a;
-  const float ALPHA_CUTOFF = 0.02;
-  if (alpha < ALPHA_CUTOFF)
-    discard;
-
   // compute pbr
   vec3 finalColor = CalculatePBRLightingTotal();
 
   // Output with alpha for blending
-  frag_color = vec4(finalColor, alpha);
+  frag_color = vec4(finalColor, currentSample.color.a);
 }
 
 // calculates F in the pbr equation
@@ -101,7 +95,8 @@ vec3 CalculatePBRPoint(PointLightUniforms light, vec3 n, vec3 objectColor)
   l = normalize(l);
   
   float attenuation = 1.0 / (lightToPixelDist * lightToPixelDist);
-  vec3 radiance = light.color * attenuation * light.intensity * 100.0;
+  attenuation = min(attenuation, 0.001); // caps attenuation so it doesnt get super bright to fast
+  vec3 radiance = light.color * attenuation * light.intensity;
 
   vec3 v = normalize(cameraUniforms[cameraIndex].camPosition.xyz - worldPosition); // view vector
   vec3 h = normalize(v + l); // half vector
@@ -183,7 +178,8 @@ vec3 CalculatePBRLightingTotal()
   }
 
   // ambient lighting
-  vec3 ambient = vec3(0.8) * currentSample.color.rgb;// * currentSample.ao;
+  float ambientFactor = 0.1;
+  vec3 ambient = vec3(ambientFactor) * currentSample.color.rgb * currentSample.ao;
   color += ambient;
 
   // HDR tone mapping

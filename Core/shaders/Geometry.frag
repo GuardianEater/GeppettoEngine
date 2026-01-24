@@ -7,10 +7,10 @@ layout(location=2) in vec2 uvOut;               // the uv coordinates of the sur
 layout(location=3) flat in uint vMaterialIndex; // the current material index into material uniforms
 
 // out /////////////////////////////////////////////////////////////////////////
-layout(location=0) out vec4 fWorldPosition;
-layout(location=1) out vec4 fWorldNormal;
+layout(location=0) out vec3 fWorldPosition;
+layout(location=1) out vec3 fWorldNormal;
 layout(location=2) out vec4 color;
-layout(location=3) out vec4 ao_rough_metal;
+layout(location=3) out vec3 ao_rough_metal;
 
 void main()
 {
@@ -21,6 +21,12 @@ void main()
   ao_rough_metal.z = mat.metallicTextureHandle  == uvec2(0,0) ? mat.metallic  : texture(sampler2D(mat.metallicTextureHandle), uvOut).r;
   color            = mat.colorTextureHandle     == uvec2(0,0) ? mat.color     : texture(sampler2D(mat.colorTextureHandle), uvOut);
 
-  fWorldPosition = vec4(worldPosition, 1.0);
-  fWorldNormal = vec4(worldNormal, 0.0);
+
+  fWorldPosition = worldPosition;
+  fWorldNormal = worldNormal;
+
+  // discard alpha if its small
+  const float ALPHA_CUTOFF = 0.01;
+  if (color.a < ALPHA_CUTOFF)
+    discard;
 }

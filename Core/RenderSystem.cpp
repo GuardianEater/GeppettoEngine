@@ -156,8 +156,12 @@ namespace Client
             model.selected = false;
         });
 
-        renderer.End();
         HandleInputs(dt);
+    }
+
+    void RenderSystem::FrameEnd()
+    {
+        mRenderer.End();
     }
 
     void RenderSystem::HandleInputs(float dt)
@@ -232,7 +236,6 @@ namespace Client
         }
         else
             isShaderReload = false; // Reset when key is released
-
     }
 
     void RenderSystem::OnRiggedModelAdded(const Gep::Event::ComponentAdded<RiggedModelComponent>& event)
@@ -419,6 +422,10 @@ namespace Client
         Gep::ImGui::MultiDragFloat("Intensity", lights,
             [](Light* light) -> float& { return light->intensity; }
         );
+
+        Gep::ImGui::MultiCheckbox("Enabled", lights,
+            [](Light* light) -> bool& { return light->enabled; }
+        );
     }
 
     void RenderSystem::OnDirectionalLightEditorRender(const Gep::Event::ComponentEditorRender<DirectionalLight>& event)
@@ -433,6 +440,10 @@ namespace Client
 
         Gep::ImGui::MultiDragFloat("Intensity", lights,
             [](DirectionalLight* light) -> float& { return light->intensity; }
+        );
+
+        Gep::ImGui::MultiCheckbox("Enabled", lights,
+            [](DirectionalLight* light) -> bool& { return light->enabled; }
         );
     }
 
@@ -779,6 +790,12 @@ namespace Client
         // prepares all of the light uniform values
         mManager.ForEachArchetype([&](Gep::Entity e, Light& l, Transform& t)
         {
+            if (l.intensity <= 0.0f)
+                return; // skip lights that have no intensity
+            if (!l.enabled)
+                return; // skip disabled lights
+
+
             Gep::PointLightGPUData uniforms
             {
                 .position = t.world.position,
@@ -792,6 +809,11 @@ namespace Client
         // prepares all of the directional light uniform values
         mManager.ForEachArchetype([&](Gep::Entity e, DirectionalLight& l, Transform& t)
         {
+            if (l.intensity <= 0.0f)
+                return; // skip lights that have no intensity
+            if (!l.enabled)
+                return; // skip disabled lights
+
             Gep::DirectionalLightGPUData uniforms
             {
                 .position = t.world.position,

@@ -232,6 +232,8 @@ namespace Gep
 
         void UnloadModel(const std::string& name);
 
+        FrameBuffer& GetGeometryFrameBuffer() { return mGeometryFrameBuffer; }
+
         // Start must be called before rendering and End must be called after rendering
         void Start(const glm::vec3& color = { 0, 0, 0 });
         void End(); // resets the state of the renderer must be called after all draw calls

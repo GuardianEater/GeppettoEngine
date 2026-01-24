@@ -26,6 +26,11 @@
 
 // client
 
+namespace Gep
+{
+    class OpenGLRenderer;
+}
+
 namespace Client
 {
     // forward declaration
@@ -59,6 +64,7 @@ namespace Client
         void DrawExtras();
         bool DrawEntityNode(Gep::Entity entity, const std::string& displayName, bool selected, const ImVec4& defaultColor);
         void DrawQuickTest();
+        void DrawGBufferTextures();
 
         std::vector<Gep::Entity> SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm);
         void SetAssetBrowserPath(const std::filesystem::path& newPath);
@@ -66,6 +72,7 @@ namespace Client
 
     private:
         EditorResource& mEditorResource;
+        Gep::OpenGLRenderer& mRenderer;
         std::filesystem::path mAssetBrowserPath;
         std::vector<std::filesystem::directory_entry> mAssetBrowserEntries; // the files that are visible from the asset browser path
         std::vector<std::function<void(std::span<Gep::Entity>)>> mComponentInspectorPanels; // component index -> function to draw the inspector
