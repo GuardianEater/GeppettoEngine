@@ -61,14 +61,20 @@ namespace Gep
 
         mGeometryFrameBuffer = FrameBuffer::Create({128, 128});
         mGeometryFrameBuffer.AddTexture(GL_RGBA32F, GL_FLOAT); // position
-        mGeometryFrameBuffer.AddTexture(GL_RGBA32F, GL_FLOAT); // normal
+        mGeometryFrameBuffer.AddTexture(GL_RGBA16F, GL_FLOAT); // normal
         mGeometryFrameBuffer.AddTexture(GL_RGBA32F, GL_FLOAT); // color
-        mGeometryFrameBuffer.AddTexture(GL_RGBA32F, GL_FLOAT); // ao + roughness + metalness
+        mGeometryFrameBuffer.AddTexture(GL_RGBA16F, GL_FLOAT); // ao + roughness + metalness
 
         mGeometryShader_Static  = Shader::FromFile("shaders/Geometry-Static.vert",  "shaders/Geometry.frag"); // shader used for geometry pass of static models
         mGeometryShader_Skinned = Shader::FromFile("shaders/Geometry-Skinned.vert", "shaders/Geometry.frag"); // shader used for geometry pass of animated models
         mLightingShader         = Shader::FromFile("shaders/Lighting.vert",         "shaders/Lighting.frag"); // shader used for lighting pass
         mLineShader             = Shader::FromFile("shaders/Line.vert",             "shaders/Line.frag");     // shader used for drawing lines
+
+        mLightingShader.Bind();
+        mLightingShader.SetUniform("worldPositionTexture", 0);
+        mLightingShader.SetUniform("worldNormalTexture", 1);
+        mLightingShader.SetUniform("colorTexture", 2);
+        mLightingShader.SetUniform("ao_rough_metal_Texture", 3);
     }
 
     void OpenGLRenderer::AddModelFromFile(const std::string& path)
@@ -634,7 +640,8 @@ namespace Gep
 
     void OpenGLRenderer::Draw(Gep::FrameBuffer& targetFrameBuffer)
     {
-        DrawGeometry();
+        DrawGeometry(targetFrameBuffer);
+        DrawLighting(targetFrameBuffer);
         DrawLines();
     }
 
@@ -665,11 +672,12 @@ namespace Gep
         glEnableVertexAttribArray(0);
     }
 
-    void OpenGLRenderer::DrawGeometry()
+    void OpenGLRenderer::DrawGeometry(const Gep::FrameBuffer& targetFrameBuffer)
     {
         mGeometryFrameBuffer.Bind();
-        mGeometryFrameBuffer.UpdateViewport();
+        mGeometryFrameBuffer.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
         mGeometryFrameBuffer.Clear();
+        mGeometryFrameBuffer.DrawBuffers();
 
         glEnable(GL_DEPTH_TEST);
         glDepthMask(GL_TRUE);

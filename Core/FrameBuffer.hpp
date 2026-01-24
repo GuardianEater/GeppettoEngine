@@ -17,6 +17,7 @@ namespace Gep
     {
     public:
         static FrameBuffer Create(const glm::ivec2 size);
+        static FrameBuffer CreateWithTexture(const glm::ivec2 size);
         static const FrameBuffer& Default(); // returns the default frame buffer (the screen) its ok to copy this it will always reference the same underlying data
 
         void AddTexture(GLint format, GLenum type); // adds a texture attachment to the framebuffer
@@ -24,10 +25,13 @@ namespace Gep
 
 
         void BindTextures() const; // binds the texture attachments to the corresponding texture units
+        void DrawBuffers() const; // sets the opengl draw buffers to the texture attachments
 
         void Bind() const;
         void Unbind() const;
-        void Clear(const glm::vec4& color = { 0.0f, 0.0f, 0.0f, 0.0f }) const;
+        void Clear(const glm::vec4& color = { 0.0f, 0.0f, 0.0f, 1.0f }) const;
+
+        // changes the size of the framebuffer and its attachments, does nothing if the size hasn't changed
         void Resize(glm::ivec2 newSize);
         void UpdateViewport() const;
 

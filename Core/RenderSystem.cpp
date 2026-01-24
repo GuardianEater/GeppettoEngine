@@ -137,10 +137,11 @@ namespace Client
 
             cam.renderTarget.Clear();
 
+            DrawImGuiCameraWindow(camEntity, cam, camTransform);
+
             // draw the scene once for every camera
             renderer.Draw(cam.renderTarget);
 
-            DrawImGuiCameraWindow(camEntity, cam, camTransform);
             cam.Resize(cam.renderTarget.GetSize());
             cam.renderTarget.Unbind();
         });

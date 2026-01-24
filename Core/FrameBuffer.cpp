@@ -33,6 +33,13 @@ namespace Gep
         return result;
     }
 
+    FrameBuffer FrameBuffer::CreateWithTexture(const glm::ivec2 size)
+    {
+        FrameBuffer fb = Create(size);
+        fb.AddTexture(GL_RGBA32F, GL_FLOAT);
+        return fb;
+    }
+
     const FrameBuffer& FrameBuffer::Default()
     {
         static FrameBuffer defaultBuffer = []()
@@ -116,6 +123,15 @@ namespace Gep
             glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(i));
             glBindTexture(GL_TEXTURE_2D, mTarget->textures[i].id);
         }
+    }
+
+    void FrameBuffer::DrawBuffers() const
+    {
+        std::vector<GLenum> buffers;
+        for (size_t i = 0; i < mTarget->textures.size(); ++i)
+            buffers.push_back(GL_COLOR_ATTACHMENT0 + static_cast<GLenum>(i));
+
+        glDrawBuffers(static_cast<GLsizei>(buffers.size()), buffers.data());
     }
 
     void FrameBuffer::Bind() const

@@ -275,7 +275,7 @@ namespace Gep
         }
 
     private:
-        void DrawGeometry();
+        void DrawGeometry(const Gep::FrameBuffer& targetFrameBuffer);
         void DrawLighting(Gep::FrameBuffer& targetFrameBuffer);
         void DrawLines();
         void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);

@@ -19,7 +19,6 @@ void main()
   ao_rough_metal.x = mat.aoTextureHandle        == uvec2(0,0) ? mat.ao        : texture(sampler2D(mat.aoTextureHandle), uvOut).r;
   ao_rough_metal.y = mat.roughnessTextureHandle == uvec2(0,0) ? mat.roughness : texture(sampler2D(mat.roughnessTextureHandle), uvOut).r;
   ao_rough_metal.z = mat.metallicTextureHandle  == uvec2(0,0) ? mat.metallic  : texture(sampler2D(mat.metallicTextureHandle), uvOut).r;
-
   color            = mat.colorTextureHandle     == uvec2(0,0) ? mat.color     : texture(sampler2D(mat.colorTextureHandle), uvOut);
 
   fWorldPosition = vec4(worldPosition, 1.0);
