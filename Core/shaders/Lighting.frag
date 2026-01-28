@@ -42,6 +42,12 @@ vec3 GetPosition(float depth)
 void main(void)
 {
   float depth = texture(u_depthTexture, v_uv).x;  
+  if (depth >= 1.0) 
+  {
+    f_color = vec4(0.0, 0.0, 0.0, 1.0);
+    return; // do not do anything if there is nothing
+  }
+
   vec3 arm    = texture(u_armTexture, v_uv).xyz;
 
   g_normal = texture(u_normalTexture, v_uv).xyz;

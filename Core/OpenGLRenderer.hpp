@@ -85,7 +85,7 @@ namespace Gep
     struct PointLightGPUData
     {
         glm::vec3 position; // location of the light in world space
-        float pad; 
+        float radius; 
 
         glm::vec3 color; // color of the light
         float intensity; // intensity of the light
@@ -279,6 +279,7 @@ namespace Gep
     private:
         void DrawGeometry(const Gep::FrameBuffer& targetFrameBuffer);
         void DrawLighting(Gep::FrameBuffer& targetFrameBuffer);
+        void DrawPointLights(Gep::FrameBuffer& targetFrameBuffer);
         void DrawLines();
         void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
 

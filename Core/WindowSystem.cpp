@@ -41,8 +41,6 @@ namespace Client
     {
         FrameEnd_ImGui();
         FrameEnd_GLFW();
-
-        glFinish();
     }
 
     void WindowSystem::Exit()

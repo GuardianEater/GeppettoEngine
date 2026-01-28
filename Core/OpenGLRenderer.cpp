@@ -745,12 +745,35 @@ namespace Gep
         mLightingShader.Bind(); 
         mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
 
+        //DrawPointLights(targetFrameBuffer);
+
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
 
         glDrawArrays(GL_TRIANGLES, 0, 3);// draw a full screen triangle, the vertices are in the vertex shader
 
         Shader::Unbind();
+    }
+
+    void OpenGLRenderer::DrawPointLights(Gep::FrameBuffer& targetFrameBuffer)
+    {
+        
+        // draw all light volumes
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+        glDepthMask(GL_FALSE);
+        glEnable(GL_DEPTH_TEST);
+
+        auto& [sphereHandle, sphere] = mModels.at("Icosphere");
+        auto& meshHandle = sphereHandle.meshHandles[0];
+
+        for (size_t i = 0; i < mPointLightUniforms.size(); ++i)
+        {
+
+        }
+
     }
 
     void OpenGLRenderer::DrawLines()
