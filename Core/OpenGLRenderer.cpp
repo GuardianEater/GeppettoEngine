@@ -60,10 +60,10 @@ namespace Gep
         SetUpLineDrawing();
 
         mGeometryFrameBuffer = FrameBuffer::Create({128, 128});
-        mGeometryFrameBuffer.AddTexture(GL_RGB16F, GL_RGB, GL_FLOAT); // position
-        mGeometryFrameBuffer.AddTexture(GL_RGB16F, GL_RGB, GL_FLOAT); // normal
-        mGeometryFrameBuffer.AddTexture(GL_RGBA8, GL_RGBA, GL_FLOAT); // color
-        mGeometryFrameBuffer.AddTexture(GL_RGB8, GL_RGB, GL_FLOAT); // ao + roughness + metalness
+        mGeometryFrameBuffer.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT); // depth
+        mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGB16F, GL_RGB, GL_FLOAT); // normal
+        mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT1, GL_RGBA8, GL_RGBA, GL_FLOAT); // color
+        mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT2, GL_RGB8, GL_RGB, GL_FLOAT); // ao + roughness + metalness
 
         mGeometryShader_Static  = Shader::FromFile("shaders/Geometry-Static.vert",  "shaders/Geometry.frag"); // shader used for geometry pass of static models
         mGeometryShader_Skinned = Shader::FromFile("shaders/Geometry-Skinned.vert", "shaders/Geometry.frag"); // shader used for geometry pass of animated models
@@ -71,10 +71,10 @@ namespace Gep
         mLineShader             = Shader::FromFile("shaders/Line.vert",             "shaders/Line.frag");     // shader used for drawing lines
 
         mLightingShader.Bind();
-        mLightingShader.SetUniform("worldPositionTexture", 0);
-        mLightingShader.SetUniform("worldNormalTexture", 1);
-        mLightingShader.SetUniform("colorTexture", 2);
-        mLightingShader.SetUniform("ao_rough_metal_Texture", 3);
+        mLightingShader.SetUniform("u_depthTexture", 0);
+        mLightingShader.SetUniform("u_normalTexture", 1);
+        mLightingShader.SetUniform("u_colorTexture", 2);
+        mLightingShader.SetUniform("u_armTexture", 3);
     }
 
     void OpenGLRenderer::AddModelFromFile(const std::string& path)
@@ -518,10 +518,10 @@ namespace Gep
         GetAllShaders());
 
         mLightingShader.Bind();
-        mLightingShader.SetUniform("worldPositionTexture", 0);
-        mLightingShader.SetUniform("worldNormalTexture", 1);
-        mLightingShader.SetUniform("colorTexture", 2);
-        mLightingShader.SetUniform("ao_rough_metal_Texture", 3);
+        mLightingShader.SetUniform("u_depthTexture", 0);
+        mLightingShader.SetUniform("u_normalTexture", 1);
+        mLightingShader.SetUniform("u_colorTexture", 2);
+        mLightingShader.SetUniform("u_armTexture", 3);
     }
 
     void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)

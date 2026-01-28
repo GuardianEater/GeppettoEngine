@@ -22,21 +22,16 @@ namespace Gep
         glGenFramebuffers(1, &target.frameBuffer);
         glBindFramebuffer(GL_FRAMEBUFFER, target.frameBuffer);
 
-        // create a render buffer and attach as a depth buffer
-        glGenRenderbuffers(1, &target.depthBuffer);
-        glBindRenderbuffer(GL_RENDERBUFFER, target.depthBuffer);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, size.x, size.y);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, target.depthBuffer);
-
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         return result;
     }
 
-    FrameBuffer FrameBuffer::CreateWithTexture(const glm::ivec2 size)
+    FrameBuffer FrameBuffer::CreateSimple(const glm::ivec2 size)
     {
         FrameBuffer fb = Create(size);
-        fb.AddTexture(GL_RGBA32F, GL_RGBA, GL_FLOAT);
+        fb.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGBA32F, GL_RGBA, GL_FLOAT);
+        fb.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT);
         return fb;
     }
 
@@ -66,7 +61,7 @@ namespace Gep
         return defaultBuffer;
     }
 
-    void FrameBuffer::AddTexture(GLint internalFormat, GLint format, GLenum type)
+    void FrameBuffer::AddTexture(GLenum attachment, GLint internalFormat, GLint format, GLenum type)
     {
         if (!mTarget)
         {
@@ -84,6 +79,7 @@ namespace Gep
         texture.internalFormat = internalFormat;
         texture.format = format;
         texture.type = type;
+        texture.attachment = attachment;
 
         glGenTextures(1, &texture.id);
         glBindTexture(GL_TEXTURE_2D, texture.id);
@@ -96,7 +92,7 @@ namespace Gep
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
         glBindFramebuffer(GL_FRAMEBUFFER, mTarget->frameBuffer);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + static_cast<GLenum>(mTarget->textures.size() - 1), GL_TEXTURE_2D, texture.id, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, texture.attachment, GL_TEXTURE_2D, texture.id, 0);
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
@@ -205,10 +201,6 @@ namespace Gep
             glBindTexture(GL_TEXTURE_2D, tex.id);
             glTexImage2D(GL_TEXTURE_2D, 0, tex.internalFormat, size.x, size.y, 0, tex.format, tex.type, nullptr);
         }
-
-        // update depth buffer size
-        glBindRenderbuffer(GL_RENDERBUFFER, mTarget->depthBuffer);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, size.x, size.y);
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {

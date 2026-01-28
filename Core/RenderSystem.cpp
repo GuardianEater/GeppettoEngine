@@ -831,11 +831,12 @@ namespace Client
         // prepares the camera uniforms
         mManager.ForEachArchetype([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
         {
-            Gep::CameraGPUData uniforms
+            const glm::mat4 pvMatrix = cam.GetProjectionMatrix() * cam.GetViewMatrix(camTransform.world.position);
+            const Gep::CameraGPUData uniforms
             {
-                .perspectiveMatrix = cam.GetProjectionMatrix(),
-                .viewMatrix = cam.GetViewMatrix(camTransform.world.position),
-                .camPosition = glm::vec4(camTransform.world.position, 1.0f),
+                .pvMatrix = pvMatrix,
+                .ipvMatrix = glm::inverse(pvMatrix),
+                .position = camTransform.world.position
             };
 
             mRenderer.AddCamera(uniforms);

@@ -52,10 +52,10 @@ struct PBRMaterial
 // stores all per camera data
 struct CameraUniforms
 {
-  mat4 perspectiveMatrix;
-  mat4 viewMatrix;
+  mat4 pvMatrix; // perspective view matrix
+  mat4 ipvMatrix; // inverse perspective view matrix
   
-  vec4 camPosition;
+  vec3 position;
 };
 
 // stores all per-object data
@@ -83,45 +83,46 @@ struct MeshUniforms
 // buffers /////////////////////////////////////////////////////////////////////
 layout(std430, binding=0) buffer ObjectUniformsBuffer
 {
-  ObjectUniforms objectUniforms[];
+  ObjectUniforms u_objects[];
 };
 
 layout(std430, binding=1) buffer PointLightUniformsBuffer
 {
-  PointLightUniforms pointLightUniforms[];
+  PointLightUniforms u_pointLights[];
 };
 
 layout(std430, binding=2) buffer CameraUniformsBuffer
 {
-  CameraUniforms cameraUniforms[];
+  CameraUniforms u_cams[];
 };
 
 layout(std430, binding=3) buffer BoneUniformsBuffer
 {
-  BoneUniforms boneUniforms[];
+  BoneUniforms u_bones[];
 };
 
 layout(std430, binding=4) buffer MaterialUniformsBuffer 
 {
-  PBRMaterial materialUniforms[];
+  PBRMaterial u_materials[];
 };
 
 layout(std430, binding=5) buffer MeshUniformsBuffer
 {
-  MeshUniforms meshUniforms[];
+  MeshUniforms u_meshs[];
 };
 
 layout(std430, binding=6) buffer DirectionalLightUniformsBuffer
 {
-  DirectionalLightUniforms directionalLightUniforms[];
+  DirectionalLightUniforms u_directionalLights[];
 };
 
 // uniforms ////////////////////////////////////////////////////////////////////
-layout(location=0) uniform uint cameraIndex;           // the currently active camera in the cameraUniforms array
+layout(location=0) uniform uint u_camIndex;           // the currently active camera in the u_cams array
 //layout(location=1)                                   // used by color in the line shader
-layout(location=2) uniform uint pointLightCount;       // the total amount of point lights in the pointLightUniforms array
-layout(location=3) uniform uint meshBaseInstance;      // the base instance of the current mesh, used to index into per mesh data
-layout(location=4) uniform uint directionalLightCount; // the total amount of directional lights in the directionalLightUniforms array
+layout(location=2) uniform uint u_pointLightCount;       // the total amount of point lights in the u_pointLights array
+layout(location=3) uniform uint u_meshBaseInstance;      // the base instance of the current mesh, used to index into per mesh data
+layout(location=4) uniform uint u_directionalLightCount; // the total amount of directional lights in the u_directionalLights array
 
 // constants ///////////////////////////////////////////////////////////////////
 const float PI = 3.14159265359;
+const uint INVALID_INDEX = 4294967295;

@@ -76,10 +76,10 @@ namespace Gep
 
     struct alignas(16) CameraGPUData
     {
-        glm::mat4 perspectiveMatrix; // perspective matrix for camera
-        glm::mat4 viewMatrix;        // view matrix for camera
+        glm::mat4 pvMatrix;  // perspective view matrix for camera
+        glm::mat4 ipvMatrix; // inverse perspective view matrix for camera
 
-        glm::vec4 camPosition; // position of the camera in world space
+        glm::vec3 position; // position of the camera in world space
     };
 
     struct PointLightGPUData

@@ -1,16 +1,19 @@
 #include "Common.glsl"
 
+// uniforms ////////////////////////////////////////////////////////////////////
+uniform sampler2D u_depthTexture;
+uniform sampler2D u_normalTexture;
+uniform sampler2D u_colorTexture;
+uniform sampler2D u_armTexture;
+
 // in variables ////////////////////////////////////////////////////////////////
-uniform sampler2D worldPositionTexture;
-uniform sampler2D worldNormalTexture;
-uniform sampler2D colorTexture;
-uniform sampler2D ao_rough_metal_Texture;
+layout(location=0) in vec2 v_uv;
 
 // out /////////////////////////////////////////////////////////////////////////
-layout(location=0) out vec4 frag_color; // the resulting pixel color
+layout(location=0) out vec4 f_color; // the resulting pixel color
 
-// forward /////////////////////////////////////////////////////////////////////
 vec3 CalculatePBRLightingTotal();
+// forward /////////////////////////////////////////////////////////////////////
 
 // all of the samples in a single struct
 struct CurrentSample
@@ -21,31 +24,38 @@ struct CurrentSample
   vec4 color;
 };
 
-CurrentSample currentSample;
-vec3 worldNormal;
-vec3 worldPosition;
+CurrentSample g_currentSample;
+vec3 g_normal;
+vec3 g_position;
+
+vec3 GetPosition(float depth)
+{
+  vec2 ndcXY = v_uv * 2.0 - 1.0;
+  float ndcZ = depth * 2.0 - 1.0;
+  vec4 clip = vec4(ndcXY, ndcZ, 1.0);
+  vec4 world = u_cams[u_camIndex].ipvMatrix * clip;
+  world /= world.w;
+
+  return world.xyz;
+}
 
 void main(void)
 {
-  // get the current pixel we are at and get the data at this position in the gbuffer
-  ivec2 pixel = ivec2(gl_FragCoord.xy);
+  float depth = texture(u_depthTexture, v_uv).x;  
+  vec3 arm    = texture(u_armTexture, v_uv).xyz;
 
-  // get position and normal
-  worldPosition = texelFetch(worldPositionTexture, pixel, 0).xyz;
-  worldNormal   = texelFetch(worldNormalTexture, pixel, 0).xyz;
-
-  // get material data
-  vec3 arm = texelFetch(ao_rough_metal_Texture, pixel, 0).xyz;
-  currentSample.ao        = arm.x;
-  currentSample.roughness = arm.y;
-  currentSample.metallic  = arm.z;
-  currentSample.color     = texelFetch(colorTexture, pixel, 0);
+  g_normal = texture(u_normalTexture, v_uv).xyz;
+  g_position = GetPosition(depth);
+  g_currentSample.color     = texture(u_colorTexture, v_uv);
+  g_currentSample.ao        = arm.x;
+  g_currentSample.roughness = arm.y;
+  g_currentSample.metallic  = arm.z;
 
   // compute pbr
   vec3 finalColor = CalculatePBRLightingTotal();
 
   // Output with alpha for blending
-  frag_color = vec4(finalColor, currentSample.color.a);
+  f_color = vec4(finalColor, g_currentSample.color.a);
 }
 
 // calculates F in the pbr equation
@@ -53,7 +63,7 @@ vec3 SchlickFresnel(float vDotH)
 {
   const float dielectricDefault = 0.04;
   vec3 F0 = vec3(dielectricDefault);
-  F0 = mix(F0, vec3(currentSample.color), currentSample.metallic);
+  F0 = mix(F0, vec3(g_currentSample.color), g_currentSample.metallic);
 
   const float clamped = clamp(1.0 - vDotH, 0.0, 1.0);
   const vec3 result = F0 + (1.0 - F0) * pow(clamped, 5);
@@ -63,7 +73,7 @@ vec3 SchlickFresnel(float vDotH)
 
 float GeometrySchlickGGX(float dp)
 {
-  float k = (currentSample.roughness + 1.0) * (currentSample.roughness + 1.0) / 8.0;
+  float k = (g_currentSample.roughness + 1.0) * (g_currentSample.roughness + 1.0) / 8.0;
   float denom = dp * (1.0 - k) + k;
   
   return dp / denom;
@@ -78,7 +88,7 @@ float GeometrySmith(float nDotV, float nDotL)
 // calculates D in the pbr equation
 float GGXDistribution(float nDotH)
 {
-  float alpha2 = pow(currentSample.roughness, 4);
+  float alpha2 = pow(g_currentSample.roughness, 4);
   float d = nDotH * nDotH * (alpha2 - 1.0) + 1.0;
   float ggx = alpha2 / (PI * d * d);
 
@@ -90,7 +100,7 @@ vec3 CalculatePBRPoint(PointLightUniforms light, vec3 n, vec3 objectColor)
 {
   vec3 l = vec3(0.0);
 
-  l = light.position - worldPosition;
+  l = light.position - g_position;
   float lightToPixelDist = length(l); // before normalizing get the length
   l = normalize(l);
   
@@ -98,7 +108,7 @@ vec3 CalculatePBRPoint(PointLightUniforms light, vec3 n, vec3 objectColor)
   attenuation = min(attenuation, 0.001); // caps attenuation so it doesnt get super bright to fast
   vec3 radiance = light.color * attenuation * light.intensity;
 
-  vec3 v = normalize(cameraUniforms[cameraIndex].camPosition.xyz - worldPosition); // view vector
+  vec3 v = normalize(u_cams[u_camIndex].position.xyz - g_position); // view vector
   vec3 h = normalize(v + l); // half vector
 
   float nDotH = max(dot(n, h), 0.0); // clamp to 0 for values less than 0
@@ -112,7 +122,7 @@ vec3 CalculatePBRPoint(PointLightUniforms light, vec3 n, vec3 objectColor)
 
   vec3 ks = F; // specular coefficient
   vec3 kd = vec3(1.0) - ks; // diffuse coefficient
-  kd *= 1.0 - currentSample.metallic;
+  kd *= 1.0 - g_currentSample.metallic;
 
   vec3 numerator = D * G * F;
   float denominator = 4.0 * nDotL * nDotV + 0.0001; // prevents division by 0
@@ -134,7 +144,7 @@ vec3 CalculatePBRDirectional(DirectionalLightUniforms light, vec3 n, vec3 object
   const float intensity = light.intensity;
 
   vec3 l = normalize(-dir);
-  vec3 v = normalize(cameraUniforms[cameraIndex].camPosition.xyz - worldPosition);
+  vec3 v = normalize(u_cams[u_camIndex].position.xyz - g_position);
   vec3 h = normalize(v + l);
 
   float nDotH = max(dot(n, h), 0.0);
@@ -147,7 +157,7 @@ vec3 CalculatePBRDirectional(DirectionalLightUniforms light, vec3 n, vec3 object
   vec3 F = SchlickFresnel(vDotH);
 
   vec3 ks = F;
-  vec3 kd = (vec3(1.0) - ks) * (1.0 - currentSample.metallic);
+  vec3 kd = (vec3(1.0) - ks) * (1.0 - g_currentSample.metallic);
 
   vec3 numerator = D * G * F;
   float denominator = 4.0 * nDotL * nDotV + 0.0001;
@@ -162,24 +172,24 @@ vec3 CalculatePBRDirectional(DirectionalLightUniforms light, vec3 n, vec3 object
 
 vec3 CalculatePBRLightingTotal()
 {    
-  vec3 n = worldNormal;
+  vec3 n = g_normal;
   vec3 color = vec3(0.0); // the final color of the fragment
 
   // point lights
-  for (int i = 0; i < pointLightCount; i++) 
+  for (int i = 0; i < u_pointLightCount; i++) 
   {
-    color += CalculatePBRPoint(pointLightUniforms[i], n, currentSample.color.rgb);
+    color += CalculatePBRPoint(u_pointLights[i], n, g_currentSample.color.rgb);
   }
 
   // directional lights
-  for (int i = 0; i < directionalLightCount; i++) 
+  for (int i = 0; i < u_directionalLightCount; i++) 
   {
-    color += CalculatePBRDirectional(directionalLightUniforms[i], n, currentSample.color.rgb);
+    color += CalculatePBRDirectional(u_directionalLights[i], n, g_currentSample.color.rgb);
   }
 
   // ambient lighting
   float ambientFactor = 0.1;
-  vec3 ambient = vec3(ambientFactor) * currentSample.color.rgb * currentSample.ao;
+  vec3 ambient = vec3(ambientFactor) * g_currentSample.color.rgb * g_currentSample.ao;
   color += ambient;
 
   // HDR tone mapping

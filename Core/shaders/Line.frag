@@ -1,10 +1,12 @@
 #version 460
 
-layout(location=1) uniform vec4 uColor;
+// uniform /////////////////////////////////////////////////////////////////////
+layout(location=1) uniform vec4 u_color;
 
-out vec4 outColor;
+// out /////////////////////////////////////////////////////////////////////////
+layout(location=0) out vec4 f_color;
 
 void main()
 {
-  outColor = uColor;
+  f_color = u_color;
 }

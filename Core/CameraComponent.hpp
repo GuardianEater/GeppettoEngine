@@ -31,7 +31,7 @@ namespace Client
         float fov       = 80.0f;   // field of view
         float aspect    = 1.0f;    // aspect ratio
 
-        Gep::FrameBuffer renderTarget = Gep::FrameBuffer::CreateWithTexture({ 100, 100 }); // TODO: vthis is a problem because there are no texture attachments
+        Gep::FrameBuffer renderTarget = Gep::FrameBuffer::CreateSimple({ 100, 100 }); // TODO: vthis is a problem because there are no texture attachments
         bool renderToImGui = true; // if true renders to an imgui texture, otherwise renders to the main window
 
         void Resize(glm::vec2 size)

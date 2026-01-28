@@ -1,59 +1,45 @@
 #include "Common.glsl"
 
 // in variables ////////////////////////////////////////////////////////////////
-layout(location=0) in vec3 position;    // surface point
-layout(location=1) in vec3 normal;      // normal at position
-layout(location=2) in vec2 uv;          // texture coordinates
-layout(location=3) in uvec4 boneIndexs; // indices of bones affecting this vertex
-layout(location=4) in vec4 boneWeights; // weights of bones affecting this vertex
+layout(location=0) in vec3 a_position;    // position in model space
+layout(location=1) in vec3 a_normal;      // normal in model space
+layout(location=2) in vec2 a_uv;          // texture coordinates
+layout(location=3) in uvec4 a_boneIndexs; // indices of bones affecting this vertex
+layout(location=4) in vec4 a_boneWeights; // weights of bones affecting this vertex
 
 // out to fragment shader //////////////////////////////////////////////////////
-layout(location=0) out vec3 worldPosition;    // surface point
-layout(location=1) out vec3 worldNormal;      // normal at position
-layout(location=2) out vec2 uvOut;            // texture coordinates
-layout(location=3) flat out uint vMaterialIndex;   // the current material index into material uniforms
-
-const uint INVALID_INDEX = 4294967295;
+layout(location=0) out vec3 v_normal;        // normal in world space
+layout(location=1) out vec2 v_uv;            // texture coordinates
+layout(location=2) flat out uint v_matIndex; // the current material index into material uniforms
 
 void main(void)
 {
   uint objectIndex = gl_InstanceID + gl_BaseInstance;
-  uint meshIndex   = gl_InstanceID + meshBaseInstance;
-  vMaterialIndex   = meshUniforms[meshIndex].materialIndex;
-
-  // ---- skin the vertex using bone matrices ----
+  uint meshIndex = gl_InstanceID + u_meshBaseInstance;
   vec4 totalPosition = vec4(0.0);
   vec3 totalNormal = vec3(0.0);
 
   for (int i = 0; i < 4; i++) 
   {
-    if (boneIndexs[i] == INVALID_INDEX)
+    if (a_boneIndexs[i] == INVALID_INDEX)
       continue; // do nothing if the bone index is not set
 
-    uint boneIndex = objectUniforms[objectIndex].boneOffset + boneIndexs[i];
-    float weight = boneWeights[i];
-    if (weight > 0.0) 
+    uint boneIndex = u_objects[objectIndex].boneOffset + a_boneIndexs[i];
+    if (a_boneWeights[i] > 0.0) 
     {
-      vec4 localPosition = boneUniforms[boneIndex].transform * vec4(position, 1.0);
-      totalPosition += localPosition * weight;
+      vec4 localPosition = u_bones[boneIndex].transform * vec4(a_position, 1.0);
+      totalPosition += localPosition * a_boneWeights[i];
 
-      vec3 localNormal = mat3(boneUniforms[boneIndex].transform) * normal;
-      totalNormal += localNormal * weight;
+      vec3 localNormal = mat3(u_bones[boneIndex].transform) * a_normal;
+      totalNormal += localNormal * a_boneWeights[i];
     }
   }
 
-  // ---- transform to world space ----
-  vec4 pos4 = objectUniforms[objectIndex].modelMatrix * totalPosition;
+  vec4 pos4 = u_objects[objectIndex].modelMatrix * totalPosition;
 
-  // correct normal transform (TBN-safe)
-  mat3 normalMatrix = objectUniforms[objectIndex].normalMatrix;
+  v_normal = normalize(u_objects[objectIndex].normalMatrix * totalNormal);
+  v_uv = a_uv;
+  v_matIndex = u_meshs[meshIndex].materialIndex;
 
-  worldNormal = normalize(normalMatrix * totalNormal);
-  worldPosition = vec3(pos4);
-  uvOut = uv;
-
-  // ---- project into clip space ----
-  gl_Position = cameraUniforms[cameraIndex].perspectiveMatrix *
-                cameraUniforms[cameraIndex].viewMatrix *
-                pos4;
+  gl_Position = u_cams[u_camIndex].pvMatrix * pos4;
 }

@@ -1,29 +1,26 @@
 #include "Common.glsl"
 
 // in variables ////////////////////////////////////////////////////////////////
-layout(location=0) in vec3 position;    // surface point
-layout(location=1) in vec3 normal;      // normal at position
-layout(location=2) in vec2 uv;          // texture coordinates
-layout(location=3) in uvec4 boneIndexs; // indices of bones affecting this vertex
-layout(location=4) in vec4 boneWeights; // weights of bones affecting this vertex
+layout(location=0) in vec3 a_position;    // position in model space
+layout(location=1) in vec3 a_normal;      // normal in model space
+layout(location=2) in vec2 a_uv;          // texture coordinates
+layout(location=3) in uvec4 a_boneIndexs; // indices of bones affecting this vertex
+layout(location=4) in vec4 a_boneWeights; // weights of bones affecting this vertex
 
 // out to fragment shader //////////////////////////////////////////////////////
-layout(location=0) out vec3 worldPosition;    // surface point
-layout(location=1) out vec3 worldNormal;      // normal at position
-layout(location=2) out vec2 uvOut;            // texture coordinates
-layout(location=3) flat out uint vMaterialIndex;   // the current material index into material uniforms
+layout(location=0) out vec3 v_normal;        // normal in world space
+layout(location=1) out vec2 v_uv;            // texture coordinates
+layout(location=2) flat out uint v_matIndex; // the current material index into material uniforms
 
 void main(void)
 {
-  uint objectIndex   = gl_InstanceID + gl_BaseInstance;
-  uint meshIndex     = gl_InstanceID + meshBaseInstance;
-  vMaterialIndex = meshUniforms[meshIndex].materialIndex;
+  uint objectIndex = gl_InstanceID + gl_BaseInstance;
+  uint meshIndex   = gl_InstanceID + u_meshBaseInstance;
+  vec4 pos4 = u_objects[objectIndex].modelMatrix * vec4(a_position, 1.0);
 
-  vec4 pos4 = objectUniforms[objectIndex].modelMatrix * vec4(position, 1.0);
+  v_normal = normalize(u_objects[objectIndex].normalMatrix * a_normal);
+  v_uv = a_uv;
+  v_matIndex = u_meshs[meshIndex].materialIndex;
 
-  worldNormal = normalize(objectUniforms[objectIndex].normalMatrix * normal);
-  uvOut = uv;
-  worldPosition = vec3(pos4);
-
-  gl_Position = cameraUniforms[cameraIndex].perspectiveMatrix * cameraUniforms[cameraIndex].viewMatrix * pos4;
+  gl_Position = u_cams[u_camIndex].pvMatrix * pos4;
 }
