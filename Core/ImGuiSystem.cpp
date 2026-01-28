@@ -23,6 +23,8 @@
 #include "EditorResource.hpp"
 #include "OpenGLRenderer.hpp"
 
+#include "ImGuiHelp.hpp"
+
 #include "OS.hpp"
 
 namespace Client
@@ -396,6 +398,7 @@ namespace Client
     void ImGuiSystem::DrawQuickTest()
     {
         ImGui::Begin("Tests");
+        static std::vector<std::function<void()>> testOutput;
 
         if (ImGui::TreeNode("Cubes"))
         {
@@ -719,6 +722,66 @@ namespace Client
             }
 
             ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("Parenting"))
+        {
+            static std::vector<Gep::Entity> entities;
+            static uint64_t count = 50;
+
+            // will cause a stack overflow if too high
+            Gep::ImGui::InputScalar("Amount", &count);
+
+            if (ImGui::Button("Start Test"))
+            {
+                testOutput.clear();
+                entities.clear();
+
+                // create a large chain of parented entities ////////////////////////
+                Gep::Entity parent = mManager.CreateEntity("Parenting Test");
+                entities.push_back(parent);
+
+                // create new test entities
+                for (uint64_t i = 1; i < count; ++i)
+                {
+                    std::string name = "Child (depth:" + std::to_string(i) + ")";
+                    Gep::Entity e = mManager.CreateEntity(name);
+
+                    entities.push_back(e);
+                    mManager.AttachEntity(entities[i - 1], e);
+                }
+
+                // delete the top entity, which should cascade delete all children
+                mManager.DestroyEntity(parent);
+
+                // check if all entities were deleted
+                bool passed = true;
+                for (auto e : entities)
+                {
+                    if (mManager.EntityExists(e))
+                    {
+                        testOutput.push_back([e]() {
+                            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Parenting Test Failed: Entity still exists!");
+                        });
+                        passed = false;
+                    }
+                }
+
+                if (passed)
+                {
+                    testOutput.push_back([]() {
+                        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Parenting Test Passed!");
+                    });
+                }
+            }
+
+            ImGui::TreePop();
+        }
+
+        // output any feedback that occured during tests
+        for (const auto& func : testOutput)
+        {
+            func();
         }
 
         ImGui::End();

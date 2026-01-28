@@ -316,11 +316,14 @@ namespace Gep
             return;
         }
 
-        auto ancestors = GetAncestors(parent);
-        if (std::find(ancestors.begin(), ancestors.end(), child) != ancestors.end())
+        debug_if(true) // very expensive validation check but only in debug mode
         {
-            Log::Error("AttachEntity() failed, Parent Entity: [", parent, "] is a child of Child Entity: [", child, "]");
-            return;
+            auto ancestors = GetAncestors(parent); 
+            if (std::find(ancestors.begin(), ancestors.end(), child) != ancestors.end())
+            {
+                Log::Error("AttachEntity() failed, Parent Entity: [", parent, "] is a child of Child Entity: [", child, "]");
+                return;
+            }
         }
 
         // if the new child has a parent currently, remove the child from its parent
@@ -430,7 +433,7 @@ namespace Gep
         return mEntityDatas.at(parent).children.size();
     }
 
-    std::vector<Entity> EngineManager::GetChildren(Entity parent) const
+    const std::vector<Entity>& EngineManager::GetChildren(Entity parent) const
     {
         if (!EntityExists(parent))
         {

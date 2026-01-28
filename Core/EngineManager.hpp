@@ -223,7 +223,7 @@ namespace Gep
         void ForEachChild(Entity parent, const Func& lamda) const; // iterates over all of the children of the entity
 
         size_t GetChildCount(Entity parent) const;
-        std::vector<Entity> GetChildren(Entity parent) const;
+        const std::vector<Entity>& GetChildren(Entity parent) const;
         bool HasChild(Entity parent) const;
 
         template <typename Func>

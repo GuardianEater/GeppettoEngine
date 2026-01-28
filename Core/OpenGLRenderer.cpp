@@ -654,7 +654,14 @@ namespace Gep
     void OpenGLRenderer::End()
     {
         mLineUniforms.clear();
-        mObjectDatas.clear();
+
+        for (auto& [modelName, flagsToObjects] : mObjectDatas)
+        {
+            for (auto& [flags, objects] : flagsToObjects)
+            {
+                objects.clear();
+            }
+        }
 
         mPointLightUniforms.clear();
         mDirectionalLightUniforms.clear();
