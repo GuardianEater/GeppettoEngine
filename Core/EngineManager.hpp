@@ -233,6 +233,7 @@ namespace Gep
         template <typename... ComponentTypes>
         const std::vector<Entity>& GetEntities();
         std::vector<Entity> GetRoots();
+        size_t GetEntityCount() const;
 
         // iterates over entities with the given component types, also automatically gets the components from those entities
         template<typename Func>
@@ -292,6 +293,8 @@ namespace Gep
 
         template<typename ComponentType>
         ComponentType& GetComponent(Entity entity);
+        template<typename ComponentType>
+        ComponentType* TryGetComponent(Entity entity);
         template <typename ComponentType>
         const ComponentType& GetComponent(Entity entity) const;
 

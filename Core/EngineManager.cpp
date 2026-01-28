@@ -472,6 +472,11 @@ namespace Gep
         return rootEntities;
     }
 
+    size_t EngineManager::GetEntityCount() const
+    {
+        return mEntityDatas.size();
+    }
+
     bool EngineManager::IsEnabled(Gep::Entity entity) const
     {
         return mEntityDatas.at(entity).active;
