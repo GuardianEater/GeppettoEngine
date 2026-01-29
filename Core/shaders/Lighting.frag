@@ -45,7 +45,7 @@ void main(void)
   float depth = texture(u_depthTexture, uv).x;  
   if (depth >= 1.0) 
   {
-    f_color = vec4(0.0, 0.0, 0.0, 0.0);
+    f_color = vec4(0.0, 0.0, 0.0, 1.0);
     return; // do not do anything if there is nothing
   }
 
@@ -55,7 +55,7 @@ void main(void)
   float distToLight = length(u_pointLights[v_InstanceID].position - g_position);
   if (distToLight > u_pointLights[v_InstanceID].radius)
   {
-    f_color = vec4(0.0, 0.0, 0.0, 0.0);
+    f_color = vec4(0.0, 0.0, 0.0, 1.0);
     return;
   }
 
