@@ -694,7 +694,11 @@ namespace Gep
 
         glEnable(GL_DEPTH_TEST);
         glDepthMask(GL_TRUE);
+
         glDisable(GL_BLEND);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
 
         uint32_t baseInstance = 0;
         uint32_t meshBaseInstance = 0;
@@ -752,34 +756,41 @@ namespace Gep
         mLightingShader.Bind(); 
         mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
 
-        //DrawPointLights(targetFrameBuffer);
-
+        // draw all light volumes
         glDisable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
+        glDepthMask(GL_FALSE);
 
-        glDrawArrays(GL_TRIANGLES, 0, 3);// draw a full screen triangle, the vertices are in the vertex shader
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+
+        auto& [sphereHandle, sphere] = mModels.at("Sphere");
+        auto& meshHandle = sphereHandle.meshHandles[0];
+
+        glBindVertexArray(meshHandle.mVertexArrayObject);
+
+        glDrawElementsInstanced(
+            GL_TRIANGLES,
+            meshHandle.mIndexCount,
+            GL_UNSIGNED_INT,
+            0,
+            static_cast<GLsizei>(mPointLightUniforms.size())
+        );
 
         Shader::Unbind();
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+
+        glDisable(GL_BLEND);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
     }
 
     void OpenGLRenderer::DrawPointLights(Gep::FrameBuffer& targetFrameBuffer)
     {
-        
-        // draw all light volumes
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE);
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
-        glDepthMask(GL_FALSE);
-        glEnable(GL_DEPTH_TEST);
-
-        auto& [sphereHandle, sphere] = mModels.at("Icosphere");
-        auto& meshHandle = sphereHandle.meshHandles[0];
-
-        for (size_t i = 0; i < mPointLightUniforms.size(); ++i)
-        {
-
-        }
 
     }
 

@@ -135,6 +135,7 @@ namespace Client
         {
             renderer.SetCameraIndex(cameraIndex++);
 
+            cam.renderTarget.Bind();
             cam.renderTarget.Clear();
 
             DrawImGuiCameraWindow(camEntity, cam, camTransform);
@@ -425,6 +426,10 @@ namespace Client
 
         Gep::ImGui::MultiCheckbox("Enabled", lights,
             [](Light* light) -> bool& { return light->enabled; }
+        );
+
+        Gep::ImGui::MultiDragFloat("Radius", lights,
+            [](Light* light) -> float& { return light->radius; }
         );
     }
 
@@ -795,12 +800,18 @@ namespace Client
             if (!l.enabled)
                 return; // skip disabled lights
 
+            glm::mat4 modelMatrix{ 1.0f };
+            modelMatrix = glm::translate(modelMatrix, t.world.position);
+            modelMatrix = glm::scale(modelMatrix, glm::vec3(l.radius));
 
             Gep::PointLightGPUData uniforms
             {
                 .position = t.world.position,
+                .radius = l.radius,
                 .color = l.color,
-                .intensity = l.intensity
+                .intensity = l.intensity,
+
+                .modelMatrix = modelMatrix
             };
 
             mRenderer.AddPointLight(uniforms);

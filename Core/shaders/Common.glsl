@@ -14,9 +14,11 @@
 struct PointLightUniforms
 {
   vec3 position;   // the location of the light source
-  float pad;
+  float radius;
   vec3 color;      // the color of the light source
   float intensity; 
+
+  mat4 modelMatrix;
 };
 
 struct DirectionalLightUniforms

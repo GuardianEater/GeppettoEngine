@@ -7,12 +7,12 @@ uniform sampler2D u_colorTexture;
 uniform sampler2D u_armTexture;
 
 // in variables ////////////////////////////////////////////////////////////////
-layout(location=0) in vec2 v_uv;
+layout(location=0) flat in uint v_InstanceID;
 
 // out /////////////////////////////////////////////////////////////////////////
 layout(location=0) out vec4 f_color; // the resulting pixel color
 
-vec3 CalculatePBRLightingTotal();
+vec3 CalculatePBRPoint(PointLightUniforms light, vec3 n, vec3 objectColor);
 // forward /////////////////////////////////////////////////////////////////////
 
 // all of the samples in a single struct
@@ -28,9 +28,9 @@ CurrentSample g_currentSample;
 vec3 g_normal;
 vec3 g_position;
 
-vec3 GetPosition(float depth)
+vec3 GetPosition(vec2 uv, float depth)
 {
-  vec2 ndcXY = v_uv * 2.0 - 1.0;
+  vec2 ndcXY = uv * 2.0 - 1.0;
   float ndcZ = depth * 2.0 - 1.0;
   vec4 clip = vec4(ndcXY, ndcZ, 1.0);
   vec4 world = u_cams[u_camIndex].ipvMatrix * clip;
@@ -41,24 +41,33 @@ vec3 GetPosition(float depth)
 
 void main(void)
 {
-  float depth = texture(u_depthTexture, v_uv).x;  
+  vec2 uv = gl_FragCoord.xy / vec2(textureSize(u_depthTexture, 0));
+  float depth = texture(u_depthTexture, uv).x;  
   if (depth >= 1.0) 
   {
-    f_color = vec4(0.0, 0.0, 0.0, 1.0);
+    f_color = vec4(0.0, 0.0, 0.0, 0.0);
     return; // do not do anything if there is nothing
   }
 
-  vec3 arm    = texture(u_armTexture, v_uv).xyz;
+  g_position = GetPosition(uv, depth);
 
-  g_normal = texture(u_normalTexture, v_uv).xyz;
-  g_position = GetPosition(depth);
-  g_currentSample.color     = texture(u_colorTexture, v_uv);
+  // check if the g_position is inside the light's radius
+  float distToLight = length(u_pointLights[v_InstanceID].position - g_position);
+  if (distToLight > u_pointLights[v_InstanceID].radius)
+  {
+    f_color = vec4(0.0, 0.0, 0.0, 0.0);
+    return;
+  }
+
+  vec3 arm = texture(u_armTexture, uv).xyz;
+  g_normal = texture(u_normalTexture, uv).xyz;
+  g_currentSample.color     = texture(u_colorTexture, uv);
   g_currentSample.ao        = arm.x;
   g_currentSample.roughness = arm.y;
   g_currentSample.metallic  = arm.z;
 
   // compute pbr
-  vec3 finalColor = CalculatePBRLightingTotal();
+  vec3 finalColor = CalculatePBRPoint(u_pointLights[v_InstanceID], g_normal, g_currentSample.color.rgb);
 
   // Output with alpha for blending
   f_color = vec4(finalColor, g_currentSample.color.a);
@@ -174,35 +183,4 @@ vec3 CalculatePBRDirectional(DirectionalLightUniforms light, vec3 n, vec3 object
   vec3 radiance = lightColor * intensity; // no attenuation for directional
 
   return (diffuseBRDF + specularBRDF) * radiance * nDotL;
-}
-
-vec3 CalculatePBRLightingTotal()
-{    
-  vec3 n = g_normal;
-  vec3 color = vec3(0.0); // the final color of the fragment
-
-  // point lights
-  for (int i = 0; i < u_pointLightCount; i++) 
-  {
-    color += CalculatePBRPoint(u_pointLights[i], n, g_currentSample.color.rgb);
-  }
-
-  // directional lights
-  for (int i = 0; i < u_directionalLightCount; i++) 
-  {
-    color += CalculatePBRDirectional(u_directionalLights[i], n, g_currentSample.color.rgb);
-  }
-
-  // ambient lighting
-  float ambientFactor = 0.1;
-  vec3 ambient = vec3(ambientFactor) * g_currentSample.color.rgb * g_currentSample.ao;
-  color += ambient;
-
-  // HDR tone mapping
-  //color /= (color + vec3(1.0));
-
-  //gamma correction
-  //color = pow(color, vec3(1.0 / 2));
-
-  return color;
 }

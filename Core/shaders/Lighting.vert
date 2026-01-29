@@ -1,22 +1,16 @@
-#version 460
+#include "Common.glsl"
+
+// ins /////////////////////////////////////////////////////////////////////////
+layout(location=0) in vec3 a_position;    // position in model space
+layout(location=1) in vec3 a_normal;      // normal in model space
+layout(location=2) in vec2 a_uv;          // texture coordinates
 
 // outs ////////////////////////////////////////////////////////////////////////
-layout(location=0) out vec2 v_uv;
-
-// full screen triangle constants //////////////////////////////////////////////
-const vec2 positions[3] = {
-  vec2(-1.0, -1.0),
-  vec2( 3.0, -1.0),
-  vec2(-1.0,  3.0)
-};
-const vec2 uvs[3] = {
-  vec2(0.0, 0.0),
-  vec2(2.0, 0.0),
-  vec2(0.0, 2.0)
-};
+layout(location=0) flat out uint v_InstanceID;
 
 void main() 
 {
-  gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);
-  v_uv = uvs[gl_VertexID];
+  vec4 pos4 = u_pointLights[gl_InstanceID].modelMatrix * vec4(a_position, 1.0);
+  gl_Position = u_cams[u_camIndex].pvMatrix * pos4;
+  v_InstanceID = gl_InstanceID;
 }

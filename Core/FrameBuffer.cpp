@@ -155,10 +155,16 @@ namespace Gep
     void FrameBuffer::DrawBuffers() const
     {
         std::vector<GLenum> buffers;
-        for (size_t i = 0; i < mTarget->textures.size(); ++i)
-            buffers.push_back(GL_COLOR_ATTACHMENT0 + static_cast<GLenum>(i));
+        buffers.reserve(mTarget->textures.size());
 
-        glDrawBuffers(static_cast<GLsizei>(buffers.size()), buffers.data());
+        for (const TextureAttachment& tex : mTarget->textures)
+        {
+            if (tex.attachment >= GL_COLOR_ATTACHMENT0 && tex.attachment <= GL_COLOR_ATTACHMENT15)
+                buffers.push_back(tex.attachment);
+        }
+
+        if (!buffers.empty())
+            glDrawBuffers(static_cast<GLsizei>(buffers.size()), buffers.data());
     }
 
     void FrameBuffer::Bind() const

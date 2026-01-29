@@ -85,10 +85,12 @@ namespace Gep
     struct PointLightGPUData
     {
         glm::vec3 position; // location of the light in world space
-        float radius; 
+        float radius; // scales the bounding sphere
 
         glm::vec3 color; // color of the light
         float intensity; // intensity of the light
+
+        glm::mat4 modelMatrix; // used for the bounding sphere
     };
 
     struct DirectionalLightGPUData
