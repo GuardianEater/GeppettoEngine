@@ -815,6 +815,18 @@ namespace Client
             mRenderer.AddPointLight(uniforms);
         });
 
+        // point lights with models
+        mManager.ForEachArchetype([&](Gep::Entity e, Light& l, StaticModelComponent& m, Transform& t)
+        {
+            const glm::mat4 modelMatrix = Gep::ToMat4(t.world); // ensure world matrix is updated
+            Gep::LightObjectGPUData uniforms
+            {
+                .modelMatrix = modelMatrix,
+                .color = glm::vec4(l.color, 1.0f) * l.intensity,
+            };
+            mRenderer.AddLightObject(m.name, uniforms);
+        });
+
         // prepares all of the directional light uniform values
         mManager.ForEachArchetype([&](Gep::Entity e, DirectionalLight& l, Transform& t)
         {
@@ -876,6 +888,9 @@ namespace Client
 
         mManager.ForEachArchetype([&](Gep::Entity entity, RiggedModelComponent& model, Transform& transform)
         {
+            if (mManager.HasComponent<Light>(entity))
+                return; // skip lights, they are handled in the AddLights function
+
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
             const Gep::Model& internalModel = mRenderer.GetModel(model.name);

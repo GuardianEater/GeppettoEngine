@@ -67,6 +67,12 @@ namespace Gep
         int pad[3];
     };
 
+    struct alignas(16) LightObjectGPUData
+    {
+        glm::mat4 modelMatrix;
+        glm::vec4 color;
+    };
+
     struct alignas(16) MeshGPUData
     {
         uint32_t materialIndex; // index into the materials ssbo
@@ -181,6 +187,7 @@ namespace Gep
 
         // adds an object to be drawn by 
         void AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& objectData, RenderFlags flags = RenderFlags::None);
+        void AddLightObject(const std::string& modelName, const LightObjectGPUData& lightData);
         void AddCamera(const CameraGPUData& cameraData);
         void AddPointLight(const PointLightGPUData& lightData); // adds a light to the renderered, will be sent to the shader when DrawLights is called
         void AddDirectionalLight(const DirectionalLightGPUData& uniforms);
@@ -281,7 +288,7 @@ namespace Gep
     private:
         void GeometryPass(const Gep::FrameBuffer& targetFrameBuffer); // renders all geometry to the geometry framebuffer
         void PointLightPass(Gep::FrameBuffer& targetFrameBuffer);     // renders all point light emissions to the target framebuffer, but doesnt draw the light itself
-        void DrawPointLights(Gep::FrameBuffer& targetFrameBuffer);
+        void LightGeometryPass(Gep::FrameBuffer& targetFrameBuffer);  // draws the geometry of the lights (spheres for point lights, etc)
         void DrawLines();
         void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
 
@@ -304,6 +311,7 @@ namespace Gep
         Shader mGeometryShader_Skinned; // shader used for geometry pass of animated models
         Shader mLightingShader;         // shader used for lighting pass
         Shader mLineShader;             // shader used for drawing lines
+        Shader mSolidLightShader;       // shader used for drawing light geometry
 
         glm::vec3 mSolidColor{};
 
@@ -328,9 +336,11 @@ namespace Gep
         Gep::gpu_vector<MaterialGPUData, 4> mMaterialUniforms;                  // copied into u_materials on the gpu
         Gep::gpu_vector<MeshGPUData, 5> mMeshUniforms;                          // copied into u_meshes on the gpu
         Gep::gpu_vector<DirectionalLightGPUData, 6> mDirectionalLightUniforms;  // copied into u_directionalLights on the gpu
+        Gep::gpu_vector<LightObjectGPUData, 7> mLightObjectUniforms;            // copied into u_lightObjects on the gpu
 
         // model -> flags -> objects
         std::map<std::string, std::map<RenderFlags, std::vector<ObjectGPUData>>> mObjectDatas;
+        std::map<std::string, std::vector<LightObjectGPUData>> mLightObjectDatas;
 
         // used to store vertices for drawing lines
         GLuint mLineVBO;

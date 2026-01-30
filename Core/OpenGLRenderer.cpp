@@ -69,6 +69,7 @@ namespace Gep
         mGeometryShader_Skinned = Shader::FromFile("shaders/Geometry-Skinned.vert", "shaders/Geometry.frag"); // shader used for geometry pass of animated models
         mLightingShader         = Shader::FromFile("shaders/Lighting.vert",         "shaders/Lighting.frag"); // shader used for lighting pass
         mLineShader             = Shader::FromFile("shaders/Line.vert",             "shaders/Line.frag");     // shader used for drawing lines
+        mSolidLightShader       = Shader::FromFile("shaders/SolidLight.vert",       "shaders/SolidLight.frag"); // shader used for drawing light geometry
 
         mLightingShader.Bind();
         mLightingShader.SetUniform("u_depthTexture", 0);
@@ -184,6 +185,17 @@ namespace Gep
         mObjectDatas[modelName][flags].push_back(gpuData);
     }
 
+    void OpenGLRenderer::AddLightObject(const std::string& modelName, const LightObjectGPUData& lightData)
+    {
+        // these existance checks are very expensive so only perform in debug mode
+        debug_if(!IsModelLoaded(modelName))
+        {
+            Gep::Log::Error("Failed to draw object. The model: [", modelName, "] doesn't exist");
+            return;
+        }
+
+        mLightObjectDatas[modelName].push_back(lightData);
+    }
 
     void OpenGLRenderer::AddCamera(const CameraGPUData& uniforms)
     {
@@ -297,6 +309,14 @@ namespace Gep
 
         SetDirectionalLightCount(mDirectionalLightUniforms.size());
         mDirectionalLightUniforms.commit();
+
+        for (const auto& [flags, objects] : mLightObjectDatas)
+        {
+            // add all per-object instance data
+            mLightObjectUniforms.insert(mLightObjectUniforms.end(), objects.begin(), objects.end());
+        }
+
+        mLightObjectUniforms.commit();
     }
 
     void OpenGLRenderer::CommitMeshes()
@@ -643,6 +663,7 @@ namespace Gep
     {
         GeometryPass(targetFrameBuffer);
         PointLightPass(targetFrameBuffer);
+        LightGeometryPass(targetFrameBuffer);
         DrawLines();
     }
 
@@ -665,6 +686,13 @@ namespace Gep
         mBoneUniforms.clear();
         mMeshUniforms.clear();
         mMaterialUniforms.clear();
+
+        for (auto& [modelName, lightObjects] : mLightObjectDatas)
+        {
+            lightObjects.clear();
+        }
+
+        mLightObjectUniforms.clear();
     }
 
     void OpenGLRenderer::SetUpLineDrawing()
@@ -784,9 +812,37 @@ namespace Gep
         glCullFace(GL_BACK);
     }
 
-    void OpenGLRenderer::DrawPointLights(Gep::FrameBuffer& targetFrameBuffer)
+    void OpenGLRenderer::LightGeometryPass(Gep::FrameBuffer& targetFrameBuffer)
     {
+        uint32_t baseInstance = 0;
+        uint32_t meshBaseInstance = 0;
 
+        mSolidLightShader.Bind();
+
+        for (const auto& [name, objects] : mLightObjectDatas)
+        {
+            const auto& [modelHandle, model] = mModels.at(name);
+
+            for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
+            {
+                glBindVertexArray(meshHandle.mVertexArrayObject);
+
+                mGeometryShader_Static.SetUniform(3, meshBaseInstance);
+
+                glDrawElementsInstancedBaseInstance(
+                    GL_TRIANGLES,
+                    meshHandle.mIndexCount,
+                    GL_UNSIGNED_INT,
+                    0,
+                    objects.size(),
+                    baseInstance
+                );
+
+                meshBaseInstance += objects.size();
+            }
+
+            baseInstance += objects.size();
+        }
     }
 
     void OpenGLRenderer::DrawLines()
