@@ -20,7 +20,7 @@ void main(void)
 
   v_normal = normalize(u_objects[objectIndex].normalMatrix * a_normal);
   v_uv = a_uv;
-  v_matIndex = u_meshs[meshIndex].materialIndex;
+  v_matIndex = u_meshes[meshIndex].materialIndex;
 
   gl_Position = u_cams[u_camIndex].pvMatrix * pos4;
 }

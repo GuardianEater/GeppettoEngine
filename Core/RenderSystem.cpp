@@ -427,10 +427,6 @@ namespace Client
         Gep::ImGui::MultiCheckbox("Enabled", lights,
             [](Light* light) -> bool& { return light->enabled; }
         );
-
-        Gep::ImGui::MultiDragFloat("Radius", lights,
-            [](Light* light) -> float& { return light->radius; }
-        );
     }
 
     void RenderSystem::OnDirectionalLightEditorRender(const Gep::Event::ComponentEditorRender<DirectionalLight>& event)
@@ -800,14 +796,16 @@ namespace Client
             if (!l.enabled)
                 return; // skip disabled lights
 
+            float cutoff = 0.1f;              // chosen threshold
+            float radius = std::sqrt(l.intensity / cutoff);
+
             glm::mat4 modelMatrix{ 1.0f };
             modelMatrix = glm::translate(modelMatrix, t.world.position);
-            modelMatrix = glm::scale(modelMatrix, glm::vec3(l.radius));
+            modelMatrix = glm::scale(modelMatrix, glm::vec3(radius));
 
             Gep::PointLightGPUData uniforms
             {
                 .position = t.world.position,
-                .radius = l.radius,
                 .color = l.color,
                 .intensity = l.intensity,
 
@@ -940,8 +938,6 @@ namespace Client
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
             const Gep::Model& internalModel = mRenderer.GetModel(model.name);
 
-            std::string targetShader = "PBR-Static";
-
             Gep::ObjectGPUData uniforms
             {
                 .modelMatrix = modelMatrix,
@@ -959,7 +955,7 @@ namespace Client
             if (model.selected)
                 flags |= Gep::RenderFlags::Highlight;
 
-            mRenderer.AddObject(targetShader, model.name, uniforms, flags);
+            mRenderer.AddObject("PBR-Static", model.name, uniforms, flags);
         });
 
         mRenderer.AddLine(skeletonLines);

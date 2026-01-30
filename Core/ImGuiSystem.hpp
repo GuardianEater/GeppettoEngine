@@ -102,23 +102,6 @@ namespace Client
         void DrawAssetBrowser();
         void DrawToolbar();
         void ShowControlBar();
-
-        template <typename T>
-        void DrawType(const std::string_view name, T& t);
-
-        template <typename T>
-        requires TypeIsContainer<T>
-        void DrawType(const std::string_view name, T& t);
-
-        // bunch of base type specializations
-        template <> void DrawType<float>(const std::string_view name, float& t);
-        template <> void DrawType<int>(const std::string_view name, int& t);
-        template <> void DrawType<std::string>(const std::string_view name, std::string& t);
-        template <> void DrawType<glm::vec3>(const std::string_view name, glm::vec3& t);
-        template <> void DrawType<glm::vec4>(const std::string_view name, glm::vec4& t);
-        template <> void DrawType<size_t>(const std::string_view name, size_t& t);
-        template <> void DrawType<bool>(const std::string_view name, bool& t);
-        template <> void DrawType<char>(const std::string_view name, char& t);
     };
 }
 

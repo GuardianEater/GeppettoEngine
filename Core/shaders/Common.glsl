@@ -70,6 +70,13 @@ struct ObjectUniforms
   int pad[3];
 };
 
+// stores all per-light-object data
+struct LightObjectUniforms
+{
+  mat4 modelMatrix;
+  vec4 color;
+};
+
 struct BoneUniforms
 {
   mat4 transform;
@@ -110,12 +117,17 @@ layout(std430, binding=4) buffer MaterialUniformsBuffer
 
 layout(std430, binding=5) buffer MeshUniformsBuffer
 {
-  MeshUniforms u_meshs[];
+  MeshUniforms u_meshes[];
 };
 
 layout(std430, binding=6) buffer DirectionalLightUniformsBuffer
 {
   DirectionalLightUniforms u_directionalLights[];
+};
+
+layout(std430, binding=7) buffer LightObjectUniformsBuffer
+{
+  LightObjectUniforms u_lightObjects[];
 };
 
 // uniforms ////////////////////////////////////////////////////////////////////

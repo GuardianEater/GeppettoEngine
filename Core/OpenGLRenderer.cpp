@@ -181,14 +181,9 @@ namespace Gep
             return;
         }
 
-        debug_if (!IsShaderLoaded(shaderName))
-        {
-            Gep::Log::Error("Failed to draw object. The shader: [", shaderName, "] doesn't exist");
-            return;
-        }
-
         mObjectDatas[modelName][flags].push_back(gpuData);
     }
+
 
     void OpenGLRenderer::AddCamera(const CameraGPUData& uniforms)
     {
@@ -646,8 +641,8 @@ namespace Gep
 
     void OpenGLRenderer::Draw(Gep::FrameBuffer& targetFrameBuffer)
     {
-        DrawGeometry(targetFrameBuffer);
-        DrawLighting(targetFrameBuffer);
+        GeometryPass(targetFrameBuffer);
+        PointLightPass(targetFrameBuffer);
         DrawLines();
     }
 
@@ -685,7 +680,7 @@ namespace Gep
         glEnableVertexAttribArray(0);
     }
 
-    void OpenGLRenderer::DrawGeometry(const Gep::FrameBuffer& targetFrameBuffer)
+    void OpenGLRenderer::GeometryPass(const Gep::FrameBuffer& targetFrameBuffer)
     {
         mGeometryFrameBuffer.Bind();
         mGeometryFrameBuffer.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
@@ -750,7 +745,7 @@ namespace Gep
         mGeometryFrameBuffer.Unbind();
     }
 
-    void OpenGLRenderer::DrawLighting(Gep::FrameBuffer& targetFrameBuffer)
+    void OpenGLRenderer::PointLightPass(Gep::FrameBuffer& targetFrameBuffer)
     {
         targetFrameBuffer.Bind(); // draw to the target framebuffer
         mLightingShader.Bind(); 

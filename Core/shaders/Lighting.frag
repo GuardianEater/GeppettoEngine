@@ -41,6 +41,9 @@ vec3 GetPosition(vec2 uv, float depth)
 
 void main(void)
 {
+  // f_color = vec4(1.0, 0.0, 0.0, 1.0);
+  // return; // do not do anything if there is nothing
+
   vec2 uv = gl_FragCoord.xy / vec2(textureSize(u_depthTexture, 0));
   float depth = texture(u_depthTexture, uv).x;  
   if (depth >= 1.0) 
@@ -50,10 +53,13 @@ void main(void)
   }
 
   g_position = GetPosition(uv, depth);
+  PointLightUniforms l = u_pointLights[v_InstanceID];
 
   // check if the g_position is inside the light's radius
-  float distToLight = length(u_pointLights[v_InstanceID].position - g_position);
-  if (distToLight > u_pointLights[v_InstanceID].radius)
+  float distToLight = length(l.position - g_position);
+  float cutoff = 0.1;              // chosen threshold
+  float radius = sqrt(l.intensity / cutoff);
+  if (distToLight > radius)
   {
     f_color = vec4(0.0, 0.0, 0.0, 1.0);
     return;
@@ -67,7 +73,7 @@ void main(void)
   g_currentSample.metallic  = arm.z;
 
   // compute pbr
-  vec3 finalColor = CalculatePBRPoint(u_pointLights[v_InstanceID], g_normal, g_currentSample.color.rgb);
+  vec3 finalColor = CalculatePBRPoint(l, g_normal, g_currentSample.color.rgb);
 
   // Output with alpha for blending
   f_color = vec4(finalColor, g_currentSample.color.a);
@@ -119,9 +125,8 @@ vec3 CalculatePBRPoint(PointLightUniforms light, vec3 n, vec3 objectColor)
   float lightToPixelDist = length(l); // before normalizing get the length
   l = normalize(l);
   
-  float attenuation = 1.0 / (lightToPixelDist * lightToPixelDist);
-  attenuation = min(attenuation, 0.001); // caps attenuation so it doesnt get super bright to fast
-  vec3 radiance = light.color * attenuation * light.intensity;
+  float attenuation = light.intensity / (lightToPixelDist * lightToPixelDist);
+  vec3 radiance = light.color * attenuation;
 
   vec3 v = normalize(u_cams[u_camIndex].position.xyz - g_position); // view vector
   vec3 h = normalize(v + l); // half vector

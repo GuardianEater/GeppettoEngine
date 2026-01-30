@@ -85,7 +85,7 @@ namespace Gep
     struct PointLightGPUData
     {
         glm::vec3 position; // location of the light in world space
-        float radius; // scales the bounding sphere
+        float pad; // scales the bounding sphere
 
         glm::vec3 color; // color of the light
         float intensity; // intensity of the light
@@ -279,8 +279,8 @@ namespace Gep
         }
 
     private:
-        void DrawGeometry(const Gep::FrameBuffer& targetFrameBuffer);
-        void DrawLighting(Gep::FrameBuffer& targetFrameBuffer);
+        void GeometryPass(const Gep::FrameBuffer& targetFrameBuffer); // renders all geometry to the geometry framebuffer
+        void PointLightPass(Gep::FrameBuffer& targetFrameBuffer);     // renders all point light emissions to the target framebuffer, but doesnt draw the light itself
         void DrawPointLights(Gep::FrameBuffer& targetFrameBuffer);
         void DrawLines();
         void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
@@ -321,13 +321,13 @@ namespace Gep
 
         FrameBuffer mGeometryFrameBuffer;
     
-        Gep::gpu_vector<ObjectGPUData,   0> mObjectUniforms;   // this vector is perfectly copied onto the gpu into the objectUniforms array
-        Gep::gpu_vector<PointLightGPUData,    1> mPointLightUniforms;    // this vector is perfectly copied onto the gpu into the lights array
-        Gep::gpu_vector<CameraGPUData,   2> mCameraUniforms;   // this vector is perfectly copied onto the gpu into the cameraUniforms array
-        Gep::gpu_vector<BoneGPUData,     3> mBoneUniforms;     // this vector is perfectly copied onto the gpu into the boneUniforms array
-        Gep::gpu_vector<MaterialGPUData, 4> mMaterialUniforms; // this vector is perfectly copied onto the gpu into the materialUniforms array
-        Gep::gpu_vector<MeshGPUData,     5> mMeshUniforms;     // this vector is perfectly copied onto the gpu into the meshUniforms array
-        Gep::gpu_vector<DirectionalLightGPUData, 6> mDirectionalLightUniforms;     // this vector is perfectly copied onto the gpu into the meshUniforms array
+        Gep::gpu_vector<ObjectGPUData, 0> mObjectUniforms;                      // copied into u_objects on the gpu
+        Gep::gpu_vector<PointLightGPUData, 1> mPointLightUniforms;              // copied into u_pointLights on the gpu
+        Gep::gpu_vector<CameraGPUData, 2> mCameraUniforms;                      // copied into u_cams on the gpu
+        Gep::gpu_vector<BoneGPUData, 3> mBoneUniforms;                          // copied into u_bones on the gpu
+        Gep::gpu_vector<MaterialGPUData, 4> mMaterialUniforms;                  // copied into u_materials on the gpu
+        Gep::gpu_vector<MeshGPUData, 5> mMeshUniforms;                          // copied into u_meshes on the gpu
+        Gep::gpu_vector<DirectionalLightGPUData, 6> mDirectionalLightUniforms;  // copied into u_directionalLights on the gpu
 
         // model -> flags -> objects
         std::map<std::string, std::map<RenderFlags, std::vector<ObjectGPUData>>> mObjectDatas;
