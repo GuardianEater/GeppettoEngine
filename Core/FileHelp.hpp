@@ -17,4 +17,7 @@ namespace Gep
 
     // reads a file from the given path into a string, will silently fail and return "" if the path doesnt exist
     std::string ReadFile(const std::filesystem::path& path);
+
+    // takes an opengl texture and writes it to a png file
+    void WritePNG(const std::filesystem::path& path, int width, int height, GLuint texID);
 }

@@ -70,7 +70,8 @@ namespace Client
 		void LabledInput_End();
 
 	private:
-		std::vector<Gep::Entity> mHierarchyEntities; // the order of the entities in the hierarchy
+        // visible entities in the hierarchy panel. also used for selection order
+		std::vector<Gep::Entity> mHierarchyEntities;
 
 		friend class ImGuiSystem;
 		std::unordered_set<Gep::Entity> mSelectedEntities;

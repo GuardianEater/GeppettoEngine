@@ -310,7 +310,7 @@ namespace Client
         {
             glfwDestroyWindow(mPrimaryWindow);
             glfwTerminate();
-            Gep::Log::Critical("Failed To Create Window");
+            Gep::Log::Critical("Failed To Initialize GLEW");
         }
 
         int display_w = 0;

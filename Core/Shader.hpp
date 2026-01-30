@@ -57,8 +57,8 @@ namespace Gep
         friend class Renderer;
 
     private:
-        static GLuint Compile(GLenum shaderType, const std::string& source);
-        static GLuint CreateProgram(GLuint vertexShader, GLuint fragmentShader);
+        static GLuint Compile(GLenum shaderType, const std::string& source, const std::string& origin = "<embedded>");
+        static GLuint CreateProgram(GLuint vertexShader, GLuint fragmentShader, const std::string& origin = "<embedded>");
         static std::string ReadShader(const std::filesystem::path& path); // reads in the data and handles includes
         
     private:

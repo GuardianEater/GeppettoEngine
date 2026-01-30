@@ -55,6 +55,28 @@ namespace Gep
     static Texture IconToTexture(HICON icon);
     static Texture BitmapToTexture(HBITMAP bitmap);
 
+    void OpenGLRenderer::Initialize()
+    {
+        SetUpLineDrawing();
+
+        mGeometryFrameBuffer = FrameBuffer::Create({128, 128});
+        mGeometryFrameBuffer.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT); // depth
+        mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGB16F, GL_RGB, GL_FLOAT); // normal
+        mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT1, GL_RGBA8, GL_RGBA, GL_FLOAT); // color
+        mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT2, GL_RGB8, GL_RGB, GL_FLOAT); // ao + roughness + metalness
+
+        mGeometryShader_Static  = Shader::FromFile("shaders/Geometry-Static.vert",  "shaders/Geometry.frag"); // shader used for geometry pass of static models
+        mGeometryShader_Skinned = Shader::FromFile("shaders/Geometry-Skinned.vert", "shaders/Geometry.frag"); // shader used for geometry pass of animated models
+        mLightingShader         = Shader::FromFile("shaders/Lighting.vert",         "shaders/Lighting.frag"); // shader used for lighting pass
+        mLineShader             = Shader::FromFile("shaders/Line.vert",             "shaders/Line.frag");     // shader used for drawing lines
+
+        mLightingShader.Bind();
+        mLightingShader.SetUniform("u_depthTexture", 0);
+        mLightingShader.SetUniform("u_normalTexture", 1);
+        mLightingShader.SetUniform("u_colorTexture", 2);
+        mLightingShader.SetUniform("u_armTexture", 3);
+    }
+
     void OpenGLRenderer::AddModelFromFile(const std::string& path)
     {
         if (mModels.contains(path))
@@ -112,7 +134,7 @@ namespace Gep
             return;
         }
 
-        mAnimations[name] = std::make_pair(AnimationGPUHandle{}, animation);
+        mAnimations[name] = animation;
     }
 
     void OpenGLRenderer::AddMaterial(const Gep::Material& material)
@@ -137,7 +159,7 @@ namespace Gep
             Gep::Log::Critical("Attempting to get a animation with name: [", name, "] that doesn't exist");
         }
 
-        return mAnimations.at(name).second;
+        return mAnimations.at(name);
     }
 
     bool OpenGLRenderer::IsAnimationLoaded(const std::string& name) const
@@ -150,11 +172,6 @@ namespace Gep
         return mModels.contains(name);
     }
 
-    bool OpenGLRenderer::IsShaderLoaded(const std::string& name) const
-    {
-        return mShaders.contains(name);
-    }
-
     void OpenGLRenderer::AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& gpuData, RenderFlags flags)
     {
         // these existance checks are very expensive so only perform in debug mode
@@ -164,14 +181,9 @@ namespace Gep
             return;
         }
 
-        debug_if (!IsShaderLoaded(shaderName))
-        {
-            Gep::Log::Error("Failed to draw object. The shader: [", shaderName, "] doesn't exist");
-            return;
-        }
-
-        mObjectDatas[shaderName][modelName][flags].push_back(gpuData);
+        mObjectDatas[modelName][flags].push_back(gpuData);
     }
+
 
     void OpenGLRenderer::AddCamera(const CameraGPUData& uniforms)
     {
@@ -236,31 +248,27 @@ namespace Gep
             materialMapping[id] = static_cast<uint32_t>(uniformIndex);
         }
 
-        // 1: loops over each shader
-        for (const auto& [shaderName, modelToFlags] : mObjectDatas)
+        // 2: loops over each model using the current shader
+        for (const auto& [modelName, flagsToObjects] : mObjectDatas)
         {
-            // 2: loops over each model using the current shader
-            for (const auto& [modelName, flagsToObjects] : modelToFlags)
+            const Gep::Model& model = GetModel(modelName);
+
+            // 3: loops over each active flag bucket
+            for (const auto& [flags, objects] : flagsToObjects)
             {
-                const Gep::Model& model = GetModel(modelName);
+                // add all per-object instance data
+                mObjectUniforms.insert(mObjectUniforms.end(), objects.begin(), objects.end());
 
-                // 3: loops over each active flag bucket
-                for (const auto& [flags, objects] : flagsToObjects)
+                // Pack mMeshUniforms in the same order DrawRegular consumes:
+                // per-mesh, then per-instance.
+                for (const auto& mesh : model.meshes)
                 {
-                    // add all per-object instance data
-                    mObjectUniforms.insert(mObjectUniforms.end(), objects.begin(), objects.end());
-
-                    // Pack mMeshUniforms in the same order DrawRegular consumes:
-                    // per-mesh, then per-instance.
-                    for (const auto& mesh : model.meshes)
+                    const uint32_t matIdx = materialMapping.at(mesh.materialIndex);
+                    for (size_t i = 0; i < objects.size(); ++i)
                     {
-                        const uint32_t matIdx = materialMapping.at(mesh.materialIndex);
-                        for (size_t i = 0; i < objects.size(); ++i)
-                        {
-                            mMeshUniforms.push_back({
-                                .materialIndex = matIdx
-                            });
-                        }
+                        mMeshUniforms.push_back({
+                            .materialIndex = matIdx
+                        });
                     }
                 }
             }
@@ -303,26 +311,29 @@ namespace Gep
 
     void OpenGLRenderer::SetCameraIndex(uint32_t index)
     {
-        for (const auto& [shaderName, shader] : mShaders)
+        std::apply([index](auto&... shaders) 
         {
-            shader->SetUniform(0, index);
-        }
+            ((shaders.SetUniform(0, index)), ...);
+        }, 
+        GetAllShaders());
     }
 
     void OpenGLRenderer::SetPointLightCount(uint32_t count)
     {
-        for (const auto& [shaderName, shader] : mShaders)
+        std::apply([count](auto&... shaders) 
         {
-            shader->SetUniform(2, count);
-        }
+            ((shaders.SetUniform(2, count)), ...);
+        }, 
+        GetAllShaders());
     }
 
     void OpenGLRenderer::SetDirectionalLightCount(uint32_t count)
     {
-        for (const auto& [shaderName, shader] : mShaders)
+        std::apply([count](auto&... shaders) 
         {
-            shader->SetUniform(4, count);
-        }
+            ((shaders.SetUniform(4, count)), ...);
+        }, 
+        GetAllShaders());
     }
 
     void OpenGLRenderer::UnloadModel(const std::string& name)
@@ -493,21 +504,19 @@ namespace Gep
             }).detach();
     }
 
-    void OpenGLRenderer::LoadShader(const std::string& name, const std::filesystem::path& vert, const std::filesystem::path& frag)
-    {
-        mShaders.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(name),
-            std::forward_as_tuple(std::make_unique<Shader>(Shader::FromFile(vert, frag)))
-        );
-    }
-
     void OpenGLRenderer::ReloadShaders()
     {
-        for (auto& [shaderName, shader] : mShaders)
+        std::apply([](auto&... shaders)
         {
-            shader->Reload();
-        }
+            ((shaders.Reload()), ...);
+        }, 
+        GetAllShaders());
+
+        mLightingShader.Bind();
+        mLightingShader.SetUniform("u_depthTexture", 0);
+        mLightingShader.SetUniform("u_normalTexture", 1);
+        mLightingShader.SetUniform("u_colorTexture", 2);
+        mLightingShader.SetUniform("u_armTexture", 3);
     }
 
     void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)
@@ -630,16 +639,24 @@ namespace Gep
         return mErrorTexture;
     }
 
-    void OpenGLRenderer::Draw() const
+    void OpenGLRenderer::Draw(Gep::FrameBuffer& targetFrameBuffer)
     {
-        DrawRegular();
+        GeometryPass(targetFrameBuffer);
+        PointLightPass(targetFrameBuffer);
         DrawLines();
     }
 
     void OpenGLRenderer::End()
     {
         mLineUniforms.clear();
-        mObjectDatas.clear();
+
+        for (auto& [modelName, flagsToObjects] : mObjectDatas)
+        {
+            for (auto& [flags, objects] : flagsToObjects)
+            {
+                objects.clear();
+            }
+        }
 
         mPointLightUniforms.clear();
         mDirectionalLightUniforms.clear();
@@ -663,130 +680,118 @@ namespace Gep
         glEnableVertexAttribArray(0);
     }
 
-    void OpenGLRenderer::DrawRegular() const
+    void OpenGLRenderer::GeometryPass(const Gep::FrameBuffer& targetFrameBuffer)
     {
+        mGeometryFrameBuffer.Bind();
+        mGeometryFrameBuffer.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
+        mGeometryFrameBuffer.Clear();
+        mGeometryFrameBuffer.DrawBuffers();
+
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+
+        glDisable(GL_BLEND);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+
         uint32_t baseInstance = 0;
         uint32_t meshBaseInstance = 0;
-        for (const auto& [shaderName, modelToFlags] : mObjectDatas)
+
+        mGeometryShader_Static.Bind();
+
+        for (const auto& [modelName, flagsToObjects] : mObjectDatas)
         {
-            Shader& currentShader = *mShaders.at(shaderName);
+            const auto& [modelHandle, model] = mModels.at(modelName);
 
-            currentShader.Bind();
-
-            for (const auto& [modelName, flagsToObjects] : modelToFlags)
+            for (const auto& [flags, objects] : flagsToObjects)
             {
-                const auto& [modelHandle, model] = mModels.at(modelName);
+                if ((flags & RenderFlags::NoDepthTest) == RenderFlags::NoDepthTest)
+                    glDisable(GL_DEPTH_TEST);
+                else
+                    glEnable(GL_DEPTH_TEST);
 
-                for (const auto& [flags, objects] : flagsToObjects)
+                if ((flags & RenderFlags::NoBackfaceCull) == RenderFlags::NoBackfaceCull)
+                    glDisable(GL_CULL_FACE);
+                else
                 {
-                    // Optional highlight pre-pass (outline)
-                    if ((flags & RenderFlags::Highlight) == RenderFlags::Highlight)
-                    {
-                        if (mShaders.contains("Highlight"))
-                        {
-                            // Use dedicated highlight shader
-                            Shader& outlineShader = *mShaders.at("Highlight");
-
-                            if (outlineShader.IsValid())
-                            {
-                                outlineShader.Bind();
-
-                                // Depth test behavior mirrors flag, but don't write depth for outline
-                                if ((flags & RenderFlags::NoDepthTest) == RenderFlags::NoDepthTest)
-                                    glDisable(GL_DEPTH_TEST);
-                                else
-                                    glEnable(GL_DEPTH_TEST);
-
-                                glDepthMask(GL_FALSE);                // don't write outline into depth
-                                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                                glEnable(GL_CULL_FACE);
-                                glCullFace(GL_FRONT);                 // draw backfaces to create silhouette
-
-                                for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
-                                {
-                                    glBindVertexArray(meshHandle.mVertexArrayObject);
-
-                                    // Maintain the same SSBO/UBO base consumption as the main pass
-                                    outlineShader.SetUniform(3, meshBaseInstance);
-
-                                    glDrawElementsInstancedBaseInstance(
-                                        GL_TRIANGLES,
-                                        meshHandle.mIndexCount,
-                                        GL_UNSIGNED_INT,
-                                        0,
-                                        objects.size(),
-                                        baseInstance
-                                    );
-                                }
-
-                                // Restore default depth write and cull face mode
-                                glDepthMask(GL_TRUE);
-                                glCullFace(GL_BACK);
-
-                                // Re-bind the main shader for the normal pass
-                                currentShader.Bind();
-                            }
-
-                        }
-                        else
-                        {
-                            Gep::Log::Error("No Highlight Shader Found!");
-                        }
-                    }
-
-                    // Wireframe check (normal pass)
-                    if ((flags & RenderFlags::Wireframe) == RenderFlags::Wireframe)
-                        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                    else
-                        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-                    // Depth test check (normal pass)
-                    if ((flags & RenderFlags::NoDepthTest) == RenderFlags::NoDepthTest)
-                        glDisable(GL_DEPTH_TEST);
-                    else
-                        glEnable(GL_DEPTH_TEST);
-
-                    // Backface culling (normal pass)
-                    if ((flags & RenderFlags::NoBackfaceCull) == RenderFlags::NoBackfaceCull)
-                    {
-                        glDisable(GL_CULL_FACE);
-                    }
-                    else
-                    {
-                        glEnable(GL_CULL_FACE);
-                        glCullFace(GL_BACK);
-                    }
-
-                    // Draw meshes (normal pass)
-                    for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
-                    {
-                        glBindVertexArray(meshHandle.mVertexArrayObject);
-
-                        currentShader.SetUniform(3, meshBaseInstance);
-
-                        glDrawElementsInstancedBaseInstance(
-                            GL_TRIANGLES,
-                            meshHandle.mIndexCount,
-                            GL_UNSIGNED_INT,
-                            0,
-                            objects.size(),
-                            baseInstance
-                        );
-
-                        meshBaseInstance += objects.size();
-                    }
-                    baseInstance += objects.size();
+                    glEnable(GL_CULL_FACE);
+                    glCullFace(GL_BACK);
                 }
+
+                for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
+                {
+                    glBindVertexArray(meshHandle.mVertexArrayObject);
+
+                    mGeometryShader_Static.SetUniform(3, meshBaseInstance);
+
+                    glDrawElementsInstancedBaseInstance(
+                        GL_TRIANGLES,
+                        meshHandle.mIndexCount,
+                        GL_UNSIGNED_INT,
+                        0,
+                        objects.size(),
+                        baseInstance
+                    );
+
+                    meshBaseInstance += objects.size();
+                }
+
+                baseInstance += objects.size();
             }
         }
 
         Shader::Unbind();
+        mGeometryFrameBuffer.Unbind();
     }
-    void OpenGLRenderer::DrawLines() const
+
+    void OpenGLRenderer::PointLightPass(Gep::FrameBuffer& targetFrameBuffer)
     {
-        //glDisable(GL_DEPTH_TEST);
-        Shader& lineShader = *mShaders.at("Line");
-        lineShader.Bind();
+        targetFrameBuffer.Bind(); // draw to the target framebuffer
+        mLightingShader.Bind(); 
+        mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
+
+        // draw all light volumes
+        glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+
+        auto& [sphereHandle, sphere] = mModels.at("Sphere");
+        auto& meshHandle = sphereHandle.meshHandles[0];
+
+        glBindVertexArray(meshHandle.mVertexArrayObject);
+
+        glDrawElementsInstanced(
+            GL_TRIANGLES,
+            meshHandle.mIndexCount,
+            GL_UNSIGNED_INT,
+            0,
+            static_cast<GLsizei>(mPointLightUniforms.size())
+        );
+
+        Shader::Unbind();
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+
+        glDisable(GL_BLEND);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+    }
+
+    void OpenGLRenderer::DrawPointLights(Gep::FrameBuffer& targetFrameBuffer)
+    {
+
+    }
+
+    void OpenGLRenderer::DrawLines()
+    {
+        mLineShader.Bind();
 
         glBindVertexArray(mLineVAO);
         glBindBuffer(GL_ARRAY_BUFFER, mLineVBO);
@@ -794,7 +799,7 @@ namespace Gep
         for (const LineGPUData& lineData : mLineUniforms)
         {
             // one color per set
-            lineShader.SetUniform(1, glm::vec4(lineData.color, 1.0f));
+            mLineShader.SetUniform(1, glm::vec4(lineData.color, 1.0f));
 
             glBufferData(GL_ARRAY_BUFFER,
                 lineData.points.size() * sizeof(glm::vec3) * 2,
@@ -806,7 +811,7 @@ namespace Gep
             glDrawArrays(GL_LINES, 0, lineData.points.size() * 2);
         }
 
-        lineShader.Unbind();
+        mLineShader.Unbind();
         //glEnable(GL_DEPTH_TEST);
     }
 
@@ -989,8 +994,7 @@ namespace Gep
             std::forward_as_tuple(std::string(assimpAnimation->mName.C_Str()) + " (" + parentPath + ")"),
             std::forward_as_tuple()
         );
-        auto& [name, pair] = *it;
-        auto& [animationHandle, animation] = pair;
+        auto& [name, animation] = *it;
 
         animation.duration = static_cast<float>(assimpAnimation->mDuration);
         animation.ticksPerSecond = assimpAnimation->mTicksPerSecond != 0.0

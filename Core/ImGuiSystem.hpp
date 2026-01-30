@@ -26,6 +26,11 @@
 
 // client
 
+namespace Gep
+{
+    class OpenGLRenderer;
+}
+
 namespace Client
 {
     // forward declaration
@@ -59,6 +64,7 @@ namespace Client
         void DrawExtras();
         bool DrawEntityNode(Gep::Entity entity, const std::string& displayName, bool selected, const ImVec4& defaultColor);
         void DrawQuickTest();
+        void DrawGBufferTextures();
 
         std::vector<Gep::Entity> SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm);
         void SetAssetBrowserPath(const std::filesystem::path& newPath);
@@ -66,6 +72,7 @@ namespace Client
 
     private:
         EditorResource& mEditorResource;
+        Gep::OpenGLRenderer& mRenderer;
         std::filesystem::path mAssetBrowserPath;
         std::vector<std::filesystem::directory_entry> mAssetBrowserEntries; // the files that are visible from the asset browser path
         std::vector<std::function<void(std::span<Gep::Entity>)>> mComponentInspectorPanels; // component index -> function to draw the inspector
@@ -95,23 +102,6 @@ namespace Client
         void DrawAssetBrowser();
         void DrawToolbar();
         void ShowControlBar();
-
-        template <typename T>
-        void DrawType(const std::string_view name, T& t);
-
-        template <typename T>
-        requires TypeIsContainer<T>
-        void DrawType(const std::string_view name, T& t);
-
-        // bunch of base type specializations
-        template <> void DrawType<float>(const std::string_view name, float& t);
-        template <> void DrawType<int>(const std::string_view name, int& t);
-        template <> void DrawType<std::string>(const std::string_view name, std::string& t);
-        template <> void DrawType<glm::vec3>(const std::string_view name, glm::vec3& t);
-        template <> void DrawType<glm::vec4>(const std::string_view name, glm::vec4& t);
-        template <> void DrawType<size_t>(const std::string_view name, size_t& t);
-        template <> void DrawType<bool>(const std::string_view name, bool& t);
-        template <> void DrawType<char>(const std::string_view name, char& t);
     };
 }
 

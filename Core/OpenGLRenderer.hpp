@@ -28,6 +28,8 @@
 
 #include "GPUVector.hpp"
 
+#include "FrameBuffer.hpp"
+
  // fwd
 struct aiScene;
 struct aiMaterial;
@@ -74,19 +76,21 @@ namespace Gep
 
     struct alignas(16) CameraGPUData
     {
-        glm::mat4 perspectiveMatrix; // perspective matrix for camera
-        glm::mat4 viewMatrix;        // view matrix for camera
+        glm::mat4 pvMatrix;  // perspective view matrix for camera
+        glm::mat4 ipvMatrix; // inverse perspective view matrix for camera
 
-        glm::vec4 camPosition; // position of the camera in world space
+        glm::vec3 position; // position of the camera in world space
     };
 
     struct PointLightGPUData
     {
         glm::vec3 position; // location of the light in world space
-        float pad; 
+        float pad; // scales the bounding sphere
 
         glm::vec3 color; // color of the light
         float intensity; // intensity of the light
+
+        glm::mat4 modelMatrix; // used for the bounding sphere
     };
 
     struct DirectionalLightGPUData
@@ -157,6 +161,9 @@ namespace Gep
     class OpenGLRenderer
     {
     public:
+        // must be called after OpenGL context is created
+        void Initialize();
+
         // adds a model directly from a file using its path as its name. necessary textures
         void AddModelFromFile(const std::string& path);
 
@@ -171,7 +178,6 @@ namespace Gep
 
         bool IsAnimationLoaded(const std::string& name) const;
         bool IsModelLoaded(const std::string& name) const;
-        bool IsShaderLoaded(const std::string& name) const;
 
         // adds an object to be drawn by 
         void AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& objectData, RenderFlags flags = RenderFlags::None);
@@ -207,7 +213,8 @@ namespace Gep
         Texture GetOrLoadIconTexture(const std::filesystem::path& iconPath);
 
         void LoadTextureAsync(const std::filesystem::path& texturePath);
-        void LoadShader(const std::string& name, const std::filesystem::path& vert, const std::filesystem::path& frag);
+
+        // shaders ///////////////////////////////////////////////////////////////////////////////////////////
         void ReloadShaders(); // Recompiles all shaders.
 
         // loads a texture from disk
@@ -222,9 +229,12 @@ namespace Gep
         void LoadErrorTexture(const std::filesystem::path& texturePath);
         Texture GetErrorTexture() const;
 
-        void Draw() const;
+        // draws all added objects to the given target framebuffer
+        void Draw(Gep::FrameBuffer& targetFrameBuffer);
 
         void UnloadModel(const std::string& name);
+
+        FrameBuffer& GetGeometryFrameBuffer() { return mGeometryFrameBuffer; }
 
         // Start must be called before rendering and End must be called after rendering
         void Start(const glm::vec3& color = { 0, 0, 0 });
@@ -263,28 +273,16 @@ namespace Gep
             std::vector<MeshGPUHandle> meshHandles;
         };
 
-        struct AnimationGPUHandle
+        auto GetAllShaders()
         {
-
-        };
-
-
-        struct ObjectCPUData // meta data for objects that is only needed on the cpu. corresponds to the gpu data variant
-        {
-            std::string shader;
-            std::string model;
-        };
-
-        struct ObjectData
-        {
-            ObjectGPUData gpuData;
-            ObjectCPUData cpuData;;
-        };
-
+            return std::tie(mGeometryShader_Static, mGeometryShader_Skinned, mLightingShader, mLineShader);
+        }
 
     private:
-        void DrawRegular() const;
-        void DrawLines() const;
+        void GeometryPass(const Gep::FrameBuffer& targetFrameBuffer); // renders all geometry to the geometry framebuffer
+        void PointLightPass(Gep::FrameBuffer& targetFrameBuffer);     // renders all point light emissions to the target framebuffer, but doesnt draw the light itself
+        void DrawPointLights(Gep::FrameBuffer& targetFrameBuffer);
+        void DrawLines();
         void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
 
         // pixel data loaded from stbimage, note pixel data must be freed after use
@@ -301,18 +299,16 @@ namespace Gep
 
         void LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton);
     private:
-        // name of the shader to the compiled shader
-        std::unordered_map<std::string, std::unique_ptr<Shader>> mShaders;
+        // when creating shaders make sure to add them to GetAllShaders
+        Shader mGeometryShader_Static;  // shader used for geometry pass of static models
+        Shader mGeometryShader_Skinned; // shader used for geometry pass of animated models
+        Shader mLightingShader;         // shader used for lighting pass
+        Shader mLineShader;             // shader used for drawing lines
 
         glm::vec3 mSolidColor{};
 
-        // camera
-        glm::mat4 mNextPerspective{};
-        glm::mat4 mNextView{};
-        glm::vec4 mNextEye{};
-
         std::unordered_map<std::string, std::pair<ModelGPUHandle, Gep::Model>> mModels; // model name -> its handle and data
-        std::unordered_map<std::string, std::pair<AnimationGPUHandle, Gep::Animation>> mAnimations;
+        std::unordered_map<std::string, Gep::Animation> mAnimations;
         Gep::keyed_vector<Material> mMaterials;
 
         std::unordered_map<std::string, Gep::Texture> mIconTextures;// icon extension -> texture
@@ -322,17 +318,19 @@ namespace Gep
         Material mErrorMaterial{};
 
         std::mutex mTextureLoadingMutex{};
-    
-        Gep::gpu_vector<ObjectGPUData,   0> mObjectUniforms;   // this vector is perfectly copied onto the gpu into the objectUniforms array
-        Gep::gpu_vector<PointLightGPUData,    1> mPointLightUniforms;    // this vector is perfectly copied onto the gpu into the lights array
-        Gep::gpu_vector<CameraGPUData,   2> mCameraUniforms;   // this vector is perfectly copied onto the gpu into the cameraUniforms array
-        Gep::gpu_vector<BoneGPUData,     3> mBoneUniforms;     // this vector is perfectly copied onto the gpu into the boneUniforms array
-        Gep::gpu_vector<MaterialGPUData, 4> mMaterialUniforms; // this vector is perfectly copied onto the gpu into the materialUniforms array
-        Gep::gpu_vector<MeshGPUData,     5> mMeshUniforms;     // this vector is perfectly copied onto the gpu into the meshUniforms array
-        Gep::gpu_vector<DirectionalLightGPUData, 6> mDirectionalLightUniforms;     // this vector is perfectly copied onto the gpu into the meshUniforms array
 
-        // shader -> model -> flags -> objects
-        std::map<std::string, std::map<std::string, std::map<RenderFlags, std::vector<ObjectGPUData>>>> mObjectDatas;
+        FrameBuffer mGeometryFrameBuffer;
+    
+        Gep::gpu_vector<ObjectGPUData, 0> mObjectUniforms;                      // copied into u_objects on the gpu
+        Gep::gpu_vector<PointLightGPUData, 1> mPointLightUniforms;              // copied into u_pointLights on the gpu
+        Gep::gpu_vector<CameraGPUData, 2> mCameraUniforms;                      // copied into u_cams on the gpu
+        Gep::gpu_vector<BoneGPUData, 3> mBoneUniforms;                          // copied into u_bones on the gpu
+        Gep::gpu_vector<MaterialGPUData, 4> mMaterialUniforms;                  // copied into u_materials on the gpu
+        Gep::gpu_vector<MeshGPUData, 5> mMeshUniforms;                          // copied into u_meshes on the gpu
+        Gep::gpu_vector<DirectionalLightGPUData, 6> mDirectionalLightUniforms;  // copied into u_directionalLights on the gpu
+
+        // model -> flags -> objects
+        std::map<std::string, std::map<RenderFlags, std::vector<ObjectGPUData>>> mObjectDatas;
 
         // used to store vertices for drawing lines
         GLuint mLineVBO;

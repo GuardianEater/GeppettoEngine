@@ -39,5 +39,16 @@ namespace Gep
 
         return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
     }
-}
 
+    void WritePNG(const std::filesystem::path& path, int width, int height, GLuint texID)
+    {
+        std::filesystem::create_directories(path.parent_path());
+
+        std::vector<uint8_t> data(width * height * 4);
+        glBindTexture(GL_TEXTURE_2D, texID);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+        glBindTexture(GL_TEXTURE_2D, 0);
+        stbi_flip_vertically_on_write(1);
+        stbi_write_png(path.string().c_str(), width, height, 4, data.data(), width * 4);
+    }
+}

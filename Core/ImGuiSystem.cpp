@@ -23,6 +23,8 @@
 #include "EditorResource.hpp"
 #include "OpenGLRenderer.hpp"
 
+#include "ImGuiHelp.hpp"
+
 #include "OS.hpp"
 
 namespace Client
@@ -30,6 +32,7 @@ namespace Client
     ImGuiSystem::ImGuiSystem(Gep::EngineManager& em)
         : ISystem(em)
         , mEditorResource(em.GetResource<EditorResource>())
+        , mRenderer(em.GetResource<Gep::OpenGLRenderer>())
     {
     }
 
@@ -239,7 +242,7 @@ namespace Client
         ImGui::Separator();
 
         // entity information
-        ImGui::Text("Entities: %d", mManager.GetEntities().size());
+        ImGui::Text("Entities: %d", mManager.GetEntityCount());
         ImGui::Separator();
 
         // component information
@@ -395,6 +398,7 @@ namespace Client
     void ImGuiSystem::DrawQuickTest()
     {
         ImGui::Begin("Tests");
+        static std::vector<std::function<void()>> testOutput;
 
         if (ImGui::TreeNode("Cubes"))
         {
@@ -720,7 +724,117 @@ namespace Client
             ImGui::TreePop();
         }
 
+        if (ImGui::TreeNode("Parenting"))
+        {
+            static std::vector<Gep::Entity> entities;
+            static uint64_t count = 50;
+
+            // will cause a stack overflow if too high
+            Gep::ImGui::InputScalar("Amount", &count);
+
+            if (ImGui::Button("Start Test"))
+            {
+                testOutput.clear();
+                entities.clear();
+
+                // create a large chain of parented entities ////////////////////////
+                Gep::Entity parent = mManager.CreateEntity("Parenting Test");
+                entities.push_back(parent);
+
+                // create new test entities
+                for (uint64_t i = 1; i < count; ++i)
+                {
+                    std::string name = "Child (depth:" + std::to_string(i) + ")";
+                    Gep::Entity e = mManager.CreateEntity(name);
+
+                    entities.push_back(e);
+                    mManager.AttachEntity(entities[i - 1], e);
+                }
+
+                // delete the top entity, which should cascade delete all children
+                mManager.DestroyEntity(parent);
+
+                // check if all entities were deleted
+                bool passed = true;
+                for (auto e : entities)
+                {
+                    if (mManager.EntityExists(e))
+                    {
+                        testOutput.push_back([e]() {
+                            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Parenting Test Failed: Entity still exists!");
+                        });
+                        passed = false;
+                    }
+                }
+
+                if (passed)
+                {
+                    testOutput.push_back([]() {
+                        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Parenting Test Passed!");
+                    });
+                }
+            }
+
+            ImGui::TreePop();
+        }
+
+        // output any feedback that occured during tests
+        for (const auto& func : testOutput)
+        {
+            func();
+        }
+
         ImGui::End();
+    }
+
+    static std::string GetCurrentTime()
+    {
+        auto now = std::time(nullptr);
+        char buf[20];
+        std::strftime(buf, sizeof(buf), "%Y-%m-%d %H-%M-%S", std::localtime(&now));
+        return buf;
+    }
+
+    void ImGuiSystem::DrawGBufferTextures()
+    {
+        Gep::FrameBuffer& gBuffer = mRenderer.GetGeometryFrameBuffer();
+
+        ImGui::Begin("GBuffer Textures");
+        for (size_t i = 0; i < gBuffer.GetTextureCount(); ++i)
+        {
+            GLuint texID = gBuffer.GetTexture(i);
+            glm::ivec2 gBufferSize = gBuffer.GetSize();
+            ImVec2 size = { (float)gBufferSize.x, (float)gBufferSize.y };
+            ImGui::Text("GBuffer Texture %zu", i);
+            ImGui::Image(texID, size, ImVec2(0, 1), ImVec2(1, 0));
+        }
+        ImGui::End();
+
+        // if F11 is pressed output the gbuffer textures to disk
+        if (ImGui::IsKeyPressed(ImGuiKey_F11))
+        {
+            //Gep::FrameBuffer outputFrameBuffer = Gep::FrameBuffer::Create({ 3840, 2160 });
+            //outputFrameBuffer.AddTexture(GL_RGBA32F, GL_RGBA, GL_FLOAT); // Albedo
+            std::string folderName = "assets/screenshots/screenshot_" + GetCurrentTime();
+            std::filesystem::create_directories(folderName);
+
+            mManager.ForEachArchetype([&](Gep::Entity e, const Camera& cam)
+            {
+                std::string camName = mManager.GetName(e) + "_" + std::to_string(e);
+                const std::string path = folderName + "/" + camName + ".png";
+                const glm::ivec2 sz = cam.renderTarget.GetSize();
+                const GLuint texID = cam.renderTarget.GetTexture(0);
+                Gep::WritePNG(path, sz.x, sz.y, texID);
+            });
+
+            for (size_t i = 0; i < gBuffer.GetTextureCount(); ++i)
+            {
+                const std::string path = folderName + "/GBuffer_Texture_" + std::to_string(i) + ".png";
+                const glm::ivec2 sz = gBuffer.GetSize();
+                const GLuint texID = gBuffer.GetTexture(i);
+                Gep::WritePNG(path, sz.x, sz.y, texID);
+            }
+        }
     }
 
     std::vector<Gep::Entity> ImGuiSystem::SearchEntities(const std::vector<Gep::Entity>& entities, const std::string& searchTerm)
@@ -940,6 +1054,7 @@ namespace Client
         DrawExtras();
         DrawToolbar();
         DrawQuickTest();
+        DrawGBufferTextures();
 
         ImGui::Begin("Entities");
 
@@ -1067,134 +1182,148 @@ namespace Client
 
     void ImGuiSystem::DrawEntities(const std::vector<Gep::Entity>& entities, float dt)
     {
-        for (Gep::Entity entity : entities)
+        if (entities.empty())
+            return;
+
+        // estimate row height
+        const float rowHeight = ImGui::GetTextLineHeight();
+        ImGuiListClipper clipper;
+        clipper.Begin(static_cast<int>(entities.size()), rowHeight);
+
+        while (clipper.Step())
         {
-            ImGui::PushID(entity);
-
-            // Precompute display name and selection state to avoid repeated allocations and lookups
-            const std::string displayName = GetEntityDisplayName(entity);
-            const bool selected = mEditorResource.mSelectedEntities.contains(entity);
-
-            // Push style vars once per node here (cheaper than pushing inside DrawEntityNode repeatedly)
-            ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, ImVec2(0.0f,0.0f)); // Increase padding
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10.0f,7.0f)); // Increase vertical padding
-
-            ImVec4 defaultColor = ImGui::GetStyleColorVec4(ImGuiCol_Header);
-            bool isOpen = DrawEntityNode(entity, displayName, selected, defaultColor);
-
-            ImGui::PopStyleVar(2);
-
-            // Multi-selection logic (Ctrl or Shift key)
-            const bool isCtrlPressed = ImGui::GetIO().KeyCtrl;
-            const bool isShiftPressed = ImGui::GetIO().KeyShift;
-
-            // same as default but if there are multiple entities selected, doesn't deselect until released
-            if (ImGui::IsItemDeactivated() && ImGui::IsItemHovered() && !isCtrlPressed && !isShiftPressed)
+            for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
             {
-                mEditorResource.SelectEntity(entity);
-                mEditorResource.mLastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
-            }
+                Gep::Entity entity = entities[i];
 
-            // will select the entity if it is clicked, and unselect if it is clicked again
-            else if (ImGui::IsItemClicked() && isCtrlPressed && !isShiftPressed)
-            {
-                if (mEditorResource.IsEntitySelected(entity))
-                    mEditorResource.DeselectEntity(entity);
-                else
+                ImGui::PushID(entity);
+
+                // Precompute display name and selection state to avoid repeated allocations and lookups
+                const std::string displayName = GetEntityDisplayName(entity);
+                const bool selected = mEditorResource.mSelectedEntities.contains(entity);
+
+                // Push style vars once per node here (cheaper than pushing inside DrawEntityNode repeatedly)
+                ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_ItemSpacing, ImVec2(0.0f,0.0f)); // Increase padding
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10.0f,7.0f)); // Increase vertical padding
+
+                ImVec4 defaultColor = ImGui::GetStyleColorVec4(ImGuiCol_Header);
+                bool isOpen = DrawEntityNode(entity, displayName, selected, defaultColor);
+
+                ImGui::PopStyleVar(2);
+
+                // Multi-selection logic (Ctrl or Shift key)
+                const bool isCtrlPressed = ImGui::GetIO().KeyCtrl;
+                const bool isShiftPressed = ImGui::GetIO().KeyShift;
+
+                // same as default but if there are multiple entities selected, doesn't deselect until released
+                if (ImGui::IsItemDeactivated() && ImGui::IsItemHovered() && !isCtrlPressed && !isShiftPressed)
                 {
-                    mEditorResource.SelectAnotherEntity(entity);
+                    mEditorResource.SelectEntity(entity);
                     mEditorResource.mLastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
                 }
-            }
 
-            // multiselect with shift key
-            else if (ImGui::IsItemClicked() && !isCtrlPressed && isShiftPressed)
-            {
-                mEditorResource.mSelectedEntities.clear();
-                if (mEditorResource.mLastSelectedIndex < entities.size())
+                // will select the entity if it is clicked, and unselect if it is clicked again
+                else if (ImGui::IsItemClicked() && isCtrlPressed && !isShiftPressed)
                 {
-                    size_t currentIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
-                    if (mEditorResource.mLastSelectedIndex < currentIndex)
+                    if (mEditorResource.IsEntitySelected(entity))
+                        mEditorResource.DeselectEntity(entity);
+                    else
                     {
-                        for (size_t i = mEditorResource.mLastSelectedIndex; i <= currentIndex; ++i)
-                            mEditorResource.SelectAnotherEntity(entities[i]);
+                        mEditorResource.SelectAnotherEntity(entity);
+                        mEditorResource.mLastSelectedIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
+                    }
+                }
+
+                // multiselect with shift key
+                else if (ImGui::IsItemClicked() && !isCtrlPressed && isShiftPressed)
+                {
+                    mEditorResource.mSelectedEntities.clear();
+                    if (mEditorResource.mLastSelectedIndex < entities.size())
+                    {
+                        size_t currentIndex = std::distance(entities.cbegin(), std::find(entities.cbegin(), entities.cend(), entity));
+                        if (mEditorResource.mLastSelectedIndex < currentIndex)
+                        {
+                            for (size_t i = mEditorResource.mLastSelectedIndex; i <= currentIndex; ++i)
+                                mEditorResource.SelectAnotherEntity(entities[i]);
+                        }
+                        else
+                        {
+                            for (size_t i = currentIndex; i <= mEditorResource.mLastSelectedIndex; ++i)
+                                mEditorResource.SelectAnotherEntity(entities[i]);
+                        }
+                    }
+                }
+
+                // right click menu, with delete and duplicate, etc options
+                if (ImGui::BeginPopupContextItem())
+                {
+                    if (ImGui::MenuItem("Delete"))
+                    {
+                        for (Gep::Entity selectedEntity : mEditorResource.mSelectedEntities)
+                        {
+                            mManager.MarkEntityForDestruction(selectedEntity);
+                        }
+                        mEditorResource.mSelectedEntities.clear();
+                    }
+                    if (ImGui::MenuItem("Duplicate"))
+                    {
+                        for (Gep::Entity selectedEntity : mEditorResource.mSelectedEntities)
+                        {
+                            mManager.DuplicateEntity(selectedEntity);
+                        }
+                    }
+
+                    if (mEditorResource.mSelectedEntities.size() == 1)
+                    {
+                        Gep::Entity selectedEntity = *mEditorResource.mSelectedEntities.begin();
+                        if (ImGui::MenuItem("Save as prefab"))
+                        {
+                            auto& sr = mManager.GetResource<Client::SerializationResource>();
+                            sr.SavePrefab(mManager.SaveEntity(selectedEntity), "assets\\prefabs\\" + GetEntityDisplayName(selectedEntity) + ".prefab");
+                        }
+                    }
+                    ImGui::EndPopup();
+                }
+
+                // drag and drop source
+                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+                {
+                    if (mEditorResource.mSelectedEntities.contains(entity))
+                    {
+                        std::vector<Gep::Entity> selectedEntities(mEditorResource.mSelectedEntities.begin(), mEditorResource.mSelectedEntities.end());
+                        ImGui::SetDragDropPayload("ENTITY", selectedEntities.data(), selectedEntities.size() * sizeof(Gep::Entity));
                     }
                     else
                     {
-                        for (size_t i = currentIndex; i <= mEditorResource.mLastSelectedIndex; ++i)
-                            mEditorResource.SelectAnotherEntity(entities[i]);
+                        ImGui::SetDragDropPayload("ENTITY", &entity, sizeof(Gep::Entity));
                     }
-                }
-            }
 
-            // right click menu, with delete and duplicate, etc options
-            if (ImGui::BeginPopupContextItem())
-            {
-                if (ImGui::MenuItem("Delete"))
+                    ImGui::Text("Dragging %s", displayName.c_str());
+                    ImGui::EndDragDropSource();
+                }
+
+                // Add drag and drop target
+                mEditorResource.EntitiesDragDropTarget([&](Gep::Entity droppedEntity)
                 {
-                    for (Gep::Entity selectedEntity : mEditorResource.mSelectedEntities)
-                    {
-                        mManager.MarkEntityForDestruction(selectedEntity);
-                    }
+                    if (droppedEntity == entity) return;
+
+                    mManager.AttachEntity(entity, droppedEntity);
+                },
+                [&]() // called once after all entities
+                {
                     mEditorResource.mSelectedEntities.clear();
-                }
-                if (ImGui::MenuItem("Duplicate"))
+                });
+
+                if (isOpen)
                 {
-                    for (Gep::Entity selectedEntity : mEditorResource.mSelectedEntities)
-                    {
-                        mManager.DuplicateEntity(selectedEntity);
-                    }
+                    DrawEntities(mManager.GetChildren(entity), dt);
+
+                    ImGui::TreePop();
                 }
 
-                if (mEditorResource.mSelectedEntities.size() == 1)
-                {
-                    Gep::Entity selectedEntity = *mEditorResource.mSelectedEntities.begin();
-                    if (ImGui::MenuItem("Save as prefab"))
-                    {
-                        auto& sr = mManager.GetResource<Client::SerializationResource>();
-                        sr.SavePrefab(mManager.SaveEntity(selectedEntity), "assets\\prefabs\\" + GetEntityDisplayName(selectedEntity) + ".prefab");
-                    }
-                }
-                ImGui::EndPopup();
+                ImGui::PopID();
+
             }
-
-            // drag and drop source
-            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
-            {
-                if (mEditorResource.mSelectedEntities.contains(entity))
-                {
-                    std::vector<Gep::Entity> selectedEntities(mEditorResource.mSelectedEntities.begin(), mEditorResource.mSelectedEntities.end());
-                    ImGui::SetDragDropPayload("ENTITY", selectedEntities.data(), selectedEntities.size() * sizeof(Gep::Entity));
-                }
-                else
-                {
-                    ImGui::SetDragDropPayload("ENTITY", &entity, sizeof(Gep::Entity));
-                }
-
-                ImGui::Text("Dragging %s", displayName.c_str());
-                ImGui::EndDragDropSource();
-            }
-
-            // Add drag and drop target
-            mEditorResource.EntitiesDragDropTarget([&](Gep::Entity droppedEntity)
-            {
-                if (droppedEntity == entity) return;
-
-                mManager.AttachEntity(entity, droppedEntity);
-            },
-            [&]() // called once after all entities
-            {
-                mEditorResource.mSelectedEntities.clear();
-            });
-
-            if (isOpen)
-            {
-                DrawEntities(mManager.GetChildren(entity), dt);
-
-                ImGui::TreePop();
-            }
-
-            ImGui::PopID();
         }
     }
     void ImGuiSystem::DrawAssetBrowser()
@@ -1501,54 +1630,5 @@ namespace Client
             }
             ImGui::EndMainMenuBar();
         }
-    }
-
-
-    template <>
-    void ImGuiSystem::DrawType<float>(const std::string_view name, float& t)
-    {
-        ImGui::DragFloat(name.data(), &t);
-    }
-
-    template <>
-    void ImGuiSystem::DrawType<int>(const std::string_view name, int& t)
-    {
-        ImGui::InputInt(name.data(), &t);
-    }
-
-    template <>
-    void ImGuiSystem::DrawType<std::string>(const std::string_view name, std::string& t)
-    {
-        ImGui::InputText(name.data(), &t);
-    }
-
-    template <>
-    void ImGuiSystem::DrawType<glm::vec3>(const std::string_view name, glm::vec3& t)
-    {
-        ImGui::DragFloat3(name.data(), &t.x);
-    }
-
-    template <>
-    void ImGuiSystem::DrawType<glm::vec4>(const std::string_view name, glm::vec4& t)
-    {
-        ImGui::DragFloat4(name.data(), &t.x);
-    }
-
-    template <>
-    void ImGuiSystem::DrawType<size_t>(const std::string_view name, size_t& t)
-    {
-        ImGui::InputScalar(name.data(), ImGuiDataType_U64, &t);
-    }
-
-    template <>
-    void ImGuiSystem::DrawType<bool>(const std::string_view name, bool& t)
-    {
-        ImGui::Checkbox(name.data(), &t);
-    }
-
-    template <>
-    void ImGuiSystem::DrawType<char>(const std::string_view name, char& t)
-    {
-        ImGui::InputScalar(name.data(), ImGuiDataType_S8, &t);
     }
 }

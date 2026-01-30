@@ -437,6 +437,28 @@ namespace Gep
     }
 
     template<typename ComponentType>
+    ComponentType* EngineManager::TryGetComponent(Entity entity)
+    {
+        if (!EntityExists(entity))
+            return nullptr;
+        if (!ComponentIsRegistered<ComponentType>())
+            return nullptr;
+        if (!HasComponent<ComponentType>(entity))
+            return nullptr;
+
+        uint8_t componentIndex = GetComponentIndex<ComponentType>();                 // instant?
+        Signature archetypeSignature = GetSignature(entity);                         // 1 add
+        glm::u64vec2 index = GetArchetypeChunkIndex(entity);                         // 1 add
+
+        Archetype& archetype = mArchetypes.at(archetypeSignature);                   // slow: std::bitset hash
+
+        std::byte* entityPtr = archetype.GetEntity(index.x, index.y);                // 1 add 1 multiply
+        std::byte* componentPtr = archetype.GetComponent(entityPtr, componentIndex); // 2 add
+
+        return reinterpret_cast<ComponentType*>(componentPtr);
+    }
+
+    template<typename ComponentType>
     inline const ComponentType& EngineManager::GetComponent(Entity entity) const
     {
         if (!EntityExists(entity))
