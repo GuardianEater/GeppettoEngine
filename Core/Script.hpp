@@ -12,16 +12,16 @@
 
 namespace Client
 {
-    struct Script
-    {
-        std::filesystem::path path = "assets\\scripts\\example.py";
+    //struct Script
+    //{
+    //    std::filesystem::path path = "assets\\scripts\\example.py";
 
-        py::function on_enabled{};
-        py::function on_start{};
-        py::function update{};
-        //py::function fixedUpdate; maybe useful?
-        py::function late_update{};
-        py::function on_disable{};
-        py::function on_destroy{};
-    };
+    //    py::function on_enabled{};
+    //    py::function on_start{};
+    //    py::function update{};
+    //    //py::function fixedUpdate; maybe useful?
+    //    py::function late_update{};
+    //    py::function on_disable{};
+    //    py::function on_destroy{};
+    //};
 }
