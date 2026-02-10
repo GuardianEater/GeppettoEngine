@@ -277,11 +277,12 @@ namespace Client
         // archetype information
         const auto& archetypes = mManager.GetArchetypes();
         ImGui::Text("Active Archetypes: %u", archetypes.size());
-        if (ImGui::BeginTable("ArchetypeTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+        if (ImGui::BeginTable("ArchetypeTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
         {
             ImGui::TableSetupColumn("Archetype", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("Active", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("Stride", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableHeadersRow();
 
             for (const auto& [signature, archetype] : archetypes)
@@ -301,6 +302,10 @@ namespace Client
                 ImGui::Text("%u", archetype.EntityCount());
                 ImGui::TableNextColumn();
                 ImGui::Text("%u", archetype.stride);
+                ImGui::TableNextColumn();
+                size_t totalSize = archetype.EntityCount() * archetype.stride;
+                std::string formattedSize = Gep::FormatBytes(totalSize);
+                ImGui::Text("%s", formattedSize.c_str());
             }
 
             ImGui::EndTable();

@@ -17,4 +17,7 @@ namespace Gep
 
     // converts the entire string to lower case
     void ToLower(std::string& str);
+
+    // given an amount of bytes, formats it to a human readable string (eg. 1.5 MB)
+    std::string FormatBytes(size_t bytes);
 }
