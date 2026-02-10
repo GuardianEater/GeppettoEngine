@@ -766,7 +766,7 @@ namespace Client
                 .normalMatrixCol2 = normal[2]
             };
 
-            mRenderer.AddObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
+            mRenderer.AddObject("Cube", uniforms, Gep::RenderFlags::Wireframe);
         });
 
         mManager.ForEachArchetype([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
@@ -782,7 +782,7 @@ namespace Client
                 .normalMatrixCol2 = normal[2]
             };
 
-            mRenderer.AddObject("PBR-Static", "Sphere", uniforms, Gep::RenderFlags::Wireframe);
+            mRenderer.AddObject("Sphere", uniforms, Gep::RenderFlags::Wireframe);
         });
     }
 
@@ -876,6 +876,8 @@ namespace Client
 
         mManager.ForEachArchetype([&](Gep::Entity entity, RiggedModelComponent& model, Transform& transform)
         {
+            Gep::Log::Error("TODO: Rigged models dont work rn, Rendering rigged model: ", model.name);
+            return;
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
             const Gep::Model& internalModel = mRenderer.GetModel(model.name);
@@ -929,34 +931,48 @@ namespace Client
             if (model.selected)
                 flags |= Gep::RenderFlags::Highlight;
 
-            mRenderer.AddObject(targetShader, model.name, uniforms, flags);
+            mRenderer.AddObject(model.name, uniforms, flags);
         });
 
-        mManager.ForEachArchetype([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
+        struct SubmissionData
         {
-            const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
-            const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
-            const Gep::Model& internalModel = mRenderer.GetModel(model.name);
+            const Gep::VQS* world;
+            const std::string* modelName;
+            Gep::ObjectGPUData uniforms;
+        };
 
-            Gep::ObjectGPUData uniforms
-            {
-                .modelMatrix = modelMatrix,
+        static std::vector<SubmissionData> submission;
+        submission.clear();
+
+        // do a pass of the engine collecting all of the data
+        mManager.ForEachArchetype([&](Gep::Entity entity, const StaticModelComponent& model, const Transform& transform)
+        {
+            submission.push_back({ .world = &transform.world, .modelName = &model.name });
+        });
+
+        // compute all of the model and normal matrices in parallel.
+        std::for_each(std::execution::par_unseq, submission.begin(), submission.end(), [&](SubmissionData& data)
+        {
+            const glm::mat4 model = Gep::ToMat4(*data.world);
+            const glm::mat3 normal = Gep::NormalFromModel(model);
+
+            data.uniforms = {
+                .modelMatrix = model,
                 .normalMatrixCol0 = normal[0],
                 .normalMatrixCol1 = normal[1],
                 .normalMatrixCol2 = normal[2],
-
-                .boneOffset = 0 // this is not used when using the static shader
+                .boneOffset = 0
             };
+        });
 
+        // submit linearly to the renderer
+        for (const auto& data : submission)
+        {
             Gep::RenderFlags flags = Gep::RenderFlags::None;
             if (mWireframeMode)
                 flags |= Gep::RenderFlags::Wireframe;
-
-            if (model.selected)
-                flags |= Gep::RenderFlags::Highlight;
-
-            mRenderer.AddObject("PBR-Static", model.name, uniforms, flags);
-        });
+            mRenderer.AddObject(*data.modelName, data.uniforms, flags);
+        }
 
         mRenderer.AddLine(skeletonLines);
 

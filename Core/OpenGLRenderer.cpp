@@ -172,7 +172,7 @@ namespace Gep
         return mModels.contains(name);
     }
 
-    void OpenGLRenderer::AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& gpuData, RenderFlags flags)
+    void OpenGLRenderer::AddObject(const std::string& modelName, const ObjectGPUData& gpuData, RenderFlags flags)
     {
         // these existance checks are very expensive so only perform in debug mode
         debug_if (!IsModelLoaded(modelName))

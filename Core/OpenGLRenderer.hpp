@@ -180,7 +180,7 @@ namespace Gep
         bool IsModelLoaded(const std::string& name) const;
 
         // adds an object to be drawn by 
-        void AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& objectData, RenderFlags flags = RenderFlags::None);
+        void AddObject(const std::string& modelName, const ObjectGPUData& objectData, RenderFlags flags = RenderFlags::None);
         void AddCamera(const CameraGPUData& cameraData);
         void AddPointLight(const PointLightGPUData& lightData); // adds a light to the renderered, will be sent to the shader when DrawLights is called
         void AddDirectionalLight(const DirectionalLightGPUData& uniforms);
