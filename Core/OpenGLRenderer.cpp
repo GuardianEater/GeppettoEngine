@@ -700,6 +700,7 @@ namespace Gep
 
         mGeometryShader_Static.Bind();
 
+        // loops through all objects sorted by type
         for (const auto& [modelName, flagsToObjects] : mObjectDatas)
         {
             const auto& [modelHandle, model] = mModels.at(modelName);

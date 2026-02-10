@@ -12,6 +12,15 @@
 
 namespace Gep
 {
+    struct TextureAttachment
+    {
+        GLuint id = 0;
+        GLint internalFormat = GL_RGBA32F;
+        GLint format = GL_RGBA;
+        GLenum type = GL_FLOAT;
+        GLenum attachment = GL_COLOR_ATTACHMENT0;
+    };
+
     // wrapper around an opengl framebuffer
     class FrameBuffer
     {
@@ -26,6 +35,7 @@ namespace Gep
         GLint GetTextureFormat(size_t index) const;
         GLenum GetTextureType(size_t index) const;
         size_t GetTextureCount() const { return mTarget ? mTarget->textures.size() : 0; }
+        const std::vector<TextureAttachment>& GetTextureAttachments() const { return mTarget->textures; }
 
         void BindTextures() const; // binds the texture attachments to the corresponding texture units
         void DrawBuffers() const; // sets the opengl draw buffers to the texture attachments
@@ -41,14 +51,6 @@ namespace Gep
         glm::ivec2 GetSize() const { return mSize; }
 
     private:
-        struct TextureAttachment
-        {
-            GLuint id = 0;
-            GLint internalFormat = GL_RGBA32F;
-            GLint format = GL_RGBA;
-            GLenum type = GL_FLOAT;
-            GLenum attachment = GL_COLOR_ATTACHMENT0;
-        };
 
         struct TargetData
         {

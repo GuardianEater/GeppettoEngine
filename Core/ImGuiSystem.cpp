@@ -823,16 +823,15 @@ namespace Client
                 std::string camName = mManager.GetName(e) + "_" + std::to_string(e);
                 const std::string path = folderName + "/" + camName + ".png";
                 const glm::ivec2 sz = cam.renderTarget.GetSize();
-                const GLuint texID = cam.renderTarget.GetTexture(0);
-                Gep::WritePNG(path, sz.x, sz.y, texID);
+                const Gep::TextureAttachment& tex = cam.renderTarget.GetTextureAttachments().front();
+                Gep::WritePNG(path, sz.x, sz.y, tex.id);
             });
 
-            for (size_t i = 0; i < gBuffer.GetTextureCount(); ++i)
+            for (const Gep::TextureAttachment& attachment : gBuffer.GetTextureAttachments())
             {
-                const std::string path = folderName + "/GBuffer_Texture_" + std::to_string(i) + ".png";
+                const std::string path = folderName + "/GBuffer_Texture_" + std::to_string(attachment.attachment) + ".png";
                 const glm::ivec2 sz = gBuffer.GetSize();
-                const GLuint texID = gBuffer.GetTexture(i);
-                Gep::WritePNG(path, sz.x, sz.y, texID);
+                Gep::WritePNG(path, sz.x, sz.y, attachment.id);
             }
         }
     }
