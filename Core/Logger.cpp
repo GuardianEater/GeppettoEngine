@@ -14,7 +14,7 @@ namespace Gep
 {
     std::mutex Log::mMutex;
     std::unique_ptr<std::ofstream> Log::mFileStream;
-    Log::LogLevel Log::mPrintLevel = Log::LogLevel::trace;
+    Log::LogLevel Log::mPrintLevel = Log::LogLevel::Trace;
 
     void Log::SetOutputFile(const std::string& filename)
     {

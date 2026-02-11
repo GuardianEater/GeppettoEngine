@@ -19,7 +19,7 @@ namespace Gep
     {
         Gep::CallerInfo ci{}; // unused
 
-        FormatLog(LogLevel::trace, ci, std::forward<Args>(args)...);
+        FormatLog(LogLevel::Trace, ci, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
@@ -27,7 +27,7 @@ namespace Gep
     {
         Gep::CallerInfo ci{}; // unused
 
-        FormatLog(LogLevel::info, ci, std::forward<Args>(args)...);
+        FormatLog(LogLevel::Info, ci, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
@@ -35,7 +35,7 @@ namespace Gep
     {
         Gep::CallerInfo ci{}; // unused
 
-        FormatLog(LogLevel::warning, ci, std::forward<Args>(args)...);
+        FormatLog(LogLevel::Warning, ci, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
@@ -43,7 +43,7 @@ namespace Gep
     {
         Gep::CallerInfo ci{}; // unused
 
-        FormatLog(LogLevel::important, ci, std::forward<Args>(args)...);
+        FormatLog(LogLevel::Important, ci, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
@@ -51,11 +51,7 @@ namespace Gep
     {
         Gep::CallerInfo callerInfo = Gep::GetCallerInfo(_ReturnAddress());
 
-        FormatLog(LogLevel::error, callerInfo, std::forward<Args>(args)...);
-
-//#ifdef _DEBUG
-//        __debugbreak();
-//#endif // _DEBUG
+        FormatLog(LogLevel::Error, callerInfo, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
@@ -63,7 +59,7 @@ namespace Gep
     {
         Gep::CallerInfo callerInfo = Gep::GetCallerInfo(_ReturnAddress());
 
-        FormatLog(LogLevel::critical, callerInfo, std::forward<Args>(args)...);
+        FormatLog(LogLevel::Critical, callerInfo, std::forward<Args>(args)...);
 #ifdef _DEBUG
         __debugbreak();
 #else // _DEBUG
@@ -107,10 +103,10 @@ namespace Gep
         {
             switch (level)
             {
-            case LogLevel::error:
+            case LogLevel::Error:
                 oss << "[" << caller.functionName << "] ";
                 break;
-            case LogLevel::critical:
+            case LogLevel::Critical:
                 oss << "[" << std::filesystem::path(caller.fileName).filename().string() << ":" << caller.functionName << ":" << caller.lineNumber << "] ";
                 break;
             default:
@@ -125,22 +121,22 @@ namespace Gep
         {
             switch (level)
             {
-            case LogLevel::trace:
+            case LogLevel::Trace:
                 std::cout << Color::cyan << oss.str() << Color::reset << std::endl;
                 break;
-            case LogLevel::info:
+            case LogLevel::Info:
                 std::cout << Color::green << oss.str() << Color::reset << std::endl;
                 break;
-            case LogLevel::warning:
+            case LogLevel::Warning:
                 std::cout << Color::yellow << oss.str() << Color::reset << std::endl;
                 break;
-            case LogLevel::error:
+            case LogLevel::Error:
                 std::cout << Color::red << oss.str() << Color::reset << std::endl;
                 break;
-            case LogLevel::important:
+            case LogLevel::Important:
                 std::cout << Color::blue << oss.str() << Color::reset << std::endl;
                 break;
-            case LogLevel::critical:
+            case LogLevel::Critical:
                 std::cout << Color::blackred << oss.str() << Color::reset << std::endl;
                 break;
             default:

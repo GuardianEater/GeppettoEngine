@@ -48,16 +48,17 @@ namespace Gep
     public:
         enum class LogLevel : char
         {
-            trace,
-            info,
-            warning,
-            error,
-            important,
-            critical,
+            Trace,
+            Info,
+            Warning,
+            Error,
+            Important,
+            Critical,
         };
 
         // Set output file, if no output file is set, no file will be written to
         static void SetOutputFile(const std::string& filename);
+
         // will only print messages with a level greater than or equal to the set level, all messages will still be written to the log file
         static void SetPrintLevel(LogLevel level);
 
@@ -65,22 +66,27 @@ namespace Gep
         template <typename... Args> static void Trace(Args&&... args);
         template <typename... Args> static void Info(Args&&... args);
         template <typename... Args> static void Warning(Args&&... args);
-        template <typename... Args> static void Important(Args&&... args);
         template <typename... Args> static void Error(Args&&... args);
+        template <typename... Args> static void Important(Args&&... args);
         template <typename... Args> static void Critical(Args&&... args);
 
     private:
-        static std::mutex mMutex;
-        static std::unique_ptr<std::ofstream> mFileStream;
-        static LogLevel mPrintLevel;
+        static std::mutex mMutex; // mutex for access to the mFileStream
+        static std::unique_ptr<std::ofstream> mFileStream; // file stream for the log file, if no output file is set this will be nullptr
+        static LogLevel mPrintLevel; // not thread safe, should only be set at the start of program. specifices which level of logs should be output to cout
 
+        // adds an item to the given ostringstream as a string
         template <typename Type>
         static void FormatAdd(std::ostringstream& oss, const Type& type);
 
+        // outputs to std::cout and the log file with the given level, caller info, and message
         template <typename... Args>
         static void FormatLog(LogLevel level, const Gep::CallerInfo& caller, Args&&... args);
 
+        // writes a message to the log file, does not print to std::cout
         static void WriteLog(const std::string& message);
+
+        // formated time when the log message was created
         static std::string GetCurrentTime();
     };
 }

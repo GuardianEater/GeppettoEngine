@@ -54,7 +54,7 @@
 int main()  
 {
     // initialize logging ////////////////////////////////////////////////////////////////////////////
-    Gep::Log::SetPrintLevel(Gep::Log::LogLevel::info);
+    Gep::Log::SetPrintLevel(Gep::Log::LogLevel::Info);
     Gep::Log::SetOutputFile("log.txt");
     Gep::Log::Important("Welcome To The Gep Engine!");
 
