@@ -8,13 +8,6 @@
 
 #pragma once
 
-#include <glm\glm.hpp>
-#include "Affine.hpp"
-#include "Conversion.h"
-
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm\gtx\matrix_decompose.hpp>
-
 #include "VQS.hpp"
 
 namespace Client

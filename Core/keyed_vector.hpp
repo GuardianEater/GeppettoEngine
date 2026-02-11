@@ -1,5 +1,5 @@
 /*****************************************************************//**
- * \file   KeyedVector.hpp
+ * \file   keyed_vector.hpp
  * \brief  A vector that returns the index of the inserted object, that key is used to access the object
  *
  * \author 2018t
@@ -15,7 +15,7 @@
 #include <cassert>
 #include <optional>
 
-namespace Gep
+namespace gtl
 {
     template<typename T>
     class keyed_vector
@@ -58,7 +58,7 @@ namespace Gep
             using pointer = T*;
             using reference = T&;
 
-            using parent_iterator       = typename std::vector<std::optional<T>>::iterator;
+            using parent_iterator = typename std::vector<std::optional<T>>::iterator;
 
             iterator(parent_iterator iterator, parent_iterator end, size_t index = 0)
                 : mIterator(iterator)
@@ -134,5 +134,5 @@ namespace Gep
     };
 }
 
-#include "KeyedVector.inl"
+#include "keyed_vector.inl"
 

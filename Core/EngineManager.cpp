@@ -10,7 +10,7 @@
 
 #include "EngineManager.hpp"
 
-#include "KeyedVector.hpp"
+#include "keyed_vector.hpp"
 
 #include "Logger.hpp"
 
@@ -151,7 +151,7 @@ namespace Gep
         return mEntityDatas.at(entity).name;
     }
 
-    void EngineManager::SetUUID(Entity entity, const UUID& uuid)
+    void EngineManager::SetUUID(Entity entity, const gtl::uuid& uuid)
     {
         if (!EntityExists(entity))
         {
@@ -160,8 +160,8 @@ namespace Gep
         }
 
         // if the entity already had a uuid set, erase the old one
-        const UUID& oldid = GetUUID(entity);
-        if (oldid.IsValid() && mUUIDToEntity.contains(oldid))
+        const gtl::uuid& oldid = GetUUID(entity);
+        if (oldid.is_valid() && mUUIDToEntity.contains(oldid))
         {
             mUUIDToEntity.erase(oldid);
         }
@@ -170,7 +170,7 @@ namespace Gep
         mEntityDatas.at(entity).uuid = uuid;
     }
 
-    const UUID& EngineManager::GetUUID(Entity entity) const
+    const gtl::uuid& EngineManager::GetUUID(Entity entity) const
     {
         if (!EntityExists(entity))
         {
@@ -257,16 +257,16 @@ namespace Gep
         Log::Trace("Destroyed Entity: [", entity, "]");
     }
 
-    Entity EngineManager::CreateEntity(const std::string& name, const UUID& uuid)
+    Entity EngineManager::CreateEntity(const std::string& name, const gtl::uuid& uuid)
     {
         Entity entity = mEntityDatas.emplace();
 
         SetName(entity, name);
 
-        if (uuid.IsValid()) // allows construction of an entity without a predefined uuid, will just generate one instead
+        if (uuid.is_valid()) // allows construction of an entity without a predefined uuid, will just generate one instead
             SetUUID(entity, uuid);
         else
-            SetUUID(entity, UUID::GenerateNew());
+            SetUUID(entity, gtl::generate_uuid());
 
         SignalEvent(Event::EntityCreated{ entity });
 
@@ -285,7 +285,7 @@ namespace Gep
 
         nlohmann::json entityData = SaveEntity(entity);
         Entity newEntity = LoadEntity(entityData, false);
-        SetUUID(newEntity, UUID::GenerateNew());
+        SetUUID(newEntity, gtl::generate_uuid());
 
         return newEntity;
     }
@@ -497,9 +497,9 @@ namespace Gep
         return true;
     }
 
-    Entity EngineManager::FindEntity(const UUID& uuid) const
+    Entity EngineManager::FindEntity(const gtl::uuid& uuid) const
     {
-        if (!uuid.IsValid()) 
+        if (!uuid.is_valid()) 
             return INVALID_ENTITY;
 
         auto it = mUUIDToEntity.find(uuid);
@@ -531,7 +531,7 @@ namespace Gep
 
         entityJson["children"] = childrenJson;
         entityJson["components"] = componentsJson;
-        entityJson["uuid"] = GetUUID(entity).ToString();
+        entityJson["uuid"] = GetUUID(entity).to_string();
         entityJson["name"] = GetName(entity);
 
         return entityJson;
@@ -589,8 +589,8 @@ namespace Gep
         {
             if (readUUID) // CreateEntity generates a uuid by default
             {
-                UUID uuid = UUID::FromString(entityJson["uuid"].get<std::string>());
-                if (uuid.IsValid())
+                gtl::uuid uuid = gtl::to_uuid(entityJson["uuid"].get<std::string>());
+                if (uuid.is_valid())
                     SetUUID(entity, uuid);
             }
         }
@@ -607,7 +607,7 @@ namespace Gep
         return entity;
     }
 
-    const Gep::keyed_vector<ComponentData>& EngineManager::GetComponentDatas() const
+    const gtl::keyed_vector<ComponentData>& EngineManager::GetComponentDatas() const
     {
         return mComponentDatas;
     }
@@ -650,7 +650,7 @@ namespace Gep
         return mArchetypes;
     }
 
-    const Gep::keyed_vector<SystemData>& EngineManager::GetSystemDatas() const
+    const gtl::keyed_vector<SystemData>& EngineManager::GetSystemDatas() const
     {
         return mSystems;
     }

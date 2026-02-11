@@ -30,20 +30,10 @@ namespace Client
             : ISystem(em)
         {}
 
-        template <typename... ComponentTypes>
-        void OnComponentsRegistered(Gep::TypeList<ComponentTypes...> componentTypes);
-
         void OnAssetBrowserItemClicked(const Gep::Event::AssetBrowserItemClicked& event);
-        void OnEngineStateChanged(const Gep::Event::EngineStateChanged& event);
 
         void Initialize() override;
         void Exit() override;
-
-    private:
-
-        // component index -> function that converts component to json
-        std::vector<std::function<nlohmann::json(Gep::Entity)>> mSaveComponentFunctions;
-        std::map<std::string, std::function<void(Gep::Entity, const nlohmann::json&)>> mLoadComponentFunctions;
     };
 }
 

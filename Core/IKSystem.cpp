@@ -1,12 +1,20 @@
-// implementation for ik system
+/*****************************************************************//**
+ * \file   IKSystem.cpp
+ * \brief  system for handling inverse kinematics using cyclic coordinate descent (CCD)
+ * 
+ * \author 2018t
+ * \date   February 2026
+ *********************************************************************/
 
+// pch
 #include "pch.hpp"
 
-// gep
+// engine
 #include "EngineManager.hpp"
 #include "Events.hpp"
+
+// rendering
 #include "Model.hpp"
-#include "ImGuiHelp.hpp"
 
 // this
 #include "IKSystem.hpp"
@@ -19,6 +27,10 @@
 // resource
 #include "EditorResource.hpp"
 #include "OpenGLRenderer.hpp"
+
+// help
+#include "ImGuiHelp.hpp"
+#include "GLMHelp.hpp"
 
 namespace Client
 {
@@ -177,7 +189,7 @@ namespace Client
     void IKSystem::OnIKTargetEditorRender(const Gep::Event::ComponentEditorRender<Client::IKTarget>& event)
     {
         bool valid = mEditor.DrawEntityDragDropTarget<Client::RiggedModelComponent, Client::Transform>(mManager, "Target Entity", event.components,
-            [&](Client::IKTarget* ikt) -> Gep::UUID& { return ikt->targetEntity; }
+            [&](Client::IKTarget* ikt) -> gtl::uuid& { return ikt->targetEntity; }
         );
 
         // if the needed checks failed dont continue with the ui

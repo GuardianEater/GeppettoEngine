@@ -75,14 +75,14 @@ namespace nlohmann
             p[i] = j.at(i).get<float>();
     }
 
-    void to_json(json& j, const Gep::UUID& v)
+    void to_json(json& j, const gtl::uuid& v)
     {
-        j = v.ToString();
+        j = v.to_string();
     }
 
-    void from_json(const json& j, Gep::UUID& v)
+    void from_json(const json& j, gtl::uuid& v)
     {
-        v = Gep::UUID::FromString(j); // json implicit conversion to string
+        v = gtl::to_uuid(j); // json implicit conversion to string
     }
 
     void to_json(json& j, const Gep::VQS& v)

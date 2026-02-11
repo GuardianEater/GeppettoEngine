@@ -10,8 +10,7 @@
 
 #include "OpenGLRenderer.hpp"
 #include "Model.hpp"
-#include "Conversion.h"
-#include "Algorithms.hpp"
+#include "Conversion.hpp"
 #include "VQS.hpp"
 
 #define WIN32_LEAN_AND_MEAN
@@ -1102,7 +1101,7 @@ namespace Gep
         const auto& k2 = track.scaleKeyFrames[i + 1];
 
         float factor = (time - k1.time) / (k2.time - k1.time);
-
+        
         return glm::lerp(k1.transform, k2.transform, factor);
     }
 

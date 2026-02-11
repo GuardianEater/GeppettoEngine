@@ -6,12 +6,11 @@
  * \date   August 2024
  *********************************************************************/
 
+// pch
 #include "pch.hpp"
 
+// this
 #include "RenderSystem.hpp"
-#include "SphereCollider.hpp"
-#include "CubeCollider.hpp"
-#include <ImGuizmo.h>
 
  // component
 #include "Transform.hpp"
@@ -20,26 +19,30 @@
 #include "TextureComponent.hpp"
 #include "LightComponent.hpp"
 #include "AnimationComponent.hpp"
+#include "SphereCollider.hpp"
+#include "CubeCollider.hpp"
 
+// mesh
 #include "SkyboxMesh.hpp"
 #include "Mesh.hpp"
-
-#include "Conversion.h"
-
 #include "QuadMesh.hpp"
 #include "SphereMesh.hpp"
 #include "IcosphereMesh.hpp"
 #include "CubeMesh.hpp"
 
+// engine
 #include "ISystem.hpp"
 
+// resource
 #include "OpenGLRenderer.hpp"
 #include "EditorResource.hpp"
-#include "PhysicsSystem.hpp"
 #include "CollisionResource.hpp"
 
-#include "ImGuiHelp.hpp"
+// help
+#include "Conversion.hpp"
 #include "STLHelp.hpp"
+#include "ImGuiHelp.hpp"
+#include "GLMHelp.hpp"
 
 namespace Client
 {
@@ -500,7 +503,7 @@ namespace Client
 
         ImGui::SetNextWindowSize(windowSizeMin, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSizeConstraints(windowSizeMin, windowSizeMax);
-        std::string windowName = mManager.GetName(cameraEntity) + "###" + mManager.GetUUID(cameraEntity).ToString();
+        std::string windowName = mManager.GetName(cameraEntity) + "###" + mManager.GetUUID(cameraEntity).to_string();
         if (ImGui::Begin(windowName.c_str()))
         {
             // get mouse delta and wether or not right click is pressed to rotate the camera

@@ -3,6 +3,10 @@
 
 #include "Transform.hpp"
 
+
+// diagnol 3x3
+#include "glm/gtx/matrix_operation.hpp"
+
 namespace Client
 {
     glm::vec3 RigidBody::LinearAcceleration() const

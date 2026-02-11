@@ -8,11 +8,11 @@
 
 #pragma once
 
+// glm
 #include <glm\glm.hpp>
-#include <glm/gtx/matrix_operation.hpp>
-#include <glm/gtc/quaternion.hpp>
 
-#include "UUID.hpp"
+// help
+#include "uuid.hpp"
 
 namespace Client
 {
@@ -31,8 +31,8 @@ namespace Client
 
     struct Spring
     {
-        Gep::UUID startEntity;
-        Gep::UUID endEntity; // target entity to perform spring computation against
+        gtl::uuid startEntity;
+        gtl::uuid endEntity; // target entity to perform spring computation against
 
         float restLength = 1.0f;
         float stiffness = 50.0f;

@@ -1,5 +1,5 @@
 /*****************************************************************//**
- * \file   KeyedVector.inl
+ * \file   keyed_vector.inl
  * \brief  Array that has stable indexing and compact memory usage
  *
  * \author 2018t
@@ -8,11 +8,9 @@
 
 #pragma once
 
-#include "KeyedVector.hpp"
+#include "keyed_vector.hpp"
 
-#include "Logger.hpp"
-
-namespace Gep
+namespace gtl
 {
     template<typename T>
     constexpr size_t keyed_vector<T>::insert(const T& obj)
@@ -55,16 +53,10 @@ namespace Gep
     constexpr void keyed_vector<T>::erase(size_t index)
     {
         if (index >= mData.size())
-        {
-            Log::Error("keyed_vector::erase() Index out of range");
-            return;
-        }
+            throw std::out_of_range("keyed_vector::erase() Index out of range");
 
         if (!mData.at(index).has_value())
-        {
-            Log::Error("keyed_vector::erase() Index is already empty");
-            return;
-        }
+            throw std::logic_error("keyed_vector::erase() Index is already empty");
 
         mAvailableSlots.push_back(index);
         mData.at(index).reset();
@@ -81,14 +73,10 @@ namespace Gep
     constexpr T& keyed_vector<T>::at(size_t index)
     {
         if (index >= mData.size())
-        {
-            Log::Critical("keyed_vector::at() Index out of range");
-        }
+            throw std::out_of_range("keyed_vector::at() Index out of range");
 
         if (!mData.at(index).has_value())
-        {
-            Log::Critical("keyed_vector::at() Index is empty");
-        }
+            throw std::logic_error("keyed_vector::at() Index is empty");
 
         return mData.at(index).value();
     }
@@ -97,14 +85,10 @@ namespace Gep
     constexpr const T& keyed_vector<T>::at(size_t index) const
     {
         if (index >= mData.size())
-        {
-            Log::Critical("keyed_vector::at() Index out of range");
-        }
+            throw std::out_of_range("keyed_vector::at() Index out of range");
 
         if (!mData.at(index).has_value())
-        {
-            Log::Critical("keyed_vector::at() Index is empty");
-        }
+            throw std::logic_error("keyed_vector::at() Index is empty");
 
         return mData.at(index).value();
     }

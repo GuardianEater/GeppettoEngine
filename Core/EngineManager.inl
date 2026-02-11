@@ -222,7 +222,7 @@ namespace Gep
         Log::Info("Registering Resource: [", GetTypeInfo<ResourceType>().PrettyName(), "]...");
 
         std::type_index typeIndex = typeid(ResourceType);
-        mResources.emplace(typeIndex, Gep::make_unique_void_ptr<ResourceType>(std::forward<ContructionTypes>(pararms)...));
+        mResources.emplace(typeIndex, gtl::make_unique_void<ResourceType>(std::forward<ContructionTypes>(pararms)...));
 
         Log::Info("Registered Resource: [", GetTypeInfo<ResourceType>().PrettyName(), "]");
     }

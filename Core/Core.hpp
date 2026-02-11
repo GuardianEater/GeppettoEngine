@@ -8,44 +8,7 @@
 
 #pragma once
 
- // standard ///////////////////////////////////////////////////////////////////
-
-#include <vector>
-#include <list>
-#include <array>
-#include <deque>
-
-#include <set>
-#include <unordered_set>
-
-#include <map>
-#include <unordered_map>
-
-#include <queue>
-#include <stack>
-
-#include <memory>
-#include <bitset>
-
-#include <string>
-#include <iostream>
-
-#include <fstream>
-#include <filesystem>
-
-#include <typeinfo>
-#include <type_traits>
-#include <typeindex>
-
-#include <chrono>
 #include <limits>
-#include <numeric>
-#include <functional>
-
-#include <assert.h>
-#include <cassert>
-
-// API Control ////////////////////////////////////////////////////////////////
 
 // engine /////////////////////////////////////////////////////////////////////
 

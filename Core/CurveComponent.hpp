@@ -9,12 +9,10 @@
 
 #pragma once
 
-#include <glm/glm.hpp>
-#include "CubicSpline.h"
+#include "CubicSpline.hpp"
 
 namespace Client
 {
-
     // defines an entity as a path that path followers can use
     struct CurveComponent
     {

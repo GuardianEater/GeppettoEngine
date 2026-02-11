@@ -185,7 +185,7 @@ namespace Client
         }
         ImGui::Text("Name: %s", displayName.c_str());
         ImGui::Text("RTID: %u", entity);
-        ImGui::Text("UUID: %s", mManager.GetUUID(entity).ToString().c_str());
+        ImGui::Text("UUID: %s", mManager.GetUUID(entity).to_string().c_str());
 
         ImGui::Dummy({ 0.0f, 10.0f });
 
@@ -1113,8 +1113,8 @@ namespace Client
             {
                 std::sort(heirarchyEnts.begin(), heirarchyEnts.end(), [&](Gep::Entity a, Gep::Entity b)
                 {
-                    const std::string& aUUID = mManager.GetUUID(a).ToString();
-                    const std::string& bUUID = mManager.GetUUID(b).ToString();
+                    const std::string& aUUID = mManager.GetUUID(a).to_string();
+                    const std::string& bUUID = mManager.GetUUID(b).to_string();
                     return aUUID < bUUID;  // descending order
                 });
             }

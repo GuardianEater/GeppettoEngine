@@ -13,55 +13,8 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-namespace Gep::ImGui
+namespace Gep::ImGui::Detail
 {
-    template <typename T>
-        requires std::is_arithmetic_v<T>
-    inline ImGuiDataType ImGuiTypeID()
-    {
-        if constexpr (std::is_same_v<T, float>)
-            return ImGuiDataType_Float;
-        else if constexpr (std::is_same_v<T, double>)
-            return ImGuiDataType_Double;
-        else if constexpr (std::is_same_v<T, int8_t>)
-            return ImGuiDataType_S8;
-        else if constexpr (std::is_same_v<T, uint8_t>)
-            return ImGuiDataType_U8;
-        else if constexpr (std::is_same_v<T, int16_t>)
-            return ImGuiDataType_S16;
-        else if constexpr (std::is_same_v<T, uint16_t>)
-            return ImGuiDataType_U16;
-        else if constexpr (std::is_same_v<T, int32_t>)
-            return ImGuiDataType_S32;
-        else if constexpr (std::is_same_v<T, uint32_t>)
-            return ImGuiDataType_U32;
-        else if constexpr (std::is_same_v<T, int64_t>)
-            return ImGuiDataType_S64;
-        else //if constexpr (std::is_same_v<T, uint64_t>)
-            return ImGuiDataType_U64;
-    }
-
-    template <typename T>
-        requires std::is_arithmetic_v<T>
-    inline bool DragScalar(const std::string& label, T* v, float v_speed, T min, T max, const std::string& format, ImGuiSliderFlags flags)
-    {
-        return ::ImGui::DragScalar(label.c_str(), Gep::ImGui::ImGuiTypeID<T>(), static_cast<void*>(v), v_speed, static_cast<void*>(&min), static_cast<void*>(&max), format.c_str(), flags);
-    }
-
-    template<typename T>
-        requires std::is_arithmetic_v<T>
-    inline bool SliderScalar(const std::string& label, T* v, T v_min, T v_max, const std::string& format, ImGuiSliderFlags flags)
-    {
-        return ::ImGui::SliderScalar(label.c_str(), Gep::ImGui::ImGuiTypeID<T>(), static_cast<void*>(v), static_cast<void*>(&v_min), static_cast<void*>(&v_max), format.c_str(), flags);
-    }
-
-    template <typename T>
-        requires std::is_arithmetic_v<T>
-    inline bool InputScalar(const std::string& label, T* v, const std::string& format, ImGuiInputTextFlags flags)
-    {
-        return ::ImGui::InputScalar(label.c_str(), Gep::ImGui::ImGuiTypeID<T>(), static_cast<void*>(v), nullptr, nullptr, format.c_str(), flags | ImGuiInputTextFlags_EnterReturnsTrue);
-    }
-
     template <typename T, typename GetterFunction>
         requires std::is_invocable_v<GetterFunction, T&>
     inline bool MultiDragScalar_Field(std::span<T> values, GetterFunction&& get)
@@ -150,6 +103,56 @@ namespace Gep::ImGui
 
         return changed;
     }
+}
+
+namespace Gep::ImGui
+{
+    template <typename T>
+        requires std::is_arithmetic_v<T>
+    inline ImGuiDataType ImGuiTypeID()
+    {
+        if constexpr (std::is_same_v<T, float>)
+            return ImGuiDataType_Float;
+        else if constexpr (std::is_same_v<T, double>)
+            return ImGuiDataType_Double;
+        else if constexpr (std::is_same_v<T, int8_t>)
+            return ImGuiDataType_S8;
+        else if constexpr (std::is_same_v<T, uint8_t>)
+            return ImGuiDataType_U8;
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return ImGuiDataType_S16;
+        else if constexpr (std::is_same_v<T, uint16_t>)
+            return ImGuiDataType_U16;
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return ImGuiDataType_S32;
+        else if constexpr (std::is_same_v<T, uint32_t>)
+            return ImGuiDataType_U32;
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return ImGuiDataType_S64;
+        else //if constexpr (std::is_same_v<T, uint64_t>)
+            return ImGuiDataType_U64;
+    }
+
+    template <typename T>
+        requires std::is_arithmetic_v<T>
+    inline bool DragScalar(const std::string& label, T* v, float v_speed, T min, T max, const std::string& format, ImGuiSliderFlags flags)
+    {
+        return ::ImGui::DragScalar(label.c_str(), Gep::ImGui::ImGuiTypeID<T>(), static_cast<void*>(v), v_speed, static_cast<void*>(&min), static_cast<void*>(&max), format.c_str(), flags);
+    }
+
+    template<typename T>
+        requires std::is_arithmetic_v<T>
+    inline bool SliderScalar(const std::string& label, T* v, T v_min, T v_max, const std::string& format, ImGuiSliderFlags flags)
+    {
+        return ::ImGui::SliderScalar(label.c_str(), Gep::ImGui::ImGuiTypeID<T>(), static_cast<void*>(v), static_cast<void*>(&v_min), static_cast<void*>(&v_max), format.c_str(), flags);
+    }
+
+    template <typename T>
+        requires std::is_arithmetic_v<T>
+    inline bool InputScalar(const std::string& label, T* v, const std::string& format, ImGuiInputTextFlags flags)
+    {
+        return ::ImGui::InputScalar(label.c_str(), Gep::ImGui::ImGuiTypeID<T>(), static_cast<void*>(v), nullptr, nullptr, format.c_str(), flags | ImGuiInputTextFlags_EnterReturnsTrue);
+    }
 
     template <typename T, typename... GetterFunctions>
     inline bool MultiDragScalarX(const std::string& label, std::span<T> values, GetterFunctions&&... gets)
@@ -168,7 +171,7 @@ namespace Gep::ImGui
             if (i > 0)
                 ::ImGui::SameLine(0, ::ImGui::GetStyle().ItemInnerSpacing.x);
 
-            anyChanged |= Gep::ImGui::MultiDragScalar_Field(values, get);
+            anyChanged |= Gep::ImGui::Detail::MultiDragScalar_Field(values, get);
             ::ImGui::PopItemWidth();
 
             ::ImGui::PopID();
@@ -239,7 +242,7 @@ namespace Gep::ImGui
             if (i > 0)
                 ::ImGui::SameLine(0, ::ImGui::GetStyle().ItemInnerSpacing.x);
 
-            anyChanged |= Gep::ImGui::MultiInputScalar_Field(values, get);
+            anyChanged |= Gep::ImGui::Detail::MultiInputScalar_Field(values, get);
             ::ImGui::PopItemWidth();
 
             ::ImGui::PopID();

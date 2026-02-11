@@ -9,7 +9,7 @@
 #include "pch.hpp"
 
 #include "CollisionChecking.hpp"
-#include "Affine.hpp"
+#include "GLMHelp.hpp"
 #include "glm/glm.hpp"
 #include <algorithm>
 #include <cmath>

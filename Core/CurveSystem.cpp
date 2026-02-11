@@ -10,14 +10,23 @@
 
 // need
 #include "pch.hpp"
+
+// this
 #include "CurveSystem.hpp"
+
+// engine
 #include "EngineManager.hpp"
 
 // helper
 #include "STLHelp.hpp"
 #include "JsonHelp.hpp"
-#include "CubicSpline.h"
+#include "CubicSpline.hpp"
 #include "ImGuiHelp.hpp"
+#include "Conversion.hpp"
+#include "GLMHelp.hpp"
+
+// gtl
+#include "uuid.hpp"
 
 // component
 #include "CurveComponent.hpp"
@@ -28,9 +37,6 @@
 // resource
 #include "OpenGLRenderer.hpp"
 #include "EditorResource.hpp"
-
-// external
-#include <vector>
 
 namespace Client
 {
@@ -399,7 +405,7 @@ namespace Client
     void CurveSystem::OnPathFollowerEditorRender(const Gep::Event::ComponentEditorRender<Client::PathFollowerComponent>& event)
     {
         bool valid = mEditor.DrawEntityDragDropTarget<Client::CurveComponent, Client::Transform>(mManager, "Target Path Entity", event.components,
-            [](Client::PathFollowerComponent* pfc) -> Gep::UUID& { return pfc->targetPathEntity; }
+            [](Client::PathFollowerComponent* pfc) -> gtl::uuid& { return pfc->targetPathEntity; }
         );
 
         // if the needed checks failed dont continue with the ui

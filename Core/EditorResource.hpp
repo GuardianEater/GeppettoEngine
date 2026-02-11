@@ -8,12 +8,16 @@
 
 #pragma once
 
-#include "Core.hpp"
+// help
 #include "StringHelp.hpp"
 #include "STLHelp.hpp"
 
+// engine
 #include "EngineManager.hpp"
-#include "UUID.hpp"
+#include "Core.hpp"
+
+// gtl
+#include "uuid.hpp"
 
 namespace Client
 {
@@ -51,7 +55,7 @@ namespace Client
 
 		// creates target 
 		template< typename... ComponentRequirements, typename T, typename Getter>
-			requires std::is_invocable_r_v<Gep::UUID&, Getter, T&>
+			requires std::is_invocable_r_v<gtl::uuid&, Getter, T&>
 		bool DrawEntityDragDropTarget(Gep::EngineManager& em, const std::string& label, std::span<T> components, Getter&& get);
 
 
@@ -186,7 +190,7 @@ namespace Client
 	}
 
 	template< typename... ComponentRequirements, typename T, typename Getter>
-		requires std::is_invocable_r_v<Gep::UUID&, Getter, T&>
+		requires std::is_invocable_r_v<gtl::uuid&, Getter, T&>
 	inline bool EditorResource::DrawEntityDragDropTarget(Gep::EngineManager& em, const std::string& label, std::span<T> components, Getter&& get)
 	{
         if (components.empty())
@@ -209,13 +213,13 @@ namespace Client
         // first check all entities for validity
 		for (T& c : components)
 		{
-            const Gep::UUID& uuid = get(c);
+            const gtl::uuid& uuid = get(c);
 
 			Gep::Entity e = em.FindEntity(uuid);
 			if (!em.EntityExists(e))
 			{
 				auto& back = invalidEntitiesDetails.emplace_back();
-                if (uuid.IsValid()) // entity doesnt exist but uuid is valid, so at one point it did exist
+                if (uuid.is_valid()) // entity doesnt exist but uuid is valid, so at one point it did exist
                     back.didExist = true;
 			}
 			else if ((em.GetSignature(e) & requirements) != requirements)
@@ -231,9 +235,9 @@ namespace Client
 		}
 
 		// determine if all components have the same entity, if so display the name of any one of them
-		const bool uniform = Gep::IsUniform(components, [&](T& c) -> Gep::UUID& { return get(c); });
+		const bool uniform = Gep::IsUniform(components, [&](T& c) -> gtl::uuid& { return get(c); });
 		const Gep::Entity first = em.FindEntity(get(components[0]));
-        const Gep::UUID& firstUUID = get(components[0]);
+        const gtl::uuid& firstUUID = get(components[0]);
 
 		ImGui::BeginGroup();
 		ImGui::Text("%s:", label.c_str());

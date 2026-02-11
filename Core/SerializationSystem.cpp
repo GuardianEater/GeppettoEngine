@@ -6,15 +6,21 @@
  * \date   February 2025
  *********************************************************************/
 
+// pch
 #include "pch.hpp"
 
+// this
 #include "SerializationSystem.hpp"
+
+// resource
 #include "SerializationResource.hpp"
 #include "EditorResource.hpp"
 
+// engine
 #include "EngineManager.hpp"
 
-#include "Logger.hpp"
+// gtl
+#include "uuid.hpp"
 
 namespace Client
 {
@@ -28,17 +34,14 @@ namespace Client
         {
             nlohmann::json prefab = mManager.GetResource<Client::SerializationResource>().LoadPrefab(event.path);
             Gep::Entity prefabEntity = mManager.LoadEntity(prefab, false);
-            mManager.SetUUID(prefabEntity, Gep::UUID::GenerateNew());
+            mManager.SetUUID(prefabEntity, gtl::generate_uuid());
             mManager.GetResource<Client::EditorResource>().SelectEntity(prefabEntity);
         }
     }
-    void SerializationSystem::OnEngineStateChanged(const Gep::Event::EngineStateChanged& event)
-    {
-    }
+
     void SerializationSystem::Initialize()
     {
         mManager.SubscribeToEvent<Gep::Event::AssetBrowserItemClicked>(this, &SerializationSystem::OnAssetBrowserItemClicked);
-        mManager.SubscribeToEvent<Gep::Event::EngineStateChanged>(this, &SerializationSystem::OnEngineStateChanged);
 
         mManager.GetResource<SerializationResource>().LoadScene(mManager, "assets\\scenes\\default.scene");
     }

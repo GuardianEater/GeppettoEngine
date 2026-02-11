@@ -17,7 +17,7 @@ namespace Client
 {
     struct PathFollowerComponent
     {
-        Gep::UUID targetPathEntity{}; // the entity that is currently being followed, it must have a curve and a transform.
+        gtl::uuid targetPathEntity{}; // the entity that is currently being followed, it must have a curve and a transform.
 
         std::pair<float, float> easeTimes = { 0.25f, 0.75f }; // ease start and ease end times
 

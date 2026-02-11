@@ -11,44 +11,55 @@
 #include <array>
 #include <string>
 
-namespace Gep
+namespace gtl
 {
-    // created using the static member functions.
-    class UUID
+    // uuid base class, can be used to create different types of uuids with different sizes and segmentations
+    template <size_t SizeV, size_t SegmentsV>
+    struct basic_uuid
     {
-    private:
-        static constexpr size_t size = 24;
-        static constexpr size_t segments = 3; // determines the amount of dashes to put in it when interpretted as a string
-        static constexpr size_t bytesPerSegment = size / segments;
+        static constexpr size_t size = SizeV;
+        static constexpr size_t segments = SegmentsV;
 
         std::array<uint8_t, size> bytes{};
 
-    public:
-        const std::array<uint8_t, size>& GetBytes() const { return bytes; };
+        std::string to_string() const;
 
-        static UUID FromString(std::string string);
-        static UUID GenerateNew();
+        bool is_valid() const;
 
-        std::string ToString() const;
-
-        bool IsValid() const;
-
-        friend std::ostream& operator<<(std::ostream& os, const UUID& uuid);
-        friend auto operator<=>(const UUID&, const UUID&) = default;
+        friend std::ostream& operator<<(std::ostream& os, const basic_uuid& uuid);
+        friend auto operator<=>(const basic_uuid&, const basic_uuid&) = default;
     };
 }
 
 // std::hash specialization to allow Gep::UUID in unordered containers
 namespace std
 {
-    template <>
-    struct hash<Gep::UUID>
+    template <size_t Size, size_t Segments>
+    struct hash<gtl::basic_uuid<Size, Segments>>
     {
-        size_t operator()(const Gep::UUID& id) const noexcept
+        size_t operator()(const gtl::basic_uuid<Size, Segments>& id) const noexcept
         {
-            const auto& bytes = id.GetBytes();
-            const std::string_view sv{ reinterpret_cast<const char*>(bytes.data()), bytes.size() };
+            const std::string_view sv{ reinterpret_cast<const char*>(id.bytes.data()), id.bytes.size() };
             return std::hash<std::string_view>{}(sv);
         }
     };
 }
+
+namespace gtl
+{
+    // a default uuid type that is usually more than enough for most use cases, it is 24 bytes total, divided into 3 segments of 8 bytes each
+    using uuid = basic_uuid<24, 3>;
+}
+
+// functions for working with basic_uuids, such as generating and converting from string
+namespace gtl
+{
+    // converts a string to a basic_uuid, "-" will be ignored.
+    template <size_t SizeV = uuid::size, size_t SegmentsV = uuid::segments>
+    basic_uuid<SizeV, SegmentsV> to_uuid(std::string string);
+
+    template <size_t SizeV = uuid::size, size_t SegmentsV = uuid::segments>
+    basic_uuid<SizeV, SegmentsV> generate_uuid();
+}
+
+#include "uuid.inl"

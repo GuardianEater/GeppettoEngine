@@ -7,11 +7,8 @@
  *********************************************************************/
 
 #include "pch.hpp"
-#include "Conversion.h"
+#include "Conversion.hpp"
 
-#include <assimp/matrix4x4.h>
-#include <glm/glm.hpp>
-#include "Mesh.hpp"
 #include "VQS.hpp"
 
 namespace Gep
@@ -66,37 +63,6 @@ namespace Gep
     VQS ToVQS(const aiMatrix4x4& m)
     {
         return ToVQS(ToMat4(m));
-    }
-
-    glm::quat Derivative(const glm::quat& q, const glm::vec3& omega)
-    {
-        // q' = 0.5 * Omega(omega) * q where Omega is quaternion [0, wx, wy, wz]
-        glm::quat wq{ 0, omega.x, omega.y, omega.z };
-
-        return wq * q * 0.5f;
-    }
-
-    VQS Inverse(const VQS& t)
-    {
-        VQS inv{};
-
-        if (t.scale.x == 0.0f ||
-            t.scale.y == 0.0f ||
-            t.scale.z == 0.0f)
-            Gep::Log::Error("Division by zero when taking the inverse of a VQS");
-
-        // Inverse scale (handle zero carefully)
-        inv.scale = 1.0f / t.scale;
-
-        // Inverse rotation (unit quaternion  conjugate)
-        inv.rotation = glm::conjugate(t.rotation);
-
-        // Inverse translation:
-        // First undo scale and rotation on the translation
-        glm::vec3 invTrans = -(inv.rotation * (inv.scale * t.position));
-        inv.position = invTrans;
-
-        return inv;
     }
 }
 

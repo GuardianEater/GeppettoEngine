@@ -8,7 +8,7 @@
 
 #include "pch.hpp"
 
-#include "CubicSpline.h"
+#include "CubicSpline.hpp"
 
 static double TruncatedPower(double t, double c, double d)
 {

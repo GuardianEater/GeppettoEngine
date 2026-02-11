@@ -51,6 +51,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/matrix4x4.h>
 
 // imgui
 #include <imgui.h>
@@ -59,6 +60,9 @@
 #include <imgui_stdlib.h>
 #include <imgui_internal.h>
 
+// imguizmo
+#include <ImGuizmo.h>
+
 // glm
 // enable glm intrinsics
 #define GLM_ENABLE_EXPERIMENTAL
@@ -66,8 +70,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtx/compatibility.hpp>
+
+// stb
 #include <stb_image_write.h>
 #include <stb_image.h>
+
 // glfw
 #include <glew.h>
 #include <glfw/glfw3.h>

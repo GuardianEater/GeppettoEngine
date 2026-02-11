@@ -15,10 +15,8 @@
 
 // components
 #include "CameraComponent.hpp"
-#include "ActiveCameraComponent.hpp"
 #include "ModelComponent.hpp"
 #include "RigidBody.hpp"
-//#include "Script.hpp"
 #include "Transform.hpp"
 #include "TextureComponent.hpp"
 #include "LightComponent.hpp"
@@ -32,7 +30,6 @@
 #include "IKTarget.hpp"
 
 // resources
-//#include "ScriptingResource.hpp"
 #include "SoundResource.hpp"
 #include "CollisionResource.hpp"
 #include "SerializationResource.hpp"
@@ -44,7 +41,6 @@
 #include "ImGuiSystem.hpp"
 #include "WindowSystem.hpp"
 #include "RenderSystem.hpp"
-//#include "ScriptingSystem.hpp"
 #include "SerializationSystem.hpp"
 #include "RelationSystem.hpp"
 #include "SoundSystem.hpp"

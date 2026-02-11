@@ -6,6 +6,7 @@
  * \date   July 2024
  *********************************************************************/
 
+// pch
 #include "pch.hpp"
 
 // this
@@ -16,22 +17,20 @@
 #include <RigidBody.hpp>
 #include <ModelComponent.hpp>
 
-// quaternion
-#include <glm/gtx/quaternion.hpp>
-
 // resouce
 #include "EditorResource.hpp"
 #include "OpenGLRenderer.hpp"
 
 // engine
-#include <EngineManager.hpp>
-#include <Events.hpp>
-#include "Conversion.h"
-#include "STLHelp.hpp"
-#include "ImGuiHelp.hpp"
+#include "EngineManager.hpp"
+#include "Events.hpp"
 
-// std
-#include <iostream>
+// help
+#include "ImGuiHelp.hpp"
+#include "GLMHelp.hpp"
+
+// gtl
+#include "uuid.hpp"
 
 namespace Client
 {
@@ -332,7 +331,7 @@ namespace Client
     {
         mManager.ForEachArchetype([&](Gep::Entity e, Spring& spring)
         {
-            if (spring.stiffness <= 0.0f || !spring.startEntity.IsValid())
+            if (spring.stiffness <= 0.0f || !spring.startEntity.is_valid())
                  return;
 
             Gep::Entity startEntity = mManager.FindEntity(spring.startEntity);
@@ -481,12 +480,12 @@ namespace Client
         EditorResource& editor = mManager.GetResource<EditorResource>();
 
         bool validStart = editor.DrawEntityDragDropTarget<Client::Transform>(mManager, "Start Entity", event.components,
-            [&](Spring* spring) -> Gep::UUID& { return spring->startEntity; }
+            [&](Spring* spring) -> gtl::uuid& { return spring->startEntity; }
         );
 
         //TODO make this give better error messages/feedback. ex: if transform is missing give a message
         bool validEnd = editor.DrawEntityDragDropTarget<Client::Transform>(mManager, "End Entity", event.components,
-            [&](Spring* spring) -> Gep::UUID& { return spring->endEntity; }
+            [&](Spring* spring) -> gtl::uuid& { return spring->endEntity; }
         );
 
         if (ImGui::Button("Match Rest Length"))

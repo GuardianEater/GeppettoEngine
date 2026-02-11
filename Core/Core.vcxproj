@@ -112,24 +112,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Affine.cpp" />
+    <ClCompile Include="GLMHelp.cpp" />
     <ClCompile Include="AnimationSystem.cpp" />
     <ClCompile Include="Archetypes.cpp" />
-    <ClCompile Include="BinarySerialzer.cpp" />
-    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CollisionChecking.cpp" />
     <ClCompile Include="CollisionResource.cpp" />
     <ClCompile Include="CollisionSystem.cpp" />
     <ClCompile Include="Conversion.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClInclude Include="ActionHistoryResource.hpp" />
-    <ClInclude Include="Algorithms.hpp" />
     <ClInclude Include="AnimationComponent.hpp" />
     <ClInclude Include="AnimationSystem.hpp" />
     <ClInclude Include="BoneComponent.hpp" />
-    <ClInclude Include="BVHTree.hpp" />
     <ClInclude Include="CollisionResource.hpp" />
-    <ClInclude Include="Conversion.h" />
+    <ClInclude Include="Conversion.hpp" />
     <ClInclude Include="CubeCollider.hpp" />
     <ClCompile Include="CubeMesh.cpp" />
     <ClCompile Include="CubicSpline.cpp" />
@@ -222,18 +218,13 @@
     </ClCompile>
     <ClCompile Include="PhysicsSystem.cpp" />
     <ClCompile Include="QuadMesh.cpp" />
-    <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="RelationSystem.cpp" />
     <ClCompile Include="OpenGLRenderer.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
-    <ClCompile Include="IRenderTarget.cpp" />
     <ClCompile Include="FrameBuffer.cpp" />
-    <ClCompile Include="RenderTargetImgui.cpp" />
-    <ClCompile Include="RenderTargetTexture.cpp" />
-    <ClCompile Include="RenderTargetWindow.cpp" />
     <ClInclude Include="CollisionChecking.hpp" />
     <ClInclude Include="CollisionSystem.hpp" />
-    <ClInclude Include="CubicSpline.h" />
+    <ClInclude Include="CubicSpline.hpp" />
     <ClInclude Include="CurveComponent.hpp" />
     <ClInclude Include="CurveSystem.hpp" />
     <ClInclude Include="EditorResource.hpp" />
@@ -249,7 +240,6 @@
     <ClInclude Include="MeshCollider.hpp" />
     <ClInclude Include="OS.hpp" />
     <ClInclude Include="PathFollowerComponent.hpp" />
-    <ClInclude Include="Quaternion.hpp" />
     <ClInclude Include="FrameBuffer.hpp" />
     <ClInclude Include="ScriptingResource.hpp" />
     <ClCompile Include="RigidBody.cpp" />
@@ -269,15 +259,11 @@
     <ClCompile Include="STLHelp.cpp" />
     <ClCompile Include="StringHelp.cpp" />
     <ClCompile Include="TypeID.cpp" />
-    <ClCompile Include="UUID.cpp" />
     <ClCompile Include="VQS.cpp" />
     <ClCompile Include="WindowSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ActiveCameraComponent.hpp" />
-    <ClInclude Include="Affine.hpp" />
-    <ClInclude Include="BinarySerializer.hpp" />
-    <ClInclude Include="Camera.hpp" />
+    <ClInclude Include="GLMHelp.hpp" />
     <ClInclude Include="CameraComponent.hpp" />
     <ClInclude Include="CubeMesh.hpp" />
     <ClInclude Include="dependencies\ImGuizmo\GraphEditor.h" />
@@ -295,13 +281,8 @@
     <ClInclude Include="ModelComponent.hpp" />
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="QuadMesh.hpp" />
-    <ClInclude Include="reflect-cpp-extra.hpp" />
     <ClInclude Include="RelationSystem.hpp" />
     <ClInclude Include="RenderSystem.hpp" />
-    <ClInclude Include="IRenderTarget.hpp" />
-    <ClInclude Include="RenderTargetImgui.hpp" />
-    <ClInclude Include="RenderTargetTexture.hpp" />
-    <ClInclude Include="RenderTargetWindow.hpp" />
     <ClInclude Include="RigidBody.hpp" />
     <ClInclude Include="Script.hpp" />
     <ClInclude Include="ScriptingSystem.hpp" />
@@ -311,8 +292,7 @@
     <ClInclude Include="SoundSystem.hpp" />
     <ClInclude Include="SphereCollider.hpp" />
     <ClInclude Include="SphereMesh.hpp" />
-    <ClInclude Include="KeyedVector.hpp" />
-    <ClInclude Include="ComponentArray.hpp" />
+    <ClInclude Include="keyed_vector.hpp" />
     <ClInclude Include="Core.hpp" />
     <ClInclude Include="dependencies\imgui\backends\imgui_impl_glfw.h" />
     <ClInclude Include="dependencies\imgui\backends\imgui_impl_opengl3.h" />
@@ -332,43 +312,25 @@
     <ClInclude Include="ISystem.hpp" />
     <ClInclude Include="STLHelp.hpp" />
     <ClInclude Include="StringHelp.hpp" />
-    <ClInclude Include="Tags.hpp" />
     <ClInclude Include="TextureComponent.hpp" />
     <ClInclude Include="TextureLibrary.hpp" />
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="TypeID.hpp" />
     <ClInclude Include="TypeList.hpp" />
-    <ClInclude Include="UUID.hpp" />
+    <ClInclude Include="uuid.hpp" />
+    <ClInclude Include="void_unique_ptr.hpp" />
     <ClInclude Include="VQS.hpp" />
     <ClInclude Include="WindowSystem.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\shaders\basic.frag" />
-    <None Include="assets\shaders\basic.vert" />
-    <None Include="assets\shaders\Common.glsl" />
-    <None Include="assets\shaders\Highlight.frag" />
-    <None Include="assets\shaders\Highlight.vert" />
-    <None Include="assets\shaders\Lighting.frag" />
-    <None Include="assets\shaders\Lighting.vert" />
-    <None Include="assets\shaders\forward.frag" />
-    <None Include="assets\shaders\forward.vert" />
-    <None Include="assets\shaders\main.frag" />
-    <None Include="assets\shaders\main.vert" />
-    <None Include="assets\shaders\PBR.frag" />
-    <None Include="assets\shaders\PBR.vert" />
-    <None Include="assets\shaders\PhongRender.frag" />
-    <None Include="assets\shaders\PhongRender.vert" />
-    <None Include="BVHTree.inl" />
     <None Include="ImGuiHelp.inl" />
-    <None Include="KeyedVector.inl" />
-    <None Include="ComponentArray.inl" />
+    <None Include="keyed_vector.inl" />
     <None Include="EngineManager.inl" />
     <None Include="ImGuiSystem.inl" />
     <None Include="Logger.inl" />
     <None Include="SerializationSystem.inl" />
-    <None Include="Skybox.frag" />
-    <None Include="Skybox.vert" />
     <None Include="TypeList.inl" />
+    <None Include="uuid.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

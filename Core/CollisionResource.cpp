@@ -6,17 +6,23 @@
  * \date   April 2025
  *********************************************************************/
 
+// pch
 #include "pch.hpp"
 
+// resource
 #include "CollisionResource.hpp"
-#include "CollisionChecking.hpp"
+#include "OpenGLRenderer.hpp"
 
+// components
 #include "SphereCollider.hpp"
 #include "CubeCollider.hpp"
 #include "Transform.hpp"
 #include "ModelComponent.hpp"
 #include "MeshCollider.hpp"
-#include "OpenGLRenderer.hpp"
+
+// help
+#include "CollisionChecking.hpp"
+#include "Conversion.hpp"
 
 namespace Client
 {

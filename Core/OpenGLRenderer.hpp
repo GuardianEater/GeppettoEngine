@@ -12,7 +12,6 @@
 #include <glew.h>
 #include <glm\glm.hpp>
 #include <Mesh.hpp>
-#include <Camera.hpp>
 #include "Shader.hpp"
 
 #include <mutex>
@@ -20,9 +19,7 @@
 
 #include "stb_image.h"
 #include "Logger.hpp"
-#include "KeyedVector.hpp"
-#include "BVHTree.hpp"
-#include "IRenderTarget.hpp"
+#include "keyed_vector.hpp"
 
 #include "Model.hpp"
 
@@ -309,7 +306,7 @@ namespace Gep
 
         std::unordered_map<std::string, std::pair<ModelGPUHandle, Gep::Model>> mModels; // model name -> its handle and data
         std::unordered_map<std::string, Gep::Animation> mAnimations;
-        Gep::keyed_vector<Material> mMaterials;
+        gtl::keyed_vector<Material> mMaterials;
 
         std::unordered_map<std::string, Gep::Texture> mIconTextures;// icon extension -> texture
         std::unordered_map<std::string, Gep::Texture> mTextures; // texture path -> texture
@@ -336,8 +333,5 @@ namespace Gep
         GLuint mLineVBO;
         GLuint mLineVAO;
         std::vector<LineGPUData> mLineUniforms;
-
-    public:
-        Gep::bvh_tree<uint64_t, Gep::Entity> mBVHTree;
     };
 }

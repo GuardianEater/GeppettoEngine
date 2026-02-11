@@ -13,17 +13,18 @@
 
 namespace Gep
 {
+    // a bunch of helpers to extract type information from an arbitrary callable
     template<typename T>
     struct FunctionTraits;
 
-    // Function pointer
+    // function pointer
     template<typename Ret, typename... Args>
     struct FunctionTraits<Ret(*)(Args...)> {
         using ReturnType = Ret;
         using ArgumentsTypeList = Gep::TypeList<Args...>;
     };
 
-    // Function reference
+    // function reference
     template<typename Ret, typename... Args>
     struct FunctionTraits<Ret(Args...)> {
         using ReturnType = Ret;
@@ -37,21 +38,21 @@ namespace Gep
         using ArgumentsTypeList = Gep::TypeList<Args...>;
     };
 
-    // Member function pointer
+    // member function pointer
     template<typename Ret, typename ClassType, typename... Args>
     struct FunctionTraits<Ret(ClassType::*)(Args...)> {
         using ReturnType = Ret;
         using ArgumentsTypeList = Gep::TypeList<Args...>;
     };
 
-    // Const member function pointer
+    // const member function pointer
     template<typename Ret, typename ClassType, typename... Args>
     struct FunctionTraits<Ret(ClassType::*)(Args...) const> {
         using ReturnType = Ret;
         using ArgumentsTypeList = Gep::TypeList<Args...>;
     };
 
-    // Lambda or functor
+    // lambda or functor
     template<typename T>
     struct FunctionTraits : FunctionTraits<decltype(&T::operator())> {};
 }

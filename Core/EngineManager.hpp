@@ -9,9 +9,7 @@
 #pragma once
 
 #include "Core.hpp"
-#include "UUID.hpp"
 
-#include "ComponentArray.hpp"
 #include "ISystem.hpp"
 #include "Events.hpp"
 
@@ -19,7 +17,6 @@
 
 #include "Logger.hpp"
 #include "TypeID.hpp"
-#include "KeyedVector.hpp"
 #include "Archetypes.h"
 
 #include <span>
@@ -27,19 +24,13 @@
 #include <rfl/json.hpp>
 #include <nlohmann/json.hpp>
 
+// gtl
+#include "keyed_vector.hpp"
+#include "void_unique_ptr.hpp"
+#include "uuid.hpp"
+
 namespace Gep
 {
-
-    using void_unique_ptr = std::unique_ptr<void, void(*)(void*)>;
-
-    template <typename T, typename... Args>
-    void_unique_ptr make_unique_void_ptr(Args&&... args)
-    {
-        std::unique_ptr<T> ptr = std::make_unique<T>(std::forward<Args>(args)...);
-
-        return void_unique_ptr(ptr.release(), [](void* p) { delete static_cast<T*>(p); });
-    }
-
     template <typename T>
     concept TypeHasOnComponentsRegisteredConcept = requires(T t, TypeList<int> componentTypes)
     {
@@ -81,7 +72,7 @@ namespace Gep
 
         bool active = true; // TODO: whether or not this entity is aquired from a regular query
         std::string name = ""; // allows for user identification
-        UUID uuid; // a way to allways identify this specific entity
+        gtl::uuid uuid; // a way to allways identify this specific entity
     };
 
     // static data for components, one is generated for each component that is registered.
@@ -184,13 +175,13 @@ namespace Gep
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // entity functions /////////////////////////////////////////////////////////////////////////////
 
-        Entity CreateEntity(const std::string& name = "", const UUID& uuid = UUID{});
+        Entity CreateEntity(const std::string& name = "", const gtl::uuid& uuid = gtl::uuid{});
         Entity DuplicateEntity(Entity entity);
         void DestroyEntity(Entity entity);
         bool EntityExists(Entity entity) const;
 
         // will silently fail if it doesnt find it and return INVALID_ENTITY
-        Entity FindEntity(const UUID& uuid) const;
+        Entity FindEntity(const gtl::uuid& uuid) const;
 
         nlohmann::json SaveEntity(Entity entity) const;
         Entity LoadEntity(const nlohmann::json& entityJson, bool readUUID);
@@ -203,8 +194,8 @@ namespace Gep
         void SetName(Entity entity, const std::string& name);
         const std::string& GetName(Entity entity) const;
 
-        void SetUUID(Entity entity, const UUID& uuid);
-        const UUID& GetUUID(Entity entity) const;
+        void SetUUID(Entity entity, const gtl::uuid& uuid);
+        const gtl::uuid& GetUUID(Entity entity) const;
 
         void MarkEntityForDestruction(Entity entity);
         void DestroyMarkedEntities();
@@ -281,7 +272,7 @@ namespace Gep
         template <typename... ComponentTypes>
         void CopyComponent(Entity to, Entity from);
 
-        const Gep::keyed_vector<ComponentData>& GetComponentDatas() const;
+        const gtl::keyed_vector<ComponentData>& GetComponentDatas() const;
 
         template<typename... ComponentTypes>
         void MarkComponentForDestruction(Entity entity);
@@ -340,7 +331,7 @@ namespace Gep
         void RegisterSystem();
 
         // gets all of the system data stored internally
-        const Gep::keyed_vector<SystemData>& GetSystemDatas() const;
+        const gtl::keyed_vector<SystemData>& GetSystemDatas() const;
 
         // given a system as a template parameter, sets when that system should be ran, note system default to always running
         // must be called after a system is registered
@@ -423,11 +414,11 @@ namespace Gep
 
         // entities
         std::vector<Entity> mMarkedEntities; // entities that are marked to be destroyed
-        Gep::keyed_vector<EntityData> mEntityDatas; // maps from an entity -> all of data
-        std::unordered_map<UUID, Entity> mUUIDToEntity;
+        gtl::keyed_vector<EntityData> mEntityDatas; // maps from an entity -> all of data
+        std::unordered_map<gtl::uuid, Entity> mUUIDToEntity;
 
         // components
-        Gep::keyed_vector<ComponentData> mComponentDatas; // maps from a component type -> all of the data
+        gtl::keyed_vector<ComponentData> mComponentDatas; // maps from a component type -> all of the data
         std::unordered_map<std::type_index, uint8_t> mComponentTypeToIndex; // maps a component type to its index
         std::unordered_map<std::string, uint8_t> mComponentNameToIndex; // maps a component name to its index
         ComponentBitPos mNextComponentBitPos = 0; // used for assigning bits in an entities signature
@@ -438,11 +429,11 @@ namespace Gep
 
         // systems
         std::unordered_map<std::type_index, uint64_t> mSystemTypeToIndex; // given the type of the system finds the index; always prefer GetSystemIndex()
-        Gep::keyed_vector<SystemData> mSystems; // all of the systems running and the associated data
+        gtl::keyed_vector<SystemData> mSystems; // all of the systems running and the associated data
         std::vector<uint64_t> mSystemsToUpdate; // the list of systems that need to be updated, registration determines order
 
         // resources
-        std::unordered_map<std::type_index, Gep::void_unique_ptr> mResources; // maps the type of a resource to the resource itself
+        std::unordered_map<std::type_index, gtl::void_unique_ptr> mResources; // maps the type of a resource to the resource itself
 
         // dt
         float mDeltaTime = 0.016f; // the amount of time that passed over the course of the last frame

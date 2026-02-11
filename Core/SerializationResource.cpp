@@ -103,7 +103,7 @@ namespace Client
 
         nlohmann::json prefab = entityJson;
         if (prefab.contains("uuid"))
-            prefab["uuid"] = Gep::UUID{}.ToString(); // assign an invalid uuid so a new one will get generated on load
+            prefab["uuid"] = gtl::uuid{}.to_string(); // assign an invalid uuid so a new one will get generated on load
 
         std::ofstream outFile(path);
         outFile << prefab.dump();

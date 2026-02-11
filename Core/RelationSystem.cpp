@@ -6,10 +6,20 @@
  * \date   February 2025
  *********************************************************************/
 
+// pch
 #include "pch.hpp"
+
+// this
 #include "RelationSystem.hpp"
+
+// engine
 #include "EngineManager.hpp"
+
+// components
 #include "Transform.hpp"
+
+// help
+#include "GLMHelp.hpp"
 
 namespace Client
 {

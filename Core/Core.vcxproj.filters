@@ -31,9 +31,6 @@
     <Filter Include="Backend\Tools">
       <UniqueIdentifier>{87ba4eda-5897-465f-a63b-fb16d6009dd2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Backend\Rendering\Shaders">
-      <UniqueIdentifier>{1ec3419c-0041-465d-a146-7470b53043c1}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Backend\ECS\Events">
       <UniqueIdentifier>{4f894227-9150-4917-9ac7-310fdf499a7f}</UniqueIdentifier>
     </Filter>
@@ -45,9 +42,6 @@
     </Filter>
     <Filter Include="Backend\Serializing">
       <UniqueIdentifier>{798df3ba-65a4-4d5a-9042-c0e28a0f819c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Backend\Rendering\RenderTargets">
-      <UniqueIdentifier>{e5ece65f-689f-41d3-9ce7-2472f692ae90}</UniqueIdentifier>
     </Filter>
     <Filter Include="Client\Systems">
       <UniqueIdentifier>{f1857e6f-d9ae-4ea1-a662-7c3465d1c90c}</UniqueIdentifier>
@@ -70,8 +64,8 @@
     <Filter Include="Client\Editor">
       <UniqueIdentifier>{99815ced-d820-40ab-abbb-52e71e26ea01}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Backend\NewRendering">
-      <UniqueIdentifier>{f8ccba76-0d13-47e3-98d6-baa264dd822e}</UniqueIdentifier>
+    <Filter Include="gtl">
+      <UniqueIdentifier>{d43c1736-0dc7-454a-a835-19b0ac564a6b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -105,10 +99,7 @@
     <ClCompile Include="dependencies\imgui\imgui_stdlib.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="Camera.cpp">
-      <Filter>Backend\Rendering</Filter>
-    </ClCompile>
-    <ClCompile Include="Affine.cpp">
+    <ClCompile Include="GLMHelp.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
     <ClCompile Include="SphereMesh.cpp">
@@ -137,21 +128,6 @@
     </ClCompile>
     <ClCompile Include="IcosphereMesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
-    </ClCompile>
-    <ClCompile Include="BinarySerialzer.cpp">
-      <Filter>Backend\Serializing</Filter>
-    </ClCompile>
-    <ClCompile Include="IRenderTarget.cpp">
-      <Filter>Backend\Rendering\RenderTargets</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderTargetImgui.cpp">
-      <Filter>Backend\Rendering\RenderTargets</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderTargetTexture.cpp">
-      <Filter>Backend\Rendering\RenderTargets</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderTargetWindow.cpp">
-      <Filter>Backend\Rendering\RenderTargets</Filter>
     </ClCompile>
     <ClCompile Include="ImGuiSystem.cpp">
       <Filter>Client\Systems</Filter>
@@ -240,9 +216,6 @@
     <ClCompile Include="SkyboxMesh.cpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClCompile>
-    <ClCompile Include="Quaternion.cpp">
-      <Filter>Backend\Tools</Filter>
-    </ClCompile>
     <ClCompile Include="Conversion.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
@@ -253,9 +226,6 @@
       <Filter>Client\Systems</Filter>
     </ClCompile>
     <ClCompile Include="CubicSpline.cpp">
-      <Filter>Backend\Tools</Filter>
-    </ClCompile>
-    <ClCompile Include="UUID.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
     <ClCompile Include="VQS.cpp">
@@ -285,10 +255,10 @@
     <ClCompile Include="EngineManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FrameBuffer.cpp">
-      <Filter>Backend\NewRendering</Filter>
-    </ClCompile>
     <ClCompile Include="Shader.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameBuffer.cpp">
       <Filter>Backend\Rendering</Filter>
     </ClCompile>
   </ItemGroup>
@@ -326,9 +296,6 @@
     <ClInclude Include="dependencies\imgui\backends\imgui_impl_win32.h">
       <Filter>ImGui\Backend</Filter>
     </ClInclude>
-    <ClInclude Include="ComponentArray.hpp">
-      <Filter>Backend\ECS</Filter>
-    </ClInclude>
     <ClInclude Include="EngineManager.hpp">
       <Filter>Backend\ECS</Filter>
     </ClInclude>
@@ -338,16 +305,10 @@
     <ClInclude Include="OpenGLRenderer.hpp">
       <Filter>Backend\Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.hpp">
-      <Filter>Backend\Rendering</Filter>
-    </ClInclude>
-    <ClInclude Include="KeyedVector.hpp">
-      <Filter>Backend\Tools</Filter>
-    </ClInclude>
     <ClInclude Include="SphereMesh.hpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
-    <ClInclude Include="Affine.hpp">
+    <ClInclude Include="GLMHelp.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
     <ClInclude Include="Transform.hpp">
@@ -377,9 +338,6 @@
     <ClInclude Include="Logger.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="reflect-cpp-extra.hpp">
-      <Filter>Backend\Tools</Filter>
-    </ClInclude>
     <ClInclude Include="Mesh.hpp">
       <Filter>Backend\Rendering\Meshes</Filter>
     </ClInclude>
@@ -391,27 +349,6 @@
     </ClInclude>
     <ClInclude Include="QuadMesh.hpp">
       <Filter>Backend\Rendering\Meshes</Filter>
-    </ClInclude>
-    <ClInclude Include="Tags.hpp">
-      <Filter>Backend\ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="BinarySerializer.hpp">
-      <Filter>Backend\Serializing</Filter>
-    </ClInclude>
-    <ClInclude Include="IRenderTarget.hpp">
-      <Filter>Backend\Rendering\RenderTargets</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderTargetImgui.hpp">
-      <Filter>Backend\Rendering\RenderTargets</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderTargetTexture.hpp">
-      <Filter>Backend\Rendering\RenderTargets</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderTargetWindow.hpp">
-      <Filter>Backend\Rendering\RenderTargets</Filter>
-    </ClInclude>
-    <ClInclude Include="ActiveCameraComponent.hpp">
-      <Filter>Client\Components</Filter>
     </ClInclude>
     <ClInclude Include="ImGuiSystem.hpp">
       <Filter>Client\Systems</Filter>
@@ -503,9 +440,6 @@
     <ClInclude Include="CollisionChecking.hpp">
       <Filter>Backend\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="BVHTree.hpp">
-      <Filter>Backend\Collision</Filter>
-    </ClInclude>
     <ClInclude Include="CollisionResource.hpp">
       <Filter>Client\Resources</Filter>
     </ClInclude>
@@ -524,13 +458,10 @@
     <ClInclude Include="HeirarchyStorage.hpp">
       <Filter>Client\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Quaternion.hpp">
-      <Filter>Backend\Tools</Filter>
-    </ClInclude>
     <ClInclude Include="TextureLibrary.hpp">
       <Filter>Client</Filter>
     </ClInclude>
-    <ClInclude Include="Conversion.h">
+    <ClInclude Include="Conversion.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
     <ClInclude Include="AnimationComponent.hpp">
@@ -538,9 +469,6 @@
     </ClInclude>
     <ClInclude Include="AnimationSystem.hpp">
       <Filter>Client\Systems</Filter>
-    </ClInclude>
-    <ClInclude Include="Algorithms.hpp">
-      <Filter>Backend\Tools</Filter>
     </ClInclude>
     <ClInclude Include="MeshCollider.hpp">
       <Filter>Client\Components</Filter>
@@ -551,14 +479,11 @@
     <ClInclude Include="CurveComponent.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
-    <ClInclude Include="CubicSpline.h">
+    <ClInclude Include="CubicSpline.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
     <ClInclude Include="PathFollowerComponent.hpp">
       <Filter>Client\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="UUID.hpp">
-      <Filter>Backend\Tools</Filter>
     </ClInclude>
     <ClInclude Include="BoneComponent.hpp">
       <Filter>Client</Filter>
@@ -590,34 +515,25 @@
     <ClInclude Include="ActionHistoryResource.hpp">
       <Filter>Client</Filter>
     </ClInclude>
-    <ClInclude Include="FrameBuffer.hpp">
-      <Filter>Backend\NewRendering</Filter>
-    </ClInclude>
     <ClInclude Include="Shader.hpp">
       <Filter>Backend\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="FrameBuffer.hpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="keyed_vector.hpp">
+      <Filter>gtl</Filter>
+    </ClInclude>
+    <ClInclude Include="void_unique_ptr.hpp">
+      <Filter>gtl</Filter>
+    </ClInclude>
+    <ClInclude Include="uuid.hpp">
+      <Filter>gtl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\shaders\PhongRender.frag">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="assets\shaders\PhongRender.vert">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="assets\shaders\basic.frag">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="assets\shaders\basic.vert">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="ComponentArray.inl">
-      <Filter>Backend\ECS</Filter>
-    </None>
     <None Include="EngineManager.inl">
       <Filter>Backend\ECS</Filter>
-    </None>
-    <None Include="KeyedVector.inl">
-      <Filter>Backend\Tools</Filter>
     </None>
     <None Include="TypeList.inl">
       <Filter>Backend\Tools</Filter>
@@ -625,56 +541,20 @@
     <None Include="Logger.inl">
       <Filter>Backend\Tools</Filter>
     </None>
-    <None Include="assets\shaders\forward.frag">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="assets\shaders\forward.vert">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="assets\shaders\main.frag">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="assets\shaders\main.vert">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="assets\shaders\Lighting.frag">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="assets\shaders\Lighting.vert">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
     <None Include="ImGuiSystem.inl">
       <Filter>Client\Systems</Filter>
     </None>
     <None Include="SerializationSystem.inl">
       <Filter>Client\Systems</Filter>
     </None>
-    <None Include="Skybox.vert">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="Skybox.frag">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="BVHTree.inl">
-      <Filter>Backend\Collision</Filter>
-    </None>
-    <None Include="assets\shaders\PBR.frag">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="assets\shaders\PBR.vert">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="assets\shaders\Common.glsl">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="assets\shaders\Highlight.frag">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
-    <None Include="assets\shaders\Highlight.vert">
-      <Filter>Backend\Rendering\Shaders</Filter>
-    </None>
     <None Include="ImGuiHelp.inl">
       <Filter>Backend\Tools</Filter>
+    </None>
+    <None Include="keyed_vector.inl">
+      <Filter>gtl</Filter>
+    </None>
+    <None Include="uuid.inl">
+      <Filter>gtl</Filter>
     </None>
   </ItemGroup>
 </Project>
