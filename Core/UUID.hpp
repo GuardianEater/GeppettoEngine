@@ -17,16 +17,20 @@ namespace gtl
     template <size_t SizeV, size_t SegmentsV>
     struct basic_uuid
     {
-        static constexpr size_t size = SizeV;
-        static constexpr size_t segments = SegmentsV;
+        static constexpr size_t size = SizeV;         // the total size in bytes of the uuid
+        static constexpr size_t segments = SegmentsV; // the amount of segments to divide the uuid by when converting to a string
+        std::array<uint8_t, size> bytes{};            // the bytes of the uuid
 
-        std::array<uint8_t, size> bytes{};
-
+        // converts the uuid to a string, segments will be separated by "-"
         std::string to_string() const;
 
+        // returns false if the uuid is all zeros, true otherwise
         bool is_valid() const;
 
+        // converts to a string then outputs
         friend std::ostream& operator<<(std::ostream& os, const basic_uuid& uuid);
+
+        // default comparison operators, compares the bytes of the uuid
         friend auto operator<=>(const basic_uuid&, const basic_uuid&) = default;
     };
 }
@@ -58,6 +62,7 @@ namespace gtl
     template <size_t SizeV = uuid::size, size_t SegmentsV = uuid::segments>
     basic_uuid<SizeV, SegmentsV> to_uuid(std::string string);
 
+    // generates a new basic_uuid with random bytes
     template <size_t SizeV = uuid::size, size_t SegmentsV = uuid::segments>
     basic_uuid<SizeV, SegmentsV> generate_uuid();
 }
