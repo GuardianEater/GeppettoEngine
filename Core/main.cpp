@@ -58,10 +58,7 @@ int main()
     Gep::Log::SetOutputFile("log.txt");
     Gep::Log::Important("Welcome To The Gep Engine!");
 
-    // start the engine //////////////////////////////////////////////////////////////////////////////
-    Gep::EngineManager em;
-
-    // register all resources ////////////////////////////////////////////////////////////////////////
+    // list of all resources ////////////////////////////////////////////////////////////////////////
     gtl::type_list<
         //Client::ScriptingResource,
         Client::SoundResource,
@@ -105,6 +102,9 @@ int main()
         Client::SoundSystem,
         Client::CollisionSystem
     > systemTypes;
+
+    // start the engine //////////////////////////////////////////////////////////////////////////////
+    Gep::EngineManager em;
 
     // register all types ////////////////////////////////////////////////////////////////////////////
     em.RegisterTypes(resourceTypes, componentTypes, systemTypes);
