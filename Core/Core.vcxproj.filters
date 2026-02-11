@@ -67,6 +67,9 @@
     <Filter Include="gtl">
       <UniqueIdentifier>{d43c1736-0dc7-454a-a835-19b0ac564a6b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Backend\Structures">
+      <UniqueIdentifier>{63530754-b2c2-4a0f-9633-7cfc8f659e50}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -162,9 +165,6 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ImGuizmoSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="dependencies\ImGuizmo\GraphEditor.cpp">
       <Filter>ImGuizmo</Filter>
     </ClCompile>
@@ -228,9 +228,6 @@
     <ClCompile Include="CubicSpline.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="VQS.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="IKSystem.cpp">
       <Filter>Client\Systems</Filter>
     </ClCompile>
@@ -243,23 +240,26 @@
     <ClCompile Include="StringHelp.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="RigidBody.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ImGuiHelp.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
     <ClCompile Include="STLHelp.cpp">
       <Filter>Backend\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="EngineManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Shader.cpp">
       <Filter>Backend\Rendering</Filter>
     </ClCompile>
     <ClCompile Include="FrameBuffer.cpp">
       <Filter>Backend\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="VQS.cpp">
+      <Filter>Backend\Structures</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody.cpp">
+      <Filter>Client\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineManager.cpp">
+      <Filter>Backend\ECS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -398,9 +398,6 @@
     <ClInclude Include="dependencies\ImGuizmo\ImZoomSlider.h">
       <Filter>ImGuizmo</Filter>
     </ClInclude>
-    <ClInclude Include="ImGuizmoSystem.hpp">
-      <Filter>Client\Systems</Filter>
-    </ClInclude>
     <ClInclude Include="ScriptingResource.hpp">
       <Filter>Client\Resources</Filter>
     </ClInclude>
@@ -455,9 +452,6 @@
     <ClInclude Include="HeirarchyStorage.hpp">
       <Filter>Client\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="TextureLibrary.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
     <ClInclude Include="Conversion.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
@@ -482,12 +476,6 @@
     <ClInclude Include="PathFollowerComponent.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
-    <ClInclude Include="BoneComponent.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
-    <ClInclude Include="VQS.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
     <ClInclude Include="IKTarget.hpp">
       <Filter>Client\Components</Filter>
     </ClInclude>
@@ -509,9 +497,6 @@
     <ClInclude Include="ImGuiHelp.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="ActionHistoryResource.hpp">
-      <Filter>Client</Filter>
-    </ClInclude>
     <ClInclude Include="Shader.hpp">
       <Filter>Backend\Rendering</Filter>
     </ClInclude>
@@ -529,6 +514,9 @@
     </ClInclude>
     <ClInclude Include="type_list.hpp">
       <Filter>gtl</Filter>
+    </ClInclude>
+    <ClInclude Include="VQS.hpp">
+      <Filter>Backend\Structures</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

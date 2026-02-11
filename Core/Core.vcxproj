@@ -120,10 +120,8 @@
     <ClCompile Include="CollisionSystem.cpp" />
     <ClCompile Include="Conversion.cpp" />
     <ClCompile Include="Core.cpp" />
-    <ClInclude Include="ActionHistoryResource.hpp" />
     <ClInclude Include="AnimationComponent.hpp" />
     <ClInclude Include="AnimationSystem.hpp" />
-    <ClInclude Include="BoneComponent.hpp" />
     <ClInclude Include="CollisionResource.hpp" />
     <ClInclude Include="Conversion.hpp" />
     <ClInclude Include="CubeCollider.hpp" />
@@ -206,7 +204,6 @@
     <ClCompile Include="IKSystem.cpp" />
     <ClCompile Include="ImGuiHelp.cpp" />
     <ClCompile Include="ImGuiSystem.cpp" />
-    <ClCompile Include="ImGuizmoSystem.cpp" />
     <ClCompile Include="JsonHelp.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
@@ -275,7 +272,6 @@
     <ClInclude Include="dependencies\imgui\imgui_stdlib.h" />
     <ClInclude Include="Events.hpp" />
     <ClInclude Include="IcosphereMesh.hpp" />
-    <ClInclude Include="ImGuizmoSystem.hpp" />
     <ClInclude Include="LightComponent.hpp" />
     <ClInclude Include="Logger.hpp" />
     <ClInclude Include="ModelComponent.hpp" />
@@ -313,7 +309,6 @@
     <ClInclude Include="STLHelp.hpp" />
     <ClInclude Include="StringHelp.hpp" />
     <ClInclude Include="TextureComponent.hpp" />
-    <ClInclude Include="TextureLibrary.hpp" />
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="TypeID.hpp" />
     <ClInclude Include="type_list.hpp" />
