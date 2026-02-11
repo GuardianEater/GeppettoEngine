@@ -13,7 +13,7 @@
 #include "ISystem.hpp"
 #include "Events.hpp"
 
-#include "TypeList.hpp"
+#include "type_list.hpp"
 
 #include "Logger.hpp"
 #include "TypeID.hpp"
@@ -32,7 +32,7 @@
 namespace Gep
 {
     template <typename T>
-    concept TypeHasOnComponentsRegisteredConcept = requires(T t, TypeList<int> componentTypes)
+    concept TypeHasOnComponentsRegisteredConcept = requires(T t, gtl::type_list<int> componentTypes)
     {
         { t.template OnComponentsRegistered<int>(componentTypes) } -> std::same_as<void>;
     };
@@ -141,7 +141,7 @@ namespace Gep
         // foundational functions /////////////////////////////////////////////////////////////////
 
         template<typename... ResourceTypes, typename ...ComponentTypes, typename ...SystemTypes>
-        void RegisterTypes(Gep::TypeList<ResourceTypes...> resourceTypes, Gep::TypeList<ComponentTypes...> componentTypes, Gep::TypeList<SystemTypes...> systemTypes);
+        void RegisterTypes(gtl::type_list<ResourceTypes...> resourceTypes, gtl::type_list<ComponentTypes...> componentTypes, gtl::type_list<SystemTypes...> systemTypes);
 
         void Initialize();
 

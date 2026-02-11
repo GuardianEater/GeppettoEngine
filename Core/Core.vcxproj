@@ -316,7 +316,7 @@
     <ClInclude Include="TextureLibrary.hpp" />
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="TypeID.hpp" />
-    <ClInclude Include="TypeList.hpp" />
+    <ClInclude Include="type_list.hpp" />
     <ClInclude Include="uuid.hpp" />
     <ClInclude Include="void_unique_ptr.hpp" />
     <ClInclude Include="VQS.hpp" />
@@ -329,7 +329,8 @@
     <None Include="ImGuiSystem.inl" />
     <None Include="Logger.inl" />
     <None Include="SerializationSystem.inl" />
-    <None Include="TypeList.inl" />
+    <None Include="STLHelp.inl" />
+    <None Include="type_list.inl" />
     <None Include="uuid.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

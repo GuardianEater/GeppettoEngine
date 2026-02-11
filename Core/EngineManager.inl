@@ -17,7 +17,7 @@
 namespace Gep
 {
     template<typename... ResourceTypes, typename ...ComponentTypes, typename ...SystemTypes>
-    inline void EngineManager::RegisterTypes(Gep::TypeList<ResourceTypes...> resourceTypes, Gep::TypeList<ComponentTypes...> componentTypes, Gep::TypeList<SystemTypes...> systemTypes)
+    inline void EngineManager::RegisterTypes(gtl::type_list<ResourceTypes...> resourceTypes, gtl::type_list<ComponentTypes...> componentTypes, gtl::type_list<SystemTypes...> systemTypes)
     {
         (RegisterResource<ResourceTypes>(), ...);
         (RegisterComponent<ComponentTypes>(), ...);

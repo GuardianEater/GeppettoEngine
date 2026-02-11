@@ -62,7 +62,7 @@ int main()
     Gep::EngineManager em;
 
     // register all resources ////////////////////////////////////////////////////////////////////////
-    Gep::TypeList<
+    gtl::type_list<
         //Client::ScriptingResource,
         Client::SoundResource,
         Client::CollisionResource,
@@ -72,7 +72,7 @@ int main()
     > resourceTypes;
 
     // list of all components ///////////////////////////////////////////////////////////////////////
-    Gep::TypeList<
+    gtl::type_list<
         Client::Transform,
         Client::RigidBody,
         Client::Spring,
@@ -92,7 +92,7 @@ int main()
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////
-    Gep::TypeList<
+    gtl::type_list<
         Client::WindowSystem,
         Client::AnimationSystem, // must happen before the render system
         Client::IKSystem,

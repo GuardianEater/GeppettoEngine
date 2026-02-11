@@ -22,7 +22,7 @@ namespace Client
     //    ~ScriptingSystem() {};
 
     //    template <typename... ComponentTypes>
-    //    void OnComponentsRegistered(Gep::TypeList<ComponentTypes...> componentTypes);
+    //    void OnComponentsRegistered(gtl::type_list<ComponentTypes...> componentTypes);
 
     //    void Initialize();
     //    void Update(float dt);
@@ -39,7 +39,7 @@ namespace Client
     //};
 
     //template<typename ...ComponentTypes>
-    //inline void ScriptingSystem::OnComponentsRegistered(Gep::TypeList<ComponentTypes...> componentTypes)
+    //inline void ScriptingSystem::OnComponentsRegistered(gtl::type_list<ComponentTypes...> componentTypes)
     //{
     //    ScriptingResource& sr = mManager.GetResource<ScriptingResource>();
 

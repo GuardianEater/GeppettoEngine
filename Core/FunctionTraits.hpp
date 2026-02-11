@@ -9,7 +9,7 @@
 #pragma once
 
 #include <functional>
-#include "TypeList.hpp"
+#include "type_list.hpp"
 
 namespace Gep
 {
@@ -21,35 +21,35 @@ namespace Gep
     template<typename Ret, typename... Args>
     struct FunctionTraits<Ret(*)(Args...)> {
         using ReturnType = Ret;
-        using ArgumentsTypeList = Gep::TypeList<Args...>;
+        using ArgumentsTypeList = gtl::type_list<Args...>;
     };
 
     // function reference
     template<typename Ret, typename... Args>
     struct FunctionTraits<Ret(Args...)> {
         using ReturnType = Ret;
-        using ArgumentsTypeList = Gep::TypeList<Args...>;
+        using ArgumentsTypeList = gtl::type_list<Args...>;
     };
 
     // std::function
     template<typename Ret, typename... Args>
     struct FunctionTraits<std::function<Ret(Args...)>> {
         using ReturnType = Ret;
-        using ArgumentsTypeList = Gep::TypeList<Args...>;
+        using ArgumentsTypeList = gtl::type_list<Args...>;
     };
 
     // member function pointer
     template<typename Ret, typename ClassType, typename... Args>
     struct FunctionTraits<Ret(ClassType::*)(Args...)> {
         using ReturnType = Ret;
-        using ArgumentsTypeList = Gep::TypeList<Args...>;
+        using ArgumentsTypeList = gtl::type_list<Args...>;
     };
 
     // const member function pointer
     template<typename Ret, typename ClassType, typename... Args>
     struct FunctionTraits<Ret(ClassType::*)(Args...) const> {
         using ReturnType = Ret;
-        using ArgumentsTypeList = Gep::TypeList<Args...>;
+        using ArgumentsTypeList = gtl::type_list<Args...>;
     };
 
     // lambda or functor

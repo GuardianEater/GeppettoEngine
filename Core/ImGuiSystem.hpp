@@ -21,7 +21,7 @@
 
 #include "Logger.hpp"
 #include "TypeID.hpp"
-#include "TypeList.hpp"
+#include "type_list.hpp"
 #include "EngineManager.hpp"
 
 // client
@@ -83,7 +83,7 @@ namespace Client
 
         // special events //
         template <typename... ComponentTypes>
-        void OnComponentsRegistered(Gep::TypeList<ComponentTypes...> componentTypes);
+        void OnComponentsRegistered(gtl::type_list<ComponentTypes...> componentTypes);
 
         // events //
         void OnEntityCreated(const Gep::Event::EntityCreated& event);

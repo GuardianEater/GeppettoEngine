@@ -13,7 +13,7 @@
 namespace Client
 {
     template <typename... ComponentTypes>
-    void ImGuiSystem::OnComponentsRegistered(Gep::TypeList<ComponentTypes...> componentTypes)
+    void ImGuiSystem::OnComponentsRegistered(gtl::type_list<ComponentTypes...> componentTypes)
     {
         componentTypes.for_each([&]<typename ComponentType>()
         {
