@@ -58,6 +58,9 @@ namespace Gep
     {
         SetUpLineDrawing();
 
+        mShadowFrameBuffer = FrameBuffer::Create({ 2048, 2048 });
+        mShadowFrameBuffer.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT); // depth
+
         mGeometryFrameBuffer = FrameBuffer::Create({128, 128});
         mGeometryFrameBuffer.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT); // depth
         mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGB16F, GL_RGB, GL_FLOAT); // normal

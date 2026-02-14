@@ -87,6 +87,7 @@ namespace Gep
         glm::vec3 color; // color of the light
         float intensity; // intensity of the light
 
+        glm::mat4 pvMatrix; // used for shadow mapping
         glm::mat4 modelMatrix; // used for the bounding sphere
     };
 
@@ -317,6 +318,7 @@ namespace Gep
         std::mutex mTextureLoadingMutex{};
 
         FrameBuffer mGeometryFrameBuffer;
+        FrameBuffer mShadowFrameBuffer;
     
         Gep::gpu_vector<ObjectGPUData, 0> mObjectUniforms;                      // copied into u_objects on the gpu
         Gep::gpu_vector<PointLightGPUData, 1> mPointLightUniforms;              // copied into u_pointLights on the gpu

@@ -14,11 +14,12 @@
 struct PointLightUniforms
 {
   vec3 position;   // the location of the light source
-  float radius;
+  float pad;
   vec3 color;      // the color of the light source
   float intensity; 
 
-  mat4 modelMatrix;
+  mat4 pvMatrix; // used for shadow mapping
+  mat4 modelMatrix; // used for the lights bounding sphere, 
 };
 
 struct DirectionalLightUniforms
