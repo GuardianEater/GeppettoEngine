@@ -261,6 +261,9 @@
     <ClCompile Include="EngineManager.cpp">
       <Filter>Backend\ECS</Filter>
     </ClCompile>
+    <ClCompile Include="Tester.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -517,6 +520,9 @@
     </ClInclude>
     <ClInclude Include="ShadowCasterComponent.hpp">
       <Filter>Client\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Tester.hpp">
+      <Filter>Backend</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

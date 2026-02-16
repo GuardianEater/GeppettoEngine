@@ -256,6 +256,7 @@
     <ClCompile Include="SphereMesh.cpp" />
     <ClCompile Include="STLHelp.cpp" />
     <ClCompile Include="StringHelp.cpp" />
+    <ClCompile Include="Tester.cpp" />
     <ClCompile Include="TypeID.cpp" />
     <ClCompile Include="VQS.cpp" />
     <ClCompile Include="WindowSystem.cpp" />
@@ -309,6 +310,7 @@
     <ClInclude Include="ISystem.hpp" />
     <ClInclude Include="STLHelp.hpp" />
     <ClInclude Include="StringHelp.hpp" />
+    <ClInclude Include="Tester.hpp" />
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="TypeID.hpp" />
     <ClInclude Include="type_list.hpp" />
