@@ -260,13 +260,12 @@ namespace Gep
     {
         bool allRegistered = true;
         ([&]()
+        {
+            if (!ComponentIsRegistered<ComponentTypes>())
             {
-                if (!ComponentIsRegistered<ComponentTypes>())
-                {
-                    Log::Error("Component Validation Failed, Component: [", GetTypeInfo<ComponentTypes>().Name(), "] is not registered!");
-                    allRegistered = false;
-                }
+                Log::Critical("Component Validation Failed, Component: [", GetTypeInfo<ComponentTypes>().Name(), "] is not registered!");
             }
+        }
         (), ...);
         return allRegistered;
     }

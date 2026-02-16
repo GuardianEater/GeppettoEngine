@@ -63,7 +63,7 @@ namespace Gep
 #ifdef _DEBUG
         __debugbreak();
 #else // _DEBUG
-        throw std::runtime_error("Critical Error");
+        throw std::runtime_error("Critical Error"); // check the console!
 #endif // _DEBUG
     }
 

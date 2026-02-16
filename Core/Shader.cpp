@@ -12,7 +12,7 @@
 
 namespace Gep
 {
-	Shader Shader::FromFile(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
+	Shader Shader::FromFile(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath, const std::filesystem::path& geomPath)
 	{
 		Shader newShader{};
 
@@ -26,36 +26,51 @@ namespace Gep
 		{
 			Gep::Log::Error("Fragment Shader file does not exist: ", fragPath);
 			return newShader;
+		}
+
+		if (!geomPath.empty() && !std::filesystem::exists(geomPath))
+		{
+			Gep::Log::Error("Geometry Shader file does not exist: ", geomPath);
+			return newShader;
         }
 
 		std::string vertSrc = ReadShader(vertPath);
 		std::string fragSrc = ReadShader(fragPath);
-
 		GLuint vertShader = Compile(GL_VERTEX_SHADER, vertSrc, vertPath.string());
 		GLuint fragShader = Compile(GL_FRAGMENT_SHADER, fragSrc, fragPath.string());
 
+		GLuint geomShader = NULL;
+		if (!geomPath.empty())
+		{
+			std::string geomSrc = ReadShader(geomPath);
+            geomShader = Compile(GL_GEOMETRY_SHADER, geomSrc, geomPath.string());
+		}
 
 		if (vertShader && fragShader)
 		{
             std::string origin = "(" + vertPath.string() + " + " + fragPath.string() + ")";
-			newShader.mProgram = CreateProgram(vertShader, fragShader, origin);
+			newShader.mProgram = CreateProgram(vertShader, fragShader, geomShader, origin);
 		}
 
 		newShader.mVertPath = vertPath;
 		newShader.mFragPath = fragPath;
+        newShader.mGeomPath = geomPath;
 
 		return std::move(newShader);
 	}
 
-	Shader Shader::FromSource(const std::string& vertSrc, const std::string& fragSrc)
+	Shader Shader::FromSource(const std::string& vertSrc, const std::string& fragSrc, const std::string& geomSrc)
 	{
 		Shader newShader{};
 
 		GLuint vertShader = Compile(GL_VERTEX_SHADER, vertSrc);
 		GLuint fragShader = Compile(GL_FRAGMENT_SHADER, fragSrc);
+		GLuint geomShader = NULL;
+        if (!geomSrc.empty())
+            geomShader = Compile(GL_GEOMETRY_SHADER, geomSrc);
 
 		if (vertShader && fragShader)
-			newShader.mProgram = CreateProgram(vertShader, fragShader);
+			newShader.mProgram = CreateProgram(vertShader, fragShader, geomShader);
 
 		return std::move(newShader);
 	}
@@ -72,6 +87,7 @@ namespace Gep
 		other.mProgram = 0;
 		mVertPath.swap(other.mVertPath);
 		mFragPath.swap(other.mFragPath);
+        mGeomPath.swap(other.mGeomPath);
 	}
 
 	Shader& Shader::operator=(Shader&& other) noexcept
@@ -86,6 +102,7 @@ namespace Gep
 
 			mVertPath.swap(other.mVertPath);
 			mFragPath.swap(other.mFragPath);
+            mGeomPath.swap(other.mGeomPath);
 		}
 
 		return *this;
@@ -197,17 +214,21 @@ namespace Gep
 		return shaderID;
     }
 
-	GLuint Shader::CreateProgram(GLuint vertShader, GLuint fragShader, const std::string& origin)
+	GLuint Shader::CreateProgram(GLuint vertShader, GLuint fragShader, GLuint geomShader, const std::string& origin)
 	{
 		GLuint program = glCreateProgram();
 
 		glAttachShader(program, vertShader);
 		glAttachShader(program, fragShader);
+        if (geomShader)
+			glAttachShader(program, geomShader);
 
 		glLinkProgram(program);
 
 		glDeleteShader(vertShader);
 		glDeleteShader(fragShader);
+        if (geomShader)
+			glDeleteShader(geomShader);
 
 		GLint errorValue = 0;
 		glGetProgramiv(program, GL_LINK_STATUS, &errorValue);
@@ -277,7 +298,7 @@ namespace Gep
 
 	void Shader::Reload()
 	{
-		Shader newShader = FromFile(mVertPath, mFragPath);
+		Shader newShader = FromFile(mVertPath, mFragPath, mGeomPath);
 		 
 		if (newShader.IsValid())
 		{

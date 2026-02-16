@@ -11,6 +11,21 @@
 
 // structures //////////////////////////////////////////////////////////////////
 
+// variant of point lights that cast shadows
+struct PointLightShadowUniforms
+{
+  vec3 position;   // the location of the light source
+  float farPlane;
+  vec3 color;      // the color of the light source
+  float intensity; 
+
+  mat4 modelMatrix; // used for the lights bounding sphere, 
+  mat4 shadowMatrices[6];
+
+  uvec2 shadowMapHandle;
+  uvec2 pad8;
+};
+
 struct PointLightUniforms
 {
   vec3 position;   // the location of the light source
@@ -18,7 +33,6 @@ struct PointLightUniforms
   vec3 color;      // the color of the light source
   float intensity; 
 
-  mat4 pvMatrix; // used for shadow mapping
   mat4 modelMatrix; // used for the lights bounding sphere, 
 };
 
@@ -126,17 +140,15 @@ layout(std430, binding=6) buffer DirectionalLightUniformsBuffer
   DirectionalLightUniforms u_directionalLights[];
 };
 
-layout(std430, binding=7) buffer LightObjectUniformsBuffer
+layout(std430, binding=7) buffer PointLightShadowUniformsBuffer
 {
-  LightObjectUniforms u_lightObjects[];
+  PointLightShadowUniforms u_pointLightShadows[];
 };
 
 // uniforms ////////////////////////////////////////////////////////////////////
 layout(location=0) uniform uint u_camIndex;           // the currently active camera in the u_cams array
 //layout(location=1)                                   // used by color in the line shader
-layout(location=2) uniform uint u_pointLightCount;       // the total amount of point lights in the u_pointLights array
 layout(location=3) uniform uint u_meshBaseInstance;      // the base instance of the current mesh, used to index into per mesh data
-layout(location=4) uniform uint u_directionalLightCount; // the total amount of directional lights in the u_directionalLights array
 
 // constants ///////////////////////////////////////////////////////////////////
 const float PI = 3.14159265359;

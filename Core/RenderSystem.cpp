@@ -16,7 +16,7 @@
 #include "Transform.hpp"
 #include "ModelComponent.hpp"
 #include "CameraComponent.hpp"
-#include "TextureComponent.hpp"
+#include "ShadowCasterComponent.hpp"
 #include "LightComponent.hpp"
 #include "AnimationComponent.hpp"
 #include "SphereCollider.hpp"
@@ -794,6 +794,9 @@ namespace Client
         // prepares all of the light uniform values
         mManager.ForEachArchetype([&](Gep::Entity e, Light& l, Transform& t)
         {
+            if (mManager.HasComponent<ShadowCasterComponent>(e))
+                return; // skip lights that also have shadow caster components, they will be added in the next loop
+
             if (l.intensity <= 0.0f)
                 return; // skip lights that have no intensity
             if (!l.enabled)
@@ -816,6 +819,50 @@ namespace Client
             };
 
             mRenderer.AddPointLight(uniforms);
+        });
+
+        // prepares all of the light uniform values
+        mManager.ForEachArchetype([&](Gep::Entity e, Light& l, ShadowCasterComponent& sc, Transform& t)
+        {
+            if (l.intensity <= 0.0f)
+                return; // skip lights that have no intensity
+            if (!l.enabled)
+                return; // skip disabled lights
+
+            float cutoff = 0.1f;              // chosen threshold
+            float radius = std::sqrt(l.intensity / cutoff);
+
+            glm::mat4 modelMatrix{ 1.0f };
+            modelMatrix = glm::translate(modelMatrix, t.world.position);
+            modelMatrix = glm::scale(modelMatrix, glm::vec3(radius));
+
+            float nearPlane = 1.0f;
+            float farPlane = radius;
+            float aspectRatio = (float)sc.shadowFrameBuffer.GetSize().x / (float)sc.shadowFrameBuffer.GetSize().y;
+            glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspectRatio, nearPlane, farPlane);
+
+            glm::mat4 shadow0 = shadowProj * glm::lookAt(t.world.position, t.world.position + glm::vec3(1, 0, 0), glm::vec3(0, -1, 0));
+            glm::mat4 shadow1 = shadowProj * glm::lookAt(t.world.position, t.world.position + glm::vec3(-1, 0, 0), glm::vec3(0, -1, 0));
+            glm::mat4 shadow2 = shadowProj * glm::lookAt(t.world.position, t.world.position + glm::vec3(0, 1, 0), glm::vec3(0, 0, 1));
+            glm::mat4 shadow3 = shadowProj * glm::lookAt(t.world.position, t.world.position + glm::vec3(0, -1, 0), glm::vec3(0, 0, -1));
+            glm::mat4 shadow4 = shadowProj * glm::lookAt(t.world.position, t.world.position + glm::vec3(0, 0, 1), glm::vec3(0, -1, 0));
+            glm::mat4 shadow5 = shadowProj * glm::lookAt(t.world.position, t.world.position + glm::vec3(0, 0, -1), glm::vec3(0, -1, 0));
+
+            GLuint64 cubemapHandle = sc.shadowFrameBuffer.GetTextureAttachments().at(0).handle;
+
+            Gep::PointLightShadowGPUData uniforms
+            {
+                .position = t.world.position,
+                .farPlane = farPlane,
+                .color = l.color,
+                .intensity = l.intensity,
+
+                .modelMatrix = modelMatrix,
+                .shadowMatrices = { shadow0, shadow1, shadow2, shadow3, shadow4, shadow5 },
+                .shadowMapHandle = cubemapHandle
+            };
+            
+            mRenderer.AddPointLightShadow(uniforms, sc.shadowFrameBuffer);
         });
 
         // prepares all of the directional light uniform values

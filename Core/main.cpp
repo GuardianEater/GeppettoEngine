@@ -18,7 +18,6 @@
 #include "ModelComponent.hpp"
 #include "RigidBody.hpp"
 #include "Transform.hpp"
-#include "TextureComponent.hpp"
 #include "LightComponent.hpp"
 #include "SoundComponent.hpp"
 #include "SphereCollider.hpp"
@@ -28,6 +27,7 @@
 #include "CurveComponent.hpp"
 #include "PathFollowerComponent.hpp"
 #include "IKTarget.hpp"
+#include "ShadowCasterComponent.hpp"
 
 // resources
 #include "SoundResource.hpp"
@@ -85,7 +85,8 @@ int main()
         Client::MeshCollider,
         Client::CurveComponent,
         Client::PathFollowerComponent,
-        Client::IKTarget
+        Client::IKTarget,
+        Client::ShadowCasterComponent
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////

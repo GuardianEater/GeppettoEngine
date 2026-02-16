@@ -371,9 +371,6 @@
     <ClInclude Include="WindowSystem.hpp">
       <Filter>Client\Systems</Filter>
     </ClInclude>
-    <ClInclude Include="TextureComponent.hpp">
-      <Filter>Client\Components</Filter>
-    </ClInclude>
     <ClInclude Include="TypeID.hpp">
       <Filter>Backend\Tools</Filter>
     </ClInclude>
@@ -517,6 +514,9 @@
     </ClInclude>
     <ClInclude Include="VQS.hpp">
       <Filter>Backend\Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadowCasterComponent.hpp">
+      <Filter>Client\Components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

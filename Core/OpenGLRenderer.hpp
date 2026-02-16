@@ -82,13 +82,27 @@ namespace Gep
     struct PointLightGPUData
     {
         glm::vec3 position; // location of the light in world space
-        float pad; // scales the bounding sphere
+        float pad; // used for shadow mapping, defines the far plane of the light's perspective projection
 
         glm::vec3 color; // color of the light
         float intensity; // intensity of the light
 
-        glm::mat4 pvMatrix; // used for shadow mapping
         glm::mat4 modelMatrix; // used for the bounding sphere
+    };
+
+    struct alignas(16) PointLightShadowGPUData
+    {
+        glm::vec3 position; // location of the light in world space
+        float farPlane; // used for shadow mapping, defines the far plane of the light's perspective projection
+
+        glm::vec3 color; // color of the light
+        float intensity; // intensity of the light
+
+        glm::mat4 modelMatrix; // used for the bounding sphere
+        glm::mat4 shadowMatrices[6]; // used for point light shadow mapping, each matrix corresponds to a face of the cubemap
+
+        GLuint64 shadowMapHandle = 0; // 64 bit gpu pointer, used to sample the shadow map on the gpu
+        GLuint64 padding; // used for alignment
     };
 
     struct DirectionalLightGPUData
@@ -181,6 +195,7 @@ namespace Gep
         void AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& objectData, RenderFlags flags = RenderFlags::None);
         void AddCamera(const CameraGPUData& cameraData);
         void AddPointLight(const PointLightGPUData& lightData); // adds a light to the renderered, will be sent to the shader when DrawLights is called
+        void AddPointLightShadow(const PointLightShadowGPUData& lightData, const FrameBuffer& fbo); // variant of pointlight that will cast shadows
         void AddDirectionalLight(const DirectionalLightGPUData& uniforms);
         void AddBone(const BoneGPUData& boneData);
         void AddLine(const LineGPUData& lines); // adds a line set to be drawn
@@ -195,9 +210,6 @@ namespace Gep
         void CommitMaterials(); // moves all of the added materials from the cpu to the gpu
 
         void SetCameraIndex(uint32_t index);
-        void SetPointLightCount(uint32_t count);
-        void SetDirectionalLightCount(uint32_t count);
-
 
         std::vector<std::string> GetLoadedModels() const;
         std::vector<std::filesystem::path> GetLoadedTextures() const;
@@ -273,13 +285,13 @@ namespace Gep
 
         auto GetAllShaders()
         {
-            return std::tie(mGeometryShader_Static, mGeometryShader_Skinned, mLightingShader, mLineShader);
+            return std::tie(mGeometryShader_Static, mGeometryShader_Skinned, mLightingShader, mLineShader, mLightingShadedShader, mPointLightShadowShader);
         }
 
     private:
         void GeometryPass(const Gep::FrameBuffer& targetFrameBuffer); // renders all geometry to the geometry framebuffer
         void PointLightPass(Gep::FrameBuffer& targetFrameBuffer);     // renders all point light emissions to the target framebuffer, but doesnt draw the light itself
-        void DrawPointLights(Gep::FrameBuffer& targetFrameBuffer);
+        void PointLightShadowDepthPass(); // renders the depth map for each point light that casts shadows
         void DrawLines();
         void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
 
@@ -301,7 +313,9 @@ namespace Gep
         Shader mGeometryShader_Static;  // shader used for geometry pass of static models
         Shader mGeometryShader_Skinned; // shader used for geometry pass of animated models
         Shader mLightingShader;         // shader used for lighting pass
+        Shader mLightingShadedShader;   // shader used for lighting pass when shadows are being cast
         Shader mLineShader;             // shader used for drawing lines
+        Shader mPointLightShadowShader; // shader used for point light shadow pass
 
         glm::vec3 mSolidColor{};
 
@@ -318,7 +332,6 @@ namespace Gep
         std::mutex mTextureLoadingMutex{};
 
         FrameBuffer mGeometryFrameBuffer;
-        FrameBuffer mShadowFrameBuffer;
     
         Gep::gpu_vector<ObjectGPUData, 0> mObjectUniforms;                      // copied into u_objects on the gpu
         Gep::gpu_vector<PointLightGPUData, 1> mPointLightUniforms;              // copied into u_pointLights on the gpu
@@ -327,6 +340,8 @@ namespace Gep
         Gep::gpu_vector<MaterialGPUData, 4> mMaterialUniforms;                  // copied into u_materials on the gpu
         Gep::gpu_vector<MeshGPUData, 5> mMeshUniforms;                          // copied into u_meshes on the gpu
         Gep::gpu_vector<DirectionalLightGPUData, 6> mDirectionalLightUniforms;  // copied into u_directionalLights on the gpu
+        Gep::gpu_vector<PointLightShadowGPUData, 7> mPointLightShadowUniforms;  // copied into u_pointLightShadows on the gpu
+        std::vector<FrameBuffer> mShadowMaps; // index corresponds to the point light shadow uniform at the same index in mPointLightShadowUniforms
 
         // model -> flags -> objects
         std::map<std::string, std::map<RenderFlags, std::vector<ObjectGPUData>>> mObjectDatas;

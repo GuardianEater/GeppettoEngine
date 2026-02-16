@@ -245,6 +245,7 @@
     <ClCompile Include="SerializationResource.cpp" />
     <ClCompile Include="SerializationSystem.cpp" />
     <ClInclude Include="Shader.hpp" />
+    <ClInclude Include="ShadowCasterComponent.hpp" />
     <ClInclude Include="Shapes.hpp" />
     <ClInclude Include="SkyboxMesh.hpp" />
     <ClInclude Include="SoundComponent.hpp" />
@@ -308,7 +309,6 @@
     <ClInclude Include="ISystem.hpp" />
     <ClInclude Include="STLHelp.hpp" />
     <ClInclude Include="StringHelp.hpp" />
-    <ClInclude Include="TextureComponent.hpp" />
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="TypeID.hpp" />
     <ClInclude Include="type_list.hpp" />

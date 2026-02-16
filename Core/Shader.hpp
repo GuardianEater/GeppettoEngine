@@ -17,8 +17,8 @@ namespace Gep
     class Shader
     {
     public:
-        static Shader FromFile(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath); // reads shaders in from files, supports includes
-        static Shader FromSource(const std::string& vertSrc, const std::string& fragSrc); // reads shader in from source, this DOES NOT support includes
+        static Shader FromFile(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath, const std::filesystem::path& geomPath = ""); // reads shaders in from files, supports includes
+        static Shader FromSource(const std::string& vertSrc, const std::string& fragSrc, const std::string& geomSrc = ""); // reads shader in from source, this DOES NOT support includes
 
         Shader() = default;
         ~Shader();
@@ -58,7 +58,7 @@ namespace Gep
 
     private:
         static GLuint Compile(GLenum shaderType, const std::string& source, const std::string& origin = "<embedded>");
-        static GLuint CreateProgram(GLuint vertexShader, GLuint fragmentShader, const std::string& origin = "<embedded>");
+        static GLuint CreateProgram(GLuint vertexShader, GLuint fragmentShader, GLuint geometryShader, const std::string& origin = "<embedded>");
         static std::string ReadShader(const std::filesystem::path& path); // reads in the data and handles includes
         
     private:
@@ -68,5 +68,6 @@ namespace Gep
         // if FromFile
         std::filesystem::path mVertPath{};
         std::filesystem::path mFragPath{};
+        std::filesystem::path mGeomPath{};
     };
 }
