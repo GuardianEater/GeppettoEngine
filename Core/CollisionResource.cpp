@@ -33,45 +33,44 @@ namespace Client
         em.ForEachArchetype([&](Gep::Entity entity, Client::Transform& transform, ModelComponentType& model, Client::MeshCollider& collider)
         {
             Gep::OpenGLRenderer& renderer = em.GetResource<Gep::OpenGLRenderer>();
-            const Gep::Model& internalModel = renderer.GetModel(model.name);
+            const Gep::Mesh& mesh = renderer.GetMesh(model.meshID);
 
             const glm::mat4 modelMtx = Gep::ToMat4(transform.world);
 
             float closestT = std::numeric_limits<float>::max();
             bool   anyHit = false;
 
-            for (const Gep::Mesh& mesh : internalModel.meshes)
+            Gep::AABB worldAABB = TransformAABB(mesh.boundingBox, modelMtx);
+
+            float taabb{};
+            if (!Gep::RayAABB(ray, worldAABB, taabb))
+                return;
+
+            // Fine test: ray vs all triangles
+            const auto& verts = mesh.vertices;
+            const auto& idx = mesh.indices;
+
+            // Guard: expect triangles
+            if (idx.size() % 3 != 0) 
+                return;
+
+            for (size_t i = 0; i + 2 < idx.size(); i += 3)
             {
-                Gep::AABB worldAABB = TransformAABB(mesh.boundingBox, modelMtx);
+                const glm::vec3 p0 = glm::vec3(modelMtx * glm::vec4(verts[idx[i + 0]].position, 1.0f));
+                const glm::vec3 p1 = glm::vec3(modelMtx * glm::vec4(verts[idx[i + 1]].position, 1.0f));
+                const glm::vec3 p2 = glm::vec3(modelMtx * glm::vec4(verts[idx[i + 2]].position, 1.0f));
 
-                float taabb{};
-                if (!Gep::RayAABB(ray, worldAABB, taabb))
-                    continue;
-
-                // Fine test: ray vs all triangles
-                const auto& verts = mesh.vertices;
-                const auto& idx = mesh.indices;
-
-                // Guard: expect triangles
-                if (idx.size() % 3 != 0) continue;
-
-                for (size_t i = 0; i + 2 < idx.size(); i += 3)
+                float tTri{};
+                if (Gep::RayTriangle(ray, Gep::Triangle{ p0, p1, p2 }, tTri))
                 {
-                    const glm::vec3 p0 = glm::vec3(modelMtx * glm::vec4(verts[idx[i + 0]].position, 1.0f));
-                    const glm::vec3 p1 = glm::vec3(modelMtx * glm::vec4(verts[idx[i + 1]].position, 1.0f));
-                    const glm::vec3 p2 = glm::vec3(modelMtx * glm::vec4(verts[idx[i + 2]].position, 1.0f));
-
-                    float tTri{};
-                    if (Gep::RayTriangle(ray, Gep::Triangle{ p0, p1, p2 }, tTri))
+                    if (tTri > 0.0f && tTri < closestT)
                     {
-                        if (tTri > 0.0f && tTri < closestT)
-                        {
-                            closestT = tTri;
-                            anyHit = true;
-                        }
+                        closestT = tTri;
+                        anyHit = true;
                     }
                 }
             }
+            
 
             if (anyHit)
                 hits.emplace_back(closestT, entity);

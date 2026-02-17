@@ -74,9 +74,9 @@ namespace Client
             if (anchorBoneIdx > effectorBoneIdx) 
                 return; // the anchor should never appear after the child
 
-            if (!mRenderer.IsModelLoaded(modelComponent.name)) return;
+            if (!mRenderer.IsMeshLoaded(modelComponent.name)) return;
 
-            const Gep::Model& internalModel = mRenderer.GetModel(modelComponent.name);
+            const Gep::Mesh& internalModel = mRenderer.GetMesh(modelComponent.meshID);
             const Gep::Skeleton& skeleton = internalModel.skeleton;
 
             if (skeleton.bones.size() != modelComponent.pose.size())

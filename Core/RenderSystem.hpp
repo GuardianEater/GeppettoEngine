@@ -19,7 +19,7 @@ namespace Gep
     struct Skeleton;
     struct VQS;
     struct LineGPUData;
-    struct Model;
+    struct Mesh;
 }
 
 // fwd
@@ -86,7 +86,7 @@ namespace Client
         void AddObjects();
 
         // when a model is changed 
-        void InitializeModelPose(RiggedModelComponent& modelComponent, const Gep::Model& internalModel);
+        void InitializeModelPose(RiggedModelComponent& modelComponent, const Gep::Mesh& internalModel);
 
         // resources
         Gep::OpenGLRenderer& mRenderer;

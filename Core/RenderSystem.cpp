@@ -77,29 +77,24 @@ namespace Client
 
         // load all of the default meshes
         {
-            Gep::Model quad;
-            quad.meshes.push_back(Gep::QuadMesh());
-            renderer.AddModel("Quad", quad);
+            Gep::Mesh quad = Gep::QuadMesh();
+            renderer.AddMesh("Quad", std::move(quad));
         }
         {
-            Gep::Model sphere;
-            sphere.meshes.push_back(Gep::SphereMesh(10, 10));
-            renderer.AddModel("Sphere", sphere);
+            Gep::Mesh sphere = Gep::SphereMesh(10, 10);
+            renderer.AddMesh("Sphere", std::move(sphere));
         }
         {
-            Gep::Model cube;
-            cube.meshes.push_back(Gep::CubeMesh());
-            renderer.AddModel("Cube", cube);
+            Gep::Mesh cube = Gep::CubeMesh();
+            renderer.AddMesh("Cube", std::move(cube));
         }
         {
-            Gep::Model icosphere;
-            icosphere.meshes.push_back(Gep::IcosphereMesh(3));
-            renderer.AddModel("Icosphere", icosphere);
+            Gep::Mesh icosphere = Gep::IcosphereMesh(3);
+            renderer.AddMesh("Icosphere", std::move(icosphere));
         }
         {
-            Gep::Model skybox;
-            skybox.meshes.push_back(Gep::SkyboxMesh());
-            renderer.AddModel("Skybox", skybox);
+            Gep::Mesh skybox = Gep::SkyboxMesh();
+            renderer.AddMesh("Skybox", std::move(skybox));
         }
         {
             Gep::Material defaultMat;
@@ -248,22 +243,24 @@ namespace Client
 
         RiggedModelComponent& model = event.component;
 
-        // if the model is not loaded when this component is added attempt load it
-        if (!renderer.IsModelLoaded(model.name))
+        // if the mesh is not loaded when this component is added attempt load it
+        if (!renderer.IsMeshLoaded(model.name))
         {
             if (std::filesystem::exists(model.name))
             {
-                renderer.AddModelFromFile(model.name);
+                renderer.AddMeshFromFile(model.name);
             }
             else
             {
                 const std::string defaultName = RiggedModelComponent{}.name; // re-initializes the meshname to the default value
                 Gep::Log::Warning("A model component was created with an invalid name/location: [", model.name, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
                 model.name = defaultName;
+                return;
             }
         }
 
-        const Gep::Model& internalModel = mRenderer.GetModel(model.name);
+        model.meshID = renderer.GetMeshID(model.name);
+        const Gep::Mesh& internalModel = mRenderer.GetMesh(model.meshID);
 
         InitializeModelPose(model, internalModel);
     }
@@ -275,26 +272,29 @@ namespace Client
         StaticModelComponent& model = event.component;
 
         // if the model is not loaded when this component is added attempt load it
-        if (!renderer.IsModelLoaded(model.name))
+        if (!renderer.IsMeshLoaded(model.name))
         {
             if (std::filesystem::exists(model.name))
             {
-                renderer.AddModelFromFile(model.name);
+                renderer.AddMeshFromFile(model.name);
             }
             else
             {
                 const std::string defaultName = RiggedModelComponent{}.name; // re-initializes the meshname to the default value
                 Gep::Log::Warning("A model component was created with an invalid name/location: [", model.name, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
                 model.name = defaultName;
+                return;
             }
         }
+
+        model.meshID = mRenderer.GetMeshID(model.name);
     }
     void RenderSystem::OnRiggedModelEditorRender(const Gep::Event::ComponentEditorRender<RiggedModelComponent>& event)
     {
         std::span<RiggedModelComponent*> models = event.components;
 
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
-        std::vector<std::string> loadedModels = mRenderer.GetLoadedModels();
+        std::vector<std::string> loadedModels = mRenderer.GetLoadedMeshes();
 
         std::string selectedModelName = models[0]->name; // in this event call there is guaranteed to be at least one component
 
@@ -316,16 +316,20 @@ namespace Client
 
         er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
         {
-            if (!mRenderer.IsModelLoaded(droppedPath.string()))
+            if (!mRenderer.IsMeshLoaded(droppedPath.string()))
             {
-                mRenderer.AddModelFromFile(droppedPath.string());
+                mRenderer.AddMeshFromFile(droppedPath.string());
             }
+
+            const uint64_t meshID = mRenderer.GetMeshID(droppedPath.string());
+            const Gep::Mesh& mesh = mRenderer.GetMesh(meshID);
 
             for (RiggedModelComponent* model : models)
             {
                 model->name = droppedPath.string();
-                const Gep::Model& internalModel = mRenderer.GetModel(model->name);
-                InitializeModelPose(*model, internalModel);
+                model->meshID = meshID;
+
+                InitializeModelPose(*model, mesh);
             }
         });
 
@@ -336,10 +340,12 @@ namespace Client
                 const bool isSelected = allSame && modelName == selectedModelName;
                 if (ImGui::Selectable(modelName.c_str(), isSelected))
                 {
-                    const Gep::Model& internalModel = mRenderer.GetModel(modelName);
+                    const uint64_t meshID = mRenderer.GetMeshID(modelName);
+                    const Gep::Mesh& internalModel = mRenderer.GetMesh(meshID);
                     for (RiggedModelComponent* model : models)
                     {
                         model->name = modelName;
+                        model->meshID = meshID;
                         InitializeModelPose(*model, internalModel);
                     }
                 }
@@ -358,7 +364,7 @@ namespace Client
         const std::span<StaticModelComponent*> models = event.components;
 
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
-        std::vector<std::string> loadedModels = mRenderer.GetLoadedModels();
+        std::vector<std::string> loadedModels = mRenderer.GetLoadedMeshes();
 
         std::string selectedModelName = models[0]->name; // in this event call there is guaranteed to be at least one component
 
@@ -379,17 +385,18 @@ namespace Client
         const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
 
         er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
+        {
+            if (!mRenderer.IsMeshLoaded(droppedPath.string()))
             {
-                if (!mRenderer.IsModelLoaded(droppedPath.string()))
-                {
-                    mRenderer.AddModelFromFile(droppedPath.string());
-                }
+                mRenderer.AddMeshFromFile(droppedPath.string());
+            }
 
-                for (StaticModelComponent* model : models)
-                {
-                    model->name = droppedPath.string();
-                }
-            });
+            for (StaticModelComponent* model : models)
+            {
+                model->meshID = mRenderer.GetMeshID(droppedPath.string());
+                model->name = droppedPath.string();
+            }
+        });
 
         if (modelsOpen)
         {
@@ -769,7 +776,7 @@ namespace Client
                 .normalMatrixCol2 = normal[2]
             };
 
-            mRenderer.AddObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
+            mRenderer.AddObject(mRenderer.GetMeshID("Cube"), uniforms, Gep::RenderFlags::Wireframe);
         });
 
         mManager.ForEachArchetype([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
@@ -785,7 +792,7 @@ namespace Client
                 .normalMatrixCol2 = normal[2]
             };
 
-            mRenderer.AddObject("PBR-Static", "Sphere", uniforms, Gep::RenderFlags::Wireframe);
+            mRenderer.AddObject(mRenderer.GetMeshID("Sphere"), uniforms, Gep::RenderFlags::Wireframe);
         });
     }
 
@@ -928,7 +935,7 @@ namespace Client
         {
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
-            const Gep::Model& internalModel = mRenderer.GetModel(model.name);
+            const Gep::Mesh& internalModel = mRenderer.GetMesh(model.meshID);
 
             std::string targetShader = "PBR-Static";
 
@@ -979,14 +986,13 @@ namespace Client
             if (model.selected)
                 flags |= Gep::RenderFlags::Highlight;
 
-            mRenderer.AddObject(targetShader, model.name, uniforms, flags);
+            mRenderer.AddObject(model.meshID, uniforms, flags);
         });
 
         mManager.ForEachArchetype([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
         {
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
-            const Gep::Model& internalModel = mRenderer.GetModel(model.name);
 
             Gep::ObjectGPUData uniforms
             {
@@ -1005,14 +1011,14 @@ namespace Client
             if (model.selected)
                 flags |= Gep::RenderFlags::Highlight;
 
-            mRenderer.AddObject("PBR-Static", model.name, uniforms, flags);
+            mRenderer.AddObject(model.meshID, uniforms, flags);
         });
 
         mRenderer.AddLine(skeletonLines);
 
     }
 
-    void RenderSystem::InitializeModelPose(RiggedModelComponent& modelComponent, const Gep::Model& internalModel)
+    void RenderSystem::InitializeModelPose(RiggedModelComponent& modelComponent, const Gep::Mesh& internalModel)
     {
         modelComponent.pose.clear();
         modelComponent.pose.resize(internalModel.skeleton.bones.size());

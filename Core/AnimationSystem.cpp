@@ -68,12 +68,12 @@ namespace Client
             if (!mRenderer.IsAnimationLoaded(animationComponent.name))
                 return; // return is continue in for_each loop
 
-            const Gep::Model& model = mRenderer.GetModel(modelComponent.name);
+            const Gep::Mesh& model = mRenderer.GetMesh(modelComponent.meshID);
 
             if (model.skeleton.bones.empty()) // do not operate on a skeleton with no bones
                 return;
 
-            const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.name);
+            const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.animationID);
 
             // progress the animation
             if (mManager.IsState(Gep::EngineState::Play))
@@ -107,9 +107,9 @@ namespace Client
 
         er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
         {
-            if (!mRenderer.IsModelLoaded(droppedPath.string()))
+            if (!mRenderer.IsMeshLoaded(droppedPath.string()))
             {
-                mRenderer.AddModelFromFile(droppedPath.string());
+                mRenderer.AddMeshFromFile(droppedPath.string());
             }
         });
 
@@ -136,7 +136,8 @@ namespace Client
             return;
         }
 
-        const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.name);
+        const uint64_t animationID = mRenderer.GetAnimationID(animationComponent.name);
+        const Gep::Animation& animation = mRenderer.GetAnimation(animationID);
 
         // basic attributes
         ImGui::DragFloat("Speed", &animationComponent.speed, 0.001f, 0.0f, 1.0f);

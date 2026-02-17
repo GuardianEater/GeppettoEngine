@@ -148,7 +148,6 @@ layout(std430, binding=7) buffer PointLightShadowUniformsBuffer
 // uniforms ////////////////////////////////////////////////////////////////////
 layout(location=0) uniform uint u_camIndex;           // the currently active camera in the u_cams array
 //layout(location=1)                                   // used by color in the line shader
-layout(location=3) uniform uint u_meshBaseInstance;      // the base instance of the current mesh, used to index into per mesh data
 
 // constants ///////////////////////////////////////////////////////////////////
 const float PI = 3.14159265359;

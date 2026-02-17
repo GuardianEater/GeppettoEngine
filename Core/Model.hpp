@@ -15,12 +15,12 @@
 
 namespace Gep
 {
-    struct Model
-    {
-        std::string name;
+    //struct Model
+    //{
+    //    std::string name;
 
-        std::vector<Mesh> meshes;
-        Skeleton skeleton;
-        Animation animation;
-    };
+    //    std::vector<Mesh> meshes;
+    //    Skeleton skeleton;
+    //    Animation animation;
+    //};
 }

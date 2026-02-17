@@ -229,6 +229,7 @@
     <ClInclude Include="FunctionTraits.hpp" />
     <ClInclude Include="GetCallerInfo.hpp" />
     <ClInclude Include="Archetypes.h" />
+    <ClInclude Include="GPUVector.hpp" />
     <ClInclude Include="HeirarchyStorage.hpp" />
     <ClInclude Include="IKSystem.hpp" />
     <ClInclude Include="IKTarget.hpp" />
@@ -320,6 +321,7 @@
     <ClInclude Include="WindowSystem.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="GPUVector.inl" />
     <None Include="ImGuiHelp.inl" />
     <None Include="keyed_vector.inl" />
     <None Include="EngineManager.inl" />

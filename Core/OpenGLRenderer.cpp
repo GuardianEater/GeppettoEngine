@@ -84,64 +84,41 @@ namespace Gep
         mLightingShader.SetUniform("u_armTexture", 3);
     }
 
-    void OpenGLRenderer::AddModelFromFile(const std::string& path)
+    void OpenGLRenderer::AddMeshFromFile(const std::string& path)
     {
-        if (mModels.contains(path))
+        if (mMeshNameToID.contains(path))
         {
             Gep::Log::Error("Cannot load mesh: [", path, "] a mesh with that name has already been loaded");
             return;
         }
-
-        auto& [modelHandle, model] = mModels[path];
-
-        model = LoadModelFromFile(path);
-
-        // moves all of the model data from the cpu onto the gpu, and keeps track of the handles
-        for (const auto& mesh : model.meshes)
-        {
-            MeshGPUHandle& meshHandle = modelHandle.meshHandles.emplace_back(); // create a handle for this mesh
-
-            meshHandle.GenVertexBuffer(mesh);
-            meshHandle.GenIndexBuffer(mesh);
-            meshHandle.BindBuffers();
-        }
+        AddMesh(path, LoadMeshFromFile(path));
     }
 
-    void OpenGLRenderer::AddModel(const std::string& name, const Gep::Model& newModel)
+    void OpenGLRenderer::AddMesh(const std::string& name, Gep::Mesh&& newMesh)
     {
-        if (mModels.contains(name))
+        if (mMeshNameToID.contains(name))
         {
             Gep::Log::Error("Cannot load mesh: [", name, "] a mesh with that name has already been loaded");
             return;
         }
 
-        auto [it, inserted] = mModels.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(name),
-            std::forward_as_tuple(ModelGPUHandle{}, newModel)
-        );
+        uint64_t meshID = mMeshes.emplace(std::move(newMesh));
+        mMeshNameToID[name] = meshID;
+        Mesh& mesh = mMeshes.at(meshID);
 
-        auto& [modelHandle, model] = it->second;
-
-        for (const Mesh& mesh : model.meshes)
-        {
-            MeshGPUHandle& meshHandle = modelHandle.meshHandles.emplace_back();
-
-            meshHandle.GenVertexBuffer(mesh);
-            meshHandle.GenIndexBuffer(mesh);
-            meshHandle.BindBuffers();
-        }
+        mesh.Commit(); // moves the mesh data from the cpu to the gpu
     }
 
-    void OpenGLRenderer::AddAnimation(const std::string& name, const Gep::Animation& animation)
+    void OpenGLRenderer::AddAnimation(const std::string& name, Gep::Animation&& animation)
     {
-        if (mAnimations.contains(name))
+        if (mAnimationNameToID.contains(name))
         {
             Gep::Log::Error("Adding animation failed, animation with the name: [", name, "] was already loaded");
             return;
         }
 
-        mAnimations[name] = animation;
+        uint64_t animationID = mAnimations.emplace(std::move(animation));
+        mAnimationNameToID[name] = animationID;
     }
 
     void OpenGLRenderer::AddMaterial(const Gep::Material& material)
@@ -149,46 +126,68 @@ namespace Gep
         mMaterials.insert(material);
     }
 
-    const Gep::Model& OpenGLRenderer::GetModel(const std::string& name)
+    const uint64_t OpenGLRenderer::GetMeshID(const std::string& name) const
     {
-        if (!mModels.contains(name))
+        if (!mMeshNameToID.contains(name))
         {
-            Gep::Log::Critical("Attempting to get a model with name: [", name, "] that doesn't exist");
+            Gep::Log::Error("Attempting to get a mesh ID with name: [", name, "] that doesn't exist");
+            return Gep::NumMax<uint64_t>();
         }
 
-        return mModels.at(name).second;
+        return mMeshNameToID.at(name);
     }
 
-    const Gep::Animation& OpenGLRenderer::GetAnimation(const std::string& name)
+    const Gep::Mesh& OpenGLRenderer::GetMesh(uint64_t meshID)
     {
-        if (!mAnimations.contains(name))
+        if (!mMeshes.contains(meshID))
         {
-            Gep::Log::Critical("Attempting to get a animation with name: [", name, "] that doesn't exist");
+            Gep::Log::Critical("Attempting to get a mesh with ID: [", meshID, "] that doesn't exist");
         }
 
-        return mAnimations.at(name);
+        return mMeshes.at(meshID);
+    }
+
+    const uint64_t OpenGLRenderer::GetAnimationID(const std::string& name) const
+    {
+        if (!mAnimationNameToID.contains(name))
+        {
+            Gep::Log::Error("Attempting to get an animation ID with name: [", name, "] that doesn't exist");
+            return Gep::NumMax<uint64_t>();
+        }
+
+        return mAnimationNameToID.at(name);
+    }
+
+    const Gep::Animation& OpenGLRenderer::GetAnimation(uint64_t animationID)
+    {
+        if (!mAnimations.contains(animationID))
+        {
+            Gep::Log::Critical("Attempting to get a animation with ID: [", animationID, "] that doesn't exist");
+        }
+
+        return mAnimations.at(animationID);
     }
 
     bool OpenGLRenderer::IsAnimationLoaded(const std::string& name) const
     {
-        return mAnimations.contains(name);
+        return mAnimationNameToID.contains(name);
     }
 
-    bool OpenGLRenderer::IsModelLoaded(const std::string& name) const
+    bool OpenGLRenderer::IsMeshLoaded(const std::string& name) const
     {
-        return mModels.contains(name);
+        return mMeshNameToID.contains(name);
     }
 
-    void OpenGLRenderer::AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& gpuData, RenderFlags flags)
+    void OpenGLRenderer::AddObject(uint64_t meshID, const ObjectGPUData& gpuData, RenderFlags flags)
     {
         // these existance checks are very expensive so only perform in debug mode
-        debug_if (!IsModelLoaded(modelName))
+        debug_if (!mMeshes.contains(meshID))
         {
-            Gep::Log::Error("Failed to draw object. The model: [", modelName, "] doesn't exist");
+            Gep::Log::Error("Failed to draw object. The mesh: [", meshID, "] doesn't exist");
             return;
         }
 
-        mObjectDatas[modelName][flags].push_back(gpuData);
+        mObjectDatas[meshID][flags].push_back(gpuData);
     }
 
 
@@ -225,74 +224,22 @@ namespace Gep
 
     void OpenGLRenderer::CommitObjects()
     {
-        static std::unordered_map<uint32_t, uint32_t> materialMapping;
-        materialMapping.clear();
-
-        for (const auto& [id, material] : mMaterials)
-        {
-            size_t uniformIndex = mMaterialUniforms.size();
-            MaterialGPUData& gpuMaterial = mMaterialUniforms.emplace_back();
-
-            // ambient occlusion
-            gpuMaterial.ao = material.ao;
-            gpuMaterial.aoTextureHandle = material.aoTexture.handle;
-
-            // color
-            gpuMaterial.color = material.color;
-            gpuMaterial.colorTextureHandle = material.diffuseTexture.handle;
-
-            // metalness
-            gpuMaterial.metalness = material.metalness;
-            gpuMaterial.metalnessTextureHandle = material.metalnessTexture.handle;
-
-            // roughness
-            gpuMaterial.roughness = material.roughness;
-            gpuMaterial.roughnessTextureHandle = material.roughnessTexture.handle;
-
-            // normal map
-            gpuMaterial.normalTextureHandle = material.normalTexture.handle;
-
-            // NOTE: These debug overrides force materials
-            //gpuMaterial.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-            //gpuMaterial.ao = 0.8f;
-            //gpuMaterial.metalness = 0.8f;
-            //gpuMaterial.roughness = 0.8f;
-
-            materialMapping[id] = static_cast<uint32_t>(uniformIndex);
-        }
-
         // 2: loops over each model using the current shader
-        for (const auto& [modelName, flagsToObjects] : mObjectDatas)
+        for (const auto& [meshID, flagsToObjects] : mObjectDatas)
         {
-            const Gep::Model& model = GetModel(modelName);
-
             // 3: loops over each active flag bucket
             for (const auto& [flags, objects] : flagsToObjects)
             {
                 // add all per-object instance data
                 mObjectUniforms.insert(mObjectUniforms.end(), objects.begin(), objects.end());
-
-                // Pack mMeshUniforms in the same order DrawRegular consumes:
-                // per-mesh, then per-instance.
-                for (const auto& mesh : model.meshes)
-                {
-                    const uint32_t matIdx = materialMapping.at(mesh.materialIndex);
-                    for (size_t i = 0; i < objects.size(); ++i)
-                    {
-                        mMeshUniforms.push_back({
-                            .materialIndex = matIdx
-                        });
-                    }
-                }
             }
         }
 
         mObjectUniforms.commit();
 
-        // send all per mesh/material data to the gpu
-        CommitMeshes();
         CommitMaterials();
     }
+
     void OpenGLRenderer::CommitCameras()
     {
         mCameraUniforms.commit();
@@ -329,24 +276,16 @@ namespace Gep
         GetAllShaders());
     }
 
-    void OpenGLRenderer::UnloadModel(const std::string& name)
+    void OpenGLRenderer::UnloadMesh(const std::string& name)
     {
-        if (!mModels.contains(name))
+        if (!mMeshNameToID.contains(name))
         {
             Gep::Log::Error("Cannot unload mesh: [", name, "] a mesh with that name has not been loaded");
             return;
         }
 
-        // aquire the model id from the name
-        auto& [modelHandle, model] = mModels[name];
-
-        // delete all meshes owned by the model
-        for (MeshGPUHandle& meshHandle : modelHandle.meshHandles)
-        {
-            meshHandle.DeleteBuffers();
-        }
-
-        mModels.erase(name);
+        mMeshes.erase(mMeshNameToID.at(name));
+        mMeshNameToID.erase(name);
     }
 
     void OpenGLRenderer::Start(const glm::vec3& color)
@@ -356,11 +295,11 @@ namespace Gep
         //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    std::vector<std::string> OpenGLRenderer::GetLoadedModels() const
+    std::vector<std::string> OpenGLRenderer::GetLoadedMeshes() const
     {
         std::vector<std::string> meshes;
 
-        for (const auto& [name, modelHandle] : mModels)
+        for (const auto& [name, meshID] : mMeshNameToID)
         {
             meshes.emplace_back(name);
         }
@@ -384,7 +323,7 @@ namespace Gep
     {
         std::vector<std::string> animations;
 
-        for (const auto& [name, pair] : mAnimations)
+        for (const auto& [name, animationID] : mAnimationNameToID)
         {
             animations.push_back(name);
         }
@@ -395,21 +334,21 @@ namespace Gep
     const std::vector<std::string>& OpenGLRenderer::GetSupportedModelFormats() const
     {
         static std::vector<std::string> allowedExtensions = []() // initializes this vector with the extensions that work with assimp
-            {
-                std::string s;
-                Assimp::Importer importer;
-                importer.GetExtensionList(s);
+        {
+            std::string s;
+            Assimp::Importer importer;
+            importer.GetExtensionList(s);
 
-                s.erase(std::remove(s.begin(), s.end(), '*'), s.end());
+            s.erase(std::remove(s.begin(), s.end(), '*'), s.end());
 
-                std::vector<std::string> out;
-                std::istringstream ss(s);
-                std::string token;
-                while (std::getline(ss, token, ';'))
-                    if (!token.empty())
-                        out.emplace_back(std::move(token));
-                return out;
-            }();
+            std::vector<std::string> out;
+            std::istringstream ss(s);
+            std::string token;
+            while (std::getline(ss, token, ';'))
+                if (!token.empty())
+                    out.emplace_back(std::move(token));
+            return out;
+        }();
 
         return allowedExtensions;
     }
@@ -701,14 +640,13 @@ namespace Gep
         glCullFace(GL_BACK);
 
         uint32_t baseInstance = 0;
-        uint32_t meshBaseInstance = 0;
 
         mGeometryShader_Static.Bind();
 
         // loops through all objects sorted by type
-        for (const auto& [modelName, flagsToObjects] : mObjectDatas)
+        for (const auto& [meshID, flagsToObjects] : mObjectDatas)
         {
-            const auto& [modelHandle, model] = mModels.at(modelName);
+            const Gep::Mesh& mesh = mMeshes.at(meshID);
 
             for (const auto& [flags, objects] : flagsToObjects)
             {
@@ -725,23 +663,15 @@ namespace Gep
                     glCullFace(GL_BACK);
                 }
 
-                for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
-                {
-                    glBindVertexArray(meshHandle.mVertexArrayObject);
-
-                    mGeometryShader_Static.SetUniform(3, meshBaseInstance);
-
-                    glDrawElementsInstancedBaseInstance(
-                        GL_TRIANGLES,
-                        meshHandle.mIndexCount,
-                        GL_UNSIGNED_INT,
-                        0,
-                        objects.size(),
-                        baseInstance
-                    );
-
-                    meshBaseInstance += objects.size();
-                }
+                glBindVertexArray(mesh.vao);
+                glDrawElementsInstancedBaseInstance(
+                    GL_TRIANGLES,
+                    mesh.commitIndexCount,
+                    GL_UNSIGNED_INT,
+                    0,
+                    objects.size(),
+                    baseInstance
+                );
 
                 baseInstance += objects.size();
             }
@@ -766,16 +696,16 @@ namespace Gep
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
 
-        auto& [sphereHandle, sphere] = mModels.at("Sphere");
-        auto& meshHandle = sphereHandle.meshHandles[0];
+        const uint64_t meshID = mMeshNameToID.at("Sphere");
+        const Gep::Mesh& mesh = mMeshes.at(meshID);
 
-        glBindVertexArray(meshHandle.mVertexArrayObject);
+        glBindVertexArray(mesh.vao);
 
         mLightingShader.Bind(); 
         // draw pass for lights that do not cast shadows
         glDrawElementsInstanced(
             GL_TRIANGLES,
-            meshHandle.mIndexCount,
+            mesh.commitIndexCount,
             GL_UNSIGNED_INT,
             0,
             static_cast<GLsizei>(mPointLightUniforms.size())
@@ -785,7 +715,7 @@ namespace Gep
         // draw pass for lights that cast shadows
         glDrawElementsInstanced(
             GL_TRIANGLES,
-            meshHandle.mIndexCount,
+            mesh.commitIndexCount,
             GL_UNSIGNED_INT,
             0,
             static_cast<GLsizei>(mPointLightShadowUniforms.size())
@@ -823,25 +753,22 @@ namespace Gep
             mPointLightShadowShader.SetUniform(2, lightIndex++);
 
             // loops through all objects sorted by type
-            for (const auto& [modelName, flagsToObjects] : mObjectDatas)
+            for (const auto& [meshID, flagsToObjects] : mObjectDatas)
             {
-                const auto& [modelHandle, model] = mModels.at(modelName);
+                const Gep::Mesh& mesh = mMeshes.at(meshID);
 
                 for (const auto& [flags, objects] : flagsToObjects)
                 {
-                    for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
-                    {
-                        glBindVertexArray(meshHandle.mVertexArrayObject);
+                    glBindVertexArray(mesh.vao);
 
-                        glDrawElementsInstancedBaseInstance(
-                            GL_TRIANGLES,
-                            meshHandle.mIndexCount,
-                            GL_UNSIGNED_INT,
-                            0,
-                            objects.size(),
-                            baseInstance
-                        );
-                    }
+                    glDrawElementsInstancedBaseInstance(
+                        GL_TRIANGLES,
+                        mesh.commitIndexCount,
+                        GL_UNSIGNED_INT,
+                        0,
+                        objects.size(),
+                        baseInstance
+                    );
 
                     baseInstance += objects.size();
                 }
@@ -944,61 +871,6 @@ namespace Gep
         return BitmapToTexture(iconInfo.hbmColor);
     }
 
-    void OpenGLRenderer::MeshGPUHandle::GenVertexBuffer(const Mesh& mesh)
-    {
-        glGenBuffers(1, &mVertexBuffer);
-        glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh.vertices.size(), mesh.vertices.data(), GL_STATIC_DRAW);
-    }
-
-    void OpenGLRenderer::MeshGPUHandle::GenIndexBuffer(const Mesh& mesh)
-    {
-        glGenBuffers(1, &mIndexBuffer);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * mesh.indices.size(), mesh.indices.data(), GL_STATIC_DRAW);
-
-        mIndexCount = mesh.indices.size();
-    }
-
-    void OpenGLRenderer::MeshGPUHandle::BindBuffers()
-    {
-        glGenVertexArrays(1, &mVertexArrayObject);
-        glBindVertexArray(mVertexArrayObject);
-
-        glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
-        glEnableVertexAttribArray(0);
-
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-        glEnableVertexAttribArray(1);
-
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
-        glEnableVertexAttribArray(2);
-
-        glVertexAttribIPointer(3, 4, GL_UNSIGNED_INT, sizeof(Vertex), (void*)offsetof(Vertex, boneIndices));
-        glEnableVertexAttribArray(3);
-
-        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, boneWeights));
-        glEnableVertexAttribArray(4);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer);
-
-        glBindVertexArray(0);
-    }
-
-    void OpenGLRenderer::MeshGPUHandle::DeleteBuffers()
-    {
-        glDeleteBuffers(1, &mIndexBuffer);
-        glDeleteBuffers(1, &mVertexBuffer);
-        glDeleteVertexArrays(1, &mVertexArrayObject);
-
-#ifdef _DEBUG
-        mVertexArrayObject = NumMax<GLuint>();
-        mVertexBuffer = NumMax<GLuint>();
-        mIndexBuffer = NumMax<GLuint>();
-#endif // _DEBUG
-    }
-
     struct BoneInfo
     {
         uint32_t index = 0;
@@ -1052,12 +924,11 @@ namespace Gep
 
     void OpenGLRenderer::LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton)
     {
-        const auto& [it, inserted] = mAnimations.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(std::string(assimpAnimation->mName.C_Str()) + " (" + parentPath + ")"),
-            std::forward_as_tuple()
-        );
-        auto& [name, animation] = *it;
+        const std::string animationName = std::string(assimpAnimation->mName.C_Str()) + " (" + parentPath + ")";
+
+        const uint64_t animationID = mAnimations.emplace();
+        mAnimationNameToID[animationName] = animationID;
+        Animation& animation = mAnimations.at(animationID);
 
         animation.duration = static_cast<float>(assimpAnimation->mDuration);
         animation.ticksPerSecond = assimpAnimation->mTicksPerSecond != 0.0
@@ -1231,18 +1102,16 @@ namespace Gep
         }
     }
 
-    void OpenGLRenderer::LoadAnimations(const std::string& name, Gep::Model& model, const aiScene* scene)
+    void OpenGLRenderer::LoadAnimations(const std::string& name, Gep::Mesh& mesh, const aiScene* scene)
     {
-        for (uint32_t i = 0; i < scene->mNumAnimations; ++i)
-        {
-            LoadAnimation(name, scene->mAnimations[i], model.skeleton);
-        }
+        //for (uint32_t i = 0; i < scene->mNumAnimations; ++i)
+        //{
+        //    LoadAnimation(name, scene->mAnimations[i], model.skeleton);
+        //}
     }
 
     static void LoadVertices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
     {
-        mesh.vertices.reserve(assimpMesh->mNumVertices);
-
         for (unsigned int i = 0; i < assimpMesh->mNumVertices; ++i)
         {
             Vertex& v = mesh.vertices.emplace_back();
@@ -1257,19 +1126,19 @@ namespace Gep
         }
     }
 
-    static void LoadIndices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
+    static void LoadIndices(Gep::Mesh& mesh, const aiMesh* assimpMesh, size_t offset)
     {
         for (unsigned int i = 0; i < assimpMesh->mNumFaces; ++i)
         {
             const aiFace& face = assimpMesh->mFaces[i];
 
             for (unsigned int j = 0; j < face.mNumIndices; ++j)
-                mesh.indices.push_back(face.mIndices[j]);
+                mesh.indices.push_back(offset + face.mIndices[j]);
         }
     }
 
     // returns the index of the node just created
-    static uint32_t LoadHierarchyStep(Gep::Model& model, const uint32_t parentIndex, const aiNode* node)
+    static uint32_t LoadHierarchyStep(Gep::Mesh& mesh, const uint32_t parentIndex, const aiNode* node)
     {
         // if the passed node is null return num max signaling that this is a leaf
         if (!node) 
@@ -1284,8 +1153,8 @@ namespace Gep
             inverseBind = it->second.offset;
         
         // create an entry in the heirarchy. 
-        uint32_t index = model.skeleton.bones.size();
-        Gep::Bone& bone = model.skeleton.bones.emplace_back();
+        uint32_t index = mesh.skeleton.bones.size();
+        Gep::Bone& bone = mesh.skeleton.bones.emplace_back();
         bone.name = node->mName.C_Str();
         bone.parentIndex = parentIndex;
         bone.transformation = ToVQS(node->mTransformation);
@@ -1299,11 +1168,11 @@ namespace Gep
         // do the same thing for each child
         for (const aiNode* childNode : std::span(node->mChildren, node->mNumChildren))
         {
-            uint32_t childIndex = LoadHierarchyStep(model, index, childNode);
+            uint32_t childIndex = LoadHierarchyStep(mesh, index, childNode);
             if (childIndex != NumMax<uint32_t>())
             {
                 //note: cant get a reference here because it could be stale after recursive calls
-                model.skeleton.bones.at(index).childrenIndices.push_back(childIndex);
+                mesh.skeleton.bones.at(index).childrenIndices.push_back(childIndex);
             }
         }
 
@@ -1311,7 +1180,7 @@ namespace Gep
     }
 
     // create hierary
-    static void LoadHierarchy(Gep::Model& model, const aiScene* scene)
+    static void LoadHierarchy(Gep::Mesh& mesh, const aiScene* scene)
     {
         // on the off chance a model doesn't have a root node?
         //uint32_t index = model.skeleton.bones.size();
@@ -1322,7 +1191,7 @@ namespace Gep
         //bone.inverseBind = Gep::VQS{};
         //bone.isRealBone = false;
 
-        LoadHierarchyStep(model, NumMax<uint32_t>(), scene->mRootNode);
+        LoadHierarchyStep(mesh, NumMax<uint32_t>(), scene->mRootNode);
     }
 
     static void SetVertexBoneData(Vertex& vertex, uint32_t boneID, float weight)
@@ -1338,7 +1207,7 @@ namespace Gep
         }
     }
 
-    static void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, const aiMesh* assimpMesh, const aiScene* scene)
+    static void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, const aiMesh* assimpMesh, const aiScene* scene, uint64_t vertexOffset)
     {
         for (const aiBone* assimpBone : std::span(assimpMesh->mBones, assimpMesh->mNumBones))
         {
@@ -1347,7 +1216,7 @@ namespace Gep
 
             for (const aiVertexWeight assimpWeight : std::span(assimpBone->mWeights, assimpBone->mNumWeights))
             {
-                const uint32_t vertexId = assimpWeight.mVertexId;
+                const uint32_t vertexId = assimpWeight.mVertexId + vertexOffset;
                 const float weight = assimpWeight.mWeight;
                 
                 SetVertexBoneData(vertices[vertexId], boneID, weight);
@@ -1355,22 +1224,23 @@ namespace Gep
         }
     }
 
-    static void LoadMeshes(Gep::Model& model, const aiScene* scene)
+    static void LoadMeshes(Gep::Mesh& mesh, const aiScene* scene)
     {
-        model.meshes.reserve(scene->mNumMeshes);
-
+        size_t vertexOffset = 0;
         for (const aiMesh* assimpMesh : std::span(scene->mMeshes, scene->mNumMeshes))
         {
-            Mesh& mesh = model.meshes.emplace_back();
-            mesh.name = assimpMesh->mName.C_Str();
-
+            // vertices
             LoadVertices(mesh, assimpMesh);
-            LoadIndices(mesh, assimpMesh);
-            mesh.CalculateBoundingBox(); //must be done after vertices are loaded
+            LoadIndices(mesh, assimpMesh, vertexOffset);
+            ExtractBoneWeightForVertices(mesh.vertices, assimpMesh, scene, vertexOffset);
+            vertexOffset += assimpMesh->mNumVertices;
 
-            mesh.materialIndex = gAssimpMaterialIndexToMaterialIndex.at(assimpMesh->mMaterialIndex);
-            ExtractBoneWeightForVertices(mesh.vertices, assimpMesh, scene);
+            // materials
+            uint64_t materialIndex = gAssimpMaterialIndexToMaterialIndex.at(assimpMesh->mMaterialIndex);
+            mesh.materials.emplace_back(materialIndex);
         }
+
+        mesh.CalculateBoundingBox(); //must be done after vertices are loaded
     }
 
     // maps the name of every bone to its inverse bind transformation
@@ -1387,7 +1257,7 @@ namespace Gep
         }
     }
 
-    Model OpenGLRenderer::LoadModelFromFile(const std::filesystem::path& path)
+    Mesh OpenGLRenderer::LoadMeshFromFile(const std::filesystem::path& path)
     {
         gBoneData.clear();
         Assimp::Importer importer;
@@ -1408,7 +1278,7 @@ namespace Gep
             return {};
         }
 
-        Gep::Model model;
+        Gep::Mesh mesh;
 
         // loads all of the materials out of this scene
         LoadMaterials(path, scene);
@@ -1416,13 +1286,13 @@ namespace Gep
         // loads every bone name to its offset matrix in gBoneData
         LoadBoneData(scene);
 
-        // fills in the skeleton of the model and the index field in gBoneData
-        LoadHierarchy(model, scene);
+        // fills in the skeleton of the mesh and the index field in gBoneData
+        LoadHierarchy(mesh, scene);
 
-        LoadMeshes(model, scene);
+        LoadMeshes(mesh, scene);
 
-        LoadAnimations(path.string(), model, scene);
+        LoadAnimations(path.string(), mesh, scene);
 
-        return model;
+        return mesh;
     }
 }

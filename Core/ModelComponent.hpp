@@ -18,6 +18,7 @@ namespace Client
     {
         std::string name{ "Cube" }; // name of the model that is currently in use
         bool selected = false;
+        uint64_t meshID = 0;
 
         std::vector<Gep::VQS> pose; // the bone offsets of the current model 
     };
@@ -27,5 +28,6 @@ namespace Client
     {
         std::string name{ "Cube" }; // name of the model that is currently in use
         bool selected = false;
+        uint64_t meshID = 0; 
     };
 }
