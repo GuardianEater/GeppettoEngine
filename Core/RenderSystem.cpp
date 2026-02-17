@@ -761,7 +761,7 @@ namespace Client
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
 
-            Gep::ObjectGPUData uniforms
+            Gep::StaticObjectGPUData uniforms
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrixCol0 = normal[0],
@@ -769,7 +769,7 @@ namespace Client
                 .normalMatrixCol2 = normal[2]
             };
 
-            mRenderer.AddObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
+            mRenderer.AddStaticObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
         });
 
         mManager.ForEachArchetype([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
@@ -777,7 +777,7 @@ namespace Client
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
 
-            Gep::ObjectGPUData uniforms
+            Gep::StaticObjectGPUData uniforms
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrixCol0 = normal[0],
@@ -785,7 +785,7 @@ namespace Client
                 .normalMatrixCol2 = normal[2]
             };
 
-            mRenderer.AddObject("PBR-Static", "Sphere", uniforms, Gep::RenderFlags::Wireframe);
+            mRenderer.AddStaticObject("PBR-Static", "Sphere", uniforms, Gep::RenderFlags::Wireframe);
         });
     }
 
@@ -962,7 +962,7 @@ namespace Client
             }
 
 
-            Gep::ObjectGPUData uniforms
+            Gep::StaticObjectGPUData uniforms
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrixCol0 = normal[0],
@@ -979,7 +979,7 @@ namespace Client
             if (model.selected)
                 flags |= Gep::RenderFlags::Highlight;
 
-            mRenderer.AddObject(targetShader, model.name, uniforms, flags);
+            mRenderer.AddStaticObject(targetShader, model.name, uniforms, flags);
         });
 
         mManager.ForEachArchetype([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
@@ -988,7 +988,7 @@ namespace Client
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
             const Gep::Model& internalModel = mRenderer.GetModel(model.name);
 
-            Gep::ObjectGPUData uniforms
+            Gep::StaticObjectGPUData uniforms
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrixCol0 = normal[0],
@@ -1005,7 +1005,7 @@ namespace Client
             if (model.selected)
                 flags |= Gep::RenderFlags::Highlight;
 
-            mRenderer.AddObject("PBR-Static", model.name, uniforms, flags);
+            mRenderer.AddStaticObject("PBR-Static", model.name, uniforms, flags);
         });
 
         mRenderer.AddLine(skeletonLines);

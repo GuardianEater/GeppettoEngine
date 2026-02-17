@@ -179,7 +179,7 @@ namespace Gep
         return mModels.contains(name);
     }
 
-    void OpenGLRenderer::AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& gpuData, RenderFlags flags)
+    void OpenGLRenderer::AddStaticObject(const std::string& shaderName, const std::string& modelName, const StaticObjectGPUData& gpuData, RenderFlags flags)
     {
         // these existance checks are very expensive so only perform in debug mode
         debug_if (!IsModelLoaded(modelName))
@@ -234,7 +234,7 @@ namespace Gep
             for (const auto& [flags, objects] : flagsToObjects)
             {
                 // add all per-object instance data
-                mObjectUniforms.insert(mObjectUniforms.end(), objects.begin(), objects.end());
+                mStaticObjectUniforms.insert(mStaticObjectUniforms.end(), objects.begin(), objects.end());
 
                 // Pack mMeshUniforms in the same order DrawRegular consumes:
                 // per-mesh, then per-instance.
@@ -248,7 +248,7 @@ namespace Gep
             }
         }
 
-        mObjectUniforms.commit();
+        mStaticObjectUniforms.commit();
         mMeshUniforms.commit();
     }
     void OpenGLRenderer::CommitCameras()
@@ -612,7 +612,7 @@ namespace Gep
         mPointLightShadowUniforms.clear();
         mPointLightUniforms.clear();
         mDirectionalLightUniforms.clear();
-        mObjectUniforms.clear();
+        mStaticObjectUniforms.clear();
         mCameraUniforms.clear();
         mBoneUniforms.clear();
         mMeshUniforms.clear();
@@ -825,7 +825,7 @@ namespace Gep
         //glEnable(GL_DEPTH_TEST);
     }
 
-    void OpenGLRenderer::AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData)
+    void OpenGLRenderer::AddWireframeObject(const std::string& modelName, const StaticObjectGPUData& objectData)
     {
     }
 

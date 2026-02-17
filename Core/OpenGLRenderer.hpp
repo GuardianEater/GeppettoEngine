@@ -52,7 +52,7 @@ namespace Gep
         GLuint64 padding;
     };
 
-    struct alignas(16) ObjectGPUData
+    struct alignas(16) StaticObjectGPUData
     {
         glm::mat4 modelMatrix;  // the location rotation and scale of an object; converts from a model from model space to world space
 
@@ -193,7 +193,7 @@ namespace Gep
         bool IsModelLoaded(const std::string& name) const;
 
         // adds an object to be drawn by 
-        void AddObject(const std::string& shaderName, const std::string& modelName, const ObjectGPUData& objectData, RenderFlags flags = RenderFlags::None);
+        void AddStaticObject(const std::string& shaderName, const std::string& modelName, const StaticObjectGPUData& objectData, RenderFlags flags = RenderFlags::None);
         void AddCamera(const CameraGPUData& cameraData);
         void AddPointLight(const PointLightGPUData& lightData); // adds a light to the renderered, will be sent to the shader when DrawLights is called
         void AddPointLightShadow(const PointLightShadowGPUData& lightData, const FrameBuffer& fbo); // variant of pointlight that will cast shadows
@@ -290,7 +290,7 @@ namespace Gep
         void PointLightPass(Gep::FrameBuffer& targetFrameBuffer);     // renders all point light emissions to the target framebuffer, but doesnt draw the light itself
         void PointLightShadowDepthPass(); // renders the depth map for each point light that casts shadows
         void DrawLines();
-        void AddWireframeObject(const std::string& modelName, const ObjectGPUData& objectData);
+        void AddWireframeObject(const std::string& modelName, const StaticObjectGPUData& objectData);
 
         // pixel data loaded from stbimage, note pixel data must be freed after use
         void LoadTextureFromPixelData(const std::string& name, const uint8_t* pixelData, size_t width, size_t height, int requiredChannels);
@@ -329,11 +329,11 @@ namespace Gep
 
         FrameBuffer mGeometryFrameBuffer;
     
-        Gep::gpu_vector<ObjectGPUData, 0> mObjectUniforms;                      // copied into u_objects on the gpu
+        Gep::gpu_vector<StaticObjectGPUData, 0> mStaticObjectUniforms;          // copied into u_objects on the gpu
         Gep::gpu_vector<PointLightGPUData, 1> mPointLightUniforms;              // copied into u_pointLights on the gpu
         Gep::gpu_vector<CameraGPUData, 2> mCameraUniforms;                      // copied into u_cams on the gpu
         Gep::gpu_vector<BoneGPUData, 3> mBoneUniforms;                          // copied into u_bones on the gpu
-        Gep::gpu_keyed_vector<MaterialGPUData, 4> mMaterials;                          // copied into u_materials on the gpu
+        Gep::gpu_keyed_vector<MaterialGPUData, 4> mMaterials;                   // copied into u_materials on the gpu
         Gep::gpu_vector<MeshGPUData, 5> mMeshUniforms;                          // copied into u_meshes on the gpu
         Gep::gpu_vector<DirectionalLightGPUData, 6> mDirectionalLightUniforms;  // copied into u_directionalLights on the gpu
         Gep::gpu_vector<PointLightShadowGPUData, 7> mPointLightShadowUniforms;  // copied into u_pointLightShadows on the gpu
@@ -341,7 +341,7 @@ namespace Gep
         std::vector<FrameBuffer> mShadowMaps; // index corresponds to the point light shadow uniform at the same index in mPointLightShadowUniforms
 
         // model -> flags -> objects
-        std::map<std::string, std::map<RenderFlags, std::vector<ObjectGPUData>>> mObjectDatas;
+        std::map<std::string, std::map<RenderFlags, std::vector<StaticObjectGPUData>>> mObjectDatas;
 
         // used to store vertices for drawing lines
         GLuint mLineVBO;
