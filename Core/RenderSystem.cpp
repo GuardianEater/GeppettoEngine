@@ -102,7 +102,7 @@ namespace Client
             renderer.AddModel("Skybox", skybox);
         }
         {
-            Gep::Material defaultMat;
+            Gep::MaterialGPUData defaultMat;
             renderer.AddMaterial(defaultMat);
         }
 

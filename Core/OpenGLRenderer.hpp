@@ -24,6 +24,7 @@
 #include "Model.hpp"
 
 #include "GPUVector.hpp"
+#include "GPUKeyedVector.hpp"
 
 #include "FrameBuffer.hpp"
 
@@ -183,7 +184,7 @@ namespace Gep
         void AddModel(const std::string& name, const Gep::Model& model);
 
         void AddAnimation(const std::string& name, const Gep::Animation& animation);
-        void AddMaterial(const Gep::Material& material);
+        size_t AddMaterial(const Gep::MaterialGPUData& material);
 
         const Gep::Model& GetModel(const std::string& name);
         const Gep::Animation& GetAnimation(const std::string& name);
@@ -204,10 +205,6 @@ namespace Gep
         void CommitCameras(); // moves all of the added camera data from the cpu to the gpu
         void CommitBones();   // moves all of the added bone data from the cpu to the gpu
         void CommitLights();  // moves all of the added light data from the cpu to the gpu
-
-        // currently done automatically with objects
-        void CommitMeshes(); // moves all of the added mesh data from the cpu to the gpu
-        void CommitMaterials(); // moves all of the added materials from the cpu to the gpu
 
         void SetCameraIndex(uint32_t index);
 
@@ -321,7 +318,6 @@ namespace Gep
 
         std::unordered_map<std::string, std::pair<ModelGPUHandle, Gep::Model>> mModels; // model name -> its handle and data
         std::unordered_map<std::string, Gep::Animation> mAnimations;
-        gtl::keyed_vector<Material> mMaterials;
 
         std::unordered_map<std::string, Gep::Texture> mIconTextures;// icon extension -> texture
         std::unordered_map<std::string, Gep::Texture> mTextures; // texture path -> texture
@@ -337,10 +333,11 @@ namespace Gep
         Gep::gpu_vector<PointLightGPUData, 1> mPointLightUniforms;              // copied into u_pointLights on the gpu
         Gep::gpu_vector<CameraGPUData, 2> mCameraUniforms;                      // copied into u_cams on the gpu
         Gep::gpu_vector<BoneGPUData, 3> mBoneUniforms;                          // copied into u_bones on the gpu
-        Gep::gpu_vector<MaterialGPUData, 4> mMaterialUniforms;                  // copied into u_materials on the gpu
+        Gep::gpu_keyed_vector<MaterialGPUData, 4> mMaterials;                          // copied into u_materials on the gpu
         Gep::gpu_vector<MeshGPUData, 5> mMeshUniforms;                          // copied into u_meshes on the gpu
         Gep::gpu_vector<DirectionalLightGPUData, 6> mDirectionalLightUniforms;  // copied into u_directionalLights on the gpu
         Gep::gpu_vector<PointLightShadowGPUData, 7> mPointLightShadowUniforms;  // copied into u_pointLightShadows on the gpu
+
         std::vector<FrameBuffer> mShadowMaps; // index corresponds to the point light shadow uniform at the same index in mPointLightShadowUniforms
 
         // model -> flags -> objects

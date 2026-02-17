@@ -144,9 +144,9 @@ namespace Gep
         mAnimations[name] = animation;
     }
 
-    void OpenGLRenderer::AddMaterial(const Gep::Material& material)
+    size_t OpenGLRenderer::AddMaterial(const Gep::MaterialGPUData& material)
     {
-        mMaterials.insert(material);
+        return mMaterials.emplace(material);
     }
 
     const Gep::Model& OpenGLRenderer::GetModel(const std::string& name)
@@ -225,42 +225,6 @@ namespace Gep
 
     void OpenGLRenderer::CommitObjects()
     {
-        static std::unordered_map<uint32_t, uint32_t> materialMapping;
-        materialMapping.clear();
-
-        for (const auto& [id, material] : mMaterials)
-        {
-            size_t uniformIndex = mMaterialUniforms.size();
-            MaterialGPUData& gpuMaterial = mMaterialUniforms.emplace_back();
-
-            // ambient occlusion
-            gpuMaterial.ao = material.ao;
-            gpuMaterial.aoTextureHandle = material.aoTexture.handle;
-
-            // color
-            gpuMaterial.color = material.color;
-            gpuMaterial.colorTextureHandle = material.diffuseTexture.handle;
-
-            // metalness
-            gpuMaterial.metalness = material.metalness;
-            gpuMaterial.metalnessTextureHandle = material.metalnessTexture.handle;
-
-            // roughness
-            gpuMaterial.roughness = material.roughness;
-            gpuMaterial.roughnessTextureHandle = material.roughnessTexture.handle;
-
-            // normal map
-            gpuMaterial.normalTextureHandle = material.normalTexture.handle;
-
-            // NOTE: These debug overrides force materials
-            //gpuMaterial.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-            //gpuMaterial.ao = 0.8f;
-            //gpuMaterial.metalness = 0.8f;
-            //gpuMaterial.roughness = 0.8f;
-
-            materialMapping[id] = static_cast<uint32_t>(uniformIndex);
-        }
-
         // 2: loops over each model using the current shader
         for (const auto& [modelName, flagsToObjects] : mObjectDatas)
         {
@@ -276,22 +240,16 @@ namespace Gep
                 // per-mesh, then per-instance.
                 for (const auto& mesh : model.meshes)
                 {
-                    const uint32_t matIdx = materialMapping.at(mesh.materialIndex);
                     for (size_t i = 0; i < objects.size(); ++i)
                     {
-                        mMeshUniforms.push_back({
-                            .materialIndex = matIdx
-                        });
+                        mMeshUniforms.push_back({mesh.materialIndex});
                     }
                 }
             }
         }
 
         mObjectUniforms.commit();
-
-        // send all per mesh/material data to the gpu
-        CommitMeshes();
-        CommitMaterials();
+        mMeshUniforms.commit();
     }
     void OpenGLRenderer::CommitCameras()
     {
@@ -308,16 +266,6 @@ namespace Gep
         mPointLightUniforms.commit();
         mPointLightShadowUniforms.commit();
         mDirectionalLightUniforms.commit();
-    }
-
-    void OpenGLRenderer::CommitMeshes()
-    {
-        mMeshUniforms.commit();
-    }
-
-    void OpenGLRenderer::CommitMaterials()
-    {
-        mMaterialUniforms.commit();
     }
 
     void OpenGLRenderer::SetCameraIndex(uint32_t index)
@@ -668,7 +616,6 @@ namespace Gep
         mCameraUniforms.clear();
         mBoneUniforms.clear();
         mMeshUniforms.clear();
-        mMaterialUniforms.clear();
     }
 
     void OpenGLRenderer::SetUpLineDrawing()
@@ -1205,7 +1152,7 @@ namespace Gep
         for (unsigned int i = 0; i < scene->mNumMaterials; ++i)
         {
             size_t materialIndex = mMaterials.emplace();
-            Material& material = mMaterials.at(materialIndex);
+            MaterialGPUData& material = mMaterials.at(materialIndex);
             const aiMaterial* assimpMaterial = scene->mMaterials[i];
 
             gAssimpMaterialIndexToMaterialIndex[i] = materialIndex; // create the mapping
@@ -1223,11 +1170,17 @@ namespace Gep
             if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, outColor))
                 material.roughness = outColor.r;
 
-            material.diffuseTexture   = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE);
-            material.aoTexture        = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_AMBIENT_OCCLUSION);
-            material.metalnessTexture = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_METALNESS);
-            material.roughnessTexture = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE_ROUGHNESS);
-            material.normalTexture    = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_NORMALS);
+            Texture diffuse = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE);
+            Texture ao = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_AMBIENT_OCCLUSION);
+            Texture metalness = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_METALNESS);
+            Texture roughness = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE_ROUGHNESS);
+            Texture normal = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_NORMALS);
+
+            material.colorTextureHandle = diffuse.handle;
+            material.aoTextureHandle = ao.handle;
+            material.metalnessTextureHandle = metalness.handle;
+            material.roughnessTextureHandle = roughness.handle;
+            material.normalTextureHandle = normal.handle;
         }
     }
 
@@ -1422,6 +1375,8 @@ namespace Gep
         LoadMeshes(model, scene);
 
         LoadAnimations(path.string(), model, scene);
+
+        mMaterials.commit(); // send material data to the gpu
 
         return model;
     }

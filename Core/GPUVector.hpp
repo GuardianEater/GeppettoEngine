@@ -55,6 +55,12 @@ namespace Gep
 
         void commit(); // moves all data to the gpu all at once, re-allocating the gpu side buffer if needed
 
+        Type* cpu_data() { return mCPUBuffer.data(); }
+        const Type* cpu_data() const { return mCPUBuffer.data(); }
+
+        const Type& at(size_t index) const { return mCPUBuffer.at(index); }
+        Type& at(size_t index) { return mCPUBuffer.at(index); }
+
     private:
         void gpu_clear(); // clears the contents on the gpu
         void gpu_reserve(size_t newCapacity); // reallocates the internal buffer, note doesn't copy existing data over, assumed to be overwritten any ways
