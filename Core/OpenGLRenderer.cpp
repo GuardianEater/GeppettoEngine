@@ -228,22 +228,29 @@ namespace Gep
         // 2: loops over each model using the current shader
         for (const auto& [modelName, flagsToObjects] : mObjectDatas)
         {
-            const Gep::Model& model = GetModel(modelName);
+            const auto& [modelHandle, model] = mModels.at(modelName);
 
             // 3: loops over each active flag bucket
             for (const auto& [flags, objects] : flagsToObjects)
             {
-                // add all per-object instance data
+                // TODO: quick frustum check
+
+                // add all per-object instance data, this vector will be sent as is to the gpu
                 mStaticObjectUniforms.insert(mStaticObjectUniforms.end(), objects.begin(), objects.end());
+
+                // this is the amount of objects successfully sent to the gpu and the meshes that are used by that object
+                ObjectDrawInfo& di = mStaticObjectDrawInfo.emplace_back();
+                di.count = objects.size();
+                di.vaos.reserve(modelHandle.meshHandles.size());
+                for (const auto& meshHandle : modelHandle.meshHandles)
+                    di.vaos.push_back({ meshHandle.mVertexArrayObject, meshHandle.mIndexCount });
 
                 // Pack mMeshUniforms in the same order DrawRegular consumes:
                 // per-mesh, then per-instance.
                 for (const auto& mesh : model.meshes)
                 {
                     for (size_t i = 0; i < objects.size(); ++i)
-                    {
                         mMeshUniforms.push_back({mesh.materialIndex});
-                    }
                 }
             }
         }
@@ -613,6 +620,7 @@ namespace Gep
         mPointLightUniforms.clear();
         mDirectionalLightUniforms.clear();
         mStaticObjectUniforms.clear();
+        mStaticObjectDrawInfo.clear();
         mCameraUniforms.clear();
         mBoneUniforms.clear();
         mMeshUniforms.clear();
@@ -652,46 +660,27 @@ namespace Gep
 
         mGeometryShader_Static.Bind();
 
-        // loops through all objects sorted by type
-        for (const auto& [modelName, flagsToObjects] : mObjectDatas)
+        for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
         {
-            const auto& [modelHandle, model] = mModels.at(modelName);
-
-            for (const auto& [flags, objects] : flagsToObjects)
+            for (auto [vao, indexCount] : di.vaos)
             {
-                if ((flags & RenderFlags::NoDepthTest) == RenderFlags::NoDepthTest)
-                    glDisable(GL_DEPTH_TEST);
-                else
-                    glEnable(GL_DEPTH_TEST);
+                glBindVertexArray(vao);
 
-                if ((flags & RenderFlags::NoBackfaceCull) == RenderFlags::NoBackfaceCull)
-                    glDisable(GL_CULL_FACE);
-                else
-                {
-                    glEnable(GL_CULL_FACE);
-                    glCullFace(GL_BACK);
-                }
+                mGeometryShader_Static.SetUniform(3, meshBaseInstance);
 
-                for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
-                {
-                    glBindVertexArray(meshHandle.mVertexArrayObject);
+                glDrawElementsInstancedBaseInstance(
+                    GL_TRIANGLES,
+                    indexCount,
+                    GL_UNSIGNED_INT,
+                    0,
+                    di.count,
+                    baseInstance
+                );
 
-                    mGeometryShader_Static.SetUniform(3, meshBaseInstance);
+                meshBaseInstance += di.count;
 
-                    glDrawElementsInstancedBaseInstance(
-                        GL_TRIANGLES,
-                        meshHandle.mIndexCount,
-                        GL_UNSIGNED_INT,
-                        0,
-                        objects.size(),
-                        baseInstance
-                    );
-
-                    meshBaseInstance += objects.size();
-                }
-
-                baseInstance += objects.size();
             }
+            baseInstance += di.count;
         }
 
         Shader::Unbind();
@@ -769,29 +758,21 @@ namespace Gep
             uint32_t baseInstance = 0;
             mPointLightShadowShader.SetUniform(2, lightIndex++);
 
-            // loops through all objects sorted by type
-            for (const auto& [modelName, flagsToObjects] : mObjectDatas)
+            for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
             {
-                const auto& [modelHandle, model] = mModels.at(modelName);
-
-                for (const auto& [flags, objects] : flagsToObjects)
+                for (auto [vao, indexCount] : di.vaos)
                 {
-                    for (const MeshGPUHandle& meshHandle : modelHandle.meshHandles)
-                    {
-                        glBindVertexArray(meshHandle.mVertexArrayObject);
-
-                        glDrawElementsInstancedBaseInstance(
-                            GL_TRIANGLES,
-                            meshHandle.mIndexCount,
-                            GL_UNSIGNED_INT,
-                            0,
-                            objects.size(),
-                            baseInstance
-                        );
-                    }
-
-                    baseInstance += objects.size();
+                    glBindVertexArray(vao);
+                    glDrawElementsInstancedBaseInstance(
+                        GL_TRIANGLES,
+                        indexCount,
+                        GL_UNSIGNED_INT,
+                        0,
+                        di.count,
+                        baseInstance
+                    );
                 }
+                baseInstance += di.count;
             }
         }
 

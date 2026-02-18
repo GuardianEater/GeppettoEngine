@@ -328,7 +328,16 @@ namespace Gep
         std::mutex mTextureLoadingMutex{};
 
         FrameBuffer mGeometryFrameBuffer;
+
+        struct ObjectDrawInfo
+        {
+            // the amount of objects to draw
+            uint64_t count = 0;
+            // vao and index count
+            std::vector<std::pair<GLuint, size_t>> vaos; // all of the meshes to draw with that object
+        };
     
+        std::vector<ObjectDrawInfo> mStaticObjectDrawInfo; // synced with object uniforms stores addition meta information
         Gep::gpu_vector<StaticObjectGPUData, 0> mStaticObjectUniforms;          // copied into u_objects on the gpu
         Gep::gpu_vector<PointLightGPUData, 1> mPointLightUniforms;              // copied into u_pointLights on the gpu
         Gep::gpu_vector<CameraGPUData, 2> mCameraUniforms;                      // copied into u_cams on the gpu
