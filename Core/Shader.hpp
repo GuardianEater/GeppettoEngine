@@ -60,9 +60,9 @@ namespace Gep
         static GLuint Compile(GLenum shaderType, const std::string& source, const std::string& origin = "<embedded>");
         static GLuint CreateProgram(GLuint vertexShader, GLuint fragmentShader, GLuint geometryShader, const std::string& origin = "<embedded>");
         static std::string ReadShader(const std::filesystem::path& path); // reads in the data and handles includes
-        
-    private:
 
+    private:
+        // whenever an include is evaluated it is added to this map to prevent redundant loads (path -> source) emptied when any shader is reloaded
         GLuint mProgram = 0;
 
         // if FromFile

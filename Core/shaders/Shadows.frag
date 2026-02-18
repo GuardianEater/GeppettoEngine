@@ -8,11 +8,15 @@ layout(location=2) uniform uint u_pointLightShadowIndex;
 
 void main()
 {
-  PointLightShadowUniforms light = u_pointLightShadows[u_pointLightShadowIndex];
+  PointLightShadowUniforms lShadow = u_pointLightShadows[u_pointLightShadowIndex];
+  PointLightUniforms l = lShadow.pointLight;
 
-  float lightDistance = length(g_fragPos.xyz - light.position);
+  float lightDistance = length(g_fragPos.xyz - l.position);
 
-  lightDistance /= light.farPlane; // normalize
+  float cutoff = 0.1;              // chosen threshold
+  float farPlane = sqrt(l.intensity / cutoff);
+
+  lightDistance /= farPlane; // normalize
 
   gl_FragDepth = lightDistance;
 }

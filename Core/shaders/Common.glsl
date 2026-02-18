@@ -11,21 +11,6 @@
 
 // structures //////////////////////////////////////////////////////////////////
 
-// variant of point lights that cast shadows
-struct PointLightShadowUniforms
-{
-  vec3 position;   // the location of the light source
-  float farPlane;
-  vec3 color;      // the color of the light source
-  float intensity; 
-
-  mat4 modelMatrix; // used for the lights bounding sphere, 
-  mat4 shadowMatrices[6];
-
-  uvec2 shadowMapHandle;
-  uvec2 pad8;
-};
-
 struct PointLightUniforms
 {
   vec3 position;   // the location of the light source
@@ -34,6 +19,15 @@ struct PointLightUniforms
   float intensity; 
 
   mat4 modelMatrix; // used for the lights bounding sphere, 
+};
+
+// variant of point lights that cast shadows
+struct PointLightShadowUniforms
+{
+  PointLightUniforms pointLight;
+  mat4 shadowMatrices[6];
+  uvec2 shadowMapHandle;
+  uvec2 pad8;
 };
 
 struct DirectionalLightUniforms

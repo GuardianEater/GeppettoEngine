@@ -10,7 +10,7 @@ layout(location=0) flat out uint v_InstanceID;
 
 void main() 
 {
-  vec4 pos4 = u_pointLightShadows[gl_InstanceID].modelMatrix * vec4(a_position, 1.0);
+  vec4 pos4 = u_pointLightShadows[gl_InstanceID].pointLight.modelMatrix * vec4(a_position, 1.0);
   gl_Position = u_cams[u_camIndex].pvMatrix * pos4;
   v_InstanceID = gl_InstanceID;
 }

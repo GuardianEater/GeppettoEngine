@@ -12,6 +12,8 @@
 
 namespace Gep
 {
+	static std::unordered_map<std::filesystem::path, std::string> mShaderCache;
+
 	Shader Shader::FromFile(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath, const std::filesystem::path& geomPath)
 	{
 		Shader newShader{};
@@ -56,7 +58,7 @@ namespace Gep
 		newShader.mFragPath = fragPath;
         newShader.mGeomPath = geomPath;
 
-		return std::move(newShader);
+		return newShader;
 	}
 
 	Shader Shader::FromSource(const std::string& vertSrc, const std::string& fragSrc, const std::string& geomSrc)
@@ -72,7 +74,7 @@ namespace Gep
 		if (vertShader && fragShader)
 			newShader.mProgram = CreateProgram(vertShader, fragShader, geomShader);
 
-		return std::move(newShader);
+		return newShader;
 	}
 
 	Shader::~Shader()
@@ -98,11 +100,11 @@ namespace Gep
 				glDeleteProgram(mProgram);
 
 			mProgram = other.mProgram;
-			other.mProgram = 0;
-
 			mVertPath.swap(other.mVertPath);
 			mFragPath.swap(other.mFragPath);
             mGeomPath.swap(other.mGeomPath);
+
+			other.mProgram = 0;
 		}
 
 		return *this;
@@ -265,32 +267,55 @@ namespace Gep
 
 	std::string Shader::ReadShader(const std::filesystem::path& path)
 	{
-		std::string shaderSource = Gep::ReadFile(path);
-		
+		if (!std::filesystem::exists(path))
+		{
+			Gep::Log::Warning("ReadShader(), Attempting to read from a path that doesnt exist ", path);
+			return "";
+		}
+
 		const std::string searchString = "#include";
+		std::string shaderSource = Gep::ReadFile(path);
+
 		size_t includeIndex = shaderSource.find(searchString);
-		size_t linestartIndex = shaderSource.rfind('\n', includeIndex) + 1; // 1 after the new line is the current line start
-		size_t lineEndIndex = shaderSource.find('\n', linestartIndex);
+		
+		// if it successfully finds an include evaluate it
 		while (includeIndex != std::string::npos)
 		{
+			// locate the position of both start and end quotes
 			size_t quoteIndex1 = shaderSource.find('\"', includeIndex + searchString.size());
-
-			if (quoteIndex1 == std::string::npos)
-				throw std::runtime_error("Invalid syntax around [#include] in shader");
-
 			size_t quoteIndex2 = shaderSource.find('\"', quoteIndex1 + 1);
-			if (quoteIndex2 == std::string::npos)
-				throw std::runtime_error("Invalid syntax around [#include] in shader");
 
-			std::string includeFileName = shaderSource.substr(quoteIndex1 + 1, quoteIndex2 - quoteIndex1 - 1); // get the name of the file included
+			// get the name of the file included
+			const std::string includeFileName = shaderSource.substr(quoteIndex1 + 1, quoteIndex2 - quoteIndex1 - 1); 
 
-			std::string includedSource = Gep::ReadFile(path.parent_path() / includeFileName); // read in the included files source
+			// remove the [#include "..."]
+			shaderSource.erase(includeIndex, quoteIndex2 - includeIndex + 1);
 
-			shaderSource.erase(linestartIndex, lineEndIndex - linestartIndex); // remove the include line
+			const std::filesystem::path includePath = path.parent_path() / includeFileName;
+			size_t offset = includeIndex; // minor optimization skips already checked areas
 
-			shaderSource.insert(linestartIndex, includedSource); // inserts the included source into where the include statement was
+			// if the include file has already been loaded reuse it
+			if (mShaderCache.contains(includePath))
+			{
+				const std::string& includeSource = mShaderCache.at(includePath);
+				shaderSource.insert(includeIndex, includeSource);
+				offset += includeSource.size();
+			}
+			// load the include file from disk and add it to the cache
+			else if (std::filesystem::exists(includePath))
+			{
+				const auto& [it, _0] = mShaderCache.try_emplace(includePath, ReadShader(includePath));
+				const auto& [_1, includeSource] = *it;
 
-			includeIndex = shaderSource.find(searchString, linestartIndex); // move to the next include if there is once
+				shaderSource.insert(includeIndex, includeSource);
+				offset += includeSource.size();
+			}
+			else
+			{
+				Gep::Log::Warning("Include doesn't exist in [", path, "]: [#include \"", includeFileName, "\"]");
+			}
+
+			includeIndex = shaderSource.find(searchString, offset);
 		}
 
 		return shaderSource;
@@ -298,6 +323,8 @@ namespace Gep
 
 	void Shader::Reload()
 	{
+		mShaderCache.clear();
+
 		Shader newShader = FromFile(mVertPath, mFragPath, mGeomPath);
 		 
 		if (newShader.IsValid())
