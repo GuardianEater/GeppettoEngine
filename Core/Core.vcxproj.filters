@@ -64,9 +64,6 @@
     <Filter Include="Client\Editor">
       <UniqueIdentifier>{99815ced-d820-40ab-abbb-52e71e26ea01}</UniqueIdentifier>
     </Filter>
-    <Filter Include="gtl">
-      <UniqueIdentifier>{d43c1736-0dc7-454a-a835-19b0ac564a6b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Backend\Structures">
       <UniqueIdentifier>{63530754-b2c2-4a0f-9633-7cfc8f659e50}</UniqueIdentifier>
     </Filter>
@@ -503,18 +500,6 @@
     <ClInclude Include="FrameBuffer.hpp">
       <Filter>Backend\Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="keyed_vector.hpp">
-      <Filter>gtl</Filter>
-    </ClInclude>
-    <ClInclude Include="void_unique_ptr.hpp">
-      <Filter>gtl</Filter>
-    </ClInclude>
-    <ClInclude Include="uuid.hpp">
-      <Filter>gtl</Filter>
-    </ClInclude>
-    <ClInclude Include="type_list.hpp">
-      <Filter>gtl</Filter>
-    </ClInclude>
     <ClInclude Include="VQS.hpp">
       <Filter>Backend\Structures</Filter>
     </ClInclude>
@@ -547,17 +532,8 @@
     <None Include="ImGuiHelp.inl">
       <Filter>Backend\Tools</Filter>
     </None>
-    <None Include="keyed_vector.inl">
-      <Filter>gtl</Filter>
-    </None>
-    <None Include="uuid.inl">
-      <Filter>gtl</Filter>
-    </None>
     <None Include="STLHelp.inl">
       <Filter>Backend\Tools</Filter>
-    </None>
-    <None Include="type_list.inl">
-      <Filter>gtl</Filter>
     </None>
     <None Include="GPUVector.inl">
       <Filter>Client</Filter>
