@@ -19,7 +19,7 @@
 
 #include "stb_image.h"
 #include "Logger.hpp"
-#include "keyed_vector.hpp"
+#include "gtl/keyed_vector.hpp"
 
 #include "Model.hpp"
 

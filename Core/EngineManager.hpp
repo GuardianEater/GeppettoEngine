@@ -13,7 +13,6 @@
 #include "ISystem.hpp"
 #include "Events.hpp"
 
-#include "type_list.hpp"
 
 #include "Logger.hpp"
 #include "TypeID.hpp"
@@ -25,9 +24,10 @@
 #include <nlohmann/json.hpp>
 
 // gtl
-#include "keyed_vector.hpp"
-#include "void_unique_ptr.hpp"
-#include "uuid.hpp"
+#include "gtl/type_list.hpp"
+#include "gtl/keyed_vector.hpp"
+#include "gtl/void_unique_ptr.hpp"
+#include "gtl/uuid.hpp"
 
 namespace Gep
 {

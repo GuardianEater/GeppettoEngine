@@ -524,6 +524,12 @@
     <ClInclude Include="Tester.hpp">
       <Filter>Backend</Filter>
     </ClInclude>
+    <ClInclude Include="GPUKeyedVector.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="GPUVector.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineManager.inl">
@@ -552,6 +558,9 @@
     </None>
     <None Include="type_list.inl">
       <Filter>gtl</Filter>
+    </None>
+    <None Include="GPUVector.inl">
+      <Filter>Client</Filter>
     </None>
   </ItemGroup>
 </Project>

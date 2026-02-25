@@ -11,7 +11,7 @@
 
 #include <glm/glm.hpp>
 
-#include "UUID.hpp"
+#include "gtl/uuid.hpp"
 
 namespace Client
 {

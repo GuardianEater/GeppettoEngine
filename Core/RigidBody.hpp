@@ -9,10 +9,10 @@
 #pragma once
 
 // glm
-#include <glm\glm.hpp>
+#include <glm/glm.hpp>
 
 // help
-#include "uuid.hpp"
+#include "gtl/uuid.hpp"
 
 namespace Client
 {

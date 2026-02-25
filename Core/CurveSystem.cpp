@@ -26,7 +26,7 @@
 #include "GLMHelp.hpp"
 
 // gtl
-#include "uuid.hpp"
+#include "gtl/uuid.hpp"
 
 // component
 #include "CurveComponent.hpp"

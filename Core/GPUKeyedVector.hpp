@@ -9,7 +9,7 @@
 #pragma once
 
 #include "GPUVector.hpp"
-#include "keyed_vector.hpp"
+#include "gtl/keyed_vector.hpp"
 #include <cstddef>
 
 namespace Gep

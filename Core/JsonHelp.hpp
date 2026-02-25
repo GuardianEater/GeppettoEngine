@@ -13,8 +13,11 @@
 #include <nlohmann/json.hpp>
 #include <glm/glm.hpp>
 #include <TypeID.hpp>
-#include <uuid.hpp>
 #include "VQS.hpp"
+
+// gtl
+#include <gtl/uuid.hpp>
+
 // adds overloads for nlohmann
 namespace nlohmann
 {

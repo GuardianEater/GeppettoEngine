@@ -20,7 +20,7 @@
 #include "EngineManager.hpp"
 
 // gtl
-#include "uuid.hpp"
+#include "gtl/uuid.hpp"
 
 namespace Client
 {
