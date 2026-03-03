@@ -170,7 +170,9 @@ namespace Gep
 
     size_t OpenGLRenderer::AddMaterial(const Gep::MaterialGPUData& material)
     {
-        return mMaterials.emplace(material);
+        size_t matIndex = mMaterials.emplace(material);
+        mMaterials.commit();
+        return matIndex;
     }
 
     const Gep::Model& OpenGLRenderer::GetModel(const std::string& name)
