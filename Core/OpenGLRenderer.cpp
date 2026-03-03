@@ -630,9 +630,9 @@ namespace Gep
     {
         // render to depth cube buffer here
         PointLightShadowDepthPass();            // renders all scene geometry for each point light that casts shadows to the corresponding shadow map
-        //DirectionalLightShadowDepthPass();
+        DirectionalLightShadowDepthPass();
         GeometryPass(targetFrameBuffer);   // renders all scene geometry to the gbuffer
-        //DirectionalLightPass(targetFrameBuffer);
+        DirectionalLightPass(targetFrameBuffer);
         PointLightPass(targetFrameBuffer); // renders all point lights as light volumes, using the gbuffer for shading
         // draw point light shadows here
         DrawLines();
@@ -746,8 +746,7 @@ namespace Gep
 
         glBindVertexArray(meshHandle.mVertexArrayObject);
 
-        mShader_PointLight.Bind(); 
-        // draw pass for lights that do not cast shadows
+        mShader_PointLight.Bind(); // draw pass for lights that do not cast shadows
         glDrawElementsInstanced(
             GL_TRIANGLES,
             meshHandle.mIndexCount,
@@ -756,8 +755,7 @@ namespace Gep
             static_cast<GLsizei>(mPointLightUniforms.size())
         );
 
-        mShader_PointLightWithShadows.Bind();
-        // draw pass for lights that cast shadows
+        mShader_PointLightWithShadows.Bind(); // draw pass for lights that cast shadows
         glDrawElementsInstanced(
             GL_TRIANGLES,
             meshHandle.mIndexCount,
