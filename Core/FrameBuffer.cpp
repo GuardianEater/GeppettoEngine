@@ -255,7 +255,7 @@ namespace Gep
         }
 
         if (mSize == size) return; // dont do anything if the size hasn't changed
-        Gep::Log::Info("Resizing Framebuffer...");
+        Gep::Log::Info("Resizing Framebuffer...[", size.x, ", ", size.y, "]");
         mSize = size;
 
         glBindFramebuffer(GL_FRAMEBUFFER, mTarget->frameBuffer);
@@ -263,25 +263,15 @@ namespace Gep
         for (const TextureAttachment& tex : mTarget->textures)
         {
             glBindTexture(tex.target, tex.id);
-
-            if (tex.target == GL_TEXTURE_CUBE_MAP)
-            {
-                for (uint32_t i = 0; i < 6; ++i)
-                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, tex.internalFormat, size.x, size.y, 0, tex.format, tex.type, nullptr);
-            }
-            else
-            {
-                glTexImage2D(tex.target, 0, tex.internalFormat, size.x, size.y, 0, tex.format, tex.type, nullptr);
-            }
+            glTexImage2D(tex.target, 0, tex.internalFormat, size.x, size.y, 0, tex.format, tex.type, nullptr);
         }
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
             Log::Error("Resize() error: Framebuffer is not complete!");
         }
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+
 
     void FrameBuffer::UpdateViewport() const
     {
