@@ -134,9 +134,6 @@ namespace Gep
         glBindTexture(texture.target, texture.id);
 
         // set handle for sampling the texture on the gpu
-        texture.handle = glGetTextureHandleARB(texture.id);
-        glMakeTextureHandleResidentARB(texture.handle);
-
         glTexImage2D(texture.target, 0, texture.internalFormat, mSize.x, mSize.y, 0, texture.format, texture.type, nullptr);
 
         // set texture parameters
@@ -146,6 +143,9 @@ namespace Gep
         glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(texture.target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
+        //texture.handle = glGetTextureHandleARB(texture.id);
+        //glMakeTextureHandleResidentARB(texture.handle);
+
         glBindFramebuffer(GL_FRAMEBUFFER, mTarget->frameBuffer);
         glFramebufferTexture2D(GL_FRAMEBUFFER, texture.attachment, texture.target, texture.id, 0);
 
@@ -154,6 +154,7 @@ namespace Gep
             Log::Error("AddTexture() error: Framebuffer is not complete!");
         }
 
+        glBindTexture(texture.target, 0);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
@@ -195,6 +196,11 @@ namespace Gep
             return 0;
         }
         return mTarget->textures[index].type;
+    }
+
+    const std::vector<TextureAttachment>& FrameBuffer::GetTextureAttachments() const
+    {
+        return mTarget->textures;
     }
 
     // takes the texture attachments and binds them to the corresponding texture units
