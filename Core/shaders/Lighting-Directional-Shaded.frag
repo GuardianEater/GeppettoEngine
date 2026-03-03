@@ -26,8 +26,8 @@ vec3 GetPosition(vec2 uv, float depth)
 
 void main(void)
 {
-  f_color = vec4(1.0, 0.0, 0.0, 1.0);
-  return; // do not do anything if there is nothing
+  // f_color = vec4(1.0, 0.0, 0.0, 1.0);
+  // return; // do not do anything if there is nothing
 
   // reconstructs uv from frag position and texture size
   // (any texture from the gbuffer would work they are all the same size)

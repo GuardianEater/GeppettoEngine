@@ -71,7 +71,7 @@ namespace Gep
     {
         FrameBuffer fb = Create(size);
         fb.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGBA32F, GL_RGBA, GL_FLOAT);
-        fb.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT);
+        fb.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
         return fb;
     }
 
@@ -133,10 +133,6 @@ namespace Gep
         glGenTextures(1, &texture.id);
         glBindTexture(texture.target, texture.id);
 
-        // set handle for sampling the texture on the gpu
-        texture.handle = glGetTextureHandleARB(texture.id);
-        glMakeTextureHandleResidentARB(texture.handle);
-
         glTexImage2D(texture.target, 0, texture.internalFormat, mSize.x, mSize.y, 0, texture.format, texture.type, nullptr);
 
         // set texture parameters
@@ -145,6 +141,10 @@ namespace Gep
         glTexParameteri(texture.target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(texture.target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+        // set handle for sampling the texture on the gpu
+        texture.handle = glGetTextureHandleARB(texture.id);
+        glMakeTextureHandleResidentARB(texture.handle);
 
         glBindFramebuffer(GL_FRAMEBUFFER, mTarget->frameBuffer);
         glFramebufferTexture2D(GL_FRAMEBUFFER, texture.attachment, texture.target, texture.id, 0);
@@ -203,7 +203,7 @@ namespace Gep
         for (size_t i = 0; i < mTarget->textures.size(); ++i)
         {
             glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(i));
-            glBindTexture(GL_TEXTURE_2D, mTarget->textures[i].id);
+            glBindTexture(mTarget->textures[i].target, mTarget->textures[i].id);
         }
     }
 
@@ -257,16 +257,33 @@ namespace Gep
 
         glBindFramebuffer(GL_FRAMEBUFFER, mTarget->frameBuffer);
 
-        for (const TextureAttachment& tex : mTarget->textures)
+        for (TextureAttachment& tex : mTarget->textures)
         {
+            if (tex.handle != 0 && glIsTextureHandleResidentARB(tex.handle))
+                glMakeTextureHandleNonResidentARB(tex.handle);
+
             glBindTexture(tex.target, tex.id);
-            glTexImage2D(tex.target, 0, tex.internalFormat, size.x, size.y, 0, tex.format, tex.type, nullptr);
+
+            if (tex.target == GL_TEXTURE_CUBE_MAP)
+            {
+                for (uint32_t i = 0; i < 6; ++i)
+                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, tex.internalFormat, size.x, size.y, 0, tex.format, tex.type, nullptr);
+            }
+            else
+            {
+                glTexImage2D(tex.target, 0, tex.internalFormat, size.x, size.y, 0, tex.format, tex.type, nullptr);
+            }
+
+            tex.handle = glGetTextureHandleARB(tex.id);
+            glMakeTextureHandleResidentARB(tex.handle);
         }
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
             Log::Error("Resize() error: Framebuffer is not complete!");
         }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     void FrameBuffer::UpdateViewport() const
