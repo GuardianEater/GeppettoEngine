@@ -53,6 +53,8 @@ namespace Gep
         size_t size() const;     // returns the size of the cpu vector
         size_t capacity() const; // returns the capacity allocated on the gpu
 
+        bool empty();
+
         void commit(); // moves all data to the gpu all at once, re-allocating the gpu side buffer if needed
 
         Type* cpu_data() { return mCPUBuffer.data(); }

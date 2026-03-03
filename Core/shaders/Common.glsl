@@ -40,6 +40,15 @@ struct DirectionalLightUniforms
   float pad2;
 };
 
+struct DirectionalLightShadowUniforms
+{
+  DirectionalLightUniforms light;
+
+  mat4 pvMatrix;
+  uvec2 shadowMapHandle;
+};
+
+
 // the material of the current object
 struct PBRMaterial
 {
@@ -137,6 +146,11 @@ layout(std430, binding=6) buffer DirectionalLightUniformsBuffer
 layout(std430, binding=7) buffer PointLightShadowUniformsBuffer
 {
   PointLightShadowUniforms u_pointLightShadows[];
+};
+
+layout(std430, binding=8) buffer DirectionalLightShadowUniformsBuffer
+{
+  DirectionalLightShadowUniforms u_directionalLightShadows[];
 };
 
 // uniforms ////////////////////////////////////////////////////////////////////

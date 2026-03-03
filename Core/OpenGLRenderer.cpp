@@ -58,30 +58,54 @@ namespace Gep
     {
         SetUpLineDrawing();
 
+        // gbuffer
         mGeometryFrameBuffer = FrameBuffer::Create({128, 128});
         mGeometryFrameBuffer.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT); // depth
         mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGB16F, GL_RGB, GL_FLOAT); // normal
         mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT1, GL_RGBA8, GL_RGBA, GL_FLOAT); // color
         mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT2, GL_RGB8, GL_RGB, GL_FLOAT); // ao + roughness + metalness
 
-        mGeometryShader_Static  = Shader::FromFile("shaders/Geometry-Static.vert",  "shaders/Geometry.frag"); // shader used for geometry pass of static models
-        mGeometryShader_Skinned = Shader::FromFile("shaders/Geometry-Skinned.vert", "shaders/Geometry.frag"); // shader used for geometry pass of animated models
-        mLightingShader         = Shader::FromFile("shaders/Lighting.vert",         "shaders/Lighting.frag"); // shader used for lighting pass
-        mLineShader             = Shader::FromFile("shaders/Line.vert",             "shaders/Line.frag");     // shader used for drawing lines
-        mPointLightShadowShader = Shader::FromFile("shaders/Shadows.vert", "shaders/Shadows.frag", "shaders/Shadows.geom"); // shader used for point light shadow pass
-        mLightingShadedShader   = Shader::FromFile("shaders/Lighting-Shaded.vert", "shaders/Lighting-Shaded.frag"); // shader used for lighting pass when shadows are being cast
+        // setup geometry shaders
+        mShader_GeometryStatic  = Shader::FromFile("shaders/Geometry-Static.vert", "shaders/Geometry.frag");
+        mShader_GeometrySkinned = Shader::FromFile("shaders/Geometry-Skinned.vert", "shaders/Geometry.frag");
+        mShader_Line            = Shader::FromFile("shaders/Line.vert", "shaders/Line.frag");
 
-        mLightingShadedShader.Bind();
-        mLightingShadedShader.SetUniform("u_depthTexture", 0);
-        mLightingShadedShader.SetUniform("u_normalTexture", 1);
-        mLightingShadedShader.SetUniform("u_colorTexture", 2);
-        mLightingShadedShader.SetUniform("u_armTexture", 3);
+        // setup pointlight shaders
+        mShader_PointLight            = Shader::FromFile("shaders/Lighting.vert", "shaders/Lighting.frag");
+        mShader_PointLightWithShadows = Shader::FromFile("shaders/Lighting-Shaded.vert", "shaders/Lighting-Shaded.frag");
+        mShader_PointLightShadowDepth = Shader::FromFile("shaders/Shadows.vert", "shaders/Shadows.frag", "shaders/Shadows.geom");
 
-        mLightingShader.Bind();
-        mLightingShader.SetUniform("u_depthTexture", 0);
-        mLightingShader.SetUniform("u_normalTexture", 1);
-        mLightingShader.SetUniform("u_colorTexture", 2);
-        mLightingShader.SetUniform("u_armTexture", 3);
+        // setup directional light shaders
+        mShader_DirectionalLight            = Shader::FromFile("shaders/Lighting-Directional.vert", "shaders/Lighting-Directional.frag");
+        mShader_DirectionalLightWithShadows = Shader::FromFile("shaders/Lighting-Directional.vert", "shaders/Lighting-Directional-Shaded.frag");
+        mShader_DirectionalLightShadowDepth = Shader::FromFile("shaders/Shadows-Directional.vert", "shaders/Shadows-Directional.frag");
+
+        // gbuffer access in shader
+        mShader_PointLight.Bind();
+        mShader_PointLight.SetUniform("u_depthTexture", 0);
+        mShader_PointLight.SetUniform("u_normalTexture", 1);
+        mShader_PointLight.SetUniform("u_colorTexture", 2);
+        mShader_PointLight.SetUniform("u_armTexture", 3);
+
+        mShader_PointLightWithShadows.Bind();
+        mShader_PointLightWithShadows.SetUniform("u_depthTexture", 0);
+        mShader_PointLightWithShadows.SetUniform("u_normalTexture", 1);
+        mShader_PointLightWithShadows.SetUniform("u_colorTexture", 2);
+        mShader_PointLightWithShadows.SetUniform("u_armTexture", 3);
+
+        mShader_DirectionalLight.Bind();
+        mShader_DirectionalLight.SetUniform("u_depthTexture", 0);
+        mShader_DirectionalLight.SetUniform("u_normalTexture", 1);
+        mShader_DirectionalLight.SetUniform("u_colorTexture", 2);
+        mShader_DirectionalLight.SetUniform("u_armTexture", 3);
+
+        mShader_DirectionalLightWithShadows.Bind();
+        mShader_DirectionalLightWithShadows.SetUniform("u_depthTexture", 0);
+        mShader_DirectionalLightWithShadows.SetUniform("u_normalTexture", 1);
+        mShader_DirectionalLightWithShadows.SetUniform("u_colorTexture", 2);
+        mShader_DirectionalLightWithShadows.SetUniform("u_armTexture", 3);
+
+        Shader::Unbind();
     }
 
     void OpenGLRenderer::AddModelFromFile(const std::string& path)
@@ -205,12 +229,18 @@ namespace Gep
     void OpenGLRenderer::AddPointLightShadow(const PointLightShadowGPUData& uniforms, const FrameBuffer& fbo)
     {
         mPointLightShadowUniforms.push_back(uniforms);
-        mShadowMaps.push_back(fbo);
+        mPointLightShadowMaps.push_back(fbo);
     }
 
     void OpenGLRenderer::AddDirectionalLight(const DirectionalLightGPUData& uniforms)
     {
         mDirectionalLightUniforms.push_back(uniforms);
+    }
+
+    void OpenGLRenderer::AddDirectionalLightShadow(const DirectionalLightShadowGPUData& uniforms, const FrameBuffer& fbo)
+    {
+        mDirectionalLightShadowUniforms.push_back(uniforms);
+        mDirectionalLightShadowMaps.push_back(fbo);
     }
 
     void OpenGLRenderer::AddBone(const BoneGPUData& boneData)
@@ -273,6 +303,7 @@ namespace Gep
         mPointLightUniforms.commit();
         mPointLightShadowUniforms.commit();
         mDirectionalLightUniforms.commit();
+        mDirectionalLightShadowUniforms.commit();
     }
 
     void OpenGLRenderer::SetCameraIndex(uint32_t index)
@@ -460,17 +491,17 @@ namespace Gep
         }, 
         GetAllShaders());
 
-        mLightingShader.Bind();
-        mLightingShader.SetUniform("u_depthTexture", 0);
-        mLightingShader.SetUniform("u_normalTexture", 1);
-        mLightingShader.SetUniform("u_colorTexture", 2);
-        mLightingShader.SetUniform("u_armTexture", 3);
+        mShader_PointLight.Bind();
+        mShader_PointLight.SetUniform("u_depthTexture", 0);
+        mShader_PointLight.SetUniform("u_normalTexture", 1);
+        mShader_PointLight.SetUniform("u_colorTexture", 2);
+        mShader_PointLight.SetUniform("u_armTexture", 3);
 
-        mLightingShadedShader.Bind();
-        mLightingShadedShader.SetUniform("u_depthTexture", 0);
-        mLightingShadedShader.SetUniform("u_normalTexture", 1);
-        mLightingShadedShader.SetUniform("u_colorTexture", 2);
-        mLightingShadedShader.SetUniform("u_armTexture", 3);
+        mShader_PointLightWithShadows.Bind();
+        mShader_PointLightWithShadows.SetUniform("u_depthTexture", 0);
+        mShader_PointLightWithShadows.SetUniform("u_normalTexture", 1);
+        mShader_PointLightWithShadows.SetUniform("u_colorTexture", 2);
+        mShader_PointLightWithShadows.SetUniform("u_armTexture", 3);
     }
 
     void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)
@@ -597,7 +628,9 @@ namespace Gep
     {
         // render to depth cube buffer here
         PointLightShadowDepthPass();            // renders all scene geometry for each point light that casts shadows to the corresponding shadow map
+        //DirectionalLightShadowDepthPass();
         GeometryPass(targetFrameBuffer);   // renders all scene geometry to the gbuffer
+        //DirectionalLightPass(targetFrameBuffer);
         PointLightPass(targetFrameBuffer); // renders all point lights as light volumes, using the gbuffer for shading
         // draw point light shadows here
         DrawLines();
@@ -615,10 +648,14 @@ namespace Gep
             }
         }
 
-        mShadowMaps.clear();
+        mPointLightShadowMaps.clear();
         mPointLightShadowUniforms.clear();
         mPointLightUniforms.clear();
+
+        mDirectionalLightShadowMaps.clear();
         mDirectionalLightUniforms.clear();
+        mDirectionalLightShadowUniforms.clear();
+
         mStaticObjectUniforms.clear();
         mStaticObjectDrawInfo.clear();
         mCameraUniforms.clear();
@@ -658,7 +695,7 @@ namespace Gep
         uint32_t baseInstance = 0;
         uint32_t meshBaseInstance = 0;
 
-        mGeometryShader_Static.Bind();
+        mShader_GeometryStatic.Bind();
 
         for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
         {
@@ -666,7 +703,7 @@ namespace Gep
             {
                 glBindVertexArray(vao);
 
-                mGeometryShader_Static.SetUniform(3, meshBaseInstance);
+                mShader_GeometryStatic.SetUniform(3, meshBaseInstance);
 
                 glDrawElementsInstancedBaseInstance(
                     GL_TRIANGLES,
@@ -707,7 +744,7 @@ namespace Gep
 
         glBindVertexArray(meshHandle.mVertexArrayObject);
 
-        mLightingShader.Bind(); 
+        mShader_PointLight.Bind(); 
         // draw pass for lights that do not cast shadows
         glDrawElementsInstanced(
             GL_TRIANGLES,
@@ -717,7 +754,7 @@ namespace Gep
             static_cast<GLsizei>(mPointLightUniforms.size())
         );
 
-        mLightingShadedShader.Bind();
+        mShader_PointLightWithShadows.Bind();
         // draw pass for lights that cast shadows
         glDrawElementsInstanced(
             GL_TRIANGLES,
@@ -748,15 +785,94 @@ namespace Gep
         glCullFace(GL_BACK);
 
         uint32_t lightIndex = 0;
-        mPointLightShadowShader.Bind();
-        for (const FrameBuffer& shadowMap : mShadowMaps)
+        mShader_PointLightShadowDepth.Bind();
+        for (const FrameBuffer& shadowMap : mPointLightShadowMaps)
         {
             shadowMap.Bind();
             shadowMap.UpdateViewport();
             glClear(GL_DEPTH_BUFFER_BIT);
 
             uint32_t baseInstance = 0;
-            mPointLightShadowShader.SetUniform(2, lightIndex++);
+            mShader_PointLightShadowDepth.SetUniform(2, lightIndex++);
+
+            for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
+            {
+                for (auto [vao, indexCount] : di.vaos)
+                {
+                    glBindVertexArray(vao);
+                    glDrawElementsInstancedBaseInstance(
+                        GL_TRIANGLES,
+                        indexCount,
+                        GL_UNSIGNED_INT,
+                        0,
+                        di.count,
+                        baseInstance
+                    );
+                }
+                baseInstance += di.count;
+            }
+        }
+
+        Shader::Unbind();
+        FrameBuffer::Unbind();
+    }
+
+    void OpenGLRenderer::DirectionalLightPass(Gep::FrameBuffer& targetFrameBuffer)
+    {
+        if (mDirectionalLightUniforms.empty())
+            return;
+
+        targetFrameBuffer.Bind();          // draw to the target framebuffer
+        mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
+
+        glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+
+        mShader_DirectionalLight.Bind();
+        glDrawArraysInstanced(
+            GL_TRIANGLES,
+            0,
+            3,
+            static_cast<GLsizei>(mDirectionalLightUniforms.size())
+        );
+
+        mShader_DirectionalLightWithShadows.Bind();
+        glDrawArraysInstanced(
+            GL_TRIANGLES,
+            0,
+            3,
+            static_cast<GLsizei>(mDirectionalLightShadowUniforms.size())
+        );
+
+        Shader::Unbind();
+    }
+
+    void OpenGLRenderer::DirectionalLightShadowDepthPass()
+    {
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+
+        glDisable(GL_BLEND);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+
+        uint32_t lightIndex = 0;
+        mShader_DirectionalLightShadowDepth.Bind();
+        for (const FrameBuffer& shadowMap : mDirectionalLightShadowMaps)
+        {
+            shadowMap.Bind();
+            shadowMap.UpdateViewport();
+            glClear(GL_DEPTH_BUFFER_BIT);
+
+            uint32_t baseInstance = 0;
+            mShader_DirectionalLightShadowDepth.SetUniform(2, lightIndex++);
 
             for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
             {
@@ -782,7 +898,7 @@ namespace Gep
 
     void OpenGLRenderer::DrawLines()
     {
-        mLineShader.Bind();
+        mShader_Line.Bind();
 
         glBindVertexArray(mLineVAO);
         glBindBuffer(GL_ARRAY_BUFFER, mLineVBO);
@@ -790,7 +906,7 @@ namespace Gep
         for (const LineGPUData& lineData : mLineUniforms)
         {
             // one color per set
-            mLineShader.SetUniform(1, glm::vec4(lineData.color, 1.0f));
+            mShader_Line.SetUniform(1, glm::vec4(lineData.color, 1.0f));
 
             glBufferData(GL_ARRAY_BUFFER,
                 lineData.points.size() * sizeof(glm::vec3) * 2,
@@ -802,7 +918,7 @@ namespace Gep
             glDrawArrays(GL_LINES, 0, lineData.points.size() * 2);
         }
 
-        mLineShader.Unbind();
+        mShader_Line.Unbind();
         //glEnable(GL_DEPTH_TEST);
     }
 

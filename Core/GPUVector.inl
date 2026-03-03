@@ -94,6 +94,12 @@ namespace Gep
     }
 
     template<typename Type, size_t BINDING_POINT>
+    inline bool gpu_vector<Type, BINDING_POINT>::empty()
+    {
+        return mCPUBuffer.empty();
+    }
+
+    template<typename Type, size_t BINDING_POINT>
     inline void gpu_vector<Type, BINDING_POINT>::commit()
     {
         if (mCPUBuffer.empty())

@@ -86,7 +86,8 @@ int main()
         Client::CurveComponent,
         Client::PathFollowerComponent,
         Client::IKTarget,
-        Client::ShadowCasterComponent
+        Client::ShadowCasterComponent,
+        Client::ShadowCasterDirectionalComponent
     > componentTypes;
 
     // list of all systems //////////////////////////////////////////////////////////////////////////

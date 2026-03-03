@@ -41,6 +41,7 @@ namespace Client
     struct DirectionalLight;
     struct CollisionResource;
     struct EditorResource;
+    struct ShadowCasterComponent;
 }
 
 // client
@@ -74,6 +75,7 @@ namespace Client
         void OnRiggedModelEditorRender(const Gep::Event::ComponentEditorRender<RiggedModelComponent>& event);
         void OnStaticModelEditorRender(const Gep::Event::ComponentEditorRender<StaticModelComponent>& event);
         void OnPointLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event);
+        void OnShadowCasterEditorRender(const Gep::Event::ComponentEditorRender<ShadowCasterComponent>& event);
         void OnDirectionalLightEditorRender(const Gep::Event::ComponentEditorRender<DirectionalLight>& event);
         void OnCameraEditorRender(const Gep::Event::ComponentEditorRender<Camera>& event);
 

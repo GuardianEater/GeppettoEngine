@@ -67,6 +67,7 @@ namespace Client
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<RiggedModelComponent>>(this, &RenderSystem::OnRiggedModelEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<StaticModelComponent>>(this, &RenderSystem::OnStaticModelEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Light>>(this, &RenderSystem::OnPointLightEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<ShadowCasterComponent>>(this, &RenderSystem::OnShadowCasterEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<DirectionalLight>>(this, &RenderSystem::OnDirectionalLightEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Camera>>(this, &RenderSystem::OnCameraEditorRender);
 
@@ -289,6 +290,7 @@ namespace Client
             }
         }
     }
+
     void RenderSystem::OnRiggedModelEditorRender(const Gep::Event::ComponentEditorRender<RiggedModelComponent>& event)
     {
         std::span<RiggedModelComponent*> models = event.components;
@@ -430,6 +432,19 @@ namespace Client
         Gep::ImGui::MultiCheckbox("Enabled", lights,
             [](Light* light) -> bool& { return light->enabled; }
         );
+    }
+
+    void RenderSystem::OnShadowCasterEditorRender(const Gep::Event::ComponentEditorRender<ShadowCasterComponent>& event)
+    {
+        std::span<ShadowCasterComponent*> scs = event.components;
+
+        // only single selection beyond this point
+        if (scs.size() > 1)
+            return;
+
+        ShadowCasterComponent& sc = *scs.front();
+
+        ImGui::Text("This component makes lighting components cast shadows");
     }
 
     void RenderSystem::OnDirectionalLightEditorRender(const Gep::Event::ComponentEditorRender<DirectionalLight>& event)
@@ -838,7 +853,7 @@ namespace Client
 
             float nearPlane = 1.0f;
             float farPlane = radius;
-            float aspectRatio = (float)sc.shadowFrameBuffer.GetSize().x / (float)sc.shadowFrameBuffer.GetSize().y;
+            float aspectRatio = (float)sc.shadowMap.GetSize().x / (float)sc.shadowMap.GetSize().y;
             glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspectRatio, nearPlane, farPlane);
 
             glm::mat4 shadow0 = shadowProj * glm::lookAt(t.world.position, t.world.position + glm::vec3(1, 0, 0), glm::vec3(0, -1, 0));
@@ -848,26 +863,33 @@ namespace Client
             glm::mat4 shadow4 = shadowProj * glm::lookAt(t.world.position, t.world.position + glm::vec3(0, 0, 1), glm::vec3(0, -1, 0));
             glm::mat4 shadow5 = shadowProj * glm::lookAt(t.world.position, t.world.position + glm::vec3(0, 0, -1), glm::vec3(0, -1, 0));
 
-            GLuint64 cubemapHandle = sc.shadowFrameBuffer.GetTextureAttachments().at(0).handle;
+            GLuint64 cubemapHandle = sc.shadowMap.GetTextureAttachments().at(0).handle;
 
-            Gep::PointLightShadowGPUData uniforms
+            Gep::PointLightGPUData light
             {
                 .position = t.world.position,
-                .farPlane = farPlane,
                 .color = l.color,
                 .intensity = l.intensity,
 
                 .modelMatrix = modelMatrix,
+            };
+
+            Gep::PointLightShadowGPUData uniforms
+            {
+                .light = light,
                 .shadowMatrices = { shadow0, shadow1, shadow2, shadow3, shadow4, shadow5 },
                 .shadowMapHandle = cubemapHandle
             };
             
-            mRenderer.AddPointLightShadow(uniforms, sc.shadowFrameBuffer);
+            mRenderer.AddPointLightShadow(uniforms, sc.shadowMap);
         });
 
         // prepares all of the directional light uniform values
         mManager.ForEachArchetype([&](Gep::Entity e, DirectionalLight& l, Transform& t)
         {
+            if (mManager.HasComponent<ShadowCasterDirectionalComponent>(e))
+                return; // skip lights that also have shadow caster components, they will be added in the next loop
+
             if (l.intensity <= 0.0f)
                 return; // skip lights that have no intensity
             if (!l.enabled)
@@ -882,6 +904,41 @@ namespace Client
             };
 
             mRenderer.AddDirectionalLight(uniforms);
+        });
+
+        // prepares all shadowing directional light uniform values
+        mManager.ForEachArchetype([&](Gep::Entity e, DirectionalLight& l, ShadowCasterDirectionalComponent& sc, Transform& t)
+        {
+            if (l.intensity <= 0.0f)
+                return; // skip lights that have no intensity
+            if (!l.enabled)
+                return; // skip disabled lights
+
+            float near = 1.0f;
+            float far = 1000.0f;
+
+            glm::mat4 lightProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near, far);
+            glm::mat4 lightView = glm::lookAt(t.world.position, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
+
+            GLuint64 shadowMapHandle = sc.shadowMap.GetTextureAttachments().at(0).handle;
+
+            Gep::DirectionalLightGPUData light
+            {
+                .position = t.world.position,
+                .color = l.color,
+                .intensity = l.intensity,
+                .direction = t.world.rotation * glm::vec3(0, 1, 0)
+            };
+
+            Gep::DirectionalLightShadowGPUData uniforms
+            {
+                .light = light,
+
+                .pvMatrix = lightProj * lightView,
+                .shadowMapHandle = shadowMapHandle,
+            };
+
+            mRenderer.AddDirectionalLightShadow(uniforms, sc.shadowMap);
         });
     }
 

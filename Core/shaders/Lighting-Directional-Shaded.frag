@@ -26,8 +26,8 @@ vec3 GetPosition(vec2 uv, float depth)
 
 void main(void)
 {
-  // f_color = vec4(1.0, 0.0, 0.0, 1.0);
-  // return; // do not do anything if there is nothing
+  f_color = vec4(1.0, 0.0, 0.0, 1.0);
+  return; // do not do anything if there is nothing
 
   // reconstructs uv from frag position and texture size
   // (any texture from the gbuffer would work they are all the same size)
@@ -41,7 +41,8 @@ void main(void)
 
   // reconstructs position from uv and depth
   vec3 position = GetPosition(uv, depth);
-  DirectionalLightUniforms l = u_directionalLights[v_InstanceID];
+  DirectionalLightShadowUniforms lShadow = u_directionalLightShadows[v_InstanceID];
+  DirectionalLightUniforms l = lShadow.light;
 
   // extracts materials from the gbuffer
   vec3 arm = texture(u_armTexture, uv).xyz;
@@ -53,8 +54,24 @@ void main(void)
   mat.roughness = arm.y;
   mat.metallic  = arm.z;
 
+  // calculate shadow
+  vec4 fragPosLightSpace = lShadow.pvMatrix * vec4(position, 1.0);
+  vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+  projCoords = projCoords * 0.5 + 0.5;
+  float shadow = 0.0;
+  if (projCoords.x >= 0.0 && projCoords.x <= 1.0 &&
+      projCoords.y >= 0.0 && projCoords.y <= 1.0 &&
+      projCoords.z <= 1.0)
+  {
+    float closestDepth = texture(sampler2D(lShadow.shadowMapHandle), projCoords.xy).r;
+    float currentDepth = projCoords.z;
+    float bias = 0.0015;
+    shadow = (currentDepth - bias) > closestDepth ? 1.0 : 0.0;
+  }
+
   // compute pbr
   vec3 finalColor = CalculatePBRDirectional(l, mat, normal, position, u_cams[u_camIndex].position.xyz);
+  finalColor *= (1.0 - shadow);
 
   // Output with alpha for blending
   f_color = vec4(finalColor, mat.color.a);
