@@ -9,13 +9,14 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <vector>
 
 namespace Gep
 {
     struct TextureAttachment
     {
-        GLuint id = 0;
-        GLuint64 handle = 0; // 64 bit gpu pointer, used to sample the texture on the gpu
+        GLuint id = NULL;
+        GLuint64 handle = NULL; // 64 bit gpu pointer, used to sample the texture on the gpu
         GLenum target = GL_TEXTURE_2D;
         GLint internalFormat = GL_RGBA32F;
         GLint format = GL_RGBA;
@@ -39,7 +40,7 @@ namespace Gep
         GLint GetTextureFormat(size_t index) const;
         GLenum GetTextureType(size_t index) const;
         size_t GetTextureCount() const { return mTarget ? mTarget->textures.size() : 0; }
-        const std::vector<TextureAttachment>& GetTextureAttachments() const { return mTarget->textures; }
+        const std::vector<TextureAttachment>& GetTextureAttachments() const;
 
         GLuint GetFrameBufferID() const { return mTarget ? mTarget->frameBuffer : 0; }
 

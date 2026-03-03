@@ -142,10 +142,6 @@ namespace Gep
         glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(texture.target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-        // set handle for sampling the texture on the gpu
-        texture.handle = glGetTextureHandleARB(texture.id);
-        glMakeTextureHandleResidentARB(texture.handle);
-
         glBindFramebuffer(GL_FRAMEBUFFER, mTarget->frameBuffer);
         glFramebufferTexture2D(GL_FRAMEBUFFER, texture.attachment, texture.target, texture.id, 0);
 
@@ -154,6 +150,7 @@ namespace Gep
             Log::Error("AddTexture() error: Framebuffer is not complete!");
         }
 
+        glBindTexture(texture.target, 0);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
@@ -195,6 +192,11 @@ namespace Gep
             return 0;
         }
         return mTarget->textures[index].type;
+    }
+
+    const std::vector<TextureAttachment>& FrameBuffer::GetTextureAttachments() const
+    {
+        return mTarget->textures;
     }
 
     // takes the texture attachments and binds them to the corresponding texture units
@@ -253,15 +255,13 @@ namespace Gep
         }
 
         if (mSize == size) return; // dont do anything if the size hasn't changed
+        Gep::Log::Info("Resizing Framebuffer...");
         mSize = size;
 
         glBindFramebuffer(GL_FRAMEBUFFER, mTarget->frameBuffer);
 
-        for (TextureAttachment& tex : mTarget->textures)
+        for (const TextureAttachment& tex : mTarget->textures)
         {
-            if (tex.handle != 0 && glIsTextureHandleResidentARB(tex.handle))
-                glMakeTextureHandleNonResidentARB(tex.handle);
-
             glBindTexture(tex.target, tex.id);
 
             if (tex.target == GL_TEXTURE_CUBE_MAP)
@@ -273,9 +273,6 @@ namespace Gep
             {
                 glTexImage2D(tex.target, 0, tex.internalFormat, size.x, size.y, 0, tex.format, tex.type, nullptr);
             }
-
-            tex.handle = glGetTextureHandleARB(tex.id);
-            glMakeTextureHandleResidentARB(tex.handle);
         }
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
