@@ -1,0 +1,16 @@
+#version 460
+
+// in //////////////////////////////////////////////////////////////////////////
+layout(location=0) in vec2 v_uv;
+
+// out /////////////////////////////////////////////////////////////////////////
+layout(location=0) out vec4 f_color;
+
+// uniform /////////////////////////////////////////////////////////////////////
+layout(location=0) uniform sampler2D u_depthTexture;
+
+void main()
+{            
+  float depthValue = texture(u_depthTexture, v_uv).r;
+  f_color = vec4(vec3(depthValue), 1.0); // orthographic
+}

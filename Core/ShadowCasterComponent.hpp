@@ -21,6 +21,6 @@ namespace Client
 
     struct ShadowCasterDirectionalComponent
     {
-        Gep::FrameBuffer shadowMap = Gep::FrameBuffer::CreateWithTexture({ SHADOW_MAP_SIZE, SHADOW_MAP_SIZE }, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
+        Gep::FrameBuffer shadowMap = Gep::FrameBuffer::CreateDepthMap({ SHADOW_MAP_SIZE << 3, SHADOW_MAP_SIZE << 3});
     };
 }

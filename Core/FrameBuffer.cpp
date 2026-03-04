@@ -51,6 +51,13 @@ namespace Gep
         return result;
     }
 
+    [[nodiscard]] FrameBuffer FrameBuffer::CreateDepthMap(const glm::ivec2 size)
+    {
+        FrameBuffer fb = Create(size);
+        fb.AddDepthMap();
+        return fb;
+    }
+
     [[nodiscard]] FrameBuffer FrameBuffer::Create(const glm::ivec2 size)
     {
         FrameBuffer result;
@@ -106,6 +113,62 @@ namespace Gep
         }
 
         return defaultBuffer;
+    }
+
+    void FrameBuffer::AddDepthMap()
+    {
+        if (!mTarget)
+        {
+            Log::Error("AddTexture() error: FrameBuffer has not been created!");
+            return;
+        }
+
+        if (mTarget->frameBuffer == 0)
+        {
+            Log::Error("AddTexture() error: Cannot add texture to the default frame buffer!");
+            return;
+        }
+
+        TextureAttachment& texture = mTarget->textures.emplace_back();
+        texture.internalFormat = GL_DEPTH_COMPONENT;
+        texture.format = GL_DEPTH_COMPONENT;
+        texture.type = GL_FLOAT;
+        texture.attachment = GL_DEPTH_ATTACHMENT;
+        texture.target = GL_TEXTURE_2D;
+
+        // generate texture
+        glGenTextures(1, &texture.id);
+        glBindTexture(texture.target, texture.id);
+
+        glTexImage2D(texture.target, 0, texture.internalFormat, mSize.x, mSize.y, 0, texture.format, texture.type, nullptr);
+
+        // set texture parameters
+        glTexParameteri(texture.target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(texture.target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        glTexParameteri(texture.target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(texture.target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+        glm::vec4 borderColor{ 1.0f };
+        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(borderColor));
+
+        // set handle for sampling the texture on the gpu
+        texture.handle = glGetTextureHandleARB(texture.id);
+        glMakeTextureHandleResidentARB(texture.handle);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, mTarget->frameBuffer);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, texture.attachment, texture.target, texture.id, 0);
+
+        // these are here to tell opengl that we aren't writing to a color buffer
+        glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
+
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        {
+            Log::Error("AddTexture() error: Framebuffer is not complete!");
+        }
+
+        glBindTexture(texture.target, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     void FrameBuffer::AddTexture(GLenum attachment, GLint internalFormat, GLint format, GLenum type)

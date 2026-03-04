@@ -630,9 +630,9 @@ namespace Gep
     {
         // render to depth cube buffer here
         PointLightShadowDepthPass();            // renders all scene geometry for each point light that casts shadows to the corresponding shadow map
-        //DirectionalLightShadowDepthPass();
+        DirectionalLightShadowDepthPass();
         GeometryPass(targetFrameBuffer);   // renders all scene geometry to the gbuffer
-        //DirectionalLightPass(targetFrameBuffer);
+        DirectionalLightPass(targetFrameBuffer);
         PointLightPass(targetFrameBuffer); // renders all point lights as light volumes, using the gbuffer for shading
         // draw point light shadows here
         DrawLines();
@@ -819,9 +819,6 @@ namespace Gep
 
     void OpenGLRenderer::DirectionalLightPass(Gep::FrameBuffer& targetFrameBuffer)
     {
-        if (mDirectionalLightUniforms.empty())
-            return;
-
         targetFrameBuffer.Bind();          // draw to the target framebuffer
         mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
 

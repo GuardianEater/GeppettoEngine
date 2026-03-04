@@ -915,10 +915,16 @@ namespace Client
                 return; // skip disabled lights
 
             float near = 1.0f;
-            float far = 1000.0f;
+            float far = t.world.scale.z;
 
-            glm::mat4 lightProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near, far);
-            glm::mat4 lightView = glm::lookAt(t.world.position, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
+            const glm::vec3 lightDirection = glm::normalize(t.world.rotation * glm::vec3(0, 1, 0));
+            const glm::vec3 up = std::abs(glm::dot(lightDirection, glm::vec3(0, 1, 0))) > 0.99f
+                ? glm::vec3(0, 0, 1)
+                : glm::vec3(0, 1, 0);
+
+            glm::vec3 shadowCamPos = t.world.position - lightDirection * far * 0.5f;
+            glm::mat4 lightProj = glm::ortho(-t.world.scale.x * 0.5f, t.world.scale.x * 0.5f, -t.world.scale.y * 0.5f, t.world.scale.y * 0.5f, near, far);
+            glm::mat4 lightView = glm::lookAt(shadowCamPos, t.world.position, up);
 
             GLuint64 shadowMapHandle = sc.shadowMap.GetTextureAttachments().at(0).handle;
 
@@ -927,7 +933,7 @@ namespace Client
                 .position = t.world.position,
                 .color = l.color,
                 .intensity = l.intensity,
-                .direction = t.world.rotation * glm::vec3(0, 1, 0)
+                .direction = lightDirection
             };
 
             Gep::DirectionalLightShadowGPUData uniforms
