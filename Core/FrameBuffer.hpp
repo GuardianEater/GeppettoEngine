@@ -29,6 +29,7 @@ namespace Gep
     {
     public:
         static FrameBuffer CreateDepthCubeMap(const glm::ivec2 size);
+        static FrameBuffer CreateMSMDepthMap(const glm::ivec2 size);
         static FrameBuffer CreateDepthMap(const glm::ivec2 size);
         static FrameBuffer CreateWithTexture(const glm::ivec2 size, GLenum attachment, GLint internalFormat, GLint format, GLenum type);
         static FrameBuffer Create(const glm::ivec2 size);
@@ -36,6 +37,7 @@ namespace Gep
         static const FrameBuffer& Default(); // returns the default frame buffer (the screen) its ok to copy this it will always reference the same underlying data
 
         void AddDepthMap();
+        void AddMSMDepthMap();
         void AddTexture(GLenum attachment, GLint internalFormat, GLint format, GLenum type); // adds a texture attachment to the framebuffer
         GLuint GetTexture(size_t index) const; // gets the opengl texture id of the texture attachment at the given index
         GLint GetTextureInternalFormat(size_t index) const;
