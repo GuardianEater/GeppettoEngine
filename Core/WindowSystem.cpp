@@ -339,6 +339,22 @@ namespace Client
             supportedExtensions.insert(ext);
         }
 
+        glm::ivec3 maxComputeWorkGroupCount;
+        glm::ivec3 maxComputeWorkGroupSize;
+        int maxComputeWorkInvocations;
+
+        for (int idx = 0; idx < 3; idx++) 
+        {
+            glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, idx, &maxComputeWorkGroupCount[idx]);
+            glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, idx, &maxComputeWorkGroupSize[idx]);
+        }
+        glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &maxComputeWorkInvocations);
+
+        Gep::Log::Info("OpenGL Limitations: ");
+        Gep::Log::Info("Maximum number of work groups: (", maxComputeWorkGroupCount.x, ",", maxComputeWorkGroupCount.y, ",", maxComputeWorkGroupCount.z, ")");
+        Gep::Log::Info("Maximum size of work groups: (", maxComputeWorkGroupSize.x, ",", maxComputeWorkGroupSize.y, ",", maxComputeWorkGroupSize.z, ")");
+        Gep::Log::Info("Number of invocations in a single local work group that may be dispatched to a compute shader: (", maxComputeWorkInvocations,")");
+
         const std::vector<std::string> requiredExtensions = {
             //"GL_ARB_bindless_texture",
         };

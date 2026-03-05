@@ -926,7 +926,8 @@ namespace Client
             glm::mat4 lightProj = glm::ortho(-t.world.scale.x * 0.5f, t.world.scale.x * 0.5f, -t.world.scale.y * 0.5f, t.world.scale.y * 0.5f, near, far);
             glm::mat4 lightView = glm::lookAt(shadowCamPos, t.world.position, up);
 
-            GLuint64 shadowMapHandle = sc.shadowMap.GetTextureAttachments().at(0).handle;
+            // texture at 0 is the msm shadow map
+            GLuint64 shadowMapHandle = sc.shadowMap.GetTextureAttachments()[0].handle;
 
             Gep::DirectionalLightGPUData light
             {

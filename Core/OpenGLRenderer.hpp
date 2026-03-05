@@ -325,6 +325,9 @@ namespace Gep
         Shader mShader_DirectionalLightWithShadows; // shader used for directional lights that cast shadows
         Shader mShader_DirectionalLightShadowDepth; // shader used to generate the depth map of directional lights
 
+        ComputeShader mShader_HorizontalBlur;
+        ComputeShader mShader_VerticalBlur;
+
         glm::vec3 mSolidColor{};
 
         std::unordered_map<std::string, std::pair<ModelGPUHandle, Gep::Model>> mModels; // model name -> its handle and data

@@ -1,0 +1,46 @@
+#version 460
+
+layout(local_size_x=32, local_size_y=32, local_size_z=1) in;
+
+layout(rgba32f, binding=0) uniform readonly image2D imgInput;
+layout(rgba32f, binding=1) uniform writeonly image2D imgOutput;
+
+// uvec3 gl_NumWorkGroups numer of work groups dispatched by glDispatchCompute
+// uvec3 gl_WorkGroupSize, local_size_x, y, z same as declared in the layout.
+// uvec3 gl_WorkGroupID index of the work group currently being operated on
+// uvec3 gl_LocalInvocationID index of the current work item in the work group
+// uvec3 gl_GlobalInvocationID global index of the current work item
+//  uint gl_LocalInvocationIndex 1d index representation of gl_LocalInvocationID
+
+void main()
+{
+	ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 size = imageSize(imgInput);
+
+	if (pixel.x >= size.x || pixel.y >= size.y)
+	{
+		return;
+	}
+
+	vec4 moments = vec4(0.0);
+
+	// 9-tap separable Gaussian blur (radius 4).
+	// Gentler than the wide tent filter and typically more stable for MSM silhouettes.
+	const float w0 = 0.22702703;
+	const float w1 = 0.19459459;
+	const float w2 = 0.12162162;
+	const float w3 = 0.05405405;
+	const float w4 = 0.01621622;
+
+	moments += imageLoad(imgInput, ivec2(pixel.x, pixel.y)) * w0;
+	moments += imageLoad(imgInput, ivec2(clamp(pixel.x - 1, 0, size.x - 1), pixel.y)) * w1;
+	moments += imageLoad(imgInput, ivec2(clamp(pixel.x + 1, 0, size.x - 1), pixel.y)) * w1;
+	moments += imageLoad(imgInput, ivec2(clamp(pixel.x - 2, 0, size.x - 1), pixel.y)) * w2;
+	moments += imageLoad(imgInput, ivec2(clamp(pixel.x + 2, 0, size.x - 1), pixel.y)) * w2;
+	moments += imageLoad(imgInput, ivec2(clamp(pixel.x - 3, 0, size.x - 1), pixel.y)) * w3;
+	moments += imageLoad(imgInput, ivec2(clamp(pixel.x + 3, 0, size.x - 1), pixel.y)) * w3;
+	moments += imageLoad(imgInput, ivec2(clamp(pixel.x - 4, 0, size.x - 1), pixel.y)) * w4;
+	moments += imageLoad(imgInput, ivec2(clamp(pixel.x + 4, 0, size.x - 1), pixel.y)) * w4;
+
+	imageStore(imgOutput, pixel, moments);
+}

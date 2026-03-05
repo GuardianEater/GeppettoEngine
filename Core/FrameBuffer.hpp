@@ -56,10 +56,10 @@ namespace Gep
         void Clear(const glm::vec4& color = { 0.0f, 0.0f, 0.0f, 1.0f }) const;
 
         // changes the size of the framebuffer and its attachments, does nothing if the size hasn't changed
-        void Resize(glm::ivec2 newSize);
+        void Resize(glm::uvec2 newSize);
         void UpdateViewport() const;
 
-        glm::ivec2 GetSize() const { return mSize; }
+        glm::uvec2 GetSize() const { return mSize; }
 
     private:
 
@@ -84,6 +84,6 @@ namespace Gep
         // this is so if the frame buffer is copied it will still reference the same underlying data, also avoids delete issues
         std::shared_ptr<TargetData> mTarget;
 
-        glm::ivec2 mSize = { 0, 0 };
+        glm::uvec2 mSize = { 0, 0 };
     };
 }

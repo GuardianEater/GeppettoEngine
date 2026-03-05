@@ -62,6 +62,7 @@ namespace Gep
     {
         FrameBuffer fb = Create(size);
         fb.AddMSMDepthMap(); // stores z z^2 z^3 z^4 for shadow moments
+        fb.AddTexture(GL_COLOR_ATTACHMENT1, GL_RGBA32F, GL_RGBA, GL_FLOAT); // result of blurred shadow moments
         fb.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_FLOAT); // stores original depth for hardware depth testing
         return fb;
     }
@@ -361,7 +362,7 @@ namespace Gep
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void FrameBuffer::Resize(glm::ivec2 size)
+    void FrameBuffer::Resize(glm::uvec2 size)
     {
         if (!mTarget)
         {

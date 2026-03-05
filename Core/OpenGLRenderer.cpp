@@ -80,6 +80,9 @@ namespace Gep
         mShader_DirectionalLightWithShadows = Shader::FromFile("shaders/Lighting-Directional.vert", "shaders/Lighting-Directional-Shaded.frag");
         mShader_DirectionalLightShadowDepth = Shader::FromFile("shaders/Shadows-Directional.vert", "shaders/Shadows-Directional.frag");
 
+        mShader_HorizontalBlur = ComputeShader::FromFile("shaders/Blur-Horizontal.comp");
+        mShader_VerticalBlur   = ComputeShader::FromFile("shaders/Blur-Vertical.comp");
+
         // gbuffer access in shader
         mShader_PointLight.Bind();
         mShader_PointLight.SetUniform("u_depthTexture", 0);
@@ -866,6 +869,7 @@ namespace Gep
         mShader_DirectionalLightShadowDepth.Bind();
         for (const FrameBuffer& shadowMap : mDirectionalLightShadowMaps)
         {
+            // basic depth pass ///////////////////////////////////////////////
             shadowMap.Bind();
             shadowMap.UpdateViewport();
             shadowMap.Clear();
@@ -890,8 +894,34 @@ namespace Gep
                 baseInstance += di.count;
             }
 
+            auto& textureAttachments = shadowMap.GetTextureAttachments();
+
+            const auto& msm = textureAttachments[0];// the item at 0 is the msm color texture
+            const auto& temp = textureAttachments[1];// the item at 1 is an output color texture
+            
+            
+            // horizontal blur pass ////////////////////////////////////////////////////////
+            
+            glBindImageTexture(0, msm.id, 0, GL_FALSE, 0, GL_READ_ONLY, msm.internalFormat);
+            glBindImageTexture(1, temp.id, 0, GL_FALSE, 0, GL_WRITE_ONLY, temp.internalFormat);
+
+            mShader_HorizontalBlur.Bind();
+            mShader_HorizontalBlur.Dispatch({ shadowMap.GetSize(), 1 });
+
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+
+            // vertical blur pass ///////////////////////////////////////////////////////////
+            glBindImageTexture(0, temp.id, 0, GL_FALSE, 0, GL_READ_ONLY, temp.internalFormat);
+            glBindImageTexture(1, msm.id, 0, GL_FALSE, 0, GL_WRITE_ONLY, msm.internalFormat);
+
+            mShader_VerticalBlur.Bind();
+            mShader_VerticalBlur.Dispatch({ shadowMap.GetSize(), 1 });
+
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+
+            // debug
             ImGui::Image(
-                shadowMap.GetTextureAttachments()[0].id,
+                msm.id,
                 ImVec2(1 << 10, 1 << 10),
                 ImVec2(0, 1),
                 ImVec2(1, 0)

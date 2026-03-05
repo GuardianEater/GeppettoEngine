@@ -54,12 +54,7 @@ namespace Gep
         static void Unbind();
 
     private:
-        friend class Renderer;
-
-    private:
-        static GLuint Compile(GLenum shaderType, const std::string& source, const std::string& origin = "<embedded>");
         static GLuint CreateProgram(GLuint vertexShader, GLuint fragmentShader, GLuint geometryShader, const std::string& origin = "<embedded>");
-        static std::string ReadShader(const std::filesystem::path& path); // reads in the data and handles includes
 
     private:
         // whenever an include is evaluated it is added to this map to prevent redundant loads (path -> source) emptied when any shader is reloaded
@@ -69,5 +64,38 @@ namespace Gep
         std::filesystem::path mVertPath{};
         std::filesystem::path mFragPath{};
         std::filesystem::path mGeomPath{};
+    };
+
+    class ComputeShader
+    {
+    public:
+        static ComputeShader FromFile(const std::filesystem::path& compPath); // reads shaders in from files, supports includes
+        static ComputeShader FromSource(const std::string& compSrc); // reads shader in from source, this DOES NOT support includes
+
+        ComputeShader() = default;
+        ~ComputeShader();
+
+        ComputeShader(const ComputeShader&) = delete;
+        ComputeShader& operator=(const ComputeShader&) = delete;
+
+        ComputeShader(ComputeShader&& other) noexcept;
+        ComputeShader& operator=(ComputeShader&& other) noexcept;
+
+        // will automatically divide amongst work groups. this function takes the original texture size
+        void Dispatch(glm::uvec3 targetTextureSize);
+
+        bool IsValid() const;
+
+        void Bind();
+        void Unbind();
+
+
+    private:
+        static GLuint CreateProgram(GLuint computeShader, const std::string& origin = "<embedded>");
+
+    private:
+        glm::ivec3 mWorkGroupSize{0};
+        GLuint mProgram = 0;
+        std::filesystem::path mCompPath{};
     };
 }
