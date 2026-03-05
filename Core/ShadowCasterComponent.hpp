@@ -21,6 +21,6 @@ namespace Client
 
     struct ShadowCasterDirectionalComponent
     {
-        Gep::FrameBuffer shadowMap = Gep::FrameBuffer::CreateDepthMap({ SHADOW_MAP_SIZE << 3, SHADOW_MAP_SIZE << 3});
+        Gep::FrameBuffer shadowMap = Gep::FrameBuffer::CreateMSMDepthMap({ SHADOW_MAP_SIZE << 3, SHADOW_MAP_SIZE << 3});
     };
 }

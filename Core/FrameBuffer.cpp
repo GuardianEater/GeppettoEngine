@@ -61,7 +61,8 @@ namespace Gep
     [[nodiscard]] FrameBuffer FrameBuffer::CreateMSMDepthMap(const glm::ivec2 size)
     {
         FrameBuffer fb = Create(size);
-        fb.AddMSMDepthMap();
+        fb.AddMSMDepthMap(); // stores z z^2 z^3 z^4 for shadow moments
+        fb.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_FLOAT); // stores original depth for hardware depth testing
         return fb;
     }
 
@@ -217,10 +218,6 @@ namespace Gep
 
         glBindFramebuffer(GL_FRAMEBUFFER, mTarget->frameBuffer);
         glFramebufferTexture2D(GL_FRAMEBUFFER, texture.attachment, texture.target, texture.id, 0);
-
-        // these are here to tell opengl that we aren't writing to a color buffer
-        glDrawBuffer(GL_NONE);
-        glReadBuffer(GL_NONE);
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {

@@ -860,13 +860,15 @@ namespace Gep
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
 
+        ImGui::Begin("Directional Light Maps");
+
         uint32_t lightIndex = 0;
         mShader_DirectionalLightShadowDepth.Bind();
         for (const FrameBuffer& shadowMap : mDirectionalLightShadowMaps)
         {
             shadowMap.Bind();
             shadowMap.UpdateViewport();
-            glClear(GL_DEPTH_BUFFER_BIT);
+            shadowMap.Clear();
 
             uint32_t baseInstance = 0;
             mShader_DirectionalLightShadowDepth.SetUniform(2, lightIndex++);
@@ -887,7 +889,16 @@ namespace Gep
                 }
                 baseInstance += di.count;
             }
+
+            ImGui::Image(
+                shadowMap.GetTextureAttachments()[0].id,
+                ImVec2(1 << 10, 1 << 10),
+                ImVec2(0, 1),
+                ImVec2(1, 0)
+            );
         }
+
+        ImGui::End();
 
         Shader::Unbind();
         FrameBuffer::Unbind();
