@@ -1,6 +1,8 @@
 # Geppetto Engine
 # Overview
+
 This is a personal project of mine that follow an Entity-Component-System (ECS) architecture that makes writing high performance code easy. Its 'one line' modular, so a new system or new component can be registered and start running with a single line of code. Many features get generated through reflection, such as UI and serialization.
+
 ---
 ![Lighting](https://guardianeater.github.io/travis-c-gronvold/resources/lighting.png)
 # API
