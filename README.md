@@ -29,7 +29,7 @@ int main()
 {
   // ...
 
-  Gep::type_list
+  gtl::type_list
   <
     // add all systems here
     MySystem,
@@ -61,7 +61,7 @@ int main()
 {
   // ...
 
-  Gep::type_list
+  gtl::type_list
   <
     // add all components here
     MyComponent,
@@ -88,9 +88,14 @@ class MyResource
 int main()
 {
   // ...
+  gtl::type_list
+  <
+    // add all resources here
+    MyResource,
 
-  em.RegisterResource<MyResource>();
-
+    // ...
+  > 
+  resourceTypes;
   // ...
 }
 ```
@@ -108,55 +113,38 @@ void MySystem::Initialize()
 }
 ```
 #### Getting Components:
+The lamda passed to ForEachArchetype automatically queries for requested components.
 ```cpp
 void MySystem::Update(float dt)
 {
-  // gets all entities that have the component 'MyComponent'
-  auto& entities = mManager.GetEntities<MyComponent>();
-
-  for (auto entity : entities)
+  mManager.ForEachArchetype([&](Gep::Entity e, MyComponent& mc)
   {
-    MyComponent& mc = mManager.GetComponent(entity);
-
     mc.myFloat += 2.0f * dt;
-  }
+  });
 }
 ```
 ```cpp
 void MySystem::Update(float dt)
 {
-  // gets all entities that have the components 'MyComponent' AND 'Transform'
-  auto& transformEntities = mManager.GetEntities<MyComponent, Transform>();
-
-  for (auto entity : transformEntities)
+  mManager.ForEachArchetype([&](Gep::Entity e, const MyComponent& mc, Transform& t)
   {
-    MyComponent& mc = mManager.GetComponent(entity);
-    Transform& transform = mManger.GetComponent(entity);
-
-    transform.position.x += mc.myFloat;
-  }
+    t.position.x += mc.myFloat;
+  });
 }
 ```
 ```cpp
 void MySystem::Update(float dt)
 {
-  // gets all entities that have the components 'MyComponent' AND 'Transform'
-  auto& transformEntities = mManager.GetEntities<MyComponent, Transform>();
-
-  for (auto entity : transformEntities)
+  mManager.ForEachArchetype([&](Gep::Entity e, MyComponent& mc, Transform& t)
   {
-    MyComponent& mc = mManager.GetComponent(entity);
-    Transform& transform = mManger.GetComponent(entity);
+    t.position.x += mc.myFloat;
+    mc.myFloat += 2.0f * dt;
 
-    transform.position.x += mc.myFloat;
-
-    // if one of the entities happens to have a 'Rigidbody'
-    if (HasComponent<Rigidbody>(entity))
+    if (mManager.HasComponent<RigidBody>(e))
     {
-      Rigidbody& rb = mManager.GetComponent(entity);
-
+      Rigidbody& rb = mManager.GetComponent<RigidBody>(e);
       rb.velocity.x = 1.0f;
     }
-  }
+  });
 }
 ```
