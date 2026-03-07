@@ -286,7 +286,17 @@ namespace Gep
 
         auto GetAllShaders()
         {
-            return std::tie(mShader_GeometryStatic, mShader_GeometrySkinned, mShader_PointLight, mShader_Line, mShader_PointLightWithShadows, mShader_PointLightShadowDepth);
+            return std::tie(
+                mShader_GeometryStatic, 
+                mShader_GeometrySkinned, 
+                mShader_PointLight, 
+                mShader_Line, 
+                mShader_PointLightWithShadows, 
+                mShader_PointLightShadowDepth,
+                mShader_DirectionalLight,
+                mShader_DirectionalLightWithShadows,
+                mShader_DirectionalLightShadowDepth
+            );
         }
 
     private:

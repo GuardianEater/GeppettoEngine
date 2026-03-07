@@ -89,9 +89,7 @@ vec3 CalculatePBRPoint(PointLightUniforms light, MaterialSample mat, vec3 fragN,
   vec3 specularBRDF = numerator / denominator;
   vec3 diffuseBRDF = kd * mat.color.rgb / PI;
 
-  vec3 finalColor = (diffuseBRDF + specularBRDF) * radiance * nDotL;
-
-  return finalColor;
+  return (diffuseBRDF + specularBRDF) * radiance * nDotL;
 }
 
 // Simple global directional light (hardcoded for quick testing)

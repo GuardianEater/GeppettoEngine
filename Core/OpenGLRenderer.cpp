@@ -84,25 +84,21 @@ namespace Gep
         mShader_VerticalBlur   = ComputeShader::FromFile("shaders/Blur-Vertical.comp");
 
         // gbuffer access in shader
-        mShader_PointLight.Bind();
         mShader_PointLight.SetUniform("u_depthTexture", 0);
         mShader_PointLight.SetUniform("u_normalTexture", 1);
         mShader_PointLight.SetUniform("u_colorTexture", 2);
         mShader_PointLight.SetUniform("u_armTexture", 3);
 
-        mShader_PointLightWithShadows.Bind();
         mShader_PointLightWithShadows.SetUniform("u_depthTexture", 0);
         mShader_PointLightWithShadows.SetUniform("u_normalTexture", 1);
         mShader_PointLightWithShadows.SetUniform("u_colorTexture", 2);
         mShader_PointLightWithShadows.SetUniform("u_armTexture", 3);
 
-        mShader_DirectionalLight.Bind();
         mShader_DirectionalLight.SetUniform("u_depthTexture", 0);
         mShader_DirectionalLight.SetUniform("u_normalTexture", 1);
         mShader_DirectionalLight.SetUniform("u_colorTexture", 2);
         mShader_DirectionalLight.SetUniform("u_armTexture", 3);
 
-        mShader_DirectionalLightWithShadows.Bind();
         mShader_DirectionalLightWithShadows.SetUniform("u_depthTexture", 0);
         mShader_DirectionalLightWithShadows.SetUniform("u_normalTexture", 1);
         mShader_DirectionalLightWithShadows.SetUniform("u_colorTexture", 2);
@@ -496,17 +492,25 @@ namespace Gep
         }, 
         GetAllShaders());
 
-        mShader_PointLight.Bind();
         mShader_PointLight.SetUniform("u_depthTexture", 0);
         mShader_PointLight.SetUniform("u_normalTexture", 1);
         mShader_PointLight.SetUniform("u_colorTexture", 2);
         mShader_PointLight.SetUniform("u_armTexture", 3);
 
-        mShader_PointLightWithShadows.Bind();
         mShader_PointLightWithShadows.SetUniform("u_depthTexture", 0);
         mShader_PointLightWithShadows.SetUniform("u_normalTexture", 1);
         mShader_PointLightWithShadows.SetUniform("u_colorTexture", 2);
         mShader_PointLightWithShadows.SetUniform("u_armTexture", 3);
+
+        mShader_DirectionalLight.SetUniform("u_depthTexture", 0);
+        mShader_DirectionalLight.SetUniform("u_normalTexture", 1);
+        mShader_DirectionalLight.SetUniform("u_colorTexture", 2);
+        mShader_DirectionalLight.SetUniform("u_armTexture", 3);
+
+        mShader_DirectionalLightWithShadows.SetUniform("u_depthTexture", 0);
+        mShader_DirectionalLightWithShadows.SetUniform("u_normalTexture", 1);
+        mShader_DirectionalLightWithShadows.SetUniform("u_colorTexture", 2);
+        mShader_DirectionalLightWithShadows.SetUniform("u_armTexture", 3);
     }
 
     void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)
@@ -872,7 +876,7 @@ namespace Gep
             // basic depth pass ///////////////////////////////////////////////
             shadowMap.Bind();
             shadowMap.UpdateViewport();
-            shadowMap.Clear();
+            shadowMap.Clear({ 1.0f, 1.0f, 1.0f, 1.0f });
 
             uint32_t baseInstance = 0;
             mShader_DirectionalLightShadowDepth.SetUniform(2, lightIndex++);
