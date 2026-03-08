@@ -295,7 +295,9 @@ namespace Gep
                 mShader_PointLightShadowDepth,
                 mShader_DirectionalLight,
                 mShader_DirectionalLightWithShadows,
-                mShader_DirectionalLightShadowDepth
+                mShader_DirectionalLightShadowDepth,
+                mShader_VerticalBlur,
+                mShader_HorizontalBlur
             );
         }
 

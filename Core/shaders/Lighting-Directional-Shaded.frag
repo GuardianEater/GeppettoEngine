@@ -189,7 +189,7 @@ void main(void)
   mat.metallic  = arm.z;
 
   float shadow = CalculateShadowDirectional_Hamburger4MSM(lShadow.pvMatrix, position, sampler2D(lShadow.shadowMapHandle));
-
+  //float shadow = CalculateShadowDirectional(lShadow.pvMatrix, position, sampler2D(lShadow.shadowMapHandle));
   // compute pbr
   vec3 finalColor = CalculatePBRDirectional(l, mat, normal, position, u_cams[u_camIndex].position.xyz);
   finalColor *= (1.0 - shadow);

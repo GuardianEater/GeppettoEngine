@@ -343,6 +343,8 @@ namespace Gep
 		glUseProgram(0);
 	}
 
+
+
 	ComputeShader ComputeShader::FromFile(const std::filesystem::path& compPath)
 	{
 		ComputeShader newShader{};
@@ -435,6 +437,96 @@ namespace Gep
 	{
 		return mProgram != 0;
 	}
+
+	void ComputeShader::Reload()
+	{
+		mShaderCache.clear();
+
+		ComputeShader newShader = FromFile(mCompPath);
+
+		if (newShader.IsValid())
+		{
+			*this = std::move(newShader);
+		}
+	}
+
+	void ComputeShader::SetUniform(const std::string& name, const glm::vec3& v)
+	{
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
+	}
+
+	void ComputeShader::SetUniform(const std::string& name, const glm::vec4& v)
+	{
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
+	}
+
+	void ComputeShader::SetUniform(const std::string& name, const glm::mat4& v, bool transpose)
+	{
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v, transpose);
+	}
+
+	void ComputeShader::SetUniform(const std::string& name, int v)
+	{
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
+	}
+
+	void ComputeShader::SetUniform(const std::string& name, float v)
+	{
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
+	}
+
+	void ComputeShader::SetUniform(const std::string& name, uint32_t v)
+	{
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
+	}
+
+	void ComputeShader::SetUniform(const std::string& name, uint64_t v)
+	{
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
+	}
+
+	void ComputeShader::SetUniform(size_t location, const glm::vec3& v)
+	{
+		Bind();
+		glUniform3fv(location, 1, glm::value_ptr(v));
+	}
+
+	void ComputeShader::SetUniform(size_t location, const glm::vec4& v)
+	{
+		Bind();
+		glUniform4fv(location, 1, glm::value_ptr(v));
+	}
+
+	void ComputeShader::SetUniform(size_t location, const glm::mat4& v, bool transpose)
+	{
+		Bind();
+		glUniformMatrix4fv(location, 1, transpose, glm::value_ptr(v));
+	}
+
+	void ComputeShader::SetUniform(size_t location, int v)
+	{
+		Bind();
+		glUniform1i(location, v);
+	}
+
+	void ComputeShader::SetUniform(size_t location, float v)
+	{
+		Bind();
+		glUniform1f(location, v);
+	}
+
+	void ComputeShader::SetUniform(size_t location, uint32_t v)
+	{
+		Bind();
+		glUniform1ui(location, v);
+	}
+
+	void ComputeShader::SetUniform(size_t location, uint64_t v)
+	{
+		Bind();
+		glUniformHandleui64ARB(location, v);
+	}
+
 
 	void ComputeShader::Bind()
 	{

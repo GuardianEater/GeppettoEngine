@@ -14,33 +14,28 @@ layout(rgba32f, binding=1) uniform writeonly image2D imgOutput;
 
 void main()
 {
-	ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
-	ivec2 size = imageSize(imgInput);
+  const int radius = 10; 
 
-	if (pixel.x >= size.x || pixel.y >= size.y)
-	{
-		return;
-	}
+  ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+  ivec2 size = imageSize(imgInput);
 
-	vec4 moments = vec4(0.0);
+  if (pixel.x >= size.x || pixel.y >= size.y)
+    return;
 
-	// 9-tap separable Gaussian blur (radius 4).
-	// Gentler than the wide tent filter and typically more stable for MSM silhouettes.
-	const float w0 = 0.22702703;
-	const float w1 = 0.19459459;
-	const float w2 = 0.12162162;
-	const float w3 = 0.05405405;
-	const float w4 = 0.01621622;
+  float sigma = max(float(radius) / 2.0, 1.0);
+  float twoSigma2 = 2.0 * sigma * sigma;
 
-	moments += imageLoad(imgInput, ivec2(pixel.x, pixel.y)) * w0;
-	moments += imageLoad(imgInput, ivec2(clamp(pixel.x - 1, 0, size.x - 1), pixel.y)) * w1;
-	moments += imageLoad(imgInput, ivec2(clamp(pixel.x + 1, 0, size.x - 1), pixel.y)) * w1;
-	moments += imageLoad(imgInput, ivec2(clamp(pixel.x - 2, 0, size.x - 1), pixel.y)) * w2;
-	moments += imageLoad(imgInput, ivec2(clamp(pixel.x + 2, 0, size.x - 1), pixel.y)) * w2;
-	moments += imageLoad(imgInput, ivec2(clamp(pixel.x - 3, 0, size.x - 1), pixel.y)) * w3;
-	moments += imageLoad(imgInput, ivec2(clamp(pixel.x + 3, 0, size.x - 1), pixel.y)) * w3;
-	moments += imageLoad(imgInput, ivec2(clamp(pixel.x - 4, 0, size.x - 1), pixel.y)) * w4;
-	moments += imageLoad(imgInput, ivec2(clamp(pixel.x + 4, 0, size.x - 1), pixel.y)) * w4;
+  vec4 moments = vec4(0.0);
+  float totalWeight = 0.0;
 
-	imageStore(imgOutput, pixel, moments);
+  for (int i = -radius; i <= radius; i++)
+  {
+    float w = exp(-float(i * i) / twoSigma2);
+    int sx = clamp(pixel.x + i, 0, size.x - 1);
+    moments += imageLoad(imgInput, ivec2(sx, pixel.y)) * w;
+    totalWeight += w;
+  }
+
+  moments /= totalWeight;
+  imageStore(imgOutput, pixel, moments);
 }

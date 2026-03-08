@@ -81,10 +81,29 @@ namespace Gep
         ComputeShader(ComputeShader&& other) noexcept;
         ComputeShader& operator=(ComputeShader&& other) noexcept;
 
+        void SetUniform(const std::string& name, const glm::vec3& v);
+        void SetUniform(const std::string& name, const glm::vec4& v);
+        void SetUniform(const std::string& name, const glm::mat4& v, bool transpose = false);
+        void SetUniform(const std::string& name, int v);
+        void SetUniform(const std::string& name, float v);
+        void SetUniform(const std::string& name, uint32_t v);
+        void SetUniform(const std::string& name, uint64_t v);
+
+        void SetUniform(size_t location, const glm::vec3& v);
+        void SetUniform(size_t location, const glm::vec4& v);
+        void SetUniform(size_t location, const glm::mat4& v, bool transpose = false);
+        void SetUniform(size_t location, int v);
+        void SetUniform(size_t location, float v);
+        void SetUniform(size_t location, uint32_t v);
+        void SetUniform(size_t location, uint64_t v);
+
+
         // will automatically divide amongst work groups. this function takes the original texture size
         void Dispatch(glm::uvec3 targetTextureSize);
 
         bool IsValid() const;
+
+        void Reload();
 
         void Bind();
         void Unbind();
