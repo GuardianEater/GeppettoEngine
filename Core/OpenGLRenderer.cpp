@@ -80,6 +80,80 @@ namespace Gep
         mShader_DirectionalLightWithShadows = Shader::FromFile("shaders/Lighting-Directional.vert", "shaders/Lighting-Directional-Shaded.frag");
         mShader_DirectionalLightShadowDepth = Shader::FromFile("shaders/Shadows-Directional.vert", "shaders/Shadows-Directional.frag");
 
+        // setup skybox
+        mShader_EquirectangularToCubemap = Shader::FromFile("shaders/IBL/cubemap.vert", "shaders/IBL/equirectangular-to-cubemap.frag");
+
+        glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+        glm::mat4 capturePVs[] =
+        {
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+        };
+
+        unsigned int captureFBO;
+        unsigned int captureRBO;
+        glGenFramebuffers(1, &captureFBO);
+        glGenRenderbuffers(1, &captureRBO);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+        glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
+
+        unsigned int envCubemap;
+        glGenTextures(1, &envCubemap);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+        for (unsigned int i = 0; i < 6; ++i)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0, GL_RGB, GL_FLOAT, nullptr);
+        }
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // enable pre-filter mipmap sampling (combatting visible dots artifact)
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+
+        // load hdr environment map
+        LoadTextureHDR("assets/textures/newport_loft.hdr");
+        Gep::Texture skyboxTextureEquirectangular = GetTexture("assets/textures/newport_loft.hdr");
+
+        // pbr: convert HDR equirectangular environment map to cubemap equivalent
+        mShader_EquirectangularToCubemap.Bind();
+        mShader_EquirectangularToCubemap.SetUniform("u_equirectangularMap", 0);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, skyboxTextureEquirectangular.id);
+
+        glViewport(0, 0, 512, 512); // don't forget to configure the viewport to the capture dimensions.
+        glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+        for (unsigned int i = 0; i < 6; ++i)
+        {
+            mShader_EquirectangularToCubemap.SetUniform("u_capturePV", capturePVs[i]);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, envCubemap, 0);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            // draw cube
+            auto& [sphereHandle, sphere] = mModels.at("Cube");
+            auto& meshHandle = sphereHandle.meshHandles[0];
+
+            glBindVertexArray(meshHandle.mVertexArrayObject);
+
+            mShader_PointLight.Bind(); // draw pass for lights that do not cast shadows
+            glDrawElements(
+                GL_TRIANGLES,
+                meshHandle.mIndexCount,
+                GL_UNSIGNED_INT,
+                nullptr
+            );
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
         // gbuffer access in shader
         mShader_PointLight.Bind();
         mShader_PointLight.SetUniform("u_depthTexture", 0);
@@ -538,6 +612,33 @@ namespace Gep
         stbi_image_free(image);
     }
 
+    void OpenGLRenderer::LoadTextureHDR(const std::filesystem::path& texturePath)
+    {
+        if (mTextures.contains(texturePath.string()))
+        {
+            Gep::Log::Error("Cannot load texture: [", texturePath.string(), "] is already loaded");
+            return;
+        }
+
+        if (!std::filesystem::exists(texturePath))
+        {
+            Gep::Log::Error("Cannot load texture: [", texturePath.string(), "] does not exist");
+            return;
+        }
+
+        int width, height, channels;
+        int required_channels = 4; // Force RGBA
+        float* image = stbi_loadf(texturePath.string().c_str(), &width, &height, &channels, required_channels);
+        if (!image)
+        {
+            Gep::Log::Error("Failed to load hdr texture: [", texturePath.string(), "]");
+            return;
+        }
+
+        LoadTextureHDRFromPixelData(texturePath.string(), image, width, height, required_channels);
+        stbi_image_free(image);
+    }
+
     void OpenGLRenderer::LoadTexture(const std::string& name, const uint8_t* imageFileData, size_t size)
     {
         if (mTextures.contains(name))
@@ -579,6 +680,31 @@ namespace Gep
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        texture.handle = glGetTextureHandleARB(texture.id);
+        glMakeTextureHandleResidentARB(texture.handle);
+
+        glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
+    }
+
+    void OpenGLRenderer::LoadTextureHDRFromPixelData(const std::string& name, const float* pixelData, size_t width, size_t height, int requiredChannels)
+    {
+        if (mTextures.contains(name))
+        {
+            Gep::Log::Error("Cannot load texture: [", name, "] is already loaded");
+            return;
+        }
+
+        Texture& texture = mTextures[name];
+        glGenTextures(1, &texture.id);
+        glBindTexture(GL_TEXTURE_2D, texture.id);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, pixelData);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         texture.handle = glGetTextureHandleARB(texture.id);

@@ -230,6 +230,7 @@ namespace Gep
 
         // loads a texture from disk
         void LoadTexture(const std::filesystem::path& texturePath);
+        void LoadTextureHDR(const std::filesystem::path& texturePath);
 
         // assuming the data is compressed, png/jpg
         void LoadTexture(const std::string& name, const uint8_t* imageFileData, size_t size);
@@ -300,6 +301,7 @@ namespace Gep
 
         // pixel data loaded from stbimage, note pixel data must be freed after use
         void LoadTextureFromPixelData(const std::string& name, const uint8_t* pixelData, size_t width, size_t height, int requiredChannels);
+        void LoadTextureHDRFromPixelData(const std::string& name, const float* pixelData, size_t width, size_t height, int requiredChannels);
 
         // helpers for loading assimp files
         Gep::Model LoadModelFromFile(const std::filesystem::path& path);
@@ -324,6 +326,8 @@ namespace Gep
         Shader mShader_DirectionalLight;            // shader used for simple directional lights
         Shader mShader_DirectionalLightWithShadows; // shader used for directional lights that cast shadows
         Shader mShader_DirectionalLightShadowDepth; // shader used to generate the depth map of directional lights
+
+        Shader mShader_EquirectangularToCubemap;
 
         glm::vec3 mSolidColor{};
 
