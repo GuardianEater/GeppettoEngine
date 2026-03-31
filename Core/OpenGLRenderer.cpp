@@ -161,8 +161,8 @@ namespace Gep
         mShader_Background.SetUniform("u_environmentMap", 0);
 
         // load hdr environment map
-        LoadTextureHDR("assets/textures/newport_loft.hdr");
-        Gep::Texture skyboxTextureEquirectangular = GetTexture("assets/textures/newport_loft.hdr");
+        LoadTextureHDR("assets/textures/HDR/14-Hamarikyu_Bridge_B_3k.hdr");
+        Gep::Texture skyboxTextureEquirectangular = GetTexture("assets/textures/HDR/14-Hamarikyu_Bridge_B_3k.hdr");
 
         glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
         glm::mat4 capturePVs[] =
