@@ -21,6 +21,5 @@ namespace Gep
 
         std::vector<Mesh> meshes;
         Skeleton skeleton;
-        Animation animation;
     };
 }
