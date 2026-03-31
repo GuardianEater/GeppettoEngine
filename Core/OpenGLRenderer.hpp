@@ -76,6 +76,8 @@ namespace Gep
     {
         glm::mat4 pvMatrix;  // perspective view matrix for camera
         glm::mat4 ipvMatrix; // inverse perspective view matrix for camera
+        glm::mat4 perspective;
+        glm::mat4 view;
 
         glm::vec3 position; // position of the camera in world space
     };
@@ -213,7 +215,7 @@ namespace Gep
         void SetCameraIndex(uint32_t index);
 
         std::vector<std::string> GetLoadedModels() const;
-        std::vector<std::filesystem::path> GetLoadedTextures() const;
+        const std::unordered_map<std::string, Texture>& GetLoadedTextures() const;
         std::vector<std::string> GetLoadedAnimations() const;
 
         const std::vector<std::string>& GetSupportedModelFormats() const;
@@ -287,7 +289,22 @@ namespace Gep
 
         auto GetAllShaders()
         {
-            return std::tie(mShader_GeometryStatic, mShader_GeometrySkinned, mShader_PointLight, mShader_Line, mShader_PointLightWithShadows, mShader_PointLightShadowDepth);
+            return std::tie(
+                mShader_GeometryStatic,
+                mShader_GeometrySkinned,
+                mShader_Line,
+
+                mShader_PointLight,
+                mShader_PointLightWithShadows,
+                mShader_PointLightShadowDepth,
+
+                mShader_DirectionalLight,
+                mShader_DirectionalLightWithShadows,
+                mShader_DirectionalLightShadowDepth,
+
+                mShader_EquirectangularToCubemap,
+                mShader_Background
+            );
         }
 
     private:
@@ -297,6 +314,8 @@ namespace Gep
         void DirectionalLightPass(Gep::FrameBuffer& targetFrameBuffer);
         void DirectionalLightShadowDepthPass(); // renders the depth map for each direcational light that casts shadows
         void DrawLines();
+        void BackgroundPass(Gep::FrameBuffer& targetFrameBuffer);
+
         void AddWireframeObject(const std::string& modelName, const StaticObjectGPUData& objectData);
 
         // pixel data loaded from stbimage, note pixel data must be freed after use
@@ -328,6 +347,8 @@ namespace Gep
         Shader mShader_DirectionalLightShadowDepth; // shader used to generate the depth map of directional lights
 
         Shader mShader_EquirectangularToCubemap;
+        Shader mShader_Background;
+        uint32_t mEnvironmentCubeMap = NULL;
 
         glm::vec3 mSolidColor{};
 

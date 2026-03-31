@@ -13,6 +13,13 @@
 #include "Conversion.hpp"
 #include "VQS.hpp"
 
+#include "SkyboxMesh.hpp"
+#include "QuadMesh.hpp"
+#include "SphereMesh.hpp"
+#include "IcosphereMesh.hpp"
+#include "CubeMesh.hpp"
+
+
 #define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
 #include "shellapi.h"
@@ -22,6 +29,41 @@
 
 namespace Gep
 {
+    struct GLDrawFlags
+    {
+        std::optional<std::pair<GLenum, GLenum>> depthFuncMask;
+        std::optional<GLenum> cullMode;
+        std::optional<std::pair<GLenum, GLenum>> blendFuncSD;
+    };
+
+    static void SetDrawFlags(GLDrawFlags flags)
+    {
+        if (flags.depthFuncMask)
+        {
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(flags.depthFuncMask->first);
+            glDepthMask(flags.depthFuncMask->second);
+        }
+        else
+            glDisable(GL_DEPTH_TEST);
+
+        if (flags.cullMode)
+        {
+            glEnable(GL_CULL_FACE);
+            glCullFace(*flags.cullMode);
+        }
+        else
+            glDisable(GL_CULL_FACE);
+
+        if (flags.blendFuncSD)
+        {
+            glEnable(GL_BLEND);
+            glBlendFunc(flags.blendFuncSD->first, flags.blendFuncSD->second);
+        }
+        else
+            glDisable(GL_BLEND);
+    }
+
     enum GLVertexAttributeLocation : GLint
     {
         Position,
@@ -80,8 +122,47 @@ namespace Gep
         mShader_DirectionalLightWithShadows = Shader::FromFile("shaders/Lighting-Directional.vert", "shaders/Lighting-Directional-Shaded.frag");
         mShader_DirectionalLightShadowDepth = Shader::FromFile("shaders/Shadows-Directional.vert", "shaders/Shadows-Directional.frag");
 
+        // load all of the default meshes
+        {
+            Gep::Model quad;
+            quad.meshes.push_back(Gep::QuadMesh());
+            AddModel("Quad", quad);
+        }
+        {
+            Gep::Model sphere;
+            sphere.meshes.push_back(Gep::SphereMesh(10, 10));
+            AddModel("Sphere", sphere);
+        }
+        {
+            Gep::Model cube;
+            cube.meshes.push_back(Gep::CubeMesh());
+            AddModel("Cube", cube);
+        }
+        {
+            Gep::Model icosphere;
+            icosphere.meshes.push_back(Gep::IcosphereMesh(3));
+            AddModel("Icosphere", icosphere);
+        }
+        {
+            Gep::Model skybox;
+            skybox.meshes.push_back(Gep::SkyboxMesh());
+            AddModel("Skybox", skybox);
+        }
+        {
+            Gep::MaterialGPUData defaultMat;
+            AddMaterial(defaultMat);
+        }
+
         // setup skybox
         mShader_EquirectangularToCubemap = Shader::FromFile("shaders/IBL/cubemap.vert", "shaders/IBL/equirectangular-to-cubemap.frag");
+        mShader_EquirectangularToCubemap.SetUniform("u_equirectangularMap", 0);
+
+        mShader_Background = Shader::FromFile("shaders/IBL/background.vert", "shaders/IBL/background.frag");
+        mShader_Background.SetUniform("u_environmentMap", 0);
+
+        // load hdr environment map
+        LoadTextureHDR("assets/textures/newport_loft.hdr");
+        Gep::Texture skyboxTextureEquirectangular = GetTexture("assets/textures/newport_loft.hdr");
 
         glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
         glm::mat4 capturePVs[] =
@@ -104,9 +185,8 @@ namespace Gep
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
 
-        unsigned int envCubemap;
-        glGenTextures(1, &envCubemap);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+        glGenTextures(1, &mEnvironmentCubeMap);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, mEnvironmentCubeMap);
         for (unsigned int i = 0; i < 6; ++i)
         {
             glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0, GL_RGB, GL_FLOAT, nullptr);
@@ -114,27 +194,32 @@ namespace Gep
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // enable pre-filter mipmap sampling (combatting visible dots artifact)
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 
-        // load hdr environment map
-        LoadTextureHDR("assets/textures/newport_loft.hdr");
-        Gep::Texture skyboxTextureEquirectangular = GetTexture("assets/textures/newport_loft.hdr");
 
         // pbr: convert HDR equirectangular environment map to cubemap equivalent
+
         mShader_EquirectangularToCubemap.Bind();
-        mShader_EquirectangularToCubemap.SetUniform("u_equirectangularMap", 0);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, skyboxTextureEquirectangular.id);
+
+        GLDrawFlags flags{
+            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
+            .cullMode = std::nullopt,
+            .blendFuncSD = std::nullopt
+        };
+        SetDrawFlags(flags);
+
 
         glViewport(0, 0, 512, 512); // don't forget to configure the viewport to the capture dimensions.
         glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
         for (unsigned int i = 0; i < 6; ++i)
         {
             mShader_EquirectangularToCubemap.SetUniform("u_capturePV", capturePVs[i]);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, envCubemap, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, mEnvironmentCubeMap, 0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             // draw cube
@@ -143,7 +228,6 @@ namespace Gep
 
             glBindVertexArray(meshHandle.mVertexArrayObject);
 
-            mShader_PointLight.Bind(); // draw pass for lights that do not cast shadows
             glDrawElements(
                 GL_TRIANGLES,
                 meshHandle.mIndexCount,
@@ -430,16 +514,9 @@ namespace Gep
         return meshes;
     }
 
-    std::vector<std::filesystem::path> OpenGLRenderer::GetLoadedTextures() const
+    const std::unordered_map<std::string, Texture>& OpenGLRenderer::GetLoadedTextures() const
     {
-        std::vector<std::filesystem::path> textures;
-
-        for (const auto& [name, texture] : mTextures)
-        {
-            textures.push_back(name);
-        }
-
-        return textures;
+        return mTextures;
     }
 
     std::vector<std::string> OpenGLRenderer::GetLoadedAnimations() const
@@ -627,8 +704,10 @@ namespace Gep
         }
 
         int width, height, channels;
-        int required_channels = 4; // Force RGBA
+        int required_channels = 3;
+        stbi_set_flip_vertically_on_load(true);
         float* image = stbi_loadf(texturePath.string().c_str(), &width, &height, &channels, required_channels);
+        stbi_set_flip_vertically_on_load(false);
         if (!image)
         {
             Gep::Log::Error("Failed to load hdr texture: [", texturePath.string(), "]");
@@ -700,7 +779,9 @@ namespace Gep
         glGenTextures(1, &texture.id);
         glBindTexture(GL_TEXTURE_2D, texture.id);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, pixelData);
+        GLenum format = (requiredChannels == 4) ? GL_RGBA : GL_RGB;
+        GLenum iformat = (requiredChannels == 4) ? GL_RGBA16F : GL_RGB16F;
+        glTexImage2D(GL_TEXTURE_2D, 0, iformat, width, height, 0, format, GL_FLOAT, pixelData);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -762,6 +843,8 @@ namespace Gep
         PointLightPass(targetFrameBuffer); // renders all point lights as light volumes, using the gbuffer for shading
         // draw point light shadows here
         DrawLines();
+
+        BackgroundPass(targetFrameBuffer);
     }
 
     void OpenGLRenderer::End()
@@ -812,13 +895,12 @@ namespace Gep
         mGeometryFrameBuffer.Clear();
         mGeometryFrameBuffer.DrawBuffers();
 
-        glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
-
-        glDisable(GL_BLEND);
-
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
+        GLDrawFlags flags{
+            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
+            .cullMode = GL_BACK, // back face culling
+            .blendFuncSD = std::nullopt // no blending
+        };
+        SetDrawFlags(flags);
 
         uint32_t baseInstance = 0;
         uint32_t meshBaseInstance = 0;
@@ -857,15 +939,12 @@ namespace Gep
         targetFrameBuffer.Bind(); // draw to the target framebuffer
         mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
 
-        // draw all light volumes
-        glDisable(GL_DEPTH_TEST);
-        glDepthMask(GL_FALSE);
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE);
-
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
+        GLDrawFlags flags{
+            .depthFuncMask = std::nullopt, // do not use depth
+            .cullMode = GL_FRONT, // front face culling
+            .blendFuncSD = std::make_pair(GL_ONE, GL_ONE) // one one blending
+        };
+        SetDrawFlags(flags);
 
         auto& [sphereHandle, sphere] = mModels.at("Sphere");
         auto& meshHandle = sphereHandle.meshHandles[0];
@@ -891,24 +970,16 @@ namespace Gep
         );
 
         Shader::Unbind();
-        glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
-
-        glDisable(GL_BLEND);
-
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
     }
 
     void OpenGLRenderer::PointLightShadowDepthPass()
     {
-        glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
-
-        glDisable(GL_BLEND);
-
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
+        GLDrawFlags flags{
+            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
+            .cullMode = GL_BACK, // back face culling
+            .blendFuncSD = std::nullopt // no blending
+        };
+        SetDrawFlags(flags);
 
         uint32_t lightIndex = 0;
         mShader_PointLightShadowDepth.Bind();
@@ -948,14 +1019,12 @@ namespace Gep
         targetFrameBuffer.Bind();          // draw to the target framebuffer
         mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
 
-        glDisable(GL_DEPTH_TEST);
-        glDepthMask(GL_FALSE);
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE);
-
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
+        GLDrawFlags flags{
+            .depthFuncMask = std::nullopt,
+            .cullMode = GL_BACK, // back face culling
+            .blendFuncSD = std::make_pair(GL_ONE, GL_ONE)
+        };
+        SetDrawFlags(flags);
 
         mShader_DirectionalLight.Bind();
         glDrawArraysInstanced(
@@ -978,13 +1047,12 @@ namespace Gep
 
     void OpenGLRenderer::DirectionalLightShadowDepthPass()
     {
-        glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
-
-        glDisable(GL_BLEND);
-
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
+        GLDrawFlags flags{
+            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
+            .cullMode = GL_BACK, // back face culling
+            .blendFuncSD = std::nullopt
+        };
+        SetDrawFlags(flags);
 
         uint32_t lightIndex = 0;
         mShader_DirectionalLightShadowDepth.Bind();
@@ -1021,6 +1089,13 @@ namespace Gep
 
     void OpenGLRenderer::DrawLines()
     {
+        GLDrawFlags flags{
+            .depthFuncMask = std::nullopt,
+            .cullMode = std::nullopt,
+            .blendFuncSD = std::nullopt
+        };
+        SetDrawFlags(flags);
+
         mShader_Line.Bind();
 
         glBindVertexArray(mLineVAO);
@@ -1042,7 +1117,41 @@ namespace Gep
         }
 
         mShader_Line.Unbind();
-        //glEnable(GL_DEPTH_TEST);
+    }
+
+    void OpenGLRenderer::BackgroundPass(Gep::FrameBuffer& targetFrameBuffer)
+    {
+        const glm::ivec2 targetSize = targetFrameBuffer.GetSize();
+
+        // copies the depth buffer from the geometry buffer to the target frame buffer
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, mGeometryFrameBuffer.GetFrameBufferID());
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFrameBuffer.GetFrameBufferID());
+        glBlitFramebuffer(0, 0, targetSize.x, targetSize.y, 0, 0, targetSize.x, targetSize.y, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+        targetFrameBuffer.Bind();          // draw to the target framebuffer
+
+        GLDrawFlags flags{
+            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_FALSE),
+            .cullMode = std::nullopt,
+            .blendFuncSD = std::nullopt
+        };
+        SetDrawFlags(flags);
+
+        mShader_Background.Bind();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, mEnvironmentCubeMap);
+
+        // draw cube
+        auto& [sphereHandle, sphere] = mModels.at("Cube");
+        auto& meshHandle = sphereHandle.meshHandles[0];
+        glBindVertexArray(meshHandle.mVertexArrayObject);
+
+        glDrawElements(
+            GL_TRIANGLES,
+            meshHandle.mIndexCount,
+            GL_UNSIGNED_INT,
+            nullptr
+        );
     }
 
     void OpenGLRenderer::AddWireframeObject(const std::string& modelName, const StaticObjectGPUData& objectData)

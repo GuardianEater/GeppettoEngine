@@ -74,6 +74,8 @@ struct CameraUniforms
 {
   mat4 pvMatrix; // perspective view matrix
   mat4 ipvMatrix; // inverse perspective view matrix
+  mat4 perspective;
+  mat4 view;
   
   vec3 position;
 };

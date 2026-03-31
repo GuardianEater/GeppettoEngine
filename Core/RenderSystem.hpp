@@ -90,6 +90,8 @@ namespace Client
         // when a model is changed 
         void InitializeModelPose(RiggedModelComponent& modelComponent, const Gep::Model& internalModel);
 
+        void ImGuiUpdate();
+
         // resources
         Gep::OpenGLRenderer& mRenderer;
         Client::CollisionResource& mCollisionResource;

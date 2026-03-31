@@ -23,12 +23,7 @@
 #include "CubeCollider.hpp"
 
 // mesh
-#include "SkyboxMesh.hpp"
 #include "Mesh.hpp"
-#include "QuadMesh.hpp"
-#include "SphereMesh.hpp"
-#include "IcosphereMesh.hpp"
-#include "CubeMesh.hpp"
 
 // engine
 #include "ISystem.hpp"
@@ -74,38 +69,7 @@ namespace Client
         Gep::OpenGLRenderer& renderer = mRenderer;
         renderer.Initialize();
 
-        renderer.LoadErrorTexture("assets\\textures\\Checker.jpg");
-
-        // load all of the default meshes
-        {
-            Gep::Model quad;
-            quad.meshes.push_back(Gep::QuadMesh());
-            renderer.AddModel("Quad", quad);
-        }
-        {
-            Gep::Model sphere;
-            sphere.meshes.push_back(Gep::SphereMesh(10, 10));
-            renderer.AddModel("Sphere", sphere);
-        }
-        {
-            Gep::Model cube;
-            cube.meshes.push_back(Gep::CubeMesh());
-            renderer.AddModel("Cube", cube);
-        }
-        {
-            Gep::Model icosphere;
-            icosphere.meshes.push_back(Gep::IcosphereMesh(3));
-            renderer.AddModel("Icosphere", icosphere);
-        }
-        {
-            Gep::Model skybox;
-            skybox.meshes.push_back(Gep::SkyboxMesh());
-            renderer.AddModel("Skybox", skybox);
-        }
-        {
-            Gep::MaterialGPUData defaultMat;
-            renderer.AddMaterial(defaultMat);
-        }
+        renderer.LoadErrorTexture("assets/textures/Checker.jpg");
 
         glEnable(GL_DEPTH_TEST);
     }
@@ -140,6 +104,7 @@ namespace Client
             renderer.SetCameraIndex(cameraIndex++);
 
             cam.renderTarget.Bind();
+            glClearDepth(1.0f);
             cam.renderTarget.Clear();
 
             DrawImGuiCameraWindow(camEntity, cam, camTransform);
@@ -161,6 +126,7 @@ namespace Client
             model.selected = false;
         });
 
+        ImGuiUpdate();
         HandleInputs(dt);
     }
 
@@ -953,11 +919,17 @@ namespace Client
         // prepares the camera uniforms
         mManager.ForEachArchetype([&](Gep::Entity camEntity, Transform& camTransform, Camera& cam)
         {
-            const glm::mat4 pvMatrix = cam.GetProjectionMatrix() * cam.GetViewMatrix(camTransform.world.position);
+            const glm::mat4 perspective = cam.GetProjectionMatrix();
+            const glm::mat4 view        = cam.GetViewMatrix(camTransform.world.position);
+            const glm::mat4 pvMatrix    = perspective * view;
+            const glm::mat4 ipvMatrix   = glm::inverse(pvMatrix);
+
             const Gep::CameraGPUData uniforms
             {
                 .pvMatrix = pvMatrix,
-                .ipvMatrix = glm::inverse(pvMatrix),
+                .ipvMatrix = ipvMatrix,
+                .perspective = perspective,
+                .view = view,
                 .position = camTransform.world.position
             };
 
@@ -1093,6 +1065,28 @@ namespace Client
 
             modelComponent.pose[i] = modelComponent.pose[parent] * modelComponent.pose[i];
         }
+    }
+
+    void RenderSystem::ImGuiUpdate()
+    {
+        ImGui::Begin("RenderSystem");
+
+        const auto& textures = mRenderer.GetLoadedTextures();
+
+        if (ImGui::CollapsingHeader("Loaded Textures"))
+        {
+            for (const auto& [name, texture] : textures)
+            {
+                if (ImGui::TreeNode(name.c_str()))
+                {
+                    ImGui::Image(texture.id, { 256, 256 });
+
+                    ImGui::TreePop();
+                }
+            }
+        }
+
+        ImGui::End();
     }
 }
 

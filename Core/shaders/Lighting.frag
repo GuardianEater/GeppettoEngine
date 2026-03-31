@@ -33,7 +33,7 @@ void main(void)
   // (any texture from the gbuffer would work they are all the same size)
   vec2 uv = gl_FragCoord.xy / vec2(textureSize(u_depthTexture, 0));
   float depth = texture(u_depthTexture, uv).x;  
-  if (depth >= 1.0) 
+  if (depth > 1.0) 
   {
     f_color = vec4(0.0, 0.0, 0.0, 1.0);
     return; // do not do anything if there is nothing
@@ -64,8 +64,12 @@ void main(void)
   mat.metallic  = arm.z;
 
   // compute pbr
-  vec3 finalColor = CalculatePBRPoint(l, mat, normal, position, u_cams[u_camIndex].position.xyz);
+  vec3 color = CalculatePBRPoint(l, mat, normal, position, u_cams[u_camIndex].position.xyz);
+
+  // color = color / (color + vec3(1.0));
+  // // gamma correct
+  // color = pow(color, vec3(1.0/2.2)); 
 
   // Output with alpha for blending
-  f_color = vec4(finalColor, mat.color.a);
+  f_color = vec4(color, mat.color.a);
 }

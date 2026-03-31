@@ -7,7 +7,7 @@ layout(location=0) in vec3 a_position;    // position in model space
 layout(location=0) out vec3 v_position;    // position in model space
 
 // uniform /////////////////////////////////////////////////////////////////////
-layout(location=4) out mat4 u_capturePV;    // position in model space
+layout(location=4) uniform mat4 u_capturePV;    // position in model space
 
 void main()
 {
