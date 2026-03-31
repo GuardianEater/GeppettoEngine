@@ -65,15 +65,15 @@ namespace Client
     {
         mManager.ForEachArchetype([&](Gep::Entity entity, AnimationComponent& animationComponent, RiggedModelComponent& modelComponent, const Transform& transform)
         {
-            if (!mRenderer.IsAnimationLoaded(animationComponent.name))
-                return; // return is continue in for_each loop
+            if (!mRenderer.IsAnimationLoaded(animationComponent.animIdx))
+                return;
 
-            const Gep::Model& model = mRenderer.GetModel(modelComponent.name);
+            const Gep::Model& model = mRenderer.GetModel(modelComponent.modelIdx);
 
             if (model.skeleton.bones.empty()) // do not operate on a skeleton with no bones
                 return;
 
-            const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.name);
+            const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.animIdx);
 
             // progress the animation
             if (mManager.IsState(Gep::EngineState::Play))
@@ -98,29 +98,31 @@ namespace Client
         AnimationComponent& animationComponent = *event.components[0];
 
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
-        std::vector<std::string> loadedAnimations = mRenderer.GetLoadedAnimations();
+        std::vector<std::string> loadedAnimations = mRenderer.GetLoadedAnimationNames();
 
         // drop down for selecting a model
-        bool meshesOpen = ImGui::BeginCombo("Animations", animationComponent.name.c_str());
+        std::string animIdxStr = std::to_string(animationComponent.animIdx);
+        bool animsOpen = ImGui::BeginCombo("Animations", animIdxStr.c_str());
 
         const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
 
         er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
         {
-            if (!mRenderer.IsModelLoaded(droppedPath.string()))
-            {
-                mRenderer.AddModelFromFile(droppedPath.string());
-            }
+            //if (!mRenderer.IsModelLoaded(droppedPath.string()))
+            //{
+            //    mRenderer.AddModelFromFile(droppedPath.string());
+            //}
         });
 
-        if (meshesOpen)
+        if (animsOpen)
         {
             for (const std::string& animationName : loadedAnimations)
             {
-                bool isSelected = (animationName == animationComponent.name);
+                bool isSelected = (animationName == mRenderer.GetAnimation(animationComponent.animIdx).name);
                 if (ImGui::Selectable(animationName.c_str(), isSelected))
                 {
-                    animationComponent.name = animationName;
+                    auto newAnimIdx = mRenderer.FindAnimation(animationName);
+                    animationComponent.animIdx = *newAnimIdx;
                 }
                 if (isSelected)
                 {
@@ -130,13 +132,13 @@ namespace Client
             ImGui::EndCombo();
         }
 
-        if (!mRenderer.IsAnimationLoaded(animationComponent.name))
+        if (!mRenderer.IsAnimationLoaded(animationComponent.animIdx))
         {
             ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "No Animation Loaded");
             return;
         }
 
-        const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.name);
+        const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.animIdx);
 
         // basic attributes
         ImGui::DragFloat("Speed", &animationComponent.speed, 0.001f, 0.0f, 1.0f);

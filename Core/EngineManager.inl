@@ -557,6 +557,14 @@ namespace Gep
         componentJson["data"] = componentDataJson;
         componentJson["type"] = componentName;
 
+        Event::ComponentSerializing<ComponentType> event{
+            .component = component,
+            .componentJson = componentDataJson,
+            .entity = entity
+        };
+
+        SignalEvent(event);
+
         return componentJson;
     }
 
@@ -591,6 +599,15 @@ namespace Gep
                 }
             }
         });
+
+        Event::ComponentDeserializing<ComponentType> event{
+            .component = component,
+            .componentJson = componentDataJson,
+            .entity = entity
+        };
+
+        SignalEvent(event);
+
 
         AddComponent<ComponentType>(entity, component);
     }
@@ -656,13 +673,16 @@ namespace Gep
     }
 
     template <typename EventType>
-    void EngineManager::SignalEvent(const EventType& eventData)
+    void EngineManager::SignalEvent(const EventType& eventData) const
     {
         std::type_index id = typeid(EventType);
 
+        if (!mEventDatas.contains(id))
+            return;
+
         //get the subscribers for this event type
-        const auto& subscribers = mEventDatas[id].subscribers;
-        for (auto& subscriber : subscribers)
+        const auto& subscribers = mEventDatas.at(id).subscribers;
+        for (const auto& subscriber : subscribers)
         {
             subscriber(&eventData);
         }

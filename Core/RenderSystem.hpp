@@ -27,6 +27,8 @@ namespace Gep::Event
 {
     template <typename ComponentType> struct ComponentAdded;
     template <typename ComponentType> struct ComponentEditorRender;
+    template <typename ComponentType> struct ComponentSerializing;
+    template <typename ComponentType> struct ComponentDeserializing;
 }
 
 // fwd
@@ -70,6 +72,8 @@ namespace Client
         // on added
         void OnRiggedModelAdded(const Gep::Event::ComponentAdded<RiggedModelComponent>& event);
         void OnStaticModelAdded(const Gep::Event::ComponentAdded<StaticModelComponent>& event);
+        void OnStaticModelSerializing(const Gep::Event::ComponentSerializing<StaticModelComponent>& event);
+        void OnStaticModelDeserializing(const Gep::Event::ComponentDeserializing<StaticModelComponent>& event);
 
         // on editor render
         void OnRiggedModelEditorRender(const Gep::Event::ComponentEditorRender<RiggedModelComponent>& event);

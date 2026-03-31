@@ -351,7 +351,7 @@ namespace Gep
 
         // sends out the given event data to all subscribers of the event.
         template <typename EventType>
-        void SignalEvent(const EventType& eventData);
+        void SignalEvent(const EventType& eventData) const;
 
     private:
         /////////////////////////////////////////////////////////////////////////////////////////////////

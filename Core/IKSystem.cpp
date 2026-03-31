@@ -74,9 +74,9 @@ namespace Client
             if (anchorBoneIdx > effectorBoneIdx) 
                 return; // the anchor should never appear after the child
 
-            if (!mRenderer.IsModelLoaded(modelComponent.name)) return;
+            if (!mRenderer.IsModelLoaded(modelComponent.modelIdx)) return;
 
-            const Gep::Model& internalModel = mRenderer.GetModel(modelComponent.name);
+            const Gep::Model& internalModel = mRenderer.GetModel(modelComponent.modelIdx);
             const Gep::Skeleton& skeleton = internalModel.skeleton;
 
             if (skeleton.bones.size() != modelComponent.pose.size())
@@ -196,11 +196,11 @@ namespace Client
         if (!valid) return;
         
         bool targetModelsUniform = Gep::IsUniform(event.components, 
-            [&](Client::IKTarget* ikt) -> const std::string& 
+            [&](Client::IKTarget* ikt) -> uint64_t 
             {
                 const Gep::Entity targetEntity = mManager.FindEntity(ikt->targetEntity);
                 const RiggedModelComponent& targetModel = mManager.GetComponent<RiggedModelComponent>(targetEntity);
-                return targetModel.name; 
+                return targetModel.modelIdx; 
             }
         );
 

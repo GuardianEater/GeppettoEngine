@@ -19,7 +19,7 @@ namespace Client
 {
     struct AnimationComponent
     {
-        std::string name = ""; // the name of the animation that this component is referencing
+        uint64_t animIdx = 0; // the name of the animation that this component is referencing
         float currentTime = 0.0f; // note this is stored in ticks
         bool looping = false; // whether or not the animation will loop
         float speed = 1.0f; // the playback multiplier of the animation

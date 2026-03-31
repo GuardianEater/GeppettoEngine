@@ -122,35 +122,56 @@ namespace Gep
         mShader_DirectionalLightWithShadows = Shader::FromFile("shaders/Lighting-Directional.vert", "shaders/Lighting-Directional-Shaded.frag");
         mShader_DirectionalLightShadowDepth = Shader::FromFile("shaders/Shadows-Directional.vert", "shaders/Shadows-Directional.frag");
 
+        Gep::MaterialGPUData defaultMat{};
+        uint64_t defaultMatIdx = AddMaterial(defaultMat);
+
         // load all of the default meshes
         {
-            Gep::Model quad;
-            quad.meshes.push_back(Gep::QuadMesh());
-            AddModel("Quad", quad);
+            Gep::Mesh quad = Gep::QuadMesh();
+            quad.materialIndex = defaultMatIdx;
+            quad.name = "Quad";
+            Gep::Model model;
+            model.name = "Quad";
+            model.meshes.push_back(quad);
+            AddModel(model);
         }
         {
-            Gep::Model sphere;
-            sphere.meshes.push_back(Gep::SphereMesh(10, 10));
-            AddModel("Sphere", sphere);
+            Gep::Mesh sphere = Gep::SphereMesh(10, 10);
+            sphere.materialIndex = defaultMatIdx;
+            sphere.name = "Sphere";
+            Gep::Model model;
+            model.name = "Sphere";
+            model.meshes.push_back(sphere);
+            uint64_t modelIdx = AddModel(model);
+            mSphereMeshIndex = GetModelMeshes(modelIdx)[0];
         }
         {
-            Gep::Model cube;
-            cube.meshes.push_back(Gep::CubeMesh());
-            AddModel("Cube", cube);
+            Gep::Mesh cube = Gep::CubeMesh();
+            cube.materialIndex = defaultMatIdx;
+            cube.name = "Cube";
+            Gep::Model model;
+            model.name = "Cube";
+            model.meshes.push_back(cube);
+            uint64_t modelIdx = AddModel(model);
+            mCubeMeshIndex = GetModelMeshes(modelIdx)[0];
         }
         {
-            Gep::Model icosphere;
-            icosphere.meshes.push_back(Gep::IcosphereMesh(3));
-            AddModel("Icosphere", icosphere);
+            Gep::Mesh icosphere = Gep::IcosphereMesh(3);
+            icosphere.materialIndex = defaultMatIdx;
+            icosphere.name = "Icosphere";
+            Gep::Model model;
+            model.name = "Icosphere";
+            model.meshes.push_back(icosphere);
+            AddModel(model);
         }
         {
-            Gep::Model skybox;
-            skybox.meshes.push_back(Gep::SkyboxMesh());
-            AddModel("Skybox", skybox);
-        }
-        {
-            Gep::MaterialGPUData defaultMat;
-            AddMaterial(defaultMat);
+            Gep::Mesh skybox = Gep::SkyboxMesh();
+            skybox.materialIndex = defaultMatIdx;
+            skybox.name = "Skybox";
+            Gep::Model model;
+            model.name = "Skybox";
+            model.meshes.push_back(skybox);
+            AddModel(model);
         }
 
         // setup skybox
@@ -161,8 +182,7 @@ namespace Gep
         mShader_Background.SetUniform("u_environmentMap", 0);
 
         // load hdr environment map
-        LoadTextureHDR("assets/textures/HDR/14-Hamarikyu_Bridge_B_3k.hdr");
-        Gep::Texture skyboxTextureEquirectangular = GetTexture("assets/textures/HDR/14-Hamarikyu_Bridge_B_3k.hdr");
+        Gep::Texture skyboxTextureEquirectangular = Texture::LoadHDR("assets/textures/HDR/14-Hamarikyu_Bridge_B_3k.hdr");
 
         glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
         glm::mat4 capturePVs[] =
@@ -223,14 +243,13 @@ namespace Gep
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             // draw cube
-            auto& [sphereHandle, sphere] = mModels.at("Cube");
-            auto& meshHandle = sphereHandle.meshHandles[0];
 
-            glBindVertexArray(meshHandle.mVertexArrayObject);
+            auto& cubeHandle = mMeshLibrary.at(mCubeMeshIndex).handle;
+            glBindVertexArray(cubeHandle.mVertexArrayObject);
 
             glDrawElements(
                 GL_TRIANGLES,
-                meshHandle.mIndexCount,
+                cubeHandle.mIndexCount,
                 GL_UNSIGNED_INT,
                 nullptr
             );
@@ -266,113 +285,177 @@ namespace Gep
         Shader::Unbind();
     }
 
-    void OpenGLRenderer::AddModelFromFile(const std::string& path)
+    uint64_t OpenGLRenderer::AddModel(const Gep::Model& model)
     {
-        if (mModels.contains(path))
-        {
-            Gep::Log::Error("Cannot load mesh: [", path, "] a mesh with that name has already been loaded");
-            return;
-        }
-
-        auto& [modelHandle, model] = mModels[path];
-
-        model = LoadModelFromFile(path);
-
-        // moves all of the model data from the cpu onto the gpu, and keeps track of the handles
-        for (const auto& mesh : model.meshes)
-        {
-            MeshGPUHandle& meshHandle = modelHandle.meshHandles.emplace_back(); // create a handle for this mesh
-
-            meshHandle.GenVertexBuffer(mesh);
-            meshHandle.GenIndexBuffer(mesh);
-            meshHandle.BindBuffers();
-        }
-    }
-
-    void OpenGLRenderer::AddModel(const std::string& name, const Gep::Model& newModel)
-    {
-        if (mModels.contains(name))
-        {
-            Gep::Log::Error("Cannot load mesh: [", name, "] a mesh with that name has already been loaded");
-            return;
-        }
-
-        auto [it, inserted] = mModels.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(name),
-            std::forward_as_tuple(ModelGPUHandle{}, newModel)
-        );
-
-        auto& [modelHandle, model] = it->second;
-
+        uint64_t modelIdx = mModelLibrary.emplace();
+        auto& entry = mModelLibrary[modelIdx];
+        
         for (const Mesh& mesh : model.meshes)
         {
-            MeshGPUHandle& meshHandle = modelHandle.meshHandles.emplace_back();
-
-            meshHandle.GenVertexBuffer(mesh);
-            meshHandle.GenIndexBuffer(mesh);
-            meshHandle.BindBuffers();
+            uint64_t meshIdx = AddMesh(mesh);
+            entry.meshes.push_back(meshIdx);
         }
+
+        entry.model = model;
+        entry.name = model.name;
+
+        return modelIdx;
     }
 
-    void OpenGLRenderer::AddAnimation(const std::string& name, const Gep::Animation& animation)
+    uint64_t OpenGLRenderer::AddMesh(const Gep::Mesh& mesh)
     {
-        if (mAnimations.contains(name))
-        {
-            Gep::Log::Error("Adding animation failed, animation with the name: [", name, "] was already loaded");
-            return;
-        }
+        uint64_t meshIdx = mMeshLibrary.emplace();
+        auto& entry = mMeshLibrary[meshIdx];
 
-        mAnimations[name] = animation;
+        entry.handle.GenVertexBuffer(mesh);
+        entry.handle.GenIndexBuffer(mesh);
+        entry.handle.BindBuffers();
+
+        entry.mesh = mesh;
+
+        return meshIdx;
     }
 
-    size_t OpenGLRenderer::AddMaterial(const Gep::MaterialGPUData& material)
+    uint64_t OpenGLRenderer::AddMaterial(const Gep::MaterialGPUData& material)
     {
         size_t matIndex = mMaterials.emplace(material);
         mMaterials.commit();
         return matIndex;
     }
 
-    const Gep::Model& OpenGLRenderer::GetModel(const std::string& name)
+    uint64_t OpenGLRenderer::AddAnimation(const Gep::Animation& animation)
     {
-        if (!mModels.contains(name))
+        uint64_t animIdx = mAnimationLibrary.emplace();
+        auto& entry = mAnimationLibrary[animIdx];
+
+        entry.animation = animation;
+
+        return animIdx;
+    }
+
+    const Gep::Texture& OpenGLRenderer::GetTexture(uint64_t texIdx)
+    {
+        return mTextureLibrary.at(texIdx).texture;
+    }
+
+    const Gep::MaterialGPUData& OpenGLRenderer::GetMaterial(uint64_t matIdx)
+    {
+        return mMaterials.at(matIdx);
+    }
+
+    const Gep::Mesh& OpenGLRenderer::GetMesh(uint64_t meshIdx)
+    {
+        return mMeshLibrary.at(meshIdx).mesh;
+    }
+
+    const Gep::Model& OpenGLRenderer::GetModel(uint64_t modelIdx)
+    {
+        return mModelLibrary.at(modelIdx).model;
+    }
+
+    const std::vector<uint64_t>& OpenGLRenderer::GetModelMeshes(uint64_t modelIdx)
+    {
+        return mModelLibrary.at(modelIdx).meshes;
+    }
+
+    const Gep::Animation& OpenGLRenderer::GetAnimation(uint64_t animIdx)
+    {
+        return mAnimationLibrary.at(animIdx).animation;
+    }
+
+    bool OpenGLRenderer::IsTextureLoaded(uint64_t texIdx)
+    {
+        return mTextureLibrary.contains(texIdx);
+    }
+
+    bool OpenGLRenderer::IsMaterialLoaded(uint64_t matIdx)
+    {
+        return mMaterials.contains(matIdx);
+    }
+
+    bool OpenGLRenderer::IsMeshLoaded(uint64_t meshIdx)
+    {
+        return mMeshLibrary.contains(meshIdx);
+    }
+
+    bool OpenGLRenderer::IsModelLoaded(uint64_t modelIdx)
+    {
+        return mModelLibrary.contains(modelIdx);
+    }
+
+    bool OpenGLRenderer::IsAnimationLoaded(uint64_t animIdx)
+    {
+        return mAnimationLibrary.contains(animIdx);
+    }
+
+    std::optional<uint64_t> OpenGLRenderer::FindTexture(const std::string& texName)
+    {
+        Gep::Log::Critical("Not Implemented");
+        return 0;
+    }
+
+    std::optional<uint64_t> OpenGLRenderer::FindMaterial(const std::string& matName)
+    {
+        Gep::Log::Critical("Not Implemented");
+        return 0;
+    }
+
+    std::optional<uint64_t> OpenGLRenderer::FindMesh(const std::string& meshName)
+    {
+        Gep::Log::Critical("Not Implemented");
+        return 0;
+    }
+
+    std::optional<uint64_t> OpenGLRenderer::FindModel(const std::string& modelName)
+    {
+        auto it = std::find_if(mModelLibrary.begin(), mModelLibrary.end(), [&](auto pair) 
         {
-            Gep::Log::Critical("Attempting to get a model with name: [", name, "] that doesn't exist");
-        }
+            auto& [modelIdx, entry] = pair;
 
-        return mModels.at(name).second;
+            return (entry.model.name == modelName);
+        });
+
+        if (it == mModelLibrary.end())
+            return std::nullopt;
+
+        return (*it).first;
     }
 
-    const Gep::Animation& OpenGLRenderer::GetAnimation(const std::string& name)
+    std::optional<uint64_t> OpenGLRenderer::FindAnimation(const std::string& animName)
     {
-        if (!mAnimations.contains(name))
+        auto it = std::find_if(mAnimationLibrary.begin(), mAnimationLibrary.end(), [&](auto pair)
         {
-            Gep::Log::Critical("Attempting to get a animation with name: [", name, "] that doesn't exist");
-        }
+            auto& [modelIdx, entry] = pair;
 
-        return mAnimations.at(name);
+            return (entry.animation.name == animName);
+        });
+
+        if (it == mAnimationLibrary.end())
+            return std::nullopt;
+
+        return (*it).first;
     }
 
-    bool OpenGLRenderer::IsAnimationLoaded(const std::string& name) const
+    uint64_t OpenGLRenderer::AddTexture(const Gep::Texture& texture)
     {
-        return mAnimations.contains(name);
+        uint64_t texIdx = mTextureLibrary.emplace();
+        auto& entry = mTextureLibrary[texIdx];
+
+        entry.texture = texture;
+
+        return texIdx;
     }
 
-    bool OpenGLRenderer::IsModelLoaded(const std::string& name) const
-    {
-        return mModels.contains(name);
-    }
-
-    void OpenGLRenderer::AddStaticObject(const std::string& shaderName, const std::string& modelName, const StaticObjectGPUData& gpuData, RenderFlags flags)
+    void OpenGLRenderer::AddObjectStatic(uint64_t modelIdx, const StaticObjectGPUData& gpuData, RenderFlags flags)
     {
         // these existance checks are very expensive so only perform in debug mode
-        debug_if (!IsModelLoaded(modelName))
+        debug_if (!IsModelLoaded(modelIdx))
         {
-            Gep::Log::Error("Failed to draw object. The model: [", modelName, "] doesn't exist");
+            Gep::Log::Error("Failed to draw object. The model: [", modelIdx, "] doesn't exist");
             return;
         }
 
-        mObjectDatas[modelName][flags].push_back(gpuData);
+        mObjectDatas[modelIdx][flags].push_back(gpuData);
     }
 
 
@@ -416,9 +499,9 @@ namespace Gep
     void OpenGLRenderer::CommitObjects()
     {
         // 2: loops over each model using the current shader
-        for (const auto& [modelName, flagsToObjects] : mObjectDatas)
+        for (const auto& [modelIdx, flagsToObjects] : mObjectDatas)
         {
-            const auto& [modelHandle, model] = mModels.at(modelName);
+            const auto& entry = mModelLibrary.at(modelIdx);
 
             // 3: loops over each active flag bucket
             for (const auto& [flags, objects] : flagsToObjects)
@@ -431,14 +514,19 @@ namespace Gep
                 // this is the amount of objects successfully sent to the gpu and the meshes that are used by that object
                 ObjectDrawInfo& di = mStaticObjectDrawInfo.emplace_back();
                 di.count = objects.size();
-                di.vaos.reserve(modelHandle.meshHandles.size());
-                for (const auto& meshHandle : modelHandle.meshHandles)
+                di.vaos.reserve(entry.meshes.size());
+                for (auto meshIdx : entry.meshes)
+                {
+                    const auto& meshHandle = mMeshLibrary.at(meshIdx).handle;
                     di.vaos.push_back({ meshHandle.mVertexArrayObject, meshHandle.mIndexCount });
+                }
 
                 // Pack mMeshUniforms in the same order DrawRegular consumes:
                 // per-mesh, then per-instance.
-                for (const auto& mesh : model.meshes)
+                for (auto meshIdx : entry.meshes)
                 {
+                    const auto& mesh = mMeshLibrary.at(meshIdx).mesh;
+
                     for (size_t i = 0; i < objects.size(); ++i)
                         mMeshUniforms.push_back({mesh.materialIndex});
                 }
@@ -475,24 +563,70 @@ namespace Gep
         GetAllShaders());
     }
 
-    void OpenGLRenderer::UnloadModel(const std::string& name)
+    void OpenGLRenderer::UnloadTexture(uint64_t texIdx)
     {
-        if (!mModels.contains(name))
+        auto& entry = mTextureLibrary[texIdx];
+
+        // 1. Make handle non-resident (required for bindless textures)
+        if (entry.texture.handle)
         {
-            Gep::Log::Error("Cannot unload mesh: [", name, "] a mesh with that name has not been loaded");
+            glMakeTextureHandleNonResidentARB(entry.texture.handle);
+            entry.texture.handle = 0;
+        }
+
+        // 2. Delete the texture object
+        if (entry.texture.id)
+        {
+            glDeleteTextures(1, &entry.texture.id);
+            entry.texture.id = 0;
+        }
+
+        mTextureLibrary.erase(texIdx);
+    }
+
+    void OpenGLRenderer::UnloadMaterial(uint64_t matIdx)
+    {
+        mMaterials.erase(matIdx);
+    }
+
+    void OpenGLRenderer::UnloadModel(uint64_t modelIdx)
+    {
+        if (!IsModelLoaded(modelIdx))
+        {
+            Gep::Log::Error("Cannot unload mesh: [", modelIdx, "] a mesh with that name has not been loaded");
             return;
         }
 
         // aquire the model id from the name
-        auto& [modelHandle, model] = mModels[name];
+        auto& entry = mModelLibrary[modelIdx];
 
         // delete all meshes owned by the model
-        for (MeshGPUHandle& meshHandle : modelHandle.meshHandles)
+        for (uint64_t meshIdx : entry.meshes)
         {
-            meshHandle.DeleteBuffers();
+            UnloadMesh(meshIdx);
         }
 
-        mModels.erase(name);
+        mModelLibrary.erase(modelIdx);
+    }
+
+    void OpenGLRenderer::UnloadMesh(uint64_t meshIdx)
+    {
+        if (!IsMeshLoaded(meshIdx))
+        {
+            Gep::Log::Error("Cannot unload mesh: [", meshIdx, "] a mesh with that name has not been loaded");
+            return;
+        }
+
+        auto& entry = mMeshLibrary[meshIdx];
+
+        entry.handle.DeleteBuffers();
+
+        mMeshLibrary.erase(meshIdx);
+    }
+
+    void OpenGLRenderer::UnloadAnimation(uint64_t animIdx)
+    {
+        mAnimationLibrary.erase(animIdx);
     }
 
     void OpenGLRenderer::Start(const glm::vec3& color)
@@ -502,33 +636,37 @@ namespace Gep
         //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    std::vector<std::string> OpenGLRenderer::GetLoadedModels() const
+    std::vector<std::string> OpenGLRenderer::GetLoadedModelNames() const
     {
-        std::vector<std::string> meshes;
+        std::vector<std::string> modelNames;
+        modelNames.reserve(mModelLibrary.size());
 
-        for (const auto& [name, modelHandle] : mModels)
-        {
-            meshes.emplace_back(name);
-        }
+        for (const auto [idx, entry] : mModelLibrary)
+            modelNames.emplace_back(entry.name);
 
-        return meshes;
+        return modelNames;
     }
 
-    const std::unordered_map<std::string, Texture>& OpenGLRenderer::GetLoadedTextures() const
+    std::vector<std::string> OpenGLRenderer::GetLoadedAnimationNames() const
     {
-        return mTextures;
+        std::vector<std::string> animNames;
+        animNames.reserve(mModelLibrary.size());
+
+        for (const auto [idx, entry] : mAnimationLibrary)
+            animNames.emplace_back(entry.animation.name);
+
+        return animNames;
     }
 
-    std::vector<std::string> OpenGLRenderer::GetLoadedAnimations() const
+    std::vector<Texture> OpenGLRenderer::GetLoadedTextures() const
     {
-        std::vector<std::string> animations;
+        std::vector<Texture> textures;
+        textures.reserve(mModelLibrary.size());
 
-        for (const auto& [name, pair] : mAnimations)
-        {
-            animations.push_back(name);
-        }
+        for (const auto [idx, entry] : mTextureLibrary)
+            textures.emplace_back(entry.texture);
 
-        return animations;
+        return textures;
     }
 
     const std::vector<std::string>& OpenGLRenderer::GetSupportedModelFormats() const
@@ -560,81 +698,23 @@ namespace Gep
         return allowedExtensions;
     }
 
-    void OpenGLRenderer::LoadIconTexture(const std::filesystem::path& iconPath)
-    {
-        if (mIconTextures.contains(iconPath.extension().string()))
-        {
-            Gep::Log::Error("Cannot load icon: [", iconPath.string(), "] an icon with that extension has already been loaded");
-            return;
-        }
+    //Texture OpenGLRenderer::GetOrLoadIconTexture(const std::filesystem::path& iconPath)
+    //{
+    //    if (!mIconTextures.contains(iconPath.extension().string()))
+    //        LoadIconTexture(iconPath);
 
-        HICON icon = GetIcon(iconPath);
-        if (!icon)
-        {
-            Gep::Log::Error("Failed to load icon: [", iconPath.string(), "]");
-            return;
-        }
+    //    // check if the icon path is a supported image format
+    //    const std::vector<std::string>& supportedTextureFormats = GetSupportedTextureFormats();
+    //    auto it = std::find(supportedTextureFormats.begin(), supportedTextureFormats.end(), iconPath.extension().string());
 
-        Texture texture = IconToTexture(icon);
-        if (texture.id == 0)
-        {
-            Gep::Log::Error("Failed to convert icon to texture: [", iconPath.string(), "]");
-            return;
-        }
+    //    // if the icon is a supported image, use the image itself
+    //    if (it != supportedTextureFormats.end())
+    //    {
+    //        return GetOrLoadTexture(iconPath);
+    //    }
 
-        mIconTextures[iconPath.extension().string()] = texture;
-    }
-
-    Texture OpenGLRenderer::GetIconTexture(const std::string& extension)
-    {
-        if (!mIconTextures.contains(extension))
-        {
-            Gep::Log::Error("Cannot get icon texture: [", extension, "] an icon with that extension has not been loaded");
-            return {};
-        }
-
-        return mIconTextures.at(extension);
-    }
-
-    Texture OpenGLRenderer::GetOrLoadIconTexture(const std::filesystem::path& iconPath)
-    {
-        if (!mIconTextures.contains(iconPath.extension().string()))
-            LoadIconTexture(iconPath);
-
-        // check if the icon path is a supported image format
-        const std::vector<std::string>& supportedTextureFormats = GetSupportedTextureFormats();
-        auto it = std::find(supportedTextureFormats.begin(), supportedTextureFormats.end(), iconPath.extension().string());
-
-        // if the icon is a supported image, use the image itself
-        if (it != supportedTextureFormats.end())
-        {
-            return GetOrLoadTexture(iconPath);
-        }
-
-        return mIconTextures.at(iconPath.extension().string());
-    }
-
-    void OpenGLRenderer::LoadTextureAsync(const std::filesystem::path& texturePath)
-    {
-        std::lock_guard<std::mutex> lock(mTextureLoadingMutex);
-
-        if (mTextures.contains(texturePath.string())) {
-            Gep::Log::Error("Cannot load texture: [", texturePath, "] has already been loaded");
-            return;
-        }
-
-        if (!std::filesystem::exists(texturePath)) {
-            Gep::Log::Error("Cannot load texture: [", texturePath.string(), "] does not exist");
-            return;
-        }
-
-        mTextures[texturePath.string()] = GetErrorTexture();
-
-        std::thread([&]()
-            {
-                LoadTexture(texturePath);
-            }).detach();
-    }
+    //    return mIconTextures.at(iconPath.extension().string());
+    //}
 
     void OpenGLRenderer::ReloadShaders()
     {
@@ -655,182 +735,6 @@ namespace Gep
         mShader_PointLightWithShadows.SetUniform("u_normalTexture", 1);
         mShader_PointLightWithShadows.SetUniform("u_colorTexture", 2);
         mShader_PointLightWithShadows.SetUniform("u_armTexture", 3);
-    }
-
-    void OpenGLRenderer::LoadTexture(const std::filesystem::path& texturePath)
-    {
-        if (mTextures.contains(texturePath.string()))
-        {
-            Gep::Log::Error("Cannot load texture: [", texturePath.string(), "] is already loaded");
-            return;
-        }
-
-        if (!std::filesystem::exists(texturePath))
-        {
-            Gep::Log::Error("Cannot load texture: [", texturePath.string(), "] does not exist");
-            return;
-        }
-
-        int width, height, channels;
-        if (!stbi_info(texturePath.string().c_str(), &width, &height, &channels)) {
-            Gep::Log::Error("Failed to get texture info: [", texturePath.string(), "]");
-            return;
-        }
-
-        int required_channels = 4; // Force RGBA
-        unsigned char* image = stbi_load(texturePath.string().c_str(), &width, &height, &channels, required_channels);
-        if (!image)
-        {
-            Gep::Log::Error("Failed to load texture: [", texturePath.string(), "]");
-            return;
-        }
-
-        LoadTextureFromPixelData(texturePath.string(), image, width, height, required_channels);
-        stbi_image_free(image);
-    }
-
-    void OpenGLRenderer::LoadTextureHDR(const std::filesystem::path& texturePath)
-    {
-        if (mTextures.contains(texturePath.string()))
-        {
-            Gep::Log::Error("Cannot load texture: [", texturePath.string(), "] is already loaded");
-            return;
-        }
-
-        if (!std::filesystem::exists(texturePath))
-        {
-            Gep::Log::Error("Cannot load texture: [", texturePath.string(), "] does not exist");
-            return;
-        }
-
-        int width, height, channels;
-        int required_channels = 3;
-        stbi_set_flip_vertically_on_load(true);
-        float* image = stbi_loadf(texturePath.string().c_str(), &width, &height, &channels, required_channels);
-        stbi_set_flip_vertically_on_load(false);
-        if (!image)
-        {
-            Gep::Log::Error("Failed to load hdr texture: [", texturePath.string(), "]");
-            return;
-        }
-
-        LoadTextureHDRFromPixelData(texturePath.string(), image, width, height, required_channels);
-        stbi_image_free(image);
-    }
-
-    void OpenGLRenderer::LoadTexture(const std::string& name, const uint8_t* imageFileData, size_t size)
-    {
-        if (mTextures.contains(name))
-        {
-            Gep::Log::Error("Cannot load texture: [", name, "] is already loaded");
-            return;
-        }
-
-        int requiredChannels = 4; // Force RGBA
-        int width, height, channels;
-        unsigned char* image = stbi_load_from_memory(imageFileData, size, &width, &height, &channels, requiredChannels);
-        if (!image)
-        {
-            Gep::Log::Error("Failed to load texture from raw data, with the given name, [", name, "]");
-            return;
-        }
-
-        LoadTextureFromPixelData(name, image, width, height, requiredChannels);
-        stbi_image_free(image);
-    }
-
-    void OpenGLRenderer::LoadTextureFromPixelData(const std::string& name, const uint8_t* pixelData, size_t width, size_t height, int requiredChannels)
-    {
-        if (mTextures.contains(name))
-        {
-            Gep::Log::Error("Cannot load texture: [", name, "] is already loaded");
-            return;
-        }
-
-        Texture& texture = mTextures[name];
-        glGenTextures(1, &texture.id);
-        glBindTexture(GL_TEXTURE_2D, texture.id);
-
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Ensure proper alignment
-        GLenum format = (requiredChannels == 4) ? GL_RGBA : GL_RGB;
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, pixelData);
-
-        glGenerateMipmap(GL_TEXTURE_2D);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        texture.handle = glGetTextureHandleARB(texture.id);
-        glMakeTextureHandleResidentARB(texture.handle);
-
-        glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
-    }
-
-    void OpenGLRenderer::LoadTextureHDRFromPixelData(const std::string& name, const float* pixelData, size_t width, size_t height, int requiredChannels)
-    {
-        if (mTextures.contains(name))
-        {
-            Gep::Log::Error("Cannot load texture: [", name, "] is already loaded");
-            return;
-        }
-
-        Texture& texture = mTextures[name];
-        glGenTextures(1, &texture.id);
-        glBindTexture(GL_TEXTURE_2D, texture.id);
-
-        GLenum format = (requiredChannels == 4) ? GL_RGBA : GL_RGB;
-        GLenum iformat = (requiredChannels == 4) ? GL_RGBA16F : GL_RGB16F;
-        glTexImage2D(GL_TEXTURE_2D, 0, iformat, width, height, 0, format, GL_FLOAT, pixelData);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        texture.handle = glGetTextureHandleARB(texture.id);
-        glMakeTextureHandleResidentARB(texture.handle);
-
-        glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
-    }
-
-    Texture OpenGLRenderer::GetTexture(const std::string& textureName)
-    {
-        if (!mTextures.contains(textureName))
-        {
-            Gep::Log::Error("Cannot get texture: [", textureName, "] a texture with that name has not been loaded");
-            return GetErrorTexture();
-        }
-
-        return mTextures.at(textureName);
-    }
-
-    Texture OpenGLRenderer::GetOrLoadTexture(const std::filesystem::path& texturePath)
-    {
-        if (!mTextures.contains(texturePath.string()))
-            LoadTexture(texturePath);
-
-        if (!mTextures.contains(texturePath.string()))
-            return GetErrorTexture();
-
-        return mTextures.at(texturePath.string());
-    }
-
-    void OpenGLRenderer::LoadErrorTexture(const std::filesystem::path& texturePath)
-    {
-        LoadTexture(texturePath);
-        mErrorTexture = GetTexture(texturePath.string());
-    }
-
-    Texture OpenGLRenderer::GetErrorTexture() const
-    {
-        if (mErrorTexture.id == 0)
-        {
-            Gep::Log::Error("Cannot get error texture: an error texture has not been loaded");
-            return {};
-        }
-
-        return mErrorTexture;
     }
 
     void OpenGLRenderer::Draw(Gep::FrameBuffer& targetFrameBuffer)
@@ -946,15 +850,14 @@ namespace Gep
         };
         SetDrawFlags(flags);
 
-        auto& [sphereHandle, sphere] = mModels.at("Sphere");
-        auto& meshHandle = sphereHandle.meshHandles[0];
+        auto& sphereHandle = mMeshLibrary[mSphereMeshIndex].handle;
 
-        glBindVertexArray(meshHandle.mVertexArrayObject);
+        glBindVertexArray(sphereHandle.mVertexArrayObject);
 
         mShader_PointLight.Bind(); // draw pass for lights that do not cast shadows
         glDrawElementsInstanced(
             GL_TRIANGLES,
-            meshHandle.mIndexCount,
+            sphereHandle.mIndexCount,
             GL_UNSIGNED_INT,
             0,
             static_cast<GLsizei>(mPointLightUniforms.size())
@@ -963,7 +866,7 @@ namespace Gep
         mShader_PointLightWithShadows.Bind(); // draw pass for lights that cast shadows
         glDrawElementsInstanced(
             GL_TRIANGLES,
-            meshHandle.mIndexCount,
+            sphereHandle.mIndexCount,
             GL_UNSIGNED_INT,
             0,
             static_cast<GLsizei>(mPointLightShadowUniforms.size())
@@ -1142,82 +1045,15 @@ namespace Gep
         glBindTexture(GL_TEXTURE_CUBE_MAP, mEnvironmentCubeMap);
 
         // draw cube
-        auto& [sphereHandle, sphere] = mModels.at("Cube");
-        auto& meshHandle = sphereHandle.meshHandles[0];
-        glBindVertexArray(meshHandle.mVertexArrayObject);
+        auto& cubeHandle = mMeshLibrary[mCubeMeshIndex].handle;
+        glBindVertexArray(cubeHandle.mVertexArrayObject);
 
         glDrawElements(
             GL_TRIANGLES,
-            meshHandle.mIndexCount,
+            cubeHandle.mIndexCount,
             GL_UNSIGNED_INT,
             nullptr
         );
-    }
-
-    void OpenGLRenderer::AddWireframeObject(const std::string& modelName, const StaticObjectGPUData& objectData)
-    {
-    }
-
-    HICON GetIcon(const std::filesystem::path& iconPath)
-    {
-        SHFILEINFO sfi{};
-        if (SHGetFileInfo(iconPath.wstring().c_str(), 0, &sfi, sizeof(sfi), SHGFI_ICON | SHGFI_LARGEICON))
-        {
-            return sfi.hIcon;
-        }
-
-        return nullptr;
-    }
-
-    Texture BitmapToTexture(HBITMAP bitmap)
-    {
-        if (!bitmap) return {};
-
-        BITMAP bm{};
-        if (!GetObject(bitmap, sizeof(bm), &bm))
-            return {};
-
-        BITMAPINFO bmpInfo{};
-        bmpInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        bmpInfo.bmiHeader.biWidth = bm.bmWidth;
-        bmpInfo.bmiHeader.biHeight = -bm.bmHeight;
-        bmpInfo.bmiHeader.biPlanes = 1;
-        bmpInfo.bmiHeader.biBitCount = 32;
-        bmpInfo.bmiHeader.biCompression = BI_RGB;
-
-        std::vector<BYTE> pixels(bm.bmWidth * bm.bmHeight * 4);
-        HDC dc = GetDC(nullptr);
-        int rows = GetDIBits(dc, bitmap, 0, bm.bmHeight, pixels.data(), &bmpInfo, DIB_RGB_COLORS);
-        ReleaseDC(nullptr, dc);
-        if (rows == 0)
-            return {};
-
-        Texture texture;
-        glGenTextures(1, &texture.id);
-        glBindTexture(GL_TEXTURE_2D, texture.id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-            bm.bmWidth, bm.bmHeight, 0,
-            GL_BGRA, GL_UNSIGNED_BYTE,
-            pixels.data());
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        texture.handle = glGetTextureHandleARB(texture.id);
-        glMakeTextureHandleResidentARB(texture.handle);
-
-        DeleteObject(bitmap);
-        return texture;
-
-    }
-
-    Texture IconToTexture(HICON icon)
-    {
-        if (!icon) return {};
-
-        ICONINFO iconInfo;
-        if (!GetIconInfo(icon, &iconInfo)) return {};
-
-        return BitmapToTexture(iconInfo.hbmColor);
     }
 
     void OpenGLRenderer::MeshGPUHandle::GenVertexBuffer(const Mesh& mesh)
@@ -1288,52 +1124,42 @@ namespace Gep
         auto root = modelPath.parent_path();
 
         aiString texPath;
-        if (aiReturn_SUCCESS == assimpMaterial->GetTexture(type, 0, &texPath))
+        if (aiReturn_SUCCESS != assimpMaterial->GetTexture(type, 0, &texPath))
         {
-            if (texPath.C_Str()[0] == '*') // if the first character is a star it is embedded
-            {
-                int assimpTextureIndex = std::atoi(texPath.C_Str() + 1);
-                aiTexture* assimpTexture = scene->mTextures[assimpTextureIndex];
-                std::string textureName = modelPath.string() + "_EMBEDDED_" + std::to_string(assimpTextureIndex);
-
-                if (assimpTexture->mHeight == 0) // if no height then it is compressed
-                {
-                    std::vector<uint8_t> bytes(
-                        reinterpret_cast<uint8_t*>(assimpTexture->pcData),
-                        reinterpret_cast<uint8_t*>(assimpTexture->pcData) + assimpTexture->mWidth
-                    );
-
-                    LoadTexture(textureName, bytes.data(), bytes.size());
-                }
-                else
-                {
-                    const int assimpTextureChannels = 4;
-                    // BGRA? format may cause issues remember this
-                    Gep::Log::Critical("I'm not sure if this is ever used so this is going to crash if this is");
-                    LoadTextureFromPixelData(textureName, reinterpret_cast<uint8_t*>(assimpTexture->pcData), assimpTexture->mWidth, assimpTexture->mHeight, assimpTextureChannels);
-                }
-
-                return GetTexture(textureName);
-            }
-            else
-            {
-                LoadTexture(root / texPath.C_Str());
-
-                return GetTexture((root / texPath.C_Str()).string());
-            }
+            Gep::Log::Error("Failed to get texture from assimp material");
+            return {};
         }
 
-        return {};
+        if (texPath.C_Str()[0] == '*') // if the first character is a star it is embedded
+        {
+            int assimpTextureIndex = std::atoi(texPath.C_Str() + 1);
+            aiTexture* assimpTexture = scene->mTextures[assimpTextureIndex];
+            std::string textureName = modelPath.string() + "_EMBEDDED_" + std::to_string(assimpTextureIndex);
+
+            if (assimpTexture->mHeight == 0) // if no height then it is compressed
+            {
+                std::vector<uint8_t> bytes(
+                    reinterpret_cast<uint8_t*>(assimpTexture->pcData),
+                    reinterpret_cast<uint8_t*>(assimpTexture->pcData) + assimpTexture->mWidth
+                );
+
+                return Texture::LoadFromMemory(bytes.data(), bytes.size());
+            }
+
+            const int assimpTextureChannels = 4;
+            // BGRA? format may cause issues remember this
+            Gep::Log::Critical("I'm not sure if this is ever used so this is going to crash if this is");
+            return Texture::LoadFromPixels(reinterpret_cast<uint8_t*>(assimpTexture->pcData), assimpTexture->mWidth, assimpTexture->mHeight, assimpTextureChannels);
+        }
+        
+        return Texture::Load(root / texPath.C_Str());
     }
 
     void OpenGLRenderer::LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton)
     {
-        const auto& [it, inserted] = mAnimations.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(std::string(assimpAnimation->mName.C_Str()) + " (" + parentPath + ")"),
-            std::forward_as_tuple()
-        );
-        auto& [name, animation] = *it;
+        uint64_t animIdx = mAnimationLibrary.emplace();
+        auto& entry = mAnimationLibrary[animIdx];
+        auto& animation = entry.animation;
 
         animation.duration = static_cast<float>(assimpAnimation->mDuration);
         animation.ticksPerSecond = assimpAnimation->mTicksPerSecond != 0.0

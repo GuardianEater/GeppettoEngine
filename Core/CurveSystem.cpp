@@ -101,7 +101,7 @@ namespace Client
                     .normalMatrixCol2 = normal[2],
                 };
 
-                mRenderer.AddStaticObject("PBR-Static", "Icosphere", uniformsCP);
+                mRenderer.AddObjectStatic(3 /*"Icosphere"*/, uniformsCP);
             }
 
             // adds a line segment for all evaluated points

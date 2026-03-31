@@ -59,6 +59,9 @@ namespace Client
         mManager.SubscribeToEvent<Gep::Event::ComponentAdded<RiggedModelComponent>>(this, &RenderSystem::OnRiggedModelAdded);
         mManager.SubscribeToEvent<Gep::Event::ComponentAdded<StaticModelComponent>>(this, &RenderSystem::OnStaticModelAdded);
 
+        mManager.SubscribeToEvent<Gep::Event::ComponentSerializing<StaticModelComponent>>(this, &RenderSystem::OnStaticModelSerializing);
+        mManager.SubscribeToEvent<Gep::Event::ComponentDeserializing<StaticModelComponent>>(this, &RenderSystem::OnStaticModelDeserializing);
+
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<RiggedModelComponent>>(this, &RenderSystem::OnRiggedModelEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<StaticModelComponent>>(this, &RenderSystem::OnStaticModelEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Light>>(this, &RenderSystem::OnPointLightEditorRender);
@@ -66,10 +69,7 @@ namespace Client
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<DirectionalLight>>(this, &RenderSystem::OnDirectionalLightEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Camera>>(this, &RenderSystem::OnCameraEditorRender);
 
-        Gep::OpenGLRenderer& renderer = mRenderer;
-        renderer.Initialize();
-
-        renderer.LoadErrorTexture("assets/textures/Checker.jpg");
+        mRenderer.Initialize();
 
         glEnable(GL_DEPTH_TEST);
     }
@@ -211,114 +211,129 @@ namespace Client
 
     void RenderSystem::OnRiggedModelAdded(const Gep::Event::ComponentAdded<RiggedModelComponent>& event)
     {
-        Gep::OpenGLRenderer& renderer = mRenderer;
+        //Gep::OpenGLRenderer& renderer = mRenderer;
 
-        RiggedModelComponent& model = event.component;
+        //RiggedModelComponent& model = event.component;
 
-        // if the model is not loaded when this component is added attempt load it
-        if (!renderer.IsModelLoaded(model.name))
-        {
-            if (std::filesystem::exists(model.name))
-            {
-                renderer.AddModelFromFile(model.name);
-            }
-            else
-            {
-                const std::string defaultName = RiggedModelComponent{}.name; // re-initializes the meshname to the default value
-                Gep::Log::Warning("A model component was created with an invalid name/location: [", model.name, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
-                model.name = defaultName;
-            }
-        }
+        //// if the model is not loaded when this component is added attempt load it
+        //if (!renderer.IsModelLoaded(model.modelIdx))
+        //{
+        //    if (std::filesystem::exists(model.name))
+        //    {
+        //        renderer.AddModelFromFile(model.name);
+        //    }
+        //    else
+        //    {
+        //        const std::string defaultName = RiggedModelComponent{}.name; // re-initializes the meshname to the default value
+        //        Gep::Log::Warning("A model component was created with an invalid name/location: [", model.name, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
+        //        model.name = defaultName;
+        //    }
+        //}
 
-        const Gep::Model& internalModel = mRenderer.GetModel(model.name);
+        //const Gep::Model& internalModel = mRenderer.GetModel(model.name);
 
-        InitializeModelPose(model, internalModel);
+        //InitializeModelPose(model, internalModel);
     }
 
     void RenderSystem::OnStaticModelAdded(const Gep::Event::ComponentAdded<StaticModelComponent>& event)
     {
-        Gep::OpenGLRenderer& renderer = mRenderer;
+    }
 
-        StaticModelComponent& model = event.component;
+    void RenderSystem::OnStaticModelSerializing(const Gep::Event::ComponentSerializing<StaticModelComponent>& event)
+    {
+        const StaticModelComponent& modelComponent = event.component;
 
-        // if the model is not loaded when this component is added attempt load it
-        if (!renderer.IsModelLoaded(model.name))
+        const std::string& modelName = mRenderer.GetModel(modelComponent.modelIdx).name;
+
+        event.componentJson["name"] = modelName;
+    }
+
+    void RenderSystem::OnStaticModelDeserializing(const Gep::Event::ComponentDeserializing<StaticModelComponent>& event)
+    {
+        StaticModelComponent& modelComponent = event.component;
+
+        if (!event.componentJson.contains("name"))
+            return;
+
+        std::string path = event.componentJson.at("name").get<std::string>();
+
+        auto maybeIdx = mRenderer.FindModel(path);
+        if (maybeIdx)
         {
-            if (std::filesystem::exists(model.name))
-            {
-                renderer.AddModelFromFile(model.name);
-            }
-            else
-            {
-                const std::string defaultName = RiggedModelComponent{}.name; // re-initializes the meshname to the default value
-                Gep::Log::Warning("A model component was created with an invalid name/location: [", model.name, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
-                model.name = defaultName;
-            }
+            modelComponent.modelIdx = *maybeIdx;
+        }
+        else if (std::filesystem::exists(path))
+        {
+            modelComponent.modelIdx = mRenderer.AddModel(mRenderer.LoadModelFromFile(path));
+        }
+        else
+        {
+            Gep::Log::Error("Failed to deserialize static model component it contained an invalid path");
         }
     }
 
     void RenderSystem::OnRiggedModelEditorRender(const Gep::Event::ComponentEditorRender<RiggedModelComponent>& event)
     {
-        std::span<RiggedModelComponent*> models = event.components;
+        //std::span<RiggedModelComponent*> models = event.components;
 
-        Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
-        std::vector<std::string> loadedModels = mRenderer.GetLoadedModels();
+        //Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
+        //std::vector<std::string> loadedModels = mRenderer.GetLoadedModels();
 
-        std::string selectedModelName = models[0]->name; // in this event call there is guaranteed to be at least one component
+        //std::string selectedModelName = models[0]->name; // in this event call there is guaranteed to be at least one component
 
-        // if all selected models have the same name, show it
-        bool allSame = true;
-        for (size_t i = 1; i < models.size(); ++i)
-        {
-            if (models[i]->name != selectedModelName)
-            {
-                allSame = false;
-                break;
-            }
-        }
+        //// if all selected models have the same name, show it
+        //bool allSame = true;
+        //for (size_t i = 1; i < models.size(); ++i)
+        //{
+        //    if (models[i]->name != selectedModelName)
+        //    {
+        //        allSame = false;
+        //        break;
+        //    }
+        //}
 
-        // drop down for selecting a model
-        bool modelsOpen = ImGui::BeginCombo("Models", allSame ? selectedModelName.c_str() : "-");
+        //// drop down for selecting a model
+        //bool modelsOpen = ImGui::BeginCombo("Models", allSame ? selectedModelName.c_str() : "-");
 
-        const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
+        //const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
 
-        er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
-        {
-            if (!mRenderer.IsModelLoaded(droppedPath.string()))
-            {
-                mRenderer.AddModelFromFile(droppedPath.string());
-            }
+        //er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
+        //{
+        //    if (!mRenderer.IsModelLoaded(droppedPath.string()))
+        //    {
+        //        mRenderer.AddModelFromFile(droppedPath.string());
+        //    }
 
-            for (RiggedModelComponent* model : models)
-            {
-                model->name = droppedPath.string();
-                const Gep::Model& internalModel = mRenderer.GetModel(model->name);
-                InitializeModelPose(*model, internalModel);
-            }
-        });
+        //    for (RiggedModelComponent* model : models)
+        //    {
+        //        model->name = droppedPath.string();
+        //        const Gep::Model& internalModel = mRenderer.GetModel(model->name);
+        //        InitializeModelPose(*model, internalModel);
+        //    }
+        //});
 
-        if (modelsOpen)
-        {
-            for (const std::string& modelName : loadedModels)
-            {
-                const bool isSelected = allSame && modelName == selectedModelName;
-                if (ImGui::Selectable(modelName.c_str(), isSelected))
-                {
-                    const Gep::Model& internalModel = mRenderer.GetModel(modelName);
-                    for (RiggedModelComponent* model : models)
-                    {
-                        model->name = modelName;
-                        InitializeModelPose(*model, internalModel);
-                    }
-                }
+        //if (modelsOpen)
+        //{
+        //    for (const std::string& modelName : loadedModels)
+        //    {
+        //        const bool isSelected = allSame && modelName == selectedModelName;
+        //        if (ImGui::Selectable(modelName.c_str(), isSelected))
+        //        {
+        //            const Gep::Model& internalModel = mRenderer.GetModel(modelName);
+        //            for (RiggedModelComponent* model : models)
+        //            {
+        //                model->name = modelName;
+        //                InitializeModelPose(*model, internalModel);
+        //            }
+        //        }
 
-                if (isSelected)
-                {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-            ImGui::EndCombo();
-        }
+        //        if (isSelected)
+        //        {
+        //            ImGui::SetItemDefaultFocus();
+        //        }
+        //    }
+        //    ImGui::EndCombo();
+        //}
     }
 
     void RenderSystem::OnStaticModelEditorRender(const Gep::Event::ComponentEditorRender<StaticModelComponent>& event)
@@ -326,15 +341,15 @@ namespace Client
         const std::span<StaticModelComponent*> models = event.components;
 
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
-        std::vector<std::string> loadedModels = mRenderer.GetLoadedModels();
+        std::vector<std::string> loadedModels = mRenderer.GetLoadedModelNames();
 
-        std::string selectedModelName = models[0]->name; // in this event call there is guaranteed to be at least one component
+        const uint64_t selectedModelIdx = models[0]->modelIdx; // in this event call there is guaranteed to be at least one component
 
         // if all selected models have the same name, show it
         bool allSame = true;
         for (size_t i = 1; i < models.size(); ++i)
         {
-            if (models[i]->name != selectedModelName)
+            if (models[i]->modelIdx != selectedModelIdx)
             {
                 allSame = false;
                 break;
@@ -342,33 +357,36 @@ namespace Client
         }
 
         // drop down for selecting a model
-        bool modelsOpen = ImGui::BeginCombo("Models", allSame ? selectedModelName.c_str() : "-");
+        std::string modelIdxStr = std::to_string(selectedModelIdx);
+        bool modelsOpen = ImGui::BeginCombo("Models", allSame ? modelIdxStr.c_str() : "-");
 
         const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
 
         er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
+        {
+            auto maybeIndex = mRenderer.FindModel(droppedPath.string());
+            if (!maybeIndex) // if there is no model then load it
             {
-                if (!mRenderer.IsModelLoaded(droppedPath.string()))
-                {
-                    mRenderer.AddModelFromFile(droppedPath.string());
-                }
-
-                for (StaticModelComponent* model : models)
-                {
-                    model->name = droppedPath.string();
-                }
-            });
+                maybeIndex = mRenderer.AddModel(mRenderer.LoadModelFromFile(droppedPath));
+            }
+            
+            for (StaticModelComponent* model : models)
+            {
+                model->modelIdx = *maybeIndex;
+            }
+        });
 
         if (modelsOpen)
         {
             for (const std::string& modelName : loadedModels)
             {
-                const bool isSelected = allSame && modelName == selectedModelName;
+                const bool isSelected = allSame && modelName == mRenderer.GetModel(selectedModelIdx).name;
                 if (ImGui::Selectable(modelName.c_str(), isSelected))
                 {
                     for (StaticModelComponent* model : models)
                     {
-                        model->name = modelName;
+                        auto modelIdx = mRenderer.FindModel(modelName);
+                        model->modelIdx = *modelIdx;
                     }
                 }
 
@@ -750,7 +768,7 @@ namespace Client
                 .normalMatrixCol2 = normal[2]
             };
 
-            mRenderer.AddStaticObject("PBR-Static", "Cube", uniforms, Gep::RenderFlags::Wireframe);
+            mRenderer.AddObjectStatic(2 /*cube*/, uniforms, Gep::RenderFlags::Wireframe);
         });
 
         mManager.ForEachArchetype([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
@@ -766,7 +784,7 @@ namespace Client
                 .normalMatrixCol2 = normal[2]
             };
 
-            mRenderer.AddStaticObject("PBR-Static", "Sphere", uniforms, Gep::RenderFlags::Wireframe);
+            mRenderer.AddObjectStatic(1 /*sphere*/, uniforms, Gep::RenderFlags::Wireframe);
         });
     }
 
@@ -963,7 +981,7 @@ namespace Client
         {
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
-            const Gep::Model& internalModel = mRenderer.GetModel(model.name);
+            const Gep::Model& internalModel = mRenderer.GetModel(model.modelIdx);
 
             std::string targetShader = "PBR-Static";
 
@@ -1014,14 +1032,14 @@ namespace Client
             if (model.selected)
                 flags |= Gep::RenderFlags::Highlight;
 
-            mRenderer.AddStaticObject(targetShader, model.name, uniforms, flags);
+            mRenderer.AddObjectStatic(model.modelIdx, uniforms, flags);
         });
 
         mManager.ForEachArchetype([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
         {
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
-            const Gep::Model& internalModel = mRenderer.GetModel(model.name);
+            const Gep::Model& internalModel = mRenderer.GetModel(model.modelIdx);
 
             Gep::StaticObjectGPUData uniforms
             {
@@ -1040,7 +1058,7 @@ namespace Client
             if (model.selected)
                 flags |= Gep::RenderFlags::Highlight;
 
-            mRenderer.AddStaticObject("PBR-Static", model.name, uniforms, flags);
+            mRenderer.AddObjectStatic(model.modelIdx, uniforms, flags);
         });
 
         mRenderer.AddLine(skeletonLines);
@@ -1075,9 +1093,10 @@ namespace Client
 
         if (ImGui::CollapsingHeader("Loaded Textures"))
         {
-            for (const auto& [name, texture] : textures)
+            for (const auto& texture : textures)
             {
-                if (ImGui::TreeNode(name.c_str()))
+                std::string textureIdStr = std::to_string(texture.id);
+                if (ImGui::TreeNode(textureIdStr.c_str()))
                 {
                     ImGui::Image(texture.id, { 256, 256 });
 

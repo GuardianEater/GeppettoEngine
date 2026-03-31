@@ -629,7 +629,7 @@ namespace Client
                         Client::Transform t;
                         t.world.position = position;
 
-                        Client::StaticModelComponent model{ .name = "Sphere" };
+                        Client::StaticModelComponent model{ .modelIdx = 1 /*sphere*/};
                         const bool needsRigidBody = !(pinTopLayer && y == width - 1);
 
                         Gep::Entity point = mManager.CreateEntity("Point (" + std::to_string(x) + "," + std::to_string(y) + "," + std::to_string(z) + ")");
@@ -1360,6 +1360,8 @@ namespace Client
 
         ImGui::BeginChild("AssetGrid");
 
+        static std::unordered_map<std::string, uint64_t> sIconTextures;
+
         for (size_t i = 0; i < mAssetBrowserEntries.size(); ++i)
         {
             const auto& entry = mAssetBrowserEntries[i];
@@ -1367,7 +1369,15 @@ namespace Client
             const std::string filenameButHidden = "##" + filename;
             const ImVec2 cursorPos = ImGui::GetCursorScreenPos();
             const std::filesystem::path relativePath = entry.path().lexically_relative(workingDir);
-            const Gep::Texture texture = renderer.GetOrLoadIconTexture(relativePath);
+
+            if (!sIconTextures.contains(relativePath.string()))
+            {
+                const Gep::Texture texture = Gep::Texture::LoadFileIcon(relativePath);
+                sIconTextures[relativePath.string()] = mRenderer.AddTexture(texture);
+            }
+
+            const uint64_t textureIdx = sIconTextures.at(relativePath.string());
+            const Gep::Texture& texture = mRenderer.GetTexture(textureIdx);
 
             constexpr float imageToTextDistance = 6.0f;
 
@@ -1375,7 +1385,7 @@ namespace Client
             ImGui::BeginGroup();
 
             // first draws an image for the thumpnail of the asset
-            ImGui::Image((ImTextureID)texture.id, ImVec2(imageSize, imageSize));
+            ImGui::Image(texture.id, ImVec2(imageSize, imageSize));
 
             // next draws the text under the file image
             ImGui::SetCursorScreenPos(ImVec2(cursorPos.x, cursorPos.y + imageSize + imageToTextDistance));//
@@ -1527,7 +1537,7 @@ namespace Client
                 if (ImGui::MenuItem("Cube"))
                 {
                     Gep::Entity entity = mManager.CreateEntity("Cube");
-                    mManager.AddComponent(entity, StaticModelComponent{ "Cube" }
+                    mManager.AddComponent(entity, StaticModelComponent{ 2 /*"Cube"*/ }
                                                 , Transform{}
                                                 , CubeCollider{});
                     mEditorResource.SelectEntity(entity);
@@ -1535,7 +1545,7 @@ namespace Client
                 if (ImGui::MenuItem("Sphere"))
                 {
                     Gep::Entity entity = mManager.CreateEntity("Icosphere");
-                    mManager.AddComponent(entity, StaticModelComponent{ "Icosphere" }
+                    mManager.AddComponent(entity, StaticModelComponent{ 3 /*"Icosphere"*/ }
                                                 , Transform{}
                                                 , SphereCollider{});
                     mEditorResource.SelectEntity(entity);
@@ -1543,7 +1553,7 @@ namespace Client
                 if (ImGui::MenuItem("Light"))
                 {
                     Gep::Entity entity = mManager.CreateEntity("Light");
-                    mManager.AddComponent(entity, StaticModelComponent{ "Sphere" }
+                    mManager.AddComponent(entity, StaticModelComponent{ 1 /*"Sphere"*/ }
                                                 , Transform{}
                                                 , Light{}
                                                 , SphereCollider{});

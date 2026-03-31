@@ -88,6 +88,8 @@ namespace Client
 	{
 		std::string payloadkey = "ASSET_BROWSER";
 
+		// TODO: Add early out if the path doesnt exist
+
 		if (ImGui::BeginDragDropTarget())
 		{
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadkey.c_str()))

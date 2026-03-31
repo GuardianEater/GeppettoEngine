@@ -16,7 +16,7 @@ namespace Client
     // this model variant is used with models that have rigging or armature. Needed for animations or IK
     struct RiggedModelComponent
     {
-        std::string name{ "Cube" }; // name of the model that is currently in use
+        uint64_t modelIdx = 0; // defaults to cube
         bool selected = false;
 
         std::vector<Gep::VQS> pose; // the bone offsets of the current model 
@@ -25,7 +25,7 @@ namespace Client
     // high performance model component that will simply render the model
     struct StaticModelComponent
     {
-        std::string name{ "Cube" }; // name of the model that is currently in use
+        uint64_t modelIdx = 0;
         bool selected = false;
     };
 }

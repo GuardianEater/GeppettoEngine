@@ -61,11 +61,11 @@ int main()
     // list of all resources ////////////////////////////////////////////////////////////////////////
     gtl::type_list<
         //Client::ScriptingResource,
+        Gep::OpenGLRenderer,
         Client::SoundResource,
         Client::CollisionResource,
         Client::SerializationResource,
-        Client::EditorResource,
-        Gep::OpenGLRenderer
+        Client::EditorResource
     > resourceTypes;
 
     // list of all components ///////////////////////////////////////////////////////////////////////

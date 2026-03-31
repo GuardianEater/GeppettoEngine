@@ -261,6 +261,9 @@
     <ClCompile Include="Tester.cpp">
       <Filter>Backend</Filter>
     </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>Backend\Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -514,6 +517,9 @@
     </ClInclude>
     <ClInclude Include="GPUVector.hpp">
       <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.hpp">
+      <Filter>Backend\Rendering</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

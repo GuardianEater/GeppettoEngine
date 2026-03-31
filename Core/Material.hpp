@@ -9,6 +9,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <filesystem>
 
 namespace Gep
 {
@@ -16,6 +17,15 @@ namespace Gep
     {
         GLuint64 handle = NULL; // gpu side pointer
         GLuint id       = NULL; // bindable id
+
+        static Texture LoadFileIcon(const std::filesystem::path& path);
+
+        static Texture Load(const std::filesystem::path& path);
+        static Texture LoadFromPixels(const uint8_t* pixelData, size_t width, size_t height, int requiredChannels);
+        static Texture LoadFromMemory(const uint8_t* imageFileData, size_t size);
+
+        static Texture LoadHDR(const std::filesystem::path& path);
+        static Texture LoadFromPixelsHDR(const float* pixelData, size_t width, size_t height, int requiredChannels);
     };
 
     // contains material data for pbr rendering.

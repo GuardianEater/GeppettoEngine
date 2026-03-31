@@ -16,6 +16,7 @@
 
 #include <mutex>
 #include <unordered_map>
+#include <optional>
 
 #include "stb_image.h"
 #include "Logger.hpp"
@@ -179,74 +180,191 @@ namespace Gep
     class OpenGLRenderer
     {
     public:
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Setup
+
         // must be called after OpenGL context is created
         void Initialize();
 
-        // adds a model directly from a file using its path as its name. necessary textures
-        void AddModelFromFile(const std::string& path);
 
-        // adds a prexisting model into the renderer. will not perform any loading from disk
-        void AddModel(const std::string& name, const Gep::Model& model);
 
-        void AddAnimation(const std::string& name, const Gep::Animation& animation);
-        size_t AddMaterial(const Gep::MaterialGPUData& material);
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Add
 
-        const Gep::Model& GetModel(const std::string& name);
-        const Gep::Animation& GetAnimation(const std::string& name);
+        // adds a standalone texture
+        uint64_t AddTexture(const Gep::Texture& texture); // shuold change this to take a struct containing pixel data and channel info and stuff
 
-        bool IsAnimationLoaded(const std::string& name) const;
-        bool IsModelLoaded(const std::string& name) const;
+        // adds a material to the renderer which may also refer to textures
+        uint64_t AddMaterial(const Gep::MaterialGPUData& material);
 
-        // adds an object to be drawn by 
-        void AddStaticObject(const std::string& shaderName, const std::string& modelName, const StaticObjectGPUData& objectData, RenderFlags flags = RenderFlags::None);
+        // adds a stand alone mesh into the renderer
+        uint64_t AddMesh(const Gep::Mesh& mesh);
+
+        // adds a prexisting model into the renderer, which is a way to refer to a collection of meshes
+        uint64_t AddModel(const Gep::Model& model);
+
+        // adds an animation
+        uint64_t AddAnimation(const Gep::Animation& animation);
+
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Get
+
+        // gets data associated with the texIdx aquired from AddTexture()
+        const Gep::Texture& GetTexture(uint64_t texIdx);
+
+        // gets data associated with the matIdx aquired from AddMaterial()
+        const Gep::MaterialGPUData& GetMaterial(uint64_t matIdx);
+
+        // gets data associated with the meshIdx aquired from AddMesh()
+        const Gep::Mesh& GetMesh(uint64_t meshIdx);
+
+        // gets data associated with the modelIdx aquired from AddModel()
+        const Gep::Model& GetModel(uint64_t modelIdx);
+
+        // gets all of the meshes associated with a model
+        const std::vector<uint64_t>& GetModelMeshes(uint64_t modelIdx);
+
+        // gets data associated with the animIdx aquired from AddAnimation()
+        const Gep::Animation& GetAnimation(uint64_t animIdx);
+
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Test
+
+        // gets data associated with the texture handle aquired from AddTexture()
+        bool IsTextureLoaded(uint64_t texIdx);
+
+        // gets data associated with the texture handle aquired from AddTexture()
+        bool IsMaterialLoaded(uint64_t matIdx);
+
+        // gets data associated with the texture handle aquired from AddTexture()
+        bool IsMeshLoaded(uint64_t meshIdx);
+
+        // gets data associated with the texture handle aquired from AddTexture()
+        bool IsModelLoaded(uint64_t modelIdx);
+
+        // gets data associated with the texture handle aquired from AddTexture()
+        bool IsAnimationLoaded(uint64_t animIdx);
+
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Find
+
+        // searches for a texture by name and returns its idx
+        std::optional<uint64_t> FindTexture(const std::string& texName);
+
+        // searches for a material by name and returns its idx
+        std::optional<uint64_t> FindMaterial(const std::string& matName);
+
+        // searches for a mesh by name and returns its idx
+        std::optional<uint64_t> FindMesh(const std::string& meshName);
+
+        // searches for a model by name and returns its idx
+        std::optional<uint64_t> FindModel(const std::string& modelName);
+
+        // searches for a animation by name and returns its idx
+        std::optional<uint64_t> FindAnimation(const std::string& animName);
+
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Remove
+
+        // unloads the texture on the cpu and gpu
+        void UnloadTexture(uint64_t texIdx);
+
+        // unloads material data but doesn't unload textures referenced
+        void UnloadMaterial(uint64_t matIdx);
+        
+        // unloads model data and all connected meshes
+        void UnloadModel(uint64_t modelIdx);
+
+        // unloads the mesh on the cpu and gpu
+        void UnloadMesh(uint64_t meshIdx);
+
+        // unloads the animation
+        void UnloadAnimation(uint64_t animIdx);
+
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Draw
+
+        // adds an object to be drawn by the renderer
+        void AddObjectStatic(uint64_t modelIdx, const StaticObjectGPUData& gpuData, RenderFlags flags = RenderFlags::None);
+
+        // adds a camera to the render, camera is selected via set camera index
         void AddCamera(const CameraGPUData& cameraData);
+
+        // adds a point light to the render pass. This will NOT cast shadows.
         void AddPointLight(const PointLightGPUData& lightData); // adds a light to the renderered, will be sent to the shader when DrawLights is called
+
+        // adds a point light to the render pass. This WILL cast shadows.
         void AddPointLightShadow(const PointLightShadowGPUData& lightData, const FrameBuffer& fbo); // variant of pointlight that will cast shadows
+
+        // adds a directional light to the render pass. this will NOT cast shadows
         void AddDirectionalLight(const DirectionalLightGPUData& uniforms);
+
+        // adds a directional light to the render pass. this WILL cast shadows
         void AddDirectionalLightShadow(const DirectionalLightShadowGPUData& uniforms, const FrameBuffer& fbo);
+
+        // adds a bone to the render pass. In a frame user must keep track of bone index and pass it it RiggedObjectUniforms.
         void AddBone(const BoneGPUData& boneData);
-        void AddLine(const LineGPUData& lines); // adds a line set to be drawn
 
-        void CommitObjects(); // moves all of the added object data from the cpu to the gpu
-        void CommitCameras(); // moves all of the added camera data from the cpu to the gpu
-        void CommitBones();   // moves all of the added bone data from the cpu to the gpu
-        void CommitLights();  // moves all of the added light data from the cpu to the gpu
+        // adds a line to the render pass. Mainly useful for debug
+        void AddLine(const LineGPUData& lines);
 
+        // moves all of the added object data from the cpu to the gpu
+        void CommitObjects(); 
+
+        // moves all of the added camera data from the cpu to the gpu
+        void CommitCameras();
+
+        // moves all of the added bone data from the cpu to the gpu
+        void CommitBones();
+
+        // moves all of the added light data from the cpu to the gpu
+        void CommitLights();
+
+        // chooses a camera to render with
         void SetCameraIndex(uint32_t index);
 
-        std::vector<std::string> GetLoadedModels() const;
-        const std::unordered_map<std::string, Texture>& GetLoadedTextures() const;
-        std::vector<std::string> GetLoadedAnimations() const;
-
-        const std::vector<std::string>& GetSupportedModelFormats() const;
-        const std::vector<std::string>& GetSupportedTextureFormats() const;
-
-        void LoadIconTexture(const std::filesystem::path& iconPath);
-        Texture GetIconTexture(const std::string& extension);
-        Texture GetOrLoadIconTexture(const std::filesystem::path& iconPath);
-
-        void LoadTextureAsync(const std::filesystem::path& texturePath);
-
-        // shaders ///////////////////////////////////////////////////////////////////////////////////////////
-        void ReloadShaders(); // Recompiles all shaders.
-
-        // loads a texture from disk
-        void LoadTexture(const std::filesystem::path& texturePath);
-        void LoadTextureHDR(const std::filesystem::path& texturePath);
-
-        // assuming the data is compressed, png/jpg
-        void LoadTexture(const std::string& name, const uint8_t* imageFileData, size_t size);
-
-        Texture GetTexture(const std::string& texturePath);
-        Texture GetOrLoadTexture(const std::filesystem::path& texturePath);
-
-        void LoadErrorTexture(const std::filesystem::path& texturePath);
-        Texture GetErrorTexture() const;
-
-        // draws all added objects to the given target framebuffer
+        // draws all added objects to the given target framebuffer, from the perspective of the last set camera index
         void Draw(Gep::FrameBuffer& targetFrameBuffer);
 
-        void UnloadModel(const std::string& name);
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Get
+
+        // gets the names of all models
+        std::vector<std::string> GetLoadedModelNames() const;
+
+        // gets the names of all animations
+        std::vector<std::string> GetLoadedAnimationNames() const;
+
+        // gets all loaded textures
+        std::vector<Texture> GetLoadedTextures() const;
+
+        // gets all model extensions that are accepted by assimp in the format ".obj"
+        const std::vector<std::string>& GetSupportedModelFormats() const;
+
+        // gets all texture extensions that are accepted by stb in the format ".png"
+        const std::vector<std::string>& GetSupportedTextureFormats() const;
+
+        // loads everything at the given path including other referenced files.
+        Gep::Model LoadModelFromFile(const std::filesystem::path& path);
+
+       
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Shaders
+        
+        void ReloadShaders(); // Recompiles all shaders.
+
 
         FrameBuffer& GetGeometryFrameBuffer() { return mGeometryFrameBuffer; }
 
@@ -282,10 +400,39 @@ namespace Gep
             size_t mIndexCount{}; // the amount of indices in the index buffer
         };
 
-        struct ModelGPUHandle
+        struct TextureLibraryEntry
         {
-            std::vector<MeshGPUHandle> meshHandles;
+            std::string name;
+            Texture texture;
         };
+
+        struct MaterialLibraryEntry
+        {
+            std::string name;
+            Material material;
+        };
+
+        struct MeshLibraryEntry
+        {
+            MeshGPUHandle handle;
+            Mesh mesh;
+        };
+
+        struct ModelLibraryEntry
+        {
+            std::string name;
+
+            std::vector<uint64_t> meshes;
+            Skeleton skeleton;
+
+            Gep::Model model;
+        };
+
+        struct AnimationLibraryEntry
+        {
+            Gep::Animation animation;
+        };
+
 
         auto GetAllShaders()
         {
@@ -316,14 +463,7 @@ namespace Gep
         void DrawLines();
         void BackgroundPass(Gep::FrameBuffer& targetFrameBuffer);
 
-        void AddWireframeObject(const std::string& modelName, const StaticObjectGPUData& objectData);
-
-        // pixel data loaded from stbimage, note pixel data must be freed after use
-        void LoadTextureFromPixelData(const std::string& name, const uint8_t* pixelData, size_t width, size_t height, int requiredChannels);
-        void LoadTextureHDRFromPixelData(const std::string& name, const float* pixelData, size_t width, size_t height, int requiredChannels);
-
         // helpers for loading assimp files
-        Gep::Model LoadModelFromFile(const std::filesystem::path& path);
         void LoadMaterials(const std::filesystem::path& path, const aiScene* scene);
 
         void LoadAnimations(const std::string& name, Gep::Model& model, const aiScene* scene);
@@ -352,14 +492,18 @@ namespace Gep
 
         glm::vec3 mSolidColor{};
 
-        std::unordered_map<std::string, std::pair<ModelGPUHandle, Gep::Model>> mModels; // model name -> its handle and data
-        std::unordered_map<std::string, Gep::Animation> mAnimations;
-
-        std::unordered_map<std::string, Gep::Texture> mIconTextures;// icon extension -> texture
-        std::unordered_map<std::string, Gep::Texture> mTextures; // texture path -> texture
+        // libraries for various assets
+        gtl::keyed_vector<TextureLibraryEntry>   mTextureLibrary;
+        gtl::keyed_vector<MeshLibraryEntry>      mMeshLibrary;
+        gtl::keyed_vector<ModelLibraryEntry>     mModelLibrary;
+        gtl::keyed_vector<AnimationLibraryEntry> mAnimationLibrary;
 
         Texture mErrorTexture{}; // always loaded, used when a texuture fails to load
         Material mErrorMaterial{};
+
+        // convienience for various algorithms
+        uint64_t mCubeMeshIndex   = Gep::NumMax<uint64_t>();
+        uint64_t mSphereMeshIndex = Gep::NumMax<uint64_t>();
 
         std::mutex mTextureLoadingMutex{};
 
@@ -387,8 +531,8 @@ namespace Gep
         std::vector<FrameBuffer> mPointLightShadowMaps; // index corresponds to the point light shadow uniform at the same index in mPointLightShadowUniforms
         std::vector<FrameBuffer> mDirectionalLightShadowMaps; // index corresponds to the directional light shadow uniform at the same index in mPointLightShadowUniforms
 
-        // model -> flags -> objects
-        std::map<std::string, std::map<RenderFlags, std::vector<StaticObjectGPUData>>> mObjectDatas;
+        // modelIdx -> flags -> objects
+        std::map<uint64_t, std::map<RenderFlags, std::vector<StaticObjectGPUData>>> mObjectDatas;
 
         // used to store vertices for drawing lines
         GLuint mLineVBO;

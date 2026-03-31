@@ -207,6 +207,7 @@
     <ClCompile Include="JsonHelp.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="OS_Windows.cpp" />
     <ClCompile Include="pch.cpp">
@@ -236,6 +237,7 @@
     <ClInclude Include="IKTarget.hpp" />
     <ClInclude Include="ImGuiHelp.hpp" />
     <ClInclude Include="JsonHelp.hpp" />
+    <ClInclude Include="Material.hpp" />
     <ClInclude Include="MeshCollider.hpp" />
     <ClInclude Include="OS.hpp" />
     <ClInclude Include="PathFollowerComponent.hpp" />
