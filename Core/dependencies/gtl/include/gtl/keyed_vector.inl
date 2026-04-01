@@ -96,7 +96,7 @@ namespace gtl
     template<typename T>
     constexpr size_t keyed_vector<T>::size() const
     {
-        return mData.size();
+        return mData.size() - mAvailableSlots.size();
     }
 
     template<typename T>
