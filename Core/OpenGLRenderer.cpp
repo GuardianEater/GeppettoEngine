@@ -785,7 +785,7 @@ namespace Gep
         // draw point light shadows here
         DrawLines();
 
-        //BackgroundPass(targetFrameBuffer);
+        BackgroundPass(targetFrameBuffer);
     }
 
     void OpenGLRenderer::End()
@@ -1091,6 +1091,8 @@ namespace Gep
             GL_UNSIGNED_INT,
             nullptr
         );
+
+        glBindVertexArray(0);
     }
 
     void OpenGLRenderer::MeshGPUHandle::GenVertexBuffer(const Mesh& mesh)
