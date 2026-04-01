@@ -98,11 +98,11 @@ int main()
         Client::CurveSystem,
         Client::RenderSystem, // must happen before the imgui system
         Client::ImGuiSystem,
-        Client::SerializationSystem,
         Client::PhysicsSystem,
         Client::RelationSystem,
         Client::SoundSystem,
-        Client::CollisionSystem
+        Client::CollisionSystem,
+        Client::SerializationSystem
     > systemTypes;
 
     // start the engine //////////////////////////////////////////////////////////////////////////////

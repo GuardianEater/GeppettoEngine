@@ -1360,6 +1360,7 @@ namespace Client
 
         ImGui::BeginChild("AssetGrid");
 
+        // extension -> textureIdx
         static std::unordered_map<std::string, uint64_t> sIconTextures;
 
         for (size_t i = 0; i < mAssetBrowserEntries.size(); ++i)
@@ -1369,14 +1370,15 @@ namespace Client
             const std::string filenameButHidden = "##" + filename;
             const ImVec2 cursorPos = ImGui::GetCursorScreenPos();
             const std::filesystem::path relativePath = entry.path().lexically_relative(workingDir);
+            const std::string entryExtension = relativePath.extension().string();
 
-            if (!sIconTextures.contains(relativePath.string()))
+            if (!sIconTextures.contains(entryExtension))
             {
                 const Gep::Texture texture = Gep::Texture::LoadFileIcon(relativePath);
-                sIconTextures[relativePath.string()] = mRenderer.AddTexture(texture);
+                sIconTextures[entryExtension] = mRenderer.AddTexture(texture);
             }
 
-            const uint64_t textureIdx = sIconTextures.at(relativePath.string());
+            const uint64_t textureIdx = sIconTextures.at(entryExtension);
             const Gep::Texture& texture = mRenderer.GetTexture(textureIdx);
 
             constexpr float imageToTextDistance = 6.0f;

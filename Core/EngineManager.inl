@@ -553,10 +553,6 @@ namespace Gep
             Json::WriteType(componentDataJson[fieldName], value);
         });
 
-        nlohmann::json componentJson = nlohmann::json::object();
-        componentJson["data"] = componentDataJson;
-        componentJson["type"] = componentName;
-
         Event::ComponentSerializing<ComponentType> event{
             .component = component,
             .componentJson = componentDataJson,
@@ -564,6 +560,10 @@ namespace Gep
         };
 
         SignalEvent(event);
+
+        nlohmann::json componentJson = nlohmann::json::object();
+        componentJson["data"] = componentDataJson;
+        componentJson["type"] = componentName;
 
         return componentJson;
     }

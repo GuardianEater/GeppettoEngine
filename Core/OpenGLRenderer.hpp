@@ -43,7 +43,7 @@ namespace Gep
         float metalness = 0.8f; // uniformly applied to the mesh. Will only be used if the metalness texture handle is null
         float __pad;     // used for allignment
 
-        glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f }; // diffuse color. uniformly applied to the mesh. Will only be used if the color texture handle is null
+        glm::vec4 color = { 0.2f, 1.0f, 0.2f, 1.0f }; // diffuse color. uniformly applied to the mesh. Will only be used if the color texture handle is null
         
         GLuint64 aoTextureHandle = 0;        // 64 bit gpu pointer, used to sample ao texture on the gpu
         GLuint64 roughnessTextureHandle = 0; // 64 bit gpu pointer, used to sample roughness texture on the gpu
@@ -194,8 +194,8 @@ namespace Gep
         // adds a standalone texture
         uint64_t AddTexture(const Gep::Texture& texture); // shuold change this to take a struct containing pixel data and channel info and stuff
 
-        // adds a material to the renderer which may also refer to textures
-        uint64_t AddMaterial(const Gep::MaterialGPUData& material);
+        // adds a material to the renderer which may also refer to textures. 
+        uint64_t AddMaterial(const Gep::Material& material);
 
         // adds a stand alone mesh into the renderer
         uint64_t AddMesh(const Gep::Mesh& mesh);
@@ -212,24 +212,34 @@ namespace Gep
         /// Get
 
         // gets data associated with the texIdx aquired from AddTexture()
-        const Gep::Texture& GetTexture(uint64_t texIdx);
+        const Gep::Texture& GetTexture(uint64_t texIdx) const;
 
         // gets data associated with the matIdx aquired from AddMaterial()
-        const Gep::MaterialGPUData& GetMaterial(uint64_t matIdx);
+        const Gep::Material& GetMaterial(uint64_t matIdx) const;
 
         // gets data associated with the meshIdx aquired from AddMesh()
-        const Gep::Mesh& GetMesh(uint64_t meshIdx);
+        const Gep::Mesh& GetMesh(uint64_t meshIdx) const;
 
         // gets data associated with the modelIdx aquired from AddModel()
-        const Gep::Model& GetModel(uint64_t modelIdx);
+        const Gep::Model& GetModel(uint64_t modelIdx) const;
 
         // gets all of the meshes associated with a model
-        const std::vector<uint64_t>& GetModelMeshes(uint64_t modelIdx);
+        const std::vector<uint64_t>& GetModelMeshes(uint64_t modelIdx) const;
 
         // gets data associated with the animIdx aquired from AddAnimation()
-        const Gep::Animation& GetAnimation(uint64_t animIdx);
+        const Gep::Animation& GetAnimation(uint64_t animIdx) const;
 
+        // gets the material container
+        std::vector<Gep::Material> GetMaterials() const
+        {
+            std::vector<Gep::Material> mats;
+            mats.reserve(mMaterialLibrary.size());
 
+            for (auto [matIdx, entry] : mMaterialLibrary)
+                mats.push_back(entry.material);
+
+            return mats;
+        }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /// Test
@@ -494,6 +504,7 @@ namespace Gep
 
         // libraries for various assets
         gtl::keyed_vector<TextureLibraryEntry>   mTextureLibrary;
+        gtl::keyed_vector<MaterialLibraryEntry>  mMaterialLibrary; // this must maintain sync with mMaterials
         gtl::keyed_vector<MeshLibraryEntry>      mMeshLibrary;
         gtl::keyed_vector<ModelLibraryEntry>     mModelLibrary;
         gtl::keyed_vector<AnimationLibraryEntry> mAnimationLibrary;

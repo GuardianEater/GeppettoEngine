@@ -209,9 +209,9 @@ namespace Gep
             if (!contains(index))
                 throw std::logic_error("gpu_keyed_vector::at() Index is empty");
 
-            PlaceHolderType& placeHolder = mData.at(index);
+            const PlaceHolderType& placeHolder = mData.at(index);
 
-            return *reinterpret_cast<Type*>(&placeHolder);
+            return *reinterpret_cast<const Type*>(&placeHolder);
         }
 
         Type& at(size_t index)

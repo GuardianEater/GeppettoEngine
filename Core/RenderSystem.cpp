@@ -1090,18 +1090,131 @@ namespace Client
         ImGui::Begin("RenderSystem");
 
         const auto& textures = mRenderer.GetLoadedTextures();
+        const auto& gBufferTextures = mRenderer.GetGeometryFrameBuffer().GetTextureAttachments();
+        const auto& materials = mRenderer.GetMaterials();
 
-        if (ImGui::CollapsingHeader("Loaded Textures"))
+        if (ImGui::CollapsingHeader("GBuffer Textures"))
+        {
+            for (const auto& texture : gBufferTextures)
+            {
+                std::string textureIdStr = std::to_string(texture.id);
+                ImGui::Text(textureIdStr.c_str());
+                ImGui::Image(texture.id, { 256, 256 });
+            }
+        }
+
+        if (ImGui::CollapsingHeader("Material Textures"))
         {
             for (const auto& texture : textures)
             {
                 std::string textureIdStr = std::to_string(texture.id);
-                if (ImGui::TreeNode(textureIdStr.c_str()))
-                {
-                    ImGui::Image(texture.id, { 256, 256 });
+                ImGui::Text(textureIdStr.c_str());
+                ImGui::Image(texture.id, { 256, 256 });
+            }
+        }
 
-                    ImGui::TreePop();
+        ImVec2 imageSize = { 100 * ImGui::GetStyle().FontScaleMain, 100 * ImGui::GetStyle().FontScaleMain };
+
+        if (ImGui::CollapsingHeader("Materials"))
+        {
+            int id = 0;
+            for (const auto& mat : materials)
+            {
+                ImGui::PushID(id);
+                id++;
+                // ao
+                ImGui::Text("Ambient Occlusion");
+                if (mat.aoTexture.id)
+                {
+                    // display the texture id and the texture
+                    std::string aoTextureIdStr = std::to_string(mat.aoTexture.id);
+                    ImGui::Text(aoTextureIdStr.c_str());
+                    ImGui::Image(mat.aoTexture.id, imageSize);
                 }
+                else
+                {
+                    // display the value
+                    std::string aoStr = std::to_string(mat.ao);
+                    ImGui::Text(aoStr.c_str());
+
+                    ImVec4 color{ mat.ao, mat.ao, mat.ao, 1.0f };
+                    ImGui::ColorButton("ao", color, 0, imageSize);
+                }
+
+                // diffuse
+                ImGui::Text("Diffuse");
+                if (mat.diffuseTexture.id)
+                {
+                    // display the texture id and the texture
+                    std::string diffuseTextureIdStr = std::to_string(mat.diffuseTexture.id);
+                    ImGui::Text(diffuseTextureIdStr.c_str());
+                    ImGui::Image(mat.diffuseTexture.id, imageSize);
+                }
+                else
+                {
+                    // display the value
+                    std::string diffuseStr = 
+                        "(" + std::to_string(mat.color.r) +
+                        "," + std::to_string(mat.color.g) +
+                        "," + std::to_string(mat.color.b) +
+                        "," + std::to_string(mat.color.a) + ")";
+
+                    ImGui::Text(diffuseStr.c_str());
+
+                    ImVec4 color{mat.color.r, mat.color.g, mat.color.b, mat.color.a};
+                    ImGui::ColorButton("diffuse", color, 0, imageSize);
+                }
+
+                // metalness
+                ImGui::Text("Metalness");
+                if (mat.metalnessTexture.id)
+                {
+                    std::string metalnessTextureIdStr = std::to_string(mat.metalnessTexture.id);
+                    ImGui::Text(metalnessTextureIdStr.c_str());
+                    ImGui::Image(mat.metalnessTexture.id, imageSize);
+                }
+                else
+                {
+                    std::string metalnessStr = std::to_string(mat.metalness);
+                    ImGui::Text(metalnessStr.c_str());
+
+                    ImVec4 color{ mat.metalness, mat.metalness, mat.metalness, 1.0f };
+                    ImGui::ColorButton("metalness", color, 0, imageSize);
+                }
+
+                // normals
+                if (mat.normalTexture.id)
+                {
+                    ImGui::Text("Normals");
+                    std::string normalTextureIdStr = std::to_string(mat.normalTexture.id);
+                    ImGui::Text(normalTextureIdStr.c_str());
+                    ImGui::Image(mat.normalTexture.id, imageSize);
+                }
+                else
+                {
+                    // display nothing if no normal texture
+                }
+
+                // roughness
+                ImGui::Text("Roughness");
+                if (mat.roughnessTexture.id)
+                {
+                    std::string roughnessTextureIdStr = std::to_string(mat.roughnessTexture.id);
+                    ImGui::Text(roughnessTextureIdStr.c_str());
+                    ImGui::Image(mat.roughnessTexture.id, imageSize);
+                }
+                else
+                {
+                    std::string roughnessStr = std::to_string(mat.roughness);
+                    ImGui::Text(roughnessStr.c_str());
+
+                    ImVec4 color{ mat.roughness, mat.roughness, mat.roughness, 1.0f };
+                    ImGui::ColorButton("roughness", color, 0, imageSize);
+                }
+
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::PopID();
             }
         }
 

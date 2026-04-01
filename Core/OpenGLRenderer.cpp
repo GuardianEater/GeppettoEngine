@@ -122,8 +122,15 @@ namespace Gep
         mShader_DirectionalLightWithShadows = Shader::FromFile("shaders/Lighting-Directional.vert", "shaders/Lighting-Directional-Shaded.frag");
         mShader_DirectionalLightShadowDepth = Shader::FromFile("shaders/Shadows-Directional.vert", "shaders/Shadows-Directional.frag");
 
-        Gep::MaterialGPUData defaultMat{};
+        Gep::Material defaultMat{};
         uint64_t defaultMatIdx = AddMaterial(defaultMat);
+        Gep::Material defaultMat1{ .color = {1.0f, 1.0f, 1.0f, 1.0f } };
+        AddMaterial(defaultMat1);
+        Gep::Material defaultMat2{};
+        AddMaterial(defaultMat2);
+        Gep::Material defaultMat3{};
+        AddMaterial(defaultMat3);
+
 
         // load all of the default meshes
         {
@@ -183,6 +190,7 @@ namespace Gep
 
         // load hdr environment map
         Gep::Texture skyboxTextureEquirectangular = Texture::LoadHDR("assets/textures/HDR/14-Hamarikyu_Bridge_B_3k.hdr");
+        AddTexture(skyboxTextureEquirectangular);
 
         glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
         glm::mat4 capturePVs[] =
@@ -283,6 +291,8 @@ namespace Gep
         mShader_DirectionalLightWithShadows.SetUniform("u_armTexture", 3);
 
         Shader::Unbind();
+
+        AddModel(LoadModelFromFile("assets/meshes/okayu/okayu.pmx"));
     }
 
     uint64_t OpenGLRenderer::AddModel(const Gep::Model& model)
@@ -316,11 +326,33 @@ namespace Gep
         return meshIdx;
     }
 
-    uint64_t OpenGLRenderer::AddMaterial(const Gep::MaterialGPUData& material)
+    uint64_t OpenGLRenderer::AddMaterial(const Gep::Material& material)
     {
-        size_t matIndex = mMaterials.emplace(material);
+        MaterialGPUData gpuData{
+            .ao = material.ao,
+            .roughness = material.roughness,
+            .metalness = material.metalness,
+            .color = material.color,
+
+            .aoTextureHandle = material.aoTexture.handle,
+            .roughnessTextureHandle = material.roughnessTexture.handle,
+            .metalnessTextureHandle = material.metalnessTexture.handle,
+            .colorTextureHandle = material.diffuseTexture.handle,
+            .normalTextureHandle = material.normalTexture.handle
+        };
+
+        MaterialLibraryEntry entry{
+            .material = material
+        };
+
+        size_t matIdxCPU = mMaterialLibrary.emplace(entry);
+        size_t matIdxGPU = mMaterials.emplace(gpuData);
+
+        if (matIdxCPU != matIdxGPU)
+            Gep::Log::Critical("CPU and GPU materials are out of sync");
+
         mMaterials.commit();
-        return matIndex;
+        return matIdxCPU;
     }
 
     uint64_t OpenGLRenderer::AddAnimation(const Gep::Animation& animation)
@@ -333,32 +365,32 @@ namespace Gep
         return animIdx;
     }
 
-    const Gep::Texture& OpenGLRenderer::GetTexture(uint64_t texIdx)
+    const Gep::Texture& OpenGLRenderer::GetTexture(uint64_t texIdx) const
     {
         return mTextureLibrary.at(texIdx).texture;
     }
 
-    const Gep::MaterialGPUData& OpenGLRenderer::GetMaterial(uint64_t matIdx)
+    const Gep::Material& OpenGLRenderer::GetMaterial(uint64_t matIdx) const
     {
-        return mMaterials.at(matIdx);
+        return mMaterialLibrary.at(matIdx).material;
     }
 
-    const Gep::Mesh& OpenGLRenderer::GetMesh(uint64_t meshIdx)
+    const Gep::Mesh& OpenGLRenderer::GetMesh(uint64_t meshIdx) const 
     {
         return mMeshLibrary.at(meshIdx).mesh;
     }
 
-    const Gep::Model& OpenGLRenderer::GetModel(uint64_t modelIdx)
+    const Gep::Model& OpenGLRenderer::GetModel(uint64_t modelIdx) const
     {
         return mModelLibrary.at(modelIdx).model;
     }
 
-    const std::vector<uint64_t>& OpenGLRenderer::GetModelMeshes(uint64_t modelIdx)
+    const std::vector<uint64_t>& OpenGLRenderer::GetModelMeshes(uint64_t modelIdx) const
     {
         return mModelLibrary.at(modelIdx).meshes;
     }
 
-    const Gep::Animation& OpenGLRenderer::GetAnimation(uint64_t animIdx)
+    const Gep::Animation& OpenGLRenderer::GetAnimation(uint64_t animIdx) const
     {
         return mAnimationLibrary.at(animIdx).animation;
     }
@@ -370,7 +402,7 @@ namespace Gep
 
     bool OpenGLRenderer::IsMaterialLoaded(uint64_t matIdx)
     {
-        return mMaterials.contains(matIdx);
+        return mMaterialLibrary.contains(matIdx);
     }
 
     bool OpenGLRenderer::IsMeshLoaded(uint64_t meshIdx)
@@ -586,6 +618,7 @@ namespace Gep
 
     void OpenGLRenderer::UnloadMaterial(uint64_t matIdx)
     {
+        mMaterialLibrary.erase(matIdx);
         mMaterials.erase(matIdx);
     }
 
@@ -650,7 +683,7 @@ namespace Gep
     std::vector<std::string> OpenGLRenderer::GetLoadedAnimationNames() const
     {
         std::vector<std::string> animNames;
-        animNames.reserve(mModelLibrary.size());
+        animNames.reserve(mAnimationLibrary.size());
 
         for (const auto [idx, entry] : mAnimationLibrary)
             animNames.emplace_back(entry.animation.name);
@@ -661,7 +694,7 @@ namespace Gep
     std::vector<Texture> OpenGLRenderer::GetLoadedTextures() const
     {
         std::vector<Texture> textures;
-        textures.reserve(mModelLibrary.size());
+        textures.reserve(mTextureLibrary.size());
 
         for (const auto [idx, entry] : mTextureLibrary)
             textures.emplace_back(entry.texture);
@@ -748,7 +781,7 @@ namespace Gep
         // draw point light shadows here
         DrawLines();
 
-        BackgroundPass(targetFrameBuffer);
+        //BackgroundPass(targetFrameBuffer);
     }
 
     void OpenGLRenderer::End()
@@ -1125,10 +1158,7 @@ namespace Gep
 
         aiString texPath;
         if (aiReturn_SUCCESS != assimpMaterial->GetTexture(type, 0, &texPath))
-        {
-            Gep::Log::Error("Failed to get texture from assimp material");
-            return {};
-        }
+            return {}; // this material does not contain a texture of the given type
 
         if (texPath.C_Str()[0] == '*') // if the first character is a star it is embedded
         {
@@ -1306,36 +1336,37 @@ namespace Gep
 
         for (unsigned int i = 0; i < scene->mNumMaterials; ++i)
         {
-            size_t materialIndex = mMaterials.emplace();
-            MaterialGPUData& material = mMaterials.at(materialIndex);
+            Gep::Material material;
             const aiMaterial* assimpMaterial = scene->mMaterials[i];
-
-            gAssimpMaterialIndexToMaterialIndex[i] = materialIndex; // create the mapping
 
             aiColor3D outColor(1.f, 1.f, 1.f);
             if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, outColor))
                 material.color = { outColor.r, outColor.g, outColor.b, 1.0f };
-
             if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_COLOR_AMBIENT, outColor))
                 material.ao = outColor.r;
-
             if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_METALLIC_FACTOR, outColor))
                 material.metalness = outColor.r;
-
             if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, outColor))
                 material.roughness = outColor.r;
 
-            Texture diffuse = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE);
-            Texture ao = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_AMBIENT_OCCLUSION);
-            Texture metalness = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_METALNESS);
-            Texture roughness = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE_ROUGHNESS);
-            Texture normal = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_NORMALS);
+            material.diffuseTexture   = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE);
+            material.aoTexture        = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_AMBIENT_OCCLUSION);
+            material.metalnessTexture = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_METALNESS);
+            material.roughnessTexture = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE_ROUGHNESS);
+            material.normalTexture    = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_NORMALS);
 
-            material.colorTextureHandle = diffuse.handle;
-            material.aoTextureHandle = ao.handle;
-            material.metalnessTextureHandle = metalness.handle;
-            material.roughnessTextureHandle = roughness.handle;
-            material.normalTextureHandle = normal.handle;
+            if (material.diffuseTexture.id)
+                AddTexture(material.diffuseTexture);
+            if (material.aoTexture.id)
+                AddTexture(material.aoTexture);
+            if (material.metalnessTexture.id)
+                AddTexture(material.metalnessTexture);
+            if (material.roughnessTexture.id)
+                AddTexture(material.roughnessTexture);
+            if (material.normalTexture.id)
+                AddTexture(material.normalTexture);
+
+            gAssimpMaterialIndexToMaterialIndex[i] = AddMaterial(material);
         }
     }
 
@@ -1518,6 +1549,8 @@ namespace Gep
 
         Gep::Model model;
 
+        model.name = path.string();
+
         // loads all of the materials out of this scene
         LoadMaterials(path, scene);
 
@@ -1527,11 +1560,9 @@ namespace Gep
         // fills in the skeleton of the model and the index field in gBoneData
         LoadHierarchy(model, scene);
 
-        LoadMeshes(model, scene);
+        LoadMeshes(model, scene); //Broken?
 
         LoadAnimations(path.string(), model, scene);
-
-        mMaterials.commit(); // send material data to the gpu
 
         return model;
     }
