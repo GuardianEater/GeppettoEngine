@@ -9,6 +9,7 @@
 #pragma once
 
 #include "EngineManager.hpp"
+#include "SoundResource.hpp"
 
 namespace Client
 {
@@ -19,6 +20,7 @@ namespace Client
     public:
         SoundSystem(Gep::EngineManager& em)
             : ISystem(em)
+            , mSoundResource(em.GetResource<SoundResource>())
         {}
 
     private:
@@ -29,5 +31,7 @@ namespace Client
         void OnSpatialSoundEmitterAdded(const Gep::Event::ComponentAdded<SpatialSoundEmitter>& event);
         void OnSpatialSoundEmitterRemoved(const Gep::Event::ComponentRemoved<SpatialSoundEmitter>& event);
         void OnSpatialSoundEmitterEditorRender(const Gep::Event::ComponentEditorRender<SpatialSoundEmitter>& event);
+
+        SoundResource& mSoundResource;
     };
 }

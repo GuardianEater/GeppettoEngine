@@ -142,6 +142,7 @@ namespace Gep
             return;
         }
 
+        // note this is not a for_each. for_all simply unpacks the typelist into an arg list
         componentParamTypes.for_all([&]<typename... ComponentTypes>() mutable
         {
             Signature targetSignature = CreateSignature<ComponentTypes...>();

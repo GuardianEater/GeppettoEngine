@@ -17,74 +17,52 @@ namespace Client
 {
     void SoundSystem::Initialize()
     {
-        SoundResource& soundResource = mManager.GetResource<SoundResource>();
-
         mManager.SubscribeToEvent<Gep::Event::ComponentAdded<SpatialSoundEmitter>>(this, &SoundSystem::OnSpatialSoundEmitterAdded);
         mManager.SubscribeToEvent<Gep::Event::ComponentRemoved<SpatialSoundEmitter>>(this, &SoundSystem::OnSpatialSoundEmitterRemoved);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<SpatialSoundEmitter>>(this, &SoundSystem::OnSpatialSoundEmitterEditorRender);
 
-        soundResource.mSoundEngine.init();
-        soundResource.mSoundEngine.setGlobalVolume(1.0f);
+        mSoundResource.mSoundEngine.init();
+        mSoundResource.mSoundEngine.setGlobalVolume(1.0f);
     }
 
     void SoundSystem::Update(float dt)
     {
-        mManager.GetResource<SoundResource>().mSoundEngine.update3dAudio();
-        SoundResource& soundResource = mManager.GetResource<SoundResource>();
-
-        const std::vector<Gep::Entity>& entities = mManager.GetEntities<SpatialSoundEmitter, Transform>();
-        const std::vector<Gep::Entity>& cameras = mManager.GetEntities<Camera, Transform>();
-
-        for (const Gep::Entity camera : cameras)
+        mManager.ForEachArchetype([&](Gep::Entity e, const Camera& cam, const Transform& camT)
         {
-            Transform& cameraTransform = mManager.GetComponent<Transform>(camera);
-            Camera& cameraComponent = mManager.GetComponent<Camera>(camera);
+            mSoundResource.mSoundEngine.set3dListenerPosition(camT.world.position.x, camT.world.position.y, camT.world.position.z);
+            mSoundResource.mSoundEngine.set3dListenerAt(-cam.back.x, -cam.back.y, -cam.back.z);
+            mSoundResource.mSoundEngine.set3dListenerUp(cam.up.x, cam.up.y, cam.up.z);
 
-            soundResource.mSoundEngine.set3dListenerPosition(
-                cameraTransform.world.position.x,
-                cameraTransform.world.position.y,
-                cameraTransform.world.position.z);
-            soundResource.mSoundEngine.set3dListenerAt(
-                -cameraComponent.back.x,
-                -cameraComponent.back.y,
-                -cameraComponent.back.z);
-            soundResource.mSoundEngine.set3dListenerUp(
-                cameraComponent.up.x,
-                cameraComponent.up.y,
-                cameraComponent.up.z);
-
-            for (const Gep::Entity& entity : entities)
+            mManager.ForEachArchetype([&](Gep::Entity e, SpatialSoundEmitter& se, const Transform& t)
             {
-                SpatialSoundEmitter& soundComponent = mManager.GetComponent<SpatialSoundEmitter>(entity);
-                Transform& transform = mManager.GetComponent<Transform>(entity);
+                if (!mSoundResource.mSoundEngine.isValidVoiceHandle(se.soundHandle))
+                    return;
 
-                if (!soundResource.mSoundEngine.isValidVoiceHandle(soundComponent.soundHandle))
-                    continue;
+                mSoundResource.mSoundEngine.set3dSourcePosition(
+                    se.soundHandle,
+                    t.world.position.x,
+                    t.world.position.y,
+                    t.world.position.z
+                );
 
-                soundResource.mSoundEngine.set3dSourcePosition(
-                    soundComponent.soundHandle,
-                    transform.world.position.x,
-                    transform.world.position.y,
-                    transform.world.position.z);
-
-                soundResource.mSoundEngine.set3dSourceMinMaxDistance(
-                    soundComponent.soundHandle,
+                mSoundResource.mSoundEngine.set3dSourceMinMaxDistance(
+                    se.soundHandle,
                     1.0f,
-                    soundComponent.distance);
+                    se.distance);
 
-                soundResource.mSoundEngine.set3dSourceAttenuation(
-                    soundComponent.soundHandle,
+                mSoundResource.mSoundEngine.set3dSourceAttenuation(
+                    se.soundHandle,
                     SoLoud::AudioSource::LINEAR_DISTANCE,
                     1.0f);
-            }
-        }
+            });
+        });
 
-        soundResource.mSoundEngine.update3dAudio();
+        mSoundResource.mSoundEngine.update3dAudio();
     }
 
     void SoundSystem::Exit()
     {
-        mManager.GetResource<SoundResource>().mSoundEngine.deinit();
+        mSoundResource.mSoundEngine.deinit();
     }
 
     void SoundSystem::OnSpatialSoundEmitterAdded(const Gep::Event::ComponentAdded<SpatialSoundEmitter>& event)
@@ -94,7 +72,7 @@ namespace Client
 
     void SoundSystem::OnSpatialSoundEmitterRemoved(const Gep::Event::ComponentRemoved<SpatialSoundEmitter>& event)
     {
-        mManager.GetResource<SoundResource>().mSoundEngine.stop(event.component.soundHandle);
+        mSoundResource.mSoundEngine.stop(event.component.soundHandle);
     }
 
     void SoundSystem::OnSpatialSoundEmitterEditorRender(const Gep::Event::ComponentEditorRender<SpatialSoundEmitter>& event)
