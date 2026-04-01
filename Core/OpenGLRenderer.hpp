@@ -404,10 +404,10 @@ namespace Gep
             void DeleteBuffers();
 
             // handles used by opengl
-            GLuint mVertexArrayObject = NumMax<GLuint>();
-            GLuint mVertexBuffer = NumMax<GLuint>();
-            GLuint mIndexBuffer = NumMax<GLuint>();
-            size_t mIndexCount{}; // the amount of indices in the index buffer
+            GLuint mVertexArrayObject = NULL;
+            GLuint mVertexBuffer = NULL;
+            GLuint mIndexBuffer = NULL;
+            size_t mIndexCount{0}; // the amount of indices in the index buffer
         };
 
         struct TextureLibraryEntry

@@ -124,13 +124,6 @@ namespace Gep
 
         Gep::Material defaultMat{};
         uint64_t defaultMatIdx = AddMaterial(defaultMat);
-        Gep::Material defaultMat1{ .color = {1.0f, 1.0f, 1.0f, 1.0f } };
-        AddMaterial(defaultMat1);
-        Gep::Material defaultMat2{};
-        AddMaterial(defaultMat2);
-        Gep::Material defaultMat3{};
-        AddMaterial(defaultMat3);
-
 
         // load all of the default meshes
         {
@@ -181,14 +174,14 @@ namespace Gep
             AddModel(model);
         }
 
-        // setup skybox
+        //// setup skybox
         mShader_EquirectangularToCubemap = Shader::FromFile("shaders/IBL/cubemap.vert", "shaders/IBL/equirectangular-to-cubemap.frag");
         mShader_EquirectangularToCubemap.SetUniform("u_equirectangularMap", 0);
 
         mShader_Background = Shader::FromFile("shaders/IBL/background.vert", "shaders/IBL/background.frag");
         mShader_Background.SetUniform("u_environmentMap", 0);
 
-        // load hdr environment map
+        //// load hdr environment map
         Gep::Texture skyboxTextureEquirectangular = Texture::LoadHDR("assets/textures/HDR/14-Hamarikyu_Bridge_B_3k.hdr");
         AddTexture(skyboxTextureEquirectangular);
 
@@ -261,8 +254,10 @@ namespace Gep
                 GL_UNSIGNED_INT,
                 nullptr
             );
+
+            glBindVertexArray(0); // holy shit found it. make sure to unbind vao
         }
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
         // gbuffer access in shader
@@ -292,7 +287,16 @@ namespace Gep
 
         Shader::Unbind();
 
-        AddModel(LoadModelFromFile("assets/meshes/okayu/okayu.pmx"));
+        // this is broken
+        Gep::Model model = LoadModelFromFile("assets/meshes/FBX/fbx/roman_D.fbx");
+        AddModel(model);
+
+        // this is broken
+        //Gep::Model model;
+        //Gep::Mesh sphere = Gep::SphereMesh(10, 10);
+        //sphere.materialIndex = defaultMatIdx;
+        //model.meshes.push_back(sphere);
+        //AddModel(model);
     }
 
     uint64_t OpenGLRenderer::AddModel(const Gep::Model& model)
@@ -1091,6 +1095,12 @@ namespace Gep
 
     void OpenGLRenderer::MeshGPUHandle::GenVertexBuffer(const Mesh& mesh)
     {
+        if (mesh.vertices.empty())
+        {
+            Gep::Log::Error("Cannot gen vertex buffer of size 0");
+            return;
+        }
+
         glGenBuffers(1, &mVertexBuffer);
         glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
         glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh.vertices.size(), mesh.vertices.data(), GL_STATIC_DRAW);
@@ -1098,6 +1108,12 @@ namespace Gep
 
     void OpenGLRenderer::MeshGPUHandle::GenIndexBuffer(const Mesh& mesh)
     {
+        if (mesh.indices.empty())
+        {
+            Gep::Log::Error("Cannot gen index buffer of size 0");
+            return;
+        }
+
         glGenBuffers(1, &mIndexBuffer);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * mesh.indices.size(), mesh.indices.data(), GL_STATIC_DRAW);
@@ -1107,6 +1123,12 @@ namespace Gep
 
     void OpenGLRenderer::MeshGPUHandle::BindBuffers()
     {
+        if (mVertexBuffer == NULL || mIndexBuffer == NULL)
+        {
+            Gep::Log::Error("Cannot bind buffers on invalid buffers");
+            return;
+        }
+
         glGenVertexArrays(1, &mVertexArrayObject);
         glBindVertexArray(mVertexArrayObject);
 
