@@ -643,6 +643,7 @@ namespace Gep
             UnloadMesh(meshIdx);
         }
 
+        mObjectDatas.erase(modelIdx);
         mModelLibrary.erase(modelIdx);
     }
 

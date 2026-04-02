@@ -22,6 +22,7 @@
 #include "SerializationResource.hpp"
 #include "EditorResource.hpp"
 #include "OpenGLRenderer.hpp"
+#include "SphereMesh.hpp"
 
 #include "ImGuiHelp.hpp"
 
@@ -777,6 +778,103 @@ namespace Client
                     testOutput.push_back([]() {
                         ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Parenting Test Passed!");
                     });
+                }
+            }
+
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("Materials"))
+        {
+            static glm::vec4 diffuse = { 0.4f, 0.4f, 0.9f, 1.0f };
+            static std::vector<Gep::Entity> cubes;
+            static Gep::Entity parent;
+            static float spacing = 2;
+            static bool running = false;
+            static std::string buttonText;
+            static std::vector<uint64_t> models; // TODO: Bandaid because meshes cannot have varying materials
+            static std::vector<uint64_t> materials;
+            static int width = 10;
+
+            buttonText = running ? "EndTest" : "StartTest";
+
+            ImGui::DragFloat("Spacing", &spacing);
+            ImGui::ColorPicker3("Color", &diffuse[0]);
+            ImGui::DragInt("Width", &width, 0.01f, 0.0f, 50.0f);
+
+            if (ImGui::Button(buttonText.c_str()))
+            {
+                if (running)
+                {
+                    running = false;
+                    for (auto e : cubes)
+                    {
+                        mManager.DestroyEntity(e);
+                    }
+
+                    for (auto mat : materials)
+                    {
+                        mRenderer.UnloadMaterial(mat);
+                    }
+
+                    for (auto model : models)
+                    {
+                        mRenderer.UnloadModel(model);
+                    }
+
+                    mManager.DestroyEntity(parent);
+                    cubes.clear();
+                    materials.clear();
+                    models.clear();
+                }
+                else
+                {
+                    running = true;
+                    float halfExtent = (width - 1) * spacing * 0.5f;
+
+                    parent = mManager.CreateEntity("Materials Test");
+                    mManager.AddComponent(parent, Transform{});
+                    for (int x = 0; x < width; ++x)
+                    for (int y = 0; y < width; ++y)
+                    {
+                        std::string name = "Sphere (" + std::to_string(x) + "," + std::to_string(y) + ")";
+
+                        // build a material
+                        Gep::Material mat;
+                        const float invRange = 1.0f / static_cast<float>(std::max(width - 1, 1));
+                        mat.color = diffuse;
+                        mat.metalness = static_cast<float>(x) * invRange;
+                        mat.roughness = static_cast<float>(y) * invRange;
+                        uint64_t matIdx = mRenderer.AddMaterial(mat);
+                        materials.push_back(matIdx);
+
+                        // build a mesh using material
+                        Gep::Mesh mesh = Gep::SphereMesh(10, 10);
+                        mesh.materialIndex = matIdx;
+                        mesh.name = name;
+
+                        // build a model using a mesh
+                        Gep::Model model;
+                        model.meshes.push_back(mesh);
+                        model.name = name;
+                        uint64_t modelIdx = mRenderer.AddModel(model);
+                        models.push_back(modelIdx);
+
+                        glm::vec3 pos = {
+                            x * spacing - halfExtent,
+                            y * spacing - halfExtent,
+                            0.0f
+                        };
+
+                        Client::Transform t;
+                        t.world.position = pos;
+
+                        Gep::Entity e = mManager.CreateEntity(name);
+                        mManager.AddComponent(e, t, Client::StaticModelComponent{.modelIdx = modelIdx /*sphere*/});
+                        mManager.AttachEntity(parent, e);
+
+                        cubes.push_back(e);
+                    }
                 }
             }
 
