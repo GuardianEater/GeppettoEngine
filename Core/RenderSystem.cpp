@@ -268,6 +268,7 @@ namespace Client
         }
         else
         {
+            event.component.modelIdx = 0;
             Gep::Log::Error("Failed to deserialize static model component it contained an invalid path");
         }
     }

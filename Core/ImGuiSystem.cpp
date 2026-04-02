@@ -788,6 +788,7 @@ namespace Client
         {
             static glm::vec4 diffuse = { 0.4f, 0.4f, 0.9f, 1.0f };
             static std::vector<Gep::Entity> cubes;
+            static std::vector<Gep::Entity> lights;
             static Gep::Entity parent;
             static float spacing = 2;
             static bool running = false;
@@ -799,7 +800,7 @@ namespace Client
             buttonText = running ? "EndTest" : "StartTest";
 
             ImGui::DragFloat("Spacing", &spacing);
-            ImGui::ColorPicker3("Color", &diffuse[0]);
+            ImGui::ColorEdit3("Color", &diffuse[0]);
             ImGui::DragInt("Width", &width, 0.01f, 0.0f, 50.0f);
 
             if (ImGui::Button(buttonText.c_str()))
@@ -808,6 +809,11 @@ namespace Client
                 {
                     running = false;
                     for (auto e : cubes)
+                    {
+                        mManager.DestroyEntity(e);
+                    }
+
+                    for (auto e : lights)
                     {
                         mManager.DestroyEntity(e);
                     }
@@ -826,6 +832,7 @@ namespace Client
                     cubes.clear();
                     materials.clear();
                     models.clear();
+                    lights.clear();
                 }
                 else
                 {
@@ -834,6 +841,31 @@ namespace Client
 
                     parent = mManager.CreateEntity("Materials Test");
                     mManager.AddComponent(parent, Transform{});
+
+                    for (int x = 0; x < 2; x++)
+                    for (int y = 0; y < 2; y++)
+                    {
+                        glm::vec3 pos = {
+                            (x * spacing * (width - 1)) - halfExtent,
+                            (y * spacing * (width - 1)) - halfExtent,
+                            10.0f
+                        };
+
+                        Client::Transform t;
+                        t.world.position = pos;
+
+                        std::string name = "Light (" + std::to_string(x) + "," + std::to_string(y) + ")";
+                        Gep::Entity light = mManager.CreateEntity(name);
+                        lights.push_back(light);
+                        mManager.AddComponent(light, 
+                            t, 
+                            Client::StaticModelComponent{ .modelIdx = 3 /*sphere*/ },
+                            Client::Light{.intensity = 1000 }
+                        );
+                        mManager.AttachEntity(parent, light);
+
+                    }
+
                     for (int x = 0; x < width; ++x)
                     for (int y = 0; y < width; ++y)
                     {
