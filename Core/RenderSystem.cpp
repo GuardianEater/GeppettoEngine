@@ -1094,6 +1094,12 @@ namespace Client
         const auto& gBufferTextures = mRenderer.GetGeometryFrameBuffer().GetTextureAttachments();
         const auto& materials = mRenderer.GetMaterials();
 
+        static float exposure = 1.0f;
+        if (ImGui::SliderFloat("Exposure", &exposure, 0, 10))
+        {
+            mRenderer.SetExposure(exposure);
+        }
+
         if (ImGui::CollapsingHeader("GBuffer Textures"))
         {
             for (const auto& texture : gBufferTextures)

@@ -1,4 +1,4 @@
-#include "../Common.glsl"
+#include "Common.glsl"
 
 // in //////////////////////////////////////////////////////////////////////////
 layout(location=0) in vec3 a_position;    // position in world space

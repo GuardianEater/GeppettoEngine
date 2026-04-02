@@ -275,6 +275,7 @@ namespace Gep
 
 		const std::string searchString = "#include";
 		std::string shaderSource = Gep::ReadFile(path);
+		const std::filesystem::path workingDir = std::filesystem::current_path() / "shaders";
 
 		size_t includeIndex = shaderSource.find(searchString);
 		
@@ -291,7 +292,7 @@ namespace Gep
 			// remove the [#include "..."]
 			shaderSource.erase(includeIndex, quoteIndex2 - includeIndex + 1);
 
-			const std::filesystem::path includePath = path.parent_path() / includeFileName;
+			const std::filesystem::path includePath = workingDir / includeFileName;
 			size_t offset = includeIndex; // minor optimization skips already checked areas
 
 			// if the include file has already been loaded reuse it

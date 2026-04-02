@@ -27,6 +27,12 @@ vec3 SchlickFresnel(float vDotH, vec3 color, float metallic)
   return result;
 }
 
+vec3 SchlickFresnelRoughness(float cosTheta, vec3 F0, float roughness)
+{
+  const float clamped = clamp(1.0 - cosTheta, 0.0, 1.0);
+  return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamped, 5.0);
+} 
+
 float GeometrySchlickGGX(float dp, float roughness)
 {
   float k = (roughness + 1.0) * (roughness + 1.0) / 8.0;

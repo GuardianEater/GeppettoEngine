@@ -176,7 +176,10 @@ namespace Gep
 
         int required_channels = 3;
         int width, height, channels;
+        stbi_set_flip_vertically_on_load(true);
         float* image = stbi_loadf(path.string().c_str(), &width, &height, &channels, required_channels);
+        stbi_set_flip_vertically_on_load(false);
+
         if (!image)
         {
             Gep::Log::Error("Failed to load hdr texture: [", path.string(), "]");

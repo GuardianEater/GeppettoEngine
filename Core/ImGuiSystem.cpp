@@ -22,7 +22,7 @@
 #include "SerializationResource.hpp"
 #include "EditorResource.hpp"
 #include "OpenGLRenderer.hpp"
-#include "SphereMesh.hpp"
+#include "IcosphereMesh.hpp"
 
 #include "ImGuiHelp.hpp"
 
@@ -881,7 +881,7 @@ namespace Client
                         materials.push_back(matIdx);
 
                         // build a mesh using material
-                        Gep::Mesh mesh = Gep::SphereMesh(10, 10);
+                        Gep::Mesh mesh = Gep::IcosphereMesh(3);
                         mesh.materialIndex = matIdx;
                         mesh.name = name;
 

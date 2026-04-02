@@ -6,6 +6,7 @@ uniform sampler2D u_depthTexture;
 uniform sampler2D u_normalTexture;
 uniform sampler2D u_colorTexture;
 uniform sampler2D u_armTexture;
+uniform samplerCube u_irradianceMap;
 
 // in variables ////////////////////////////////////////////////////////////////
 layout(location=0) flat in uint v_InstanceID;
@@ -64,12 +65,11 @@ void main(void)
   mat.metallic  = arm.z;
 
   // compute pbr
-  vec3 color = CalculatePBRPoint(l, mat, normal, position, u_cams[u_camIndex].position.xyz);
-
+  vec3 direct = CalculatePBRPoint(l, mat, normal, position, u_cams[u_camIndex].position.xyz);
   // color = color / (color + vec3(1.0));
   // // gamma correct
   // color = pow(color, vec3(1.0/2.2)); 
 
   // Output with alpha for blending
-  f_color = vec4(color, mat.color.a);
+  f_color = vec4(direct, mat.color.a);
 }

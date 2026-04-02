@@ -81,10 +81,18 @@ namespace Gep
         return result;
     }
 
-    [[nodiscard]] FrameBuffer FrameBuffer::CreateSimple(const glm::ivec2 size)
+    [[nodiscard]] FrameBuffer FrameBuffer::CreateScreenHDR(const glm::ivec2 size)
     {
         FrameBuffer fb = Create(size);
-        fb.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGBA32F, GL_RGBA, GL_FLOAT);
+        fb.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGBA16F, GL_RGBA, GL_FLOAT);
+        fb.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
+        return fb;
+    }
+
+    [[nodiscard]] FrameBuffer FrameBuffer::CreateScreenLDR(const glm::ivec2 size)
+    {
+        FrameBuffer fb = Create(size);
+        fb.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
         fb.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
         return fb;
     }

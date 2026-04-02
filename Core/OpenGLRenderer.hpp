@@ -375,6 +375,8 @@ namespace Gep
         
         void ReloadShaders(); // Recompiles all shaders.
 
+        void SetExposure(float exposure);
+
 
         FrameBuffer& GetGeometryFrameBuffer() { return mGeometryFrameBuffer; }
 
@@ -460,7 +462,9 @@ namespace Gep
                 mShader_DirectionalLightShadowDepth,
 
                 mShader_EquirectangularToCubemap,
-                mShader_Background
+                mShader_Background,
+                mShader_AmbientLight,
+                mShader_Tonemap
             );
         }
 
@@ -472,6 +476,8 @@ namespace Gep
         void DirectionalLightShadowDepthPass(); // renders the depth map for each direcational light that casts shadows
         void DrawLines();
         void BackgroundPass(Gep::FrameBuffer& targetFrameBuffer);
+        void AmbientPass(Gep::FrameBuffer& targetFrameBuffer);
+        void TonemapPass(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer);
 
         // helpers for loading assimp files
         void LoadMaterials(const std::filesystem::path& path, const aiScene* scene);
@@ -482,6 +488,9 @@ namespace Gep
         Texture LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type);
 
         void LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton);
+
+        // does not modify input texture, creates a new cubemap texture
+        Texture EquirectangularToCubemap(const Texture& texture);
     private:
         // when creating shaders make sure to add them to GetAllShaders
         Shader mShader_GeometryStatic;  // shader used for geometry pass of static models
@@ -498,7 +507,13 @@ namespace Gep
 
         Shader mShader_EquirectangularToCubemap;
         Shader mShader_Background;
-        uint32_t mEnvironmentCubeMap = NULL;
+
+        Shader mShader_AmbientLight;
+
+        Shader mShader_Tonemap;
+
+        Texture mEnvironmentCubeMap;
+        Texture mIrradianceCubeMap;
 
         glm::vec3 mSolidColor{};
 

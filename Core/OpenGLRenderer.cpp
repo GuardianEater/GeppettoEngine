@@ -92,10 +92,6 @@ namespace Gep
         IgnoreLight,
     };
 
-    static HICON GetIcon(const std::filesystem::path& iconPath);
-    static Texture IconToTexture(HICON icon);
-    static Texture BitmapToTexture(HBITMAP bitmap);
-
     void OpenGLRenderer::Initialize()
     {
         SetUpLineDrawing();
@@ -108,19 +104,19 @@ namespace Gep
         mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT2, GL_RGB8, GL_RGB, GL_FLOAT); // ao + roughness + metalness
 
         // setup geometry shaders
-        mShader_GeometryStatic  = Shader::FromFile("shaders/Geometry-Static.vert", "shaders/Geometry.frag");
+        mShader_GeometryStatic  = Shader::FromFile("shaders/Geometry-Static.vert",  "shaders/Geometry.frag");
         mShader_GeometrySkinned = Shader::FromFile("shaders/Geometry-Skinned.vert", "shaders/Geometry.frag");
         mShader_Line            = Shader::FromFile("shaders/Line.vert", "shaders/Line.frag");
 
         // setup pointlight shaders
-        mShader_PointLight            = Shader::FromFile("shaders/Lighting.vert", "shaders/Lighting.frag");
-        mShader_PointLightWithShadows = Shader::FromFile("shaders/Lighting-Shaded.vert", "shaders/Lighting-Shaded.frag");
-        mShader_PointLightShadowDepth = Shader::FromFile("shaders/Shadows.vert", "shaders/Shadows.frag", "shaders/Shadows.geom");
+        mShader_PointLight            = Shader::FromFile("shaders/Point/Lighting-Point.vert",  "shaders/Point/Lighting-Point.frag");
+        mShader_PointLightWithShadows = Shader::FromFile("shaders/Point/Lighting-Point-Shaded.vert", "shaders/Point/Lighting-Point-Shaded.frag");
+        mShader_PointLightShadowDepth = Shader::FromFile("shaders/Point/Shadows-Point.vert",   "shaders/Point/Shadows-Point.frag", "shaders/Point/Shadows-Point.geom");
 
         // setup directional light shaders
-        mShader_DirectionalLight            = Shader::FromFile("shaders/Lighting-Directional.vert", "shaders/Lighting-Directional.frag");
-        mShader_DirectionalLightWithShadows = Shader::FromFile("shaders/Lighting-Directional.vert", "shaders/Lighting-Directional-Shaded.frag");
-        mShader_DirectionalLightShadowDepth = Shader::FromFile("shaders/Shadows-Directional.vert", "shaders/Shadows-Directional.frag");
+        mShader_DirectionalLight            = Shader::FromFile("shaders/Directional/Lighting-Directional.vert", "shaders/Directional/Lighting-Directional.frag");
+        mShader_DirectionalLightWithShadows = Shader::FromFile("shaders/Directional/Lighting-Directional.vert", "shaders/Directional/Lighting-Directional-Shaded.frag");
+        mShader_DirectionalLightShadowDepth = Shader::FromFile("shaders/Directional/Shadows-Directional.vert",  "shaders/Directional/Shadows-Directional.frag");
 
         Gep::Material defaultMat{};
         uint64_t defaultMatIdx = AddMaterial(defaultMat);
@@ -175,128 +171,56 @@ namespace Gep
         }
 
         //// setup skybox
-        mShader_EquirectangularToCubemap = Shader::FromFile("shaders/IBL/cubemap.vert", "shaders/IBL/equirectangular-to-cubemap.frag");
+        mShader_EquirectangularToCubemap = Shader::FromFile("shaders/IBL/Cubemap.vert", "shaders/IBL/Equirectangular-To-Cubemap.frag");
         mShader_EquirectangularToCubemap.SetUniform("u_equirectangularMap", 0);
 
-        mShader_Background = Shader::FromFile("shaders/IBL/background.vert", "shaders/IBL/background.frag");
+        mShader_Background = Shader::FromFile("shaders/IBL/Background.vert", "shaders/IBL/Background.frag");
         mShader_Background.SetUniform("u_environmentMap", 0);
 
+        mShader_AmbientLight = Shader::FromFile("shaders/Ambient.vert", "shaders/Ambient.frag");
+
+        mShader_Tonemap = Shader::FromFile("shaders/Tonemap.vert", "shaders/Tonemap.frag");
+        mShader_Tonemap.SetUniform("u_sceneTexture", 0);
+
         //// load hdr environment map
-        Gep::Texture skyboxTextureEquirectangular = Texture::LoadHDR("assets/textures/HDR/14-Hamarikyu_Bridge_B_3k.hdr");
+        Gep::Texture skyboxTextureEquirectangular = Texture::LoadHDR("assets/textures/HDR/Newport_Loft_Ref.hdr");
         AddTexture(skyboxTextureEquirectangular);
-
-        glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-        glm::mat4 capturePVs[] =
-        {
-            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-        };
-
-        unsigned int captureFBO;
-        unsigned int captureRBO;
-        glGenFramebuffers(1, &captureFBO);
-        glGenRenderbuffers(1, &captureRBO);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-        glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
-
-        glGenTextures(1, &mEnvironmentCubeMap);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, mEnvironmentCubeMap);
-        for (unsigned int i = 0; i < 6; ++i)
-        {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0, GL_RGB, GL_FLOAT, nullptr);
-        }
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-
-
-        // pbr: convert HDR equirectangular environment map to cubemap equivalent
-
-        mShader_EquirectangularToCubemap.Bind();
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, skyboxTextureEquirectangular.id);
-
-        GLDrawFlags flags{
-            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
-            .cullMode = std::nullopt,
-            .blendFuncSD = std::nullopt
-        };
-        SetDrawFlags(flags);
-
-
-        glViewport(0, 0, 512, 512); // don't forget to configure the viewport to the capture dimensions.
-        glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-        for (unsigned int i = 0; i < 6; ++i)
-        {
-            mShader_EquirectangularToCubemap.SetUniform("u_capturePV", capturePVs[i]);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, mEnvironmentCubeMap, 0);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            // draw cube
-
-            auto& cubeHandle = mMeshLibrary.at(mCubeMeshIndex).handle;
-            glBindVertexArray(cubeHandle.mVertexArrayObject);
-
-            glDrawElements(
-                GL_TRIANGLES,
-                cubeHandle.mIndexCount,
-                GL_UNSIGNED_INT,
-                nullptr
-            );
-
-            glBindVertexArray(0); // holy shit found it. make sure to unbind vao
-        }
-        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+        mEnvironmentCubeMap = EquirectangularToCubemap(skyboxTextureEquirectangular);
+        
+        Gep::Texture skyboxIrradianceEquirectangular = Texture::LoadHDR("assets/textures/HDR/Newport_Loft_Ref.irr.hdr");
+        AddTexture(skyboxIrradianceEquirectangular);
+        mIrradianceCubeMap = EquirectangularToCubemap(skyboxIrradianceEquirectangular);
 
         // gbuffer access in shader
-        mShader_PointLight.Bind();
         mShader_PointLight.SetUniform("u_depthTexture", 0);
         mShader_PointLight.SetUniform("u_normalTexture", 1);
         mShader_PointLight.SetUniform("u_colorTexture", 2);
         mShader_PointLight.SetUniform("u_armTexture", 3);
 
-        mShader_PointLightWithShadows.Bind();
         mShader_PointLightWithShadows.SetUniform("u_depthTexture", 0);
         mShader_PointLightWithShadows.SetUniform("u_normalTexture", 1);
         mShader_PointLightWithShadows.SetUniform("u_colorTexture", 2);
         mShader_PointLightWithShadows.SetUniform("u_armTexture", 3);
 
-        mShader_DirectionalLight.Bind();
         mShader_DirectionalLight.SetUniform("u_depthTexture", 0);
         mShader_DirectionalLight.SetUniform("u_normalTexture", 1);
         mShader_DirectionalLight.SetUniform("u_colorTexture", 2);
         mShader_DirectionalLight.SetUniform("u_armTexture", 3);
 
-        mShader_DirectionalLightWithShadows.Bind();
         mShader_DirectionalLightWithShadows.SetUniform("u_depthTexture", 0);
         mShader_DirectionalLightWithShadows.SetUniform("u_normalTexture", 1);
         mShader_DirectionalLightWithShadows.SetUniform("u_colorTexture", 2);
         mShader_DirectionalLightWithShadows.SetUniform("u_armTexture", 3);
 
+        mShader_AmbientLight.SetUniform("u_depthTexture", 0);
+        mShader_AmbientLight.SetUniform("u_normalTexture", 1);
+        mShader_AmbientLight.SetUniform("u_colorTexture", 2);
+        mShader_AmbientLight.SetUniform("u_armTexture", 3);
+        mShader_AmbientLight.SetUniform("u_irradianceMap", 4);
+
+        SetExposure(1.0f);
+
         Shader::Unbind();
-
-        // this is broken
-        Gep::Model model = LoadModelFromFile("assets/meshes/FBX/fbx/roman_D.fbx");
-        AddModel(model);
-
-        // this is broken
-        //Gep::Model model;
-        //Gep::Mesh sphere = Gep::SphereMesh(10, 10);
-        //sphere.materialIndex = defaultMatIdx;
-        //model.meshes.push_back(sphere);
-        //AddModel(model);
     }
 
     uint64_t OpenGLRenderer::AddModel(const Gep::Model& model)
@@ -762,31 +686,64 @@ namespace Gep
         }, 
         GetAllShaders());
 
-        mShader_PointLight.Bind();
+        mShader_EquirectangularToCubemap.SetUniform("u_equirectangularMap", 0);
+        mShader_Background.SetUniform("u_environmentMap", 0);
+
+        mShader_Tonemap.SetUniform("u_sceneTexture", 0);
+        SetExposure(1.0f);
+
+        // gbuffer access in shader
         mShader_PointLight.SetUniform("u_depthTexture", 0);
         mShader_PointLight.SetUniform("u_normalTexture", 1);
         mShader_PointLight.SetUniform("u_colorTexture", 2);
         mShader_PointLight.SetUniform("u_armTexture", 3);
 
-        mShader_PointLightWithShadows.Bind();
         mShader_PointLightWithShadows.SetUniform("u_depthTexture", 0);
         mShader_PointLightWithShadows.SetUniform("u_normalTexture", 1);
         mShader_PointLightWithShadows.SetUniform("u_colorTexture", 2);
         mShader_PointLightWithShadows.SetUniform("u_armTexture", 3);
+
+        mShader_DirectionalLight.SetUniform("u_depthTexture", 0);
+        mShader_DirectionalLight.SetUniform("u_normalTexture", 1);
+        mShader_DirectionalLight.SetUniform("u_colorTexture", 2);
+        mShader_DirectionalLight.SetUniform("u_armTexture", 3);
+
+        mShader_DirectionalLightWithShadows.SetUniform("u_depthTexture", 0);
+        mShader_DirectionalLightWithShadows.SetUniform("u_normalTexture", 1);
+        mShader_DirectionalLightWithShadows.SetUniform("u_colorTexture", 2);
+        mShader_DirectionalLightWithShadows.SetUniform("u_armTexture", 3);
+
+        mShader_AmbientLight.SetUniform("u_depthTexture", 0);
+        mShader_AmbientLight.SetUniform("u_normalTexture", 1);
+        mShader_AmbientLight.SetUniform("u_colorTexture", 2);
+        mShader_AmbientLight.SetUniform("u_armTexture", 3);
+        mShader_AmbientLight.SetUniform("u_irradianceMap", 4);
+    }
+
+    void OpenGLRenderer::SetExposure(float exposure)
+    {
+        mShader_Tonemap.SetUniform(0, exposure);
     }
 
     void OpenGLRenderer::Draw(Gep::FrameBuffer& targetFrameBuffer)
     {
+        static FrameBuffer hdrSceneFrameBuffer = FrameBuffer::CreateScreenHDR({128, 128});
+        hdrSceneFrameBuffer.Bind();
+        hdrSceneFrameBuffer.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
+        hdrSceneFrameBuffer.UpdateViewport();
+        hdrSceneFrameBuffer.Clear();
+        FrameBuffer::Unbind();
+
         // render to depth cube buffer here
+        //DrawLines();
         PointLightShadowDepthPass();            // renders all scene geometry for each point light that casts shadows to the corresponding shadow map
         DirectionalLightShadowDepthPass();
-        GeometryPass(targetFrameBuffer);   // renders all scene geometry to the gbuffer
-        DirectionalLightPass(targetFrameBuffer);
-        PointLightPass(targetFrameBuffer); // renders all point lights as light volumes, using the gbuffer for shading
-        // draw point light shadows here
-        DrawLines();
-
-        BackgroundPass(targetFrameBuffer);
+        GeometryPass(hdrSceneFrameBuffer);   // renders all scene geometry to the gbuffer
+        DirectionalLightPass(hdrSceneFrameBuffer);
+        PointLightPass(hdrSceneFrameBuffer); // renders all point lights as light volumes, using the gbuffer for shading
+        AmbientPass(hdrSceneFrameBuffer);
+        BackgroundPass(hdrSceneFrameBuffer);
+        TonemapPass(targetFrameBuffer, hdrSceneFrameBuffer);
     }
 
     void OpenGLRenderer::End()
@@ -1080,7 +1037,7 @@ namespace Gep
 
         mShader_Background.Bind();
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, mEnvironmentCubeMap);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, mEnvironmentCubeMap.id);
 
         // draw cube
         auto& cubeHandle = mMeshLibrary[mCubeMeshIndex].handle;
@@ -1094,6 +1051,49 @@ namespace Gep
         );
 
         glBindVertexArray(0);
+    }
+
+    void OpenGLRenderer::AmbientPass(Gep::FrameBuffer& targetFrameBuffer)
+    {
+        targetFrameBuffer.Bind(); // draw to the target framebuffer
+        mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
+        glActiveTexture(GL_TEXTURE0 + mGeometryFrameBuffer.GetTextureCount());
+        glBindTexture(GL_TEXTURE_CUBE_MAP, mIrradianceCubeMap.id);
+
+        GLDrawFlags flags{
+            .depthFuncMask = std::nullopt, // do not use depth
+            .cullMode = std::nullopt, // front face culling
+            .blendFuncSD = std::make_pair(GL_ONE, GL_ONE) // one one blending
+        };
+        SetDrawFlags(flags);
+
+        mShader_AmbientLight.Bind(); // draw pass for lights that do not cast shadows
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        
+        Shader::Unbind();
+    }
+
+    void OpenGLRenderer::TonemapPass(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer)
+    {
+        // tone map pass
+        ldrFrameBuffer.Bind();
+        ldrFrameBuffer.UpdateViewport();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, hdrFrameBuffer.GetTexture(0));
+
+        GLDrawFlags flags{
+            .depthFuncMask = std::nullopt,
+            .cullMode = std::nullopt,
+            .blendFuncSD = std::nullopt
+        };
+        SetDrawFlags(flags);
+
+        mShader_Tonemap.Bind();
+        glBindVertexArray(mLineVAO); // core profile requires a VAO bound even when using gl_VertexID
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
+
+        Shader::Unbind();
     }
 
     void OpenGLRenderer::MeshGPUHandle::GenVertexBuffer(const Mesh& mesh)
@@ -1590,5 +1590,85 @@ namespace Gep
         LoadAnimations(path.string(), model, scene);
 
         return model;
+    }
+
+    Texture OpenGLRenderer::EquirectangularToCubemap(const Texture& texture)
+    {
+        glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+        glm::mat4 capturePVs[] =
+        {
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+        };
+
+        unsigned int captureFBO;
+        unsigned int captureRBO;
+        glGenFramebuffers(1, &captureFBO);
+        glGenRenderbuffers(1, &captureRBO);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+        glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
+
+        Texture cubeMap;
+        glGenTextures(1, &cubeMap.id);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap.id);
+        for (unsigned int i = 0; i < 6; ++i)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0, GL_RGB, GL_FLOAT, nullptr);
+        }
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+
+
+        // pbr: convert HDR equirectangular environment map to cubemap equivalent
+
+        mShader_EquirectangularToCubemap.Bind();
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.id);
+
+        GLDrawFlags flags{
+            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
+            .cullMode = std::nullopt,
+            .blendFuncSD = std::nullopt
+        };
+        SetDrawFlags(flags);
+
+
+        glViewport(0, 0, 512, 512); // don't forget to configure the viewport to the capture dimensions.
+        glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+        for (unsigned int i = 0; i < 6; ++i)
+        {
+            mShader_EquirectangularToCubemap.SetUniform("u_capturePV", capturePVs[i]);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cubeMap.id, 0);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            // draw cube
+
+            auto& cubeHandle = mMeshLibrary.at(mCubeMeshIndex).handle;
+            glBindVertexArray(cubeHandle.mVertexArrayObject);
+
+            glDrawElements(
+                GL_TRIANGLES,
+                cubeHandle.mIndexCount,
+                GL_UNSIGNED_INT,
+                nullptr
+            );
+
+            glBindVertexArray(0); // holy shit found it. make sure to unbind vao
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        return cubeMap;
     }
 }

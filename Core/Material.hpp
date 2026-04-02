@@ -32,7 +32,7 @@ namespace Gep
     struct Material
     {
         // if it has a uniform material across the entire mesh
-        float ao = 0.8f; // ambient occlusion
+        float ao = 1.0f; // ambient occlusion
         float roughness = 0.8f;
         float metalness = 0.8f;
         glm::vec4 color = {1.0f, 0.2f, 0.2f, 1.0f};
