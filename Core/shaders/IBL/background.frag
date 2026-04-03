@@ -11,8 +11,8 @@ uniform samplerCube u_environmentMap;
 
 void main()
 {
-  vec3 envColor = texture(u_environmentMap, v_position).rgb;
-
+  //vec3 envColor = texture(u_environmentMap, v_position).rgb;
+  vec3 envColor = textureLod(u_environmentMap, v_position, 3.0).rgb;
   // Keep skybox in linear HDR; final tonemap pass handles tone mapping + gamma once.
   
   f_color = vec4(envColor, 1.0);

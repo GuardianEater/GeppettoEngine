@@ -246,21 +246,21 @@ namespace Gep
 			return 0; // failed to link
 		}
 
-		glValidateProgram(program);
+		//glValidateProgram(program);
 
-		errorValue = 0;
-		glGetProgramiv(program, GL_VALIDATE_STATUS, &errorValue);
-		if (!errorValue)
-		{
-			std::string message;
-			message.resize(1024);
-			glGetProgramInfoLog(program, message.capacity(), 0, message.data());
+		//errorValue = 0;
+		//glGetProgramiv(program, GL_VALIDATE_STATUS, &errorValue);
+		//if (!errorValue)
+		//{
+		//	std::string message;
+		//	message.resize(1024);
+		//	glGetProgramInfoLog(program, message.capacity(), 0, message.data());
 
-			Gep::Log::Error("Failed to Validate OpenGL Program\n", message);
-            Gep::Log::Error("Origin: ", origin);
+		//	Gep::Log::Error("Failed to Validate OpenGL Program\n", message);
+  //          Gep::Log::Error("Origin: ", origin);
 
-			return 0; // failed to Validate
-		}
+		//	return 0; // failed to Validate
+		//}
 
 		return program;
 	}

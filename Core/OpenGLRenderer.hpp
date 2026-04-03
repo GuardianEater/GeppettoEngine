@@ -475,7 +475,7 @@ namespace Gep
         void DirectionalLightPass(Gep::FrameBuffer& targetFrameBuffer);
         void DirectionalLightShadowDepthPass(); // renders the depth map for each direcational light that casts shadows
         void DrawLines();
-        void BackgroundPass(Gep::FrameBuffer& targetFrameBuffer);
+        void BackgroundPass(Gep::FrameBuffer& targetFrameBuffer, const Gep::Texture& backgroundCubeMap);
         void AmbientPass(Gep::FrameBuffer& targetFrameBuffer);
         void TonemapPass(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer);
 
@@ -491,6 +491,9 @@ namespace Gep
 
         // does not modify input texture, creates a new cubemap texture
         Texture EquirectangularToCubemap(const Texture& texture);
+
+        // does not modify input texture, creates a new cubemap texture
+        Texture GeneratePrefilterMap(const Texture& environmentCubemap);
     private:
         // when creating shaders make sure to add them to GetAllShaders
         Shader mShader_GeometryStatic;  // shader used for geometry pass of static models
@@ -512,8 +515,13 @@ namespace Gep
 
         Shader mShader_Tonemap;
 
+        Shader mShader_Prefilter;
+
         Texture mEnvironmentCubeMap;
         Texture mIrradianceCubeMap;
+        Texture mPrefilterCubeMap;
+
+        bool mDebug_ShowPrefilter = false;
 
         glm::vec3 mSolidColor{};
 
