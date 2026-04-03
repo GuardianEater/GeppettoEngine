@@ -494,6 +494,8 @@ namespace Gep
 
         // does not modify input texture, creates a new cubemap texture
         Texture GeneratePrefilterMap(const Texture& environmentCubemap);
+
+        Texture GenerateBRDFLUT();
     private:
         // when creating shaders make sure to add them to GetAllShaders
         Shader mShader_GeometryStatic;  // shader used for geometry pass of static models
@@ -517,9 +519,12 @@ namespace Gep
 
         Shader mShader_Prefilter;
 
+        Shader mShader_GenerateBRDFLUT;
+
         Texture mEnvironmentCubeMap;
         Texture mIrradianceCubeMap;
         Texture mPrefilterCubeMap;
+        Texture mBRDFLUT;
 
         bool mDebug_ShowPrefilter = false;
 

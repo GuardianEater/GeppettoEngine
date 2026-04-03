@@ -184,8 +184,8 @@ namespace Gep
 
         mShader_Prefilter = Shader::FromFile("shaders/IBL/Cubemap.vert", "shaders/IBL/Prefilter.frag");
         mShader_Prefilter.SetUniform("u_environmentMap", 0);
-        mShader_Prefilter.SetUniform("u_faceResolution", 512u);
-        mShader_Prefilter.SetUniform("u_sampleCount", 1024u);
+
+        mShader_GenerateBRDFLUT = Shader::FromFile("shaders/IBL/GenerateBRDFLUT.vert", "shaders/IBL/GenerateBRDFLUT.frag");
 
         //// load hdr environment map
         Gep::Texture skyboxTextureEquirectangular = Texture::LoadHDR("assets/textures/HDR/Newport_Loft_Ref.hdr");
@@ -197,6 +197,8 @@ namespace Gep
         mIrradianceCubeMap = EquirectangularToCubemap(skyboxIrradianceEquirectangular);
 
         mPrefilterCubeMap = GeneratePrefilterMap(mEnvironmentCubeMap);
+
+        mBRDFLUT = GenerateBRDFLUT();
 
         // gbuffer access in shader
         mShader_PointLight.SetUniform("u_depthTexture", 0);
@@ -1681,6 +1683,47 @@ namespace Gep
         glDeleteRenderbuffers(1, &captureRBO);
 
         return cubeMap;
+    }
+
+    Texture OpenGLRenderer::GenerateBRDFLUT()
+    {
+        const uint32_t brdflutSize = 512;
+        const uint32_t captureSize = 512;
+        const uint32_t sampleCount = 1024;
+
+        mShader_GenerateBRDFLUT.SetUniform("u_sampleCount", sampleCount);
+
+        Texture brdflut;
+        glGenTextures(1, &brdflut.id);
+
+        glBindTexture(GL_TEXTURE_2D, brdflut.id);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, brdflutSize, brdflutSize, 0, GL_RG, GL_FLOAT, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        GLuint captureFBO;
+        GLuint captureRBO;
+        glGenFramebuffers(1, &captureFBO);
+        glGenRenderbuffers(1, &captureRBO);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+        glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, captureSize, captureSize);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdflut.id, 0);
+        glViewport(0, 0, 512, 512);
+        mShader_GenerateBRDFLUT.Bind();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glBindVertexArray(mLineVAO); // core profile requires a VAO bound even when using gl_VertexID
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        return brdflut;
     }
 
     Texture OpenGLRenderer::GeneratePrefilterMap(const Texture& environmentCubemap)
