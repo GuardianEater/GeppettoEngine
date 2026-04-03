@@ -750,7 +750,7 @@ namespace Gep
         DirectionalLightPass(hdrSceneFrameBuffer);
         PointLightPass(hdrSceneFrameBuffer); // renders all point lights as light volumes, using the gbuffer for shading
         AmbientPass(hdrSceneFrameBuffer);
-        BackgroundPass(hdrSceneFrameBuffer, mPrefilterCubeMap);
+        BackgroundPass(hdrSceneFrameBuffer, mEnvironmentCubeMap);
         TonemapPass(targetFrameBuffer, hdrSceneFrameBuffer);
     }
 
