@@ -6,6 +6,8 @@ uniform sampler2D u_depthTexture;
 uniform sampler2D u_normalTexture;
 uniform sampler2D u_colorTexture;
 uniform sampler2D u_armTexture;
+uniform sampler2D u_brdflut;
+uniform samplerCube u_prefilterMap;
 uniform samplerCube u_irradianceMap;
 
 // out /////////////////////////////////////////////////////////////////////////
@@ -36,8 +38,9 @@ void main()
 
 	vec3 arm = texture(u_armTexture, uv).xyz;
 	vec3 normal = normalize(texture(u_normalTexture, uv).xyz);
-	// vec3 position = GetPosition(uv, depth);
-	// vec3 view = normalize(u_cams[u_camIndex].position.xyz - position);
+	vec3 position = GetPosition(uv, depth);
+	vec3 view = normalize(u_cams[u_camIndex].position.xyz - position);
+  vec3 reflection = reflect(-view, normal);
 
 	MaterialSample mat;
 	mat.color     = texture(u_colorTexture, uv);
@@ -45,14 +48,25 @@ void main()
 	mat.roughness = arm.y;
 	mat.metallic  = arm.z;
 
-  // const float dielectricDefault = 0.04;
-  // vec3 F0 = vec3(dielectricDefault);
-  // F0 = mix(F0, mat.color.rgb, mat.metallic);
+  const float dielectricDefault = 0.04;
+  vec3 F0 = vec3(dielectricDefault);
+  F0 = mix(F0, mat.color.rgb, mat.metallic);
 
-  // vec3 kS = SchlickFresnelRoughness(max(dot(normal, view), 0.0), F0, mat.roughness); 
-  // vec3 kD = 1.0 - kS;
+  vec3 F =  SchlickFresnelRoughness(max(dot(normal, view), 0.0), F0, mat.roughness); ;
+  
+  vec3 kS = F;
+  vec3 kD = 1.0 - kS;
+  kD *= 1.0 - mat.metallic;
+  
 	vec3 irradiance = texture(u_irradianceMap, normal).rgb;
-	vec3 ambient = irradiance * mat.color.rgb * mat.ao;
+  vec3 diffuse = irradiance * mat.color.rgb;
+
+  const float MAX_REFLECTION_LOD = 4.0;
+  vec3 prefilteredColor = textureLod(u_prefilterMap, reflection,  mat.roughness * MAX_REFLECTION_LOD).rgb;     
+  vec2 brdf  = texture(u_brdflut, vec2(max(dot(normal, view), 0.0), mat.roughness)).rg;
+  vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+  vec3 ambient = (kD * diffuse + specular) * mat.ao;
 
 	f_color = vec4(ambient, mat.color.a);
 }

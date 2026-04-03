@@ -491,9 +491,11 @@ namespace Gep
 
         // does not modify input texture, creates a new cubemap texture
         Texture EquirectangularToCubemap(const Texture& texture);
+        Texture CubemapToEquirectangular(const Texture& cubemap);
 
         // does not modify input texture, creates a new cubemap texture
         Texture GeneratePrefilterMap(const Texture& environmentCubemap);
+        Texture GenerateIrradianceMap(const Texture& environmentCubemap);
 
         Texture GenerateBRDFLUT();
     private:
@@ -511,15 +513,14 @@ namespace Gep
         Shader mShader_DirectionalLightShadowDepth; // shader used to generate the depth map of directional lights
 
         Shader mShader_EquirectangularToCubemap;
+        Shader mShader_CubemapToEquirectangular;
+
         Shader mShader_Background;
-
         Shader mShader_AmbientLight;
-
         Shader mShader_Tonemap;
-
         Shader mShader_Prefilter;
-
         Shader mShader_GenerateBRDFLUT;
+        Shader mShader_GenerateIrradianceMap;
 
         Texture mEnvironmentCubeMap;
         Texture mIrradianceCubeMap;

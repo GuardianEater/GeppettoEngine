@@ -1093,6 +1093,7 @@ namespace Client
         const auto& textures = mRenderer.GetLoadedTextures();
         const auto& gBufferTextures = mRenderer.GetGeometryFrameBuffer().GetTextureAttachments();
         const auto& materials = mRenderer.GetMaterials();
+        const ImVec2 imageSize = { 256 * ImGui::GetStyle().FontScaleMain, 256 * ImGui::GetStyle().FontScaleMain };
 
         static float exposure = 1.0f;
         if (ImGui::SliderFloat("Exposure", &exposure, 0, 10))
@@ -1106,7 +1107,7 @@ namespace Client
             {
                 std::string textureIdStr = std::to_string(texture.id);
                 ImGui::Text(textureIdStr.c_str());
-                ImGui::Image(texture.id, { 256, 256 });
+                ImGui::Image(texture.id, imageSize);
             }
         }
 
@@ -1116,11 +1117,10 @@ namespace Client
             {
                 std::string textureIdStr = std::to_string(texture.id);
                 ImGui::Text(textureIdStr.c_str());
-                ImGui::Image(texture.id, { 256, 256 });
+                ImGui::Image(texture.id, imageSize);
             }
         }
 
-        ImVec2 imageSize = { 100 * ImGui::GetStyle().FontScaleMain, 100 * ImGui::GetStyle().FontScaleMain };
 
         if (ImGui::CollapsingHeader("Materials"))
         {

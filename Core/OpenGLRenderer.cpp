@@ -174,6 +174,9 @@ namespace Gep
         mShader_EquirectangularToCubemap = Shader::FromFile("shaders/IBL/Cubemap.vert", "shaders/IBL/Equirectangular-To-Cubemap.frag");
         mShader_EquirectangularToCubemap.SetUniform("u_equirectangularMap", 0);
 
+        mShader_CubemapToEquirectangular = Shader::FromFile("shaders/IBL/Cubemap-To-Equirectangular.vert", "shaders/IBL/Cubemap-To-Equirectangular.frag");
+        mShader_CubemapToEquirectangular.SetUniform("u_cubeMap", 0);
+
         mShader_Background = Shader::FromFile("shaders/IBL/Background.vert", "shaders/IBL/Background.frag");
         mShader_Background.SetUniform("u_environmentMap", 0);
 
@@ -185,6 +188,9 @@ namespace Gep
         mShader_Prefilter = Shader::FromFile("shaders/IBL/Cubemap.vert", "shaders/IBL/Prefilter.frag");
         mShader_Prefilter.SetUniform("u_environmentMap", 0);
 
+        mShader_GenerateIrradianceMap = Shader::FromFile("shaders/IBL/Cubemap.vert", "shaders/IBL/GenerateIrradianceMap.frag");
+        mShader_GenerateIrradianceMap.SetUniform("u_environmentMap", 0);
+
         mShader_GenerateBRDFLUT = Shader::FromFile("shaders/IBL/GenerateBRDFLUT.vert", "shaders/IBL/GenerateBRDFLUT.frag");
 
         //// load hdr environment map
@@ -192,13 +198,18 @@ namespace Gep
         AddTexture(skyboxTextureEquirectangular);
         mEnvironmentCubeMap = EquirectangularToCubemap(skyboxTextureEquirectangular);
         
-        Gep::Texture skyboxIrradianceEquirectangular = Texture::LoadHDR("assets/textures/HDR/Newport_Loft_Ref.irr.hdr");
-        AddTexture(skyboxIrradianceEquirectangular);
-        mIrradianceCubeMap = EquirectangularToCubemap(skyboxIrradianceEquirectangular);
+        //Gep::Texture skyboxIrradianceEquirectangular = Texture::LoadHDR("assets/textures/HDR/Newport_Loft_Ref.irr.hdr");
+        //AddTexture(skyboxIrradianceEquirectangular);
+        //mIrradianceCubeMap = EquirectangularToCubemap(skyboxIrradianceEquirectangular);
+
+        mIrradianceCubeMap = GenerateIrradianceMap(mEnvironmentCubeMap);
+        Texture irradianceEquirectangular = CubemapToEquirectangular(mIrradianceCubeMap);
+        AddTexture(irradianceEquirectangular);
 
         mPrefilterCubeMap = GeneratePrefilterMap(mEnvironmentCubeMap);
 
         mBRDFLUT = GenerateBRDFLUT();
+        AddTexture(mBRDFLUT);
 
         // gbuffer access in shader
         mShader_PointLight.SetUniform("u_depthTexture", 0);
@@ -225,7 +236,9 @@ namespace Gep
         mShader_AmbientLight.SetUniform("u_normalTexture", 1);
         mShader_AmbientLight.SetUniform("u_colorTexture", 2);
         mShader_AmbientLight.SetUniform("u_armTexture", 3);
-        mShader_AmbientLight.SetUniform("u_irradianceMap", 4);
+        mShader_AmbientLight.SetUniform("u_brdflut", 4);
+        mShader_AmbientLight.SetUniform("u_prefilterMap", 5);
+        mShader_AmbientLight.SetUniform("u_irradianceMap", 6);
 
         SetExposure(1.0f);
 
@@ -727,7 +740,9 @@ namespace Gep
         mShader_AmbientLight.SetUniform("u_normalTexture", 1);
         mShader_AmbientLight.SetUniform("u_colorTexture", 2);
         mShader_AmbientLight.SetUniform("u_armTexture", 3);
-        mShader_AmbientLight.SetUniform("u_irradianceMap", 4);
+        mShader_AmbientLight.SetUniform("u_brdflut", 4);
+        mShader_AmbientLight.SetUniform("u_prefilterMap", 5);
+        mShader_AmbientLight.SetUniform("u_irradianceMap", 6);
     }
 
     void OpenGLRenderer::SetExposure(float exposure)
@@ -1067,7 +1082,11 @@ namespace Gep
     {
         targetFrameBuffer.Bind(); // draw to the target framebuffer
         mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
-        glActiveTexture(GL_TEXTURE0 + mGeometryFrameBuffer.GetTextureCount());
+        glActiveTexture(GL_TEXTURE0 + mGeometryFrameBuffer.GetTextureCount() + 0);
+        glBindTexture(GL_TEXTURE_2D, mBRDFLUT.id);
+        glActiveTexture(GL_TEXTURE0 + mGeometryFrameBuffer.GetTextureCount() + 1);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, mPrefilterCubeMap.id);
+        glActiveTexture(GL_TEXTURE0 + mGeometryFrameBuffer.GetTextureCount() + 2);
         glBindTexture(GL_TEXTURE_CUBE_MAP, mIrradianceCubeMap.id);
 
         GLDrawFlags flags{
@@ -1685,6 +1704,45 @@ namespace Gep
         return cubeMap;
     }
 
+    Texture OpenGLRenderer::CubemapToEquirectangular(const Texture& cubemap)
+    {
+        Texture equirectangular;
+        glGenTextures(1, &equirectangular.id);
+
+        glBindTexture(GL_TEXTURE_2D, equirectangular.id);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 512, 512, 0, GL_RG, GL_FLOAT, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        GLuint captureFBO;
+        GLuint captureRBO;
+        glGenFramebuffers(1, &captureFBO);
+        glGenRenderbuffers(1, &captureRBO);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+        glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, equirectangular.id, 0);
+        glViewport(0, 0, 512, 512);
+        
+        mShader_CubemapToEquirectangular.Bind();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap.id);
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glBindVertexArray(mLineVAO); // core profile requires a VAO bound even when using gl_VertexID
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        return equirectangular;
+    }
+
     Texture OpenGLRenderer::GenerateBRDFLUT()
     {
         const uint32_t brdflutSize = 512;
@@ -1816,5 +1874,75 @@ namespace Gep
         glDeleteRenderbuffers(1, &captureRBO);
 
         return prefilterMap;
+    }
+
+    Texture OpenGLRenderer::GenerateIrradianceMap(const Texture& environmentCubemap)
+    {
+        glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+        glm::mat4 capturePVs[] =
+        {
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            captureProjection * glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+        };
+
+        // make a new capture FBO and RBO to render the prefilter cubemap faces to
+        GLuint captureFBO;
+        GLuint captureRBO;
+        glGenFramebuffers(1, &captureFBO);
+        glGenRenderbuffers(1, &captureRBO);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+        glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 32, 32);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
+
+        Texture irradianceMap;
+        glGenTextures(1, &irradianceMap.id);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap.id);
+        for (uint32_t i = 0; i < 6; ++i)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 32, 32, 0, GL_RGB, GL_FLOAT, nullptr);
+        }
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        mShader_GenerateIrradianceMap.Bind();
+        mShader_GenerateIrradianceMap.SetUniform("u_environmentMap", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, environmentCubemap.id);
+
+        glViewport(0, 0, 32, 32); // don't forget to configure the viewport to the capture dimensions.
+        glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+        for (unsigned int i = 0; i < 6; ++i)
+        {
+            mShader_GenerateIrradianceMap.SetUniform("u_capturePV", capturePVs[i]);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradianceMap.id, 0);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            auto& cubeHandle = mMeshLibrary.at(mCubeMeshIndex).handle;
+            glBindVertexArray(cubeHandle.mVertexArrayObject);
+
+            glDrawElements(
+                GL_TRIANGLES,
+                cubeHandle.mIndexCount,
+                GL_UNSIGNED_INT,
+                nullptr
+            );
+
+            glBindVertexArray(0); // holy shit found it. make sure to unbind vao
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        glDeleteFramebuffers(1, &captureFBO);
+        glDeleteRenderbuffers(1, &captureRBO);
+
+        return irradianceMap;
     }
 }
