@@ -96,6 +96,8 @@ namespace Gep
     {
         SetUpLineDrawing();
 
+        glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
         // gbuffer
         mGeometryFrameBuffer = FrameBuffer::Create({128, 128});
         mGeometryFrameBuffer.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT); // depth
@@ -193,6 +195,7 @@ namespace Gep
 
         mShader_GenerateBRDFLUT = Shader::FromFile("shaders/IBL/GenerateBRDFLUT.vert", "shaders/IBL/GenerateBRDFLUT.frag");
 
+
         //// load hdr environment map
         Gep::Texture skyboxTextureEquirectangular = Texture::LoadHDR("assets/textures/HDR/Newport_Loft_Ref.hdr");
         AddTexture(skyboxTextureEquirectangular);
@@ -242,7 +245,6 @@ namespace Gep
 
         SetExposure(1.0f);
 
-        glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
         Shader::Unbind();
     }
 
@@ -431,8 +433,7 @@ namespace Gep
 
     void OpenGLRenderer::AddObjectStatic(uint64_t modelIdx, const StaticObjectGPUData& gpuData, RenderFlags flags)
     {
-        // these existance checks are very expensive so only perform in debug mode
-        debug_if (!IsModelLoaded(modelIdx))
+        if (!IsModelLoaded(modelIdx))
         {
             Gep::Log::Error("Failed to draw object. The model: [", modelIdx, "] doesn't exist");
             return;
@@ -440,7 +441,6 @@ namespace Gep
 
         mObjectDatas[modelIdx][flags].push_back(gpuData);
     }
-
 
     void OpenGLRenderer::AddCamera(const CameraGPUData& uniforms)
     {
@@ -769,6 +769,8 @@ namespace Gep
         AmbientPass(hdrSceneFrameBuffer);
         BackgroundPass(hdrSceneFrameBuffer, mEnvironmentCubeMap);
         TonemapPass(targetFrameBuffer, hdrSceneFrameBuffer);
+
+        // draw postprocess effects, ie model outlines
     }
 
     void OpenGLRenderer::End()
@@ -1651,7 +1653,7 @@ namespace Gep
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap.id);
         for (unsigned int i = 0; i < 6; ++i)
         {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, captureResolution, captureResolution, 0, GL_RGB, GL_FLOAT, nullptr);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB32F, captureResolution, captureResolution, 0, GL_RGB, GL_FLOAT, nullptr);
         }
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -1710,7 +1712,7 @@ namespace Gep
         glGenTextures(1, &equirectangular.id);
 
         glBindTexture(GL_TEXTURE_2D, equirectangular.id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 512, 512, 0, GL_RG, GL_FLOAT, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 512, 512, 0, GL_RGB, GL_FLOAT, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -1800,7 +1802,7 @@ namespace Gep
         glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap.id);
         for (uint32_t i = 0; i < 6; ++i)
         {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, faceResolution, faceResolution, 0, GL_RGB, GL_FLOAT, nullptr);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB32F, faceResolution, faceResolution, 0, GL_RGB, GL_FLOAT, nullptr);
         }
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -1878,6 +1880,8 @@ namespace Gep
 
     Texture OpenGLRenderer::GenerateIrradianceMap(const Texture& environmentCubemap)
     {
+        uint32_t captureSize = 32;
+
         glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
         glm::mat4 capturePVs[] =
         {
@@ -1897,7 +1901,7 @@ namespace Gep
 
         glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
         glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 32, 32);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, captureSize, captureSize);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
 
         Texture irradianceMap;
@@ -1905,7 +1909,7 @@ namespace Gep
         glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap.id);
         for (uint32_t i = 0; i < 6; ++i)
         {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 32, 32, 0, GL_RGB, GL_FLOAT, nullptr);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, captureSize, captureSize, 0, GL_RGB, GL_FLOAT, nullptr);
         }
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -1918,9 +1922,9 @@ namespace Gep
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, environmentCubemap.id);
 
-        glViewport(0, 0, 32, 32); // don't forget to configure the viewport to the capture dimensions.
+        glViewport(0, 0, captureSize, captureSize);
         glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-        for (unsigned int i = 0; i < 6; ++i)
+        for (uint32_t i = 0; i < 6; ++i)
         {
             mShader_GenerateIrradianceMap.SetUniform("u_capturePV", capturePVs[i]);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradianceMap.id, 0);

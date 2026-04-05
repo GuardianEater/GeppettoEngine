@@ -198,7 +198,7 @@ namespace Gep
         glGenTextures(1, &texture.id);
         glBindTexture(GL_TEXTURE_2D, texture.id);
 
-        GLenum iformat = (requiredChannels == 4) ? GL_RGBA16F : GL_RGB16F;
+        GLenum iformat = (requiredChannels == 4) ? GL_RGBA32F : GL_RGB32F;
         GLenum format = (requiredChannels == 4) ? GL_RGBA : GL_RGB;
         glTexImage2D(GL_TEXTURE_2D, 0, iformat, width, height, 0, format, GL_FLOAT, pixelData);
 

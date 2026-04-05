@@ -20,7 +20,7 @@ void main()
   vec3 up    = normalize(cross(N, right));
       
   float sampleDelta = 0.025;
-  float nrSamples = 0.0f;
+  float nrSamples = 0.0;
   for(float phi = 0.0; phi < 2.0 * PI; phi += sampleDelta)
   {
     for(float theta = 0.0; theta < 0.5 * PI; theta += sampleDelta)

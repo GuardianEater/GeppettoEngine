@@ -303,6 +303,25 @@ namespace Gep
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /// Draw
+        
+        struct OutlineDrawInfo
+        {
+            glm::vec4 color;
+            float thickness = 1.0f; // pixels
+            bool alwaysOnTop = true;
+        };
+        
+        struct AddObjectInfo
+        {
+            uint32_t modelIdx = 0;
+            glm::mat4 modelMatrix;
+            glm::mat3 normalMatrix;
+            std::vector<uint32_t> materialIDs;
+            std::vector<Bone> bones;
+
+            std::optional<glm::vec3> wireframe = std::nullopt; // whether or not to render in wireframe mode; specifies color
+            std::optional<OutlineDrawInfo> outline = std::nullopt; // whether or not to render with an outline
+        };
 
         // adds an object to be drawn by the renderer
         void AddObjectStatic(uint64_t modelIdx, const StaticObjectGPUData& gpuData, RenderFlags flags = RenderFlags::None);
