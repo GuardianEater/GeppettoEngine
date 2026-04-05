@@ -35,6 +35,7 @@ namespace Gep
         static FrameBuffer Create(const glm::ivec2 size);
         static FrameBuffer CreateScreenHDR(const glm::ivec2 size);
         static FrameBuffer CreateScreenLDR(const glm::ivec2 size);
+        static FrameBuffer CreateMask(const glm::ivec2 size);
         static const FrameBuffer& Default(); // returns the default frame buffer (the screen) its ok to copy this it will always reference the same underlying data
 
         void AddDepthMap();

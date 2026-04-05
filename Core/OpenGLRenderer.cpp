@@ -440,7 +440,6 @@ namespace Gep
         }
 
         mObjectDatas[drawInfo.modelIdx][RenderFlags::None].push_back(drawInfo);
-
     }
 
     //void OpenGLRenderer::AddObject(uint64_t modelIdx, const ObjectInstanceDataGPU& gpuData, RenderFlags flags)
@@ -779,7 +778,7 @@ namespace Gep
 
     void OpenGLRenderer::Draw(Gep::FrameBuffer& targetFrameBuffer)
     {
-        static FrameBuffer hdrSceneFrameBuffer = FrameBuffer::CreateScreenHDR({128, 128});
+        static FrameBuffer hdrSceneFrameBuffer = FrameBuffer::CreateScreenHDR(targetFrameBuffer.GetSize());
         hdrSceneFrameBuffer.Bind();
         hdrSceneFrameBuffer.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
         hdrSceneFrameBuffer.UpdateViewport();
@@ -798,6 +797,7 @@ namespace Gep
         TonemapPass(targetFrameBuffer, hdrSceneFrameBuffer);
 
         // draw postprocess effects, ie model outlines
+        OutlinePass(targetFrameBuffer);
     }
 
     void OpenGLRenderer::End()
@@ -1165,6 +1165,148 @@ namespace Gep
         glBindVertexArray(0);
 
         Shader::Unbind();
+    }
+
+    void OpenGLRenderer::OutlinePass(Gep::FrameBuffer& targetFrameBuffer)
+    {
+        static FrameBuffer mask = FrameBuffer::CreateMask(targetFrameBuffer.GetSize());
+        mask.Bind();
+        mask.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
+        mask.UpdateViewport();
+        mask.Clear();
+        FrameBuffer::Unbind();
+
+        static FrameBuffer dilation = FrameBuffer::CreateMask(targetFrameBuffer.GetSize());
+        dilation.Bind();
+        dilation.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
+        dilation.UpdateViewport();
+        dilation.Clear();
+        FrameBuffer::Unbind();
+
+        static Shader maskShader = Shader::FromFile("shaders/Mask.vert", "shaders/Mask.frag");
+        static Shader dilationShader = Shader::FromFile("shaders/Dilation.vert", "shaders/Dilation.frag");
+        static Shader compositeShader = Shader::FromFile("shaders/Dilation.vert", "shaders/Outline-Composite.frag");
+
+        // draw the object mask ///////////////////////////////////////////////////////////
+        mask.Bind();
+        maskShader.Bind();
+        maskShader.SetUniform("u_color", glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
+        
+        uint32_t baseInstance = 0;
+        uint32_t meshBaseInstance = 0;
+        for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
+        {
+            for (auto [vao, indexCount] : di.vaos)
+            {
+                glBindVertexArray(vao);
+                mStats.drawCalls++;
+                glDrawElementsInstancedBaseInstance(
+                    GL_TRIANGLES,
+                    indexCount,
+                    GL_UNSIGNED_INT,
+                    0,
+                    di.count,
+                    baseInstance
+                );
+
+                meshBaseInstance += di.count;
+            }
+            baseInstance += di.count;
+        }
+        Shader::Unbind();
+        FrameBuffer::Unbind();
+
+        //// draw the object dialated horizontal //////////////////////////////////////////
+        dilation.Bind();
+        dilationShader.Bind();
+        dilationShader.SetUniform("u_direction", glm::vec2{ 1,0 });
+        dilationShader.SetUniform("u_radius", 2);
+        dilationShader.SetUniform("u_maskTexture", 0);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, mask.GetTexture(0));
+
+        mStats.drawCalls++;
+        glBindVertexArray(mLineVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
+
+        Shader::Unbind();
+        FrameBuffer::Unbind();
+
+        // draw the object dialated vertical //////////////////////////////////////////////////
+        mask.Bind();
+        dilationShader.Bind();
+        dilationShader.SetUniform("u_direction", glm::vec2{ 0,1 });
+        dilationShader.SetUniform("u_radius", 2);
+        dilationShader.SetUniform("u_maskTexture", 0);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, dilation.GetTexture(0));
+
+        mStats.drawCalls++;
+        glBindVertexArray(mLineVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
+
+        Shader::Unbind();
+        FrameBuffer::Unbind();
+
+        // draw the object again but inverted so it cookie cutters ///////////////////////////////
+        mask.Bind();
+        maskShader.Bind();
+        maskShader.SetUniform("u_color", glm::vec4{ 0.0f, 0.0f, 0.0f, 0.0f });
+        baseInstance = 0;
+        meshBaseInstance = 0;
+        for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
+        {
+            for (auto [vao, indexCount] : di.vaos)
+            {
+                glBindVertexArray(vao);
+                mStats.drawCalls++;
+                glDrawElementsInstancedBaseInstance(
+                    GL_TRIANGLES,
+                    indexCount,
+                    GL_UNSIGNED_INT,
+                    0,
+                    di.count,
+                    baseInstance
+                );
+
+                meshBaseInstance += di.count;
+
+            }
+            baseInstance += di.count;
+        }
+        glBindVertexArray(0);
+        Shader::Unbind();
+        FrameBuffer::Unbind();
+
+        // composite the outline mask over the final scene /////////////////////////////////////////////
+        targetFrameBuffer.Bind();
+        targetFrameBuffer.UpdateViewport();
+
+        GLDrawFlags flags{
+            .depthFuncMask = std::nullopt,
+            .cullMode = std::nullopt,
+            .blendFuncSD = std::make_pair(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        };
+        SetDrawFlags(flags);
+
+        compositeShader.Bind();
+        compositeShader.SetUniform("u_outlineMask", 0);
+        compositeShader.SetUniform("u_outlineColor", glm::vec4{ 1.0f, 0.1f, 0.1f, 1.0f });
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, mask.GetTexture(0));
+
+        mStats.drawCalls++;
+        glBindVertexArray(mLineVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
+
+        Shader::Unbind();
+        FrameBuffer::Unbind();
     }
 
     void OpenGLRenderer::MeshGPUHandle::GenVertexBuffer(const Mesh& mesh)

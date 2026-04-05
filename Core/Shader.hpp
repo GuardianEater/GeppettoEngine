@@ -31,6 +31,7 @@ namespace Gep
 
         bool IsValid() const; // checks if the shader compiled successfully
 
+        void SetUniform(const std::string& name, const glm::vec2& v);
         void SetUniform(const std::string& name, const glm::vec3& v);
         void SetUniform(const std::string& name, const glm::vec4& v);
         void SetUniform(const std::string& name, const glm::mat4& v, bool transpose = false);
@@ -39,6 +40,7 @@ namespace Gep
         void SetUniform(const std::string& name, uint32_t v);
         void SetUniform(const std::string& name, uint64_t v);
 
+        void SetUniform(size_t location, const glm::vec2& v);
         void SetUniform(size_t location, const glm::vec3& v);
         void SetUniform(size_t location, const glm::vec4& v);
         void SetUniform(size_t location, const glm::mat4& v, bool transpose = false);

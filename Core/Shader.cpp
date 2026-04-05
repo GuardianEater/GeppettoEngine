@@ -115,6 +115,11 @@ namespace Gep
 		return mProgram != 0;
     }
 
+	void Shader::SetUniform(const std::string& name, const glm::vec2& v)
+	{
+		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
+	}
+
 	void Shader::SetUniform(const std::string& name, const glm::vec3& v)
 	{
 		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
@@ -148,6 +153,12 @@ namespace Gep
 	void Shader::SetUniform(const std::string& name, uint64_t v)
 	{
 		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
+	}
+
+	void Shader::SetUniform(size_t location, const glm::vec2& v)
+	{
+		Bind();
+		glUniform2fv(location, 1, glm::value_ptr(v));
 	}
 
 	void Shader::SetUniform(size_t location, const glm::vec3& v)

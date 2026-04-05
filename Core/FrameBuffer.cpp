@@ -97,6 +97,13 @@ namespace Gep
         return fb;
     }
 
+    [[nodiscard]] FrameBuffer FrameBuffer::CreateMask(const glm::ivec2 size)
+    {
+        FrameBuffer fb = Create(size);
+        fb.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
+        return fb;
+    }
+
     [[nodiscard]] FrameBuffer FrameBuffer::CreateWithTexture(const glm::ivec2 size, GLenum attachment, GLint internalFormat, GLint format, GLenum type)
     {
         FrameBuffer fb = Create(size);

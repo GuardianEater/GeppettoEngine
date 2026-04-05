@@ -326,6 +326,7 @@
     <None Include="ImGuiSystem.inl" />
     <None Include="Logger.inl" />
     <None Include="SerializationSystem.inl" />
+    <None Include="shaders\Outline-Composite.frag" />
     <None Include="STLHelp.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

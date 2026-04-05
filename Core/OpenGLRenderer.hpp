@@ -520,6 +520,7 @@ namespace Gep
         void BackgroundPass(Gep::FrameBuffer& targetFrameBuffer, const Gep::Texture& backgroundCubeMap);
         void AmbientPass(Gep::FrameBuffer& targetFrameBuffer);
         void TonemapPass(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer);
+        void OutlinePass(Gep::FrameBuffer& targetFrameBuffer);
 
         // helpers for loading assimp files
         void LoadMaterials(const std::filesystem::path& path, const aiScene* scene);
@@ -596,6 +597,7 @@ namespace Gep
             // the amount of objects to draw
             uint64_t count = 0;
             // vao and index count
+            bool outline = false;
             std::vector<std::pair<GLuint, size_t>> vaos; // all of the meshes to draw with that object
         };
     
