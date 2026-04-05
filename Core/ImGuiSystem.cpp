@@ -877,20 +877,8 @@ namespace Client
                         mat.color = diffuse;
                         mat.metalness = static_cast<float>(x) * invRange;
                         mat.roughness = static_cast<float>(y) * invRange;
-                        uint64_t matIdx = mRenderer.AddMaterial(mat);
+                        uint32_t matIdx = mRenderer.AddMaterial(mat);
                         materials.push_back(matIdx);
-
-                        // build a mesh using material
-                        Gep::Mesh mesh = Gep::IcosphereMesh(3);
-                        mesh.materialIndex = matIdx;
-                        mesh.name = name;
-
-                        // build a model using a mesh
-                        Gep::Model model;
-                        model.meshes.push_back(mesh);
-                        model.name = name;
-                        uint64_t modelIdx = mRenderer.AddModel(model);
-                        models.push_back(modelIdx);
 
                         glm::vec3 pos = {
                             x * spacing - halfExtent,
@@ -902,7 +890,7 @@ namespace Client
                         t.world.position = pos;
 
                         Gep::Entity e = mManager.CreateEntity(name);
-                        mManager.AddComponent(e, t, Client::StaticModelComponent{.modelIdx = modelIdx /*sphere*/});
+                        mManager.AddComponent(e, t, Client::StaticModelComponent{.modelIdx = 2 /*sphere*/, .materialOverride = { matIdx }});
                         mManager.AttachEntity(parent, e);
 
                         cubes.push_back(e);

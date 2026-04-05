@@ -516,13 +516,18 @@ namespace Gep
                     di.count = objects.size();
                     di.vaos.reserve(entry.meshes.size());
 
-                    for (uint64_t meshIdx : entry.meshes)
+                    for (uint32_t i = 0; i < entry.meshes.size(); ++i)
                     {
+                        uint32_t meshIdx = entry.meshes[i];
                         auto& meshEntry = mMeshLibrary[meshIdx];
+
+                        uint32_t matIdx = meshEntry.mesh.materialIndex;
+                        if (i < object.materialIdxs.size())
+                            matIdx = object.materialIdxs[i];
 
                         MeshGPUData meshData
                         {
-                            .materialIndex = meshEntry.mesh.materialIndex
+                            .materialIndex = matIdx
                         };
 
                         mMeshUniforms.push_back(meshData); // push back mesh instance uniform data
