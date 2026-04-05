@@ -504,6 +504,10 @@ namespace Gep
                 mShader_AmbientLight,
                 mShader_Tonemap,
 
+                mShader_OutlineMask,
+                mShader_OutlineDilation,
+                mShader_OutlineComposite,
+
                 mShader_Prefilter,
                 mShader_GenerateBRDFLUT,
                 mShader_GenerateIrradianceMap
@@ -561,6 +565,9 @@ namespace Gep
         Shader mShader_Background;
         Shader mShader_AmbientLight;
         Shader mShader_Tonemap;
+        Shader mShader_OutlineMask;
+        Shader mShader_OutlineDilation;
+        Shader mShader_OutlineComposite;
         Shader mShader_Prefilter;
         Shader mShader_GenerateBRDFLUT;
         Shader mShader_GenerateIrradianceMap;
@@ -591,6 +598,8 @@ namespace Gep
         std::mutex mTextureLoadingMutex{};
 
         FrameBuffer mGeometryFrameBuffer;
+        FrameBuffer mOutlineMaskFrameBuffer;
+        FrameBuffer mOutlineDilationFrameBuffer;
 
         struct ObjectDrawInfo
         {

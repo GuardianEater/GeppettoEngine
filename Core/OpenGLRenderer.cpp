@@ -187,6 +187,10 @@ namespace Gep
         mShader_Tonemap = Shader::FromFile("shaders/Tonemap.vert", "shaders/Tonemap.frag");
         mShader_Tonemap.SetUniform("u_sceneTexture", 0);
 
+        mShader_OutlineMask = Shader::FromFile("shaders/Mask.vert", "shaders/Mask.frag");
+        mShader_OutlineDilation = Shader::FromFile("shaders/Dilation.vert", "shaders/Dilation.frag");
+        mShader_OutlineComposite = Shader::FromFile("shaders/Dilation.vert", "shaders/Outline-Composite.frag");
+
         mShader_Prefilter = Shader::FromFile("shaders/IBL/Cubemap.vert", "shaders/IBL/Prefilter.frag");
         mShader_Prefilter.SetUniform("u_environmentMap", 0);
 
@@ -194,6 +198,9 @@ namespace Gep
         mShader_GenerateIrradianceMap.SetUniform("u_environmentMap", 0);
 
         mShader_GenerateBRDFLUT = Shader::FromFile("shaders/IBL/GenerateBRDFLUT.vert", "shaders/IBL/GenerateBRDFLUT.frag");
+
+        mOutlineMaskFrameBuffer = FrameBuffer::CreateMask({ 128, 128 });
+        mOutlineDilationFrameBuffer = FrameBuffer::CreateMask({ 128, 128 });
 
 
         //// load hdr environment map
@@ -1169,26 +1176,39 @@ namespace Gep
 
     void OpenGLRenderer::OutlinePass(Gep::FrameBuffer& targetFrameBuffer)
     {
-        static FrameBuffer mask = FrameBuffer::CreateMask(targetFrameBuffer.GetSize());
+        GLDrawFlags sceneMaskFlags{
+            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
+            .cullMode = GL_BACK,
+            .blendFuncSD = std::nullopt
+        };
+
+        GLDrawFlags postProcessFlags{
+            .depthFuncMask = std::nullopt,
+            .cullMode = std::nullopt,
+            .blendFuncSD = std::nullopt
+        };
+
+        FrameBuffer& mask = mOutlineMaskFrameBuffer;
         mask.Bind();
         mask.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
         mask.UpdateViewport();
         mask.Clear();
         FrameBuffer::Unbind();
 
-        static FrameBuffer dilation = FrameBuffer::CreateMask(targetFrameBuffer.GetSize());
+        FrameBuffer& dilation = mOutlineDilationFrameBuffer;
         dilation.Bind();
         dilation.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
         dilation.UpdateViewport();
         dilation.Clear();
         FrameBuffer::Unbind();
 
-        static Shader maskShader = Shader::FromFile("shaders/Mask.vert", "shaders/Mask.frag");
-        static Shader dilationShader = Shader::FromFile("shaders/Dilation.vert", "shaders/Dilation.frag");
-        static Shader compositeShader = Shader::FromFile("shaders/Dilation.vert", "shaders/Outline-Composite.frag");
+        Shader& maskShader = mShader_OutlineMask;
+        Shader& dilationShader = mShader_OutlineDilation;
+        Shader& compositeShader = mShader_OutlineComposite;
 
         // draw the object mask ///////////////////////////////////////////////////////////
         mask.Bind();
+        SetDrawFlags(sceneMaskFlags);
         maskShader.Bind();
         maskShader.SetUniform("u_color", glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
         
@@ -1218,6 +1238,7 @@ namespace Gep
 
         //// draw the object dialated horizontal //////////////////////////////////////////
         dilation.Bind();
+        SetDrawFlags(postProcessFlags);
         dilationShader.Bind();
         dilationShader.SetUniform("u_direction", glm::vec2{ 1,0 });
         dilationShader.SetUniform("u_radius", 2);
@@ -1236,6 +1257,7 @@ namespace Gep
 
         // draw the object dialated vertical //////////////////////////////////////////////////
         mask.Bind();
+        SetDrawFlags(postProcessFlags);
         dilationShader.Bind();
         dilationShader.SetUniform("u_direction", glm::vec2{ 0,1 });
         dilationShader.SetUniform("u_radius", 2);
@@ -1254,6 +1276,7 @@ namespace Gep
 
         // draw the object again but inverted so it cookie cutters ///////////////////////////////
         mask.Bind();
+        SetDrawFlags(sceneMaskFlags);
         maskShader.Bind();
         maskShader.SetUniform("u_color", glm::vec4{ 0.0f, 0.0f, 0.0f, 0.0f });
         baseInstance = 0;
