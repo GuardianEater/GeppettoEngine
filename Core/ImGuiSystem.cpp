@@ -890,7 +890,7 @@ namespace Client
                         t.world.position = pos;
 
                         Gep::Entity e = mManager.CreateEntity(name);
-                        mManager.AddComponent(e, t, Client::StaticModelComponent{.modelIdx = 2 /*sphere*/, .materialOverride = { matIdx }});
+                        mManager.AddComponent(e, t, Client::StaticModelComponent{.modelIdx = 3 /*sphere*/, .materialOverrides = { matIdx }});
                         mManager.AttachEntity(parent, e);
 
                         cubes.push_back(e);

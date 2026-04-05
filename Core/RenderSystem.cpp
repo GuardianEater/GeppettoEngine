@@ -1052,6 +1052,7 @@ namespace Client
                 .modelIdx = (uint32_t)model.modelIdx,
                 .modelMatrix = modelMatrix,
                 .normalMatrix = normal,
+                .materialIdxs = model.materialOverrides
             };
 
             Gep::RenderFlags flags = Gep::RenderFlags::None;

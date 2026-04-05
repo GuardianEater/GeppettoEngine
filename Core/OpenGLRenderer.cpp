@@ -496,7 +496,7 @@ namespace Gep
         // 2: loops over each model using the current shader
         for (const auto& [modelIdx, flagsToObjects] : mObjectDatas)
         {
-            const auto& entry = mModelLibrary.at(modelIdx);
+            const auto& modelEntry = mModelLibrary.at(modelIdx);
 
             // 3: loops over each active flag bucket
             for (const auto& [flags, objects] : flagsToObjects)
@@ -511,27 +511,33 @@ namespace Gep
                         .boneOffset = Gep::NumMax<int>()
                     };
 
+                    // add per object instance data
                     mStaticObjectUniforms.push_back(gpuData); // push back object instance uniform data
                     ObjectDrawInfo& di = mStaticObjectDrawInfo.emplace_back(); // add the draw information for this object instance
-                    di.count = objects.size();
-                    di.vaos.reserve(entry.meshes.size());
+                    di.count = objects.size(); // the amount of this object to be drawn
+                    di.vaos.reserve(modelEntry.meshes.size());
 
-                    for (uint32_t i = 0; i < entry.meshes.size(); ++i)
+                    // add per mesh instance data, ordering memory like [0][0][0][0][1][1][1][1][2][2][2][2]
+                    for (uint32_t localMeshIdx = 0; localMeshIdx < modelEntry.meshes.size(); ++localMeshIdx) // mesh index local to the model
                     {
-                        uint32_t meshIdx = entry.meshes[i];
+                        uint32_t meshIdx = modelEntry.meshes[localMeshIdx];
                         auto& meshEntry = mMeshLibrary[meshIdx];
-
-                        uint32_t matIdx = meshEntry.mesh.materialIndex;
-                        if (i < object.materialIdxs.size())
-                            matIdx = object.materialIdxs[i];
-
-                        MeshGPUData meshData
-                        {
-                            .materialIndex = matIdx
-                        };
-
-                        mMeshUniforms.push_back(meshData); // push back mesh instance uniform data
                         di.vaos.push_back({ meshEntry.handle.mVertexArrayObject, meshEntry.handle.mIndexCount }); // add the draw information for this mesh instance
+
+                        // loop over the instances of each mesh 
+                        for (uint32_t i = 0; i < objects.size(); ++i)
+                        {
+                            uint32_t matIdx = meshEntry.mesh.materialIndex;
+                            if (i < object.materialIdxs.size())
+                                matIdx = object.materialIdxs[i];
+
+                            MeshGPUData meshData
+                            {
+                                .materialIndex = matIdx
+                            };
+
+                            mMeshUniforms.push_back(meshData); // push back mesh instance uniform data
+                        }
                     }
                 }
             }
@@ -541,6 +547,7 @@ namespace Gep
         mStaticObjectUniforms.commit();
         mMeshUniforms.commit();
     }
+
     void OpenGLRenderer::CommitCameras()
     {
         mCameraUniforms.commit();
@@ -875,7 +882,7 @@ namespace Gep
                 meshBaseInstance += di.count;
 
             }
-            baseInstance += di.count;
+            baseInstance += 1;
         }
 
         Shader::Unbind();

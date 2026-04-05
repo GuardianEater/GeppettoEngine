@@ -26,7 +26,7 @@ namespace Client
     struct StaticModelComponent
     {
         uint64_t modelIdx = 0;
-        std::vector<uint32_t> materialOverride;
+        std::vector<uint32_t> materialOverrides;
         bool selected = false;
     };
 }
