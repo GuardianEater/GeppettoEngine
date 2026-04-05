@@ -761,15 +761,15 @@ namespace Client
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
 
-            Gep::ObjectInstanceDataGPU uniforms
+            Gep::AddObjectInfo info
             {
+                .modelIdx = 2, // cube
                 .modelMatrix = modelMatrix,
-                .normalMatrixCol0 = normal[0],
-                .normalMatrixCol1 = normal[1],
-                .normalMatrixCol2 = normal[2]
+                .normalMatrix = normal,
+                .wireframe = glm::vec3{1.0f, 1.0f, 0.0f}
             };
 
-            mRenderer.AddObject(2 /*cube*/, uniforms, Gep::RenderFlags::Wireframe);
+            mRenderer.AddObject(info);
         });
 
         mManager.ForEachArchetype([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
@@ -777,15 +777,15 @@ namespace Client
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
 
-            Gep::ObjectInstanceDataGPU uniforms
+            Gep::AddObjectInfo info
             {
+                .modelIdx = 1, // sphere
                 .modelMatrix = modelMatrix,
-                .normalMatrixCol0 = normal[0],
-                .normalMatrixCol1 = normal[1],
-                .normalMatrixCol2 = normal[2]
+                .normalMatrix = normal,
+                .wireframe = glm::vec3{1.0f, 1.0f, 0.0f}
             };
 
-            mRenderer.AddObject(1 /*sphere*/, uniforms, Gep::RenderFlags::Wireframe);
+            mRenderer.AddObject(info);
         });
     }
 
@@ -1016,24 +1016,29 @@ namespace Client
             }
 
 
-            Gep::ObjectInstanceDataGPU uniforms
+            Gep::AddObjectInfo info
             {
+                .modelIdx = (uint32_t)model.modelIdx,
                 .modelMatrix = modelMatrix,
-                .normalMatrixCol0 = normal[0],
-                .normalMatrixCol1 = normal[1],
-                .normalMatrixCol2 = normal[2],
-
-                .boneOffset = previousBoneOffset // only used in the PBR-Skinned shader
+                .normalMatrix = normal,
+                .bones = internalModel.skeleton.bones, // only used in the PBR-Skinned shader
             };
 
             Gep::RenderFlags flags = Gep::RenderFlags::None;
             if (mWireframeMode)
-                flags |= Gep::RenderFlags::Wireframe;
+                info.wireframe = glm::vec3{1.0f, 1.0, 0.0f};
 
             if (model.selected)
-                flags |= Gep::RenderFlags::Highlight;
+            {
+                Gep::OutlineDrawInfo odi{
+                    .color = {1.0f, 1.0, 0.0f, 1.0f},
+                    .thickness = 1.0f,
+                    .alwaysOnTop = true
+                };
+                info.outline = odi;
+            }
 
-            mRenderer.AddObject(model.modelIdx, uniforms, flags);
+            mRenderer.AddObject(info);
         });
 
         mManager.ForEachArchetype([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
@@ -1042,24 +1047,28 @@ namespace Client
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
             const Gep::Model& internalModel = mRenderer.GetModel(model.modelIdx);
 
-            Gep::ObjectInstanceDataGPU uniforms
+            Gep::AddObjectInfo info
             {
+                .modelIdx = (uint32_t)model.modelIdx,
                 .modelMatrix = modelMatrix,
-                .normalMatrixCol0 = normal[0],
-                .normalMatrixCol1 = normal[1],
-                .normalMatrixCol2 = normal[2],
-
-                .boneOffset = 0 // this is not used when using the static shader
+                .normalMatrix = normal,
             };
 
             Gep::RenderFlags flags = Gep::RenderFlags::None;
             if (mWireframeMode)
-                flags |= Gep::RenderFlags::Wireframe;
+                info.wireframe = glm::vec3{1.0f, 1.0f, 1.0f};
 
             if (model.selected)
-                flags |= Gep::RenderFlags::Highlight;
+            {
+                Gep::OutlineDrawInfo odi{
+                    .color = {1.0f, 1.0, 0.0f, 1.0f},
+                    .thickness = 1.0f,
+                    .alwaysOnTop = true
+                };
+                info.outline = odi;
+            }
 
-            mRenderer.AddObject(model.modelIdx, uniforms, flags);
+            mRenderer.AddObject(info);
         });
 
         mRenderer.AddLine(skeletonLines);

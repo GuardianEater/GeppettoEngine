@@ -183,6 +183,25 @@ namespace Gep
         }
     };
 
+    struct OutlineDrawInfo
+    {
+        glm::vec4 color;
+        float thickness = 1.0f; // pixels
+        bool alwaysOnTop = true;
+    };
+
+    struct AddObjectInfo
+    {
+        uint32_t modelIdx = 0;
+        glm::mat4 modelMatrix;
+        glm::mat3 normalMatrix;
+        std::vector<uint32_t> materialIdxs;
+        std::vector<Bone> bones;
+
+        std::optional<glm::vec3> wireframe = std::nullopt; // whether or not to render in wireframe mode; specifies color
+        std::optional<OutlineDrawInfo> outline = std::nullopt; // whether or not to render with an outline
+    };
+
     class OpenGLRenderer
     {
     public:
@@ -310,29 +329,12 @@ namespace Gep
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /// Draw
         
-        struct OutlineDrawInfo
-        {
-            glm::vec4 color;
-            float thickness = 1.0f; // pixels
-            bool alwaysOnTop = true;
-        };
-        
-        struct AddObjectInfo
-        {
-            uint32_t modelIdx = 0;
-            glm::mat4 modelMatrix;
-            glm::mat3 normalMatrix;
-            std::vector<uint32_t> materialIdxs;
-            std::vector<Bone> bones;
 
-            std::optional<glm::vec3> wireframe = std::nullopt; // whether or not to render in wireframe mode; specifies color
-            std::optional<OutlineDrawInfo> outline = std::nullopt; // whether or not to render with an outline
-        };
 
         void AddObject(const AddObjectInfo& drawInfo);
 
         // adds an object to be drawn by the renderer
-        void AddObject(uint64_t modelIdx, const ObjectInstanceDataGPU& gpuData, RenderFlags flags = RenderFlags::None);
+        //void AddObject(uint64_t modelIdx, const ObjectInstanceDataGPU& gpuData, RenderFlags flags = RenderFlags::None);
 
         // adds a camera to the render, camera is selected via set camera index
         void AddCamera(const CameraGPUData& cameraData);
@@ -603,7 +605,7 @@ namespace Gep
         std::vector<FrameBuffer> mDirectionalLightShadowMaps; // index corresponds to the directional light shadow uniform at the same index in mPointLightShadowUniforms
 
         // modelIdx -> flags -> objects
-        std::map<uint64_t, std::map<RenderFlags, std::vector<ObjectInstanceDataGPU>>> mObjectDatas;
+        std::map<uint64_t, std::map<RenderFlags, std::vector<AddObjectInfo>>> mObjectDatas;
 
         // used to store vertices for drawing lines
         GLuint mLineVBO;

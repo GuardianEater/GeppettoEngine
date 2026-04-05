@@ -93,15 +93,14 @@ namespace Client
                 glm::mat4 cpModel = model * translation;
                 cpModel = glm::scale(cpModel, glm::vec3(2.0f, 2.0f, 2.0f));
 
-                Gep::ObjectInstanceDataGPU uniformsCP
+                Gep::AddObjectInfo infoCP
                 {
+                    .modelIdx = 3,
                     .modelMatrix = cpModel,
-                    .normalMatrixCol0 = normal[0],
-                    .normalMatrixCol1 = normal[1],
-                    .normalMatrixCol2 = normal[2],
+                    .normalMatrix = normal,
                 };
 
-                mRenderer.AddObject(3 /*"Icosphere"*/, uniformsCP);
+                mRenderer.AddObject(infoCP);
             }
 
             // adds a line segment for all evaluated points

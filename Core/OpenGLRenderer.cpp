@@ -433,19 +433,26 @@ namespace Gep
 
     void OpenGLRenderer::AddObject(const AddObjectInfo& drawInfo)
     {
-
-    }
-
-    void OpenGLRenderer::AddObject(uint64_t modelIdx, const ObjectInstanceDataGPU& gpuData, RenderFlags flags)
-    {
-        if (!IsModelLoaded(modelIdx))
+        if (!IsModelLoaded(drawInfo.modelIdx))
         {
-            Gep::Log::Error("Failed to draw object. The model: [", modelIdx, "] doesn't exist");
+            Gep::Log::Error("Failed to draw object. The model: [", drawInfo, "] doesn't exist");
             return;
         }
 
-        mObjectDatas[modelIdx][flags].push_back(gpuData);
+        mObjectDatas[drawInfo.modelIdx][RenderFlags::None].push_back(drawInfo);
+
     }
+
+    //void OpenGLRenderer::AddObject(uint64_t modelIdx, const ObjectInstanceDataGPU& gpuData, RenderFlags flags)
+    //{
+    //    if (!IsModelLoaded(modelIdx))
+    //    {
+    //        Gep::Log::Error("Failed to draw object. The model: [", modelIdx, "] doesn't exist");
+    //        return;
+    //    }
+
+    //    mObjectDatas[modelIdx][flags].push_back(gpuData);
+    //}
 
     void OpenGLRenderer::AddCamera(const CameraGPUData& uniforms)
     {
@@ -496,7 +503,15 @@ namespace Gep
             {
                 for (auto& object : objects)
                 {
-                    mStaticObjectUniforms.push_back(object); // push back object instance uniform data
+                    ObjectInstanceDataGPU gpuData{
+                        .modelMatrix = object.modelMatrix,
+                        .normalMatrixCol0 = object.normalMatrix[0],
+                        .normalMatrixCol1 = object.normalMatrix[1],
+                        .normalMatrixCol2 = object.normalMatrix[2],
+                        .boneOffset = Gep::NumMax<int>()
+                    };
+
+                    mStaticObjectUniforms.push_back(gpuData); // push back object instance uniform data
                     ObjectDrawInfo& di = mStaticObjectDrawInfo.emplace_back(); // add the draw information for this object instance
                     di.count = objects.size();
                     di.vaos.reserve(entry.meshes.size());
