@@ -761,7 +761,7 @@ namespace Client
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
 
-            Gep::StaticObjectGPUData uniforms
+            Gep::ObjectInstanceDataGPU uniforms
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrixCol0 = normal[0],
@@ -769,7 +769,7 @@ namespace Client
                 .normalMatrixCol2 = normal[2]
             };
 
-            mRenderer.AddObjectStatic(2 /*cube*/, uniforms, Gep::RenderFlags::Wireframe);
+            mRenderer.AddObject(2 /*cube*/, uniforms, Gep::RenderFlags::Wireframe);
         });
 
         mManager.ForEachArchetype([&](Gep::Entity entity, SphereCollider& collider, Transform& transform)
@@ -777,7 +777,7 @@ namespace Client
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
 
-            Gep::StaticObjectGPUData uniforms
+            Gep::ObjectInstanceDataGPU uniforms
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrixCol0 = normal[0],
@@ -785,7 +785,7 @@ namespace Client
                 .normalMatrixCol2 = normal[2]
             };
 
-            mRenderer.AddObjectStatic(1 /*sphere*/, uniforms, Gep::RenderFlags::Wireframe);
+            mRenderer.AddObject(1 /*sphere*/, uniforms, Gep::RenderFlags::Wireframe);
         });
     }
 
@@ -1016,7 +1016,7 @@ namespace Client
             }
 
 
-            Gep::StaticObjectGPUData uniforms
+            Gep::ObjectInstanceDataGPU uniforms
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrixCol0 = normal[0],
@@ -1033,7 +1033,7 @@ namespace Client
             if (model.selected)
                 flags |= Gep::RenderFlags::Highlight;
 
-            mRenderer.AddObjectStatic(model.modelIdx, uniforms, flags);
+            mRenderer.AddObject(model.modelIdx, uniforms, flags);
         });
 
         mManager.ForEachArchetype([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
@@ -1042,7 +1042,7 @@ namespace Client
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
             const Gep::Model& internalModel = mRenderer.GetModel(model.modelIdx);
 
-            Gep::StaticObjectGPUData uniforms
+            Gep::ObjectInstanceDataGPU uniforms
             {
                 .modelMatrix = modelMatrix,
                 .normalMatrixCol0 = normal[0],
@@ -1059,7 +1059,7 @@ namespace Client
             if (model.selected)
                 flags |= Gep::RenderFlags::Highlight;
 
-            mRenderer.AddObjectStatic(model.modelIdx, uniforms, flags);
+            mRenderer.AddObject(model.modelIdx, uniforms, flags);
         });
 
         mRenderer.AddLine(skeletonLines);

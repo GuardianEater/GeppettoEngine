@@ -431,7 +431,12 @@ namespace Gep
         return texIdx;
     }
 
-    void OpenGLRenderer::AddObjectStatic(uint64_t modelIdx, const StaticObjectGPUData& gpuData, RenderFlags flags)
+    void OpenGLRenderer::AddObject(const AddObjectInfo& drawInfo)
+    {
+
+    }
+
+    void OpenGLRenderer::AddObject(uint64_t modelIdx, const ObjectInstanceDataGPU& gpuData, RenderFlags flags)
     {
         if (!IsModelLoaded(modelIdx))
         {
@@ -489,33 +494,30 @@ namespace Gep
             // 3: loops over each active flag bucket
             for (const auto& [flags, objects] : flagsToObjects)
             {
-                // TODO: quick frustum check
-
-                // add all per-object instance data, this vector will be sent as is to the gpu
-                mStaticObjectUniforms.insert(mStaticObjectUniforms.end(), objects.begin(), objects.end());
-
-                // this is the amount of objects successfully sent to the gpu and the meshes that are used by that object
-                ObjectDrawInfo& di = mStaticObjectDrawInfo.emplace_back();
-                di.count = objects.size();
-                di.vaos.reserve(entry.meshes.size());
-                for (auto meshIdx : entry.meshes)
+                for (auto& object : objects)
                 {
-                    const auto& meshHandle = mMeshLibrary.at(meshIdx).handle;
-                    di.vaos.push_back({ meshHandle.mVertexArrayObject, meshHandle.mIndexCount });
-                }
+                    mStaticObjectUniforms.push_back(object); // push back object instance uniform data
+                    ObjectDrawInfo& di = mStaticObjectDrawInfo.emplace_back(); // add the draw information for this object instance
+                    di.count = objects.size();
+                    di.vaos.reserve(entry.meshes.size());
 
-                // Pack mMeshUniforms in the same order DrawRegular consumes:
-                // per-mesh, then per-instance.
-                for (auto meshIdx : entry.meshes)
-                {
-                    const auto& mesh = mMeshLibrary.at(meshIdx).mesh;
+                    for (uint64_t meshIdx : entry.meshes)
+                    {
+                        auto& meshEntry = mMeshLibrary[meshIdx];
 
-                    for (size_t i = 0; i < objects.size(); ++i)
-                        mMeshUniforms.push_back({mesh.materialIndex});
+                        MeshGPUData meshData
+                        {
+                            .materialIndex = meshEntry.mesh.materialIndex
+                        };
+
+                        mMeshUniforms.push_back(meshData); // push back mesh instance uniform data
+                        di.vaos.push_back({ meshEntry.handle.mVertexArrayObject, meshEntry.handle.mIndexCount }); // add the draw information for this mesh instance
+                    }
                 }
             }
         }
 
+        // copies instance information to the gpu
         mStaticObjectUniforms.commit();
         mMeshUniforms.commit();
     }

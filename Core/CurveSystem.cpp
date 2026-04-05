@@ -93,7 +93,7 @@ namespace Client
                 glm::mat4 cpModel = model * translation;
                 cpModel = glm::scale(cpModel, glm::vec3(2.0f, 2.0f, 2.0f));
 
-                Gep::StaticObjectGPUData uniformsCP
+                Gep::ObjectInstanceDataGPU uniformsCP
                 {
                     .modelMatrix = cpModel,
                     .normalMatrixCol0 = normal[0],
@@ -101,7 +101,7 @@ namespace Client
                     .normalMatrixCol2 = normal[2],
                 };
 
-                mRenderer.AddObjectStatic(3 /*"Icosphere"*/, uniformsCP);
+                mRenderer.AddObject(3 /*"Icosphere"*/, uniformsCP);
             }
 
             // adds a line segment for all evaluated points

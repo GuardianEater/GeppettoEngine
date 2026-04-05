@@ -53,7 +53,7 @@ namespace Gep
         GLuint64 padding;
     };
 
-    struct alignas(16) StaticObjectGPUData
+    struct alignas(16) ObjectInstanceDataGPU
     {
         glm::mat4 modelMatrix;  // the location rotation and scale of an object; converts from a model from model space to world space
 
@@ -127,6 +127,12 @@ namespace Gep
     struct BoneGPUData
     {
         glm::mat4 offsetMatrix; // how the bone should move; used for animation
+    };
+
+    // stores per model instance information that is stored as meta cpu data
+    struct ObjectInstanceDataCPU
+    {
+
     };
 
     struct LineGPUData // this is not actually sent to the gpu
@@ -304,27 +310,29 @@ namespace Gep
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /// Draw
         
-        //struct OutlineDrawInfo
-        //{
-        //    glm::vec4 color;
-        //    float thickness = 1.0f; // pixels
-        //    bool alwaysOnTop = true;
-        //};
-        //
-        //struct AddObjectInfo
-        //{
-        //    uint32_t modelIdx = 0;
-        //    glm::mat4 modelMatrix;
-        //    glm::mat3 normalMatrix;
-        //    std::vector<uint32_t> materialIDs;
-        //    std::vector<Bone> bones;
+        struct OutlineDrawInfo
+        {
+            glm::vec4 color;
+            float thickness = 1.0f; // pixels
+            bool alwaysOnTop = true;
+        };
+        
+        struct AddObjectInfo
+        {
+            uint32_t modelIdx = 0;
+            glm::mat4 modelMatrix;
+            glm::mat3 normalMatrix;
+            std::vector<uint32_t> materialIdxs;
+            std::vector<Bone> bones;
 
-        //    std::optional<glm::vec3> wireframe = std::nullopt; // whether or not to render in wireframe mode; specifies color
-        //    std::optional<OutlineDrawInfo> outline = std::nullopt; // whether or not to render with an outline
-        //};
+            std::optional<glm::vec3> wireframe = std::nullopt; // whether or not to render in wireframe mode; specifies color
+            std::optional<OutlineDrawInfo> outline = std::nullopt; // whether or not to render with an outline
+        };
+
+        void AddObject(const AddObjectInfo& drawInfo);
 
         // adds an object to be drawn by the renderer
-        void AddObjectStatic(uint64_t modelIdx, const StaticObjectGPUData& gpuData, RenderFlags flags = RenderFlags::None);
+        void AddObject(uint64_t modelIdx, const ObjectInstanceDataGPU& gpuData, RenderFlags flags = RenderFlags::None);
 
         // adds a camera to the render, camera is selected via set camera index
         void AddCamera(const CameraGPUData& cameraData);
@@ -483,7 +491,11 @@ namespace Gep
                 mShader_EquirectangularToCubemap,
                 mShader_Background,
                 mShader_AmbientLight,
-                mShader_Tonemap
+                mShader_Tonemap,
+
+                mShader_Prefilter,
+                mShader_GenerateBRDFLUT,
+                mShader_GenerateIrradianceMap
             );
         }
 
@@ -577,7 +589,7 @@ namespace Gep
         };
     
         std::vector<ObjectDrawInfo> mStaticObjectDrawInfo; // synced with object uniforms stores addition meta information
-        Gep::gpu_vector<StaticObjectGPUData, 0> mStaticObjectUniforms;          // copied into u_objects on the gpu
+        Gep::gpu_vector<ObjectInstanceDataGPU, 0> mStaticObjectUniforms;          // copied into u_objects on the gpu
         Gep::gpu_vector<PointLightGPUData, 1> mPointLightUniforms;              // copied into u_pointLights on the gpu
         Gep::gpu_vector<CameraGPUData, 2> mCameraUniforms;                      // copied into u_cams on the gpu
         Gep::gpu_vector<BoneGPUData, 3> mBoneUniforms;                          // copied into u_bones on the gpu
@@ -591,7 +603,7 @@ namespace Gep
         std::vector<FrameBuffer> mDirectionalLightShadowMaps; // index corresponds to the directional light shadow uniform at the same index in mPointLightShadowUniforms
 
         // modelIdx -> flags -> objects
-        std::map<uint64_t, std::map<RenderFlags, std::vector<StaticObjectGPUData>>> mObjectDatas;
+        std::map<uint64_t, std::map<RenderFlags, std::vector<ObjectInstanceDataGPU>>> mObjectDatas;
 
         // used to store vertices for drawing lines
         GLuint mLineVBO;
