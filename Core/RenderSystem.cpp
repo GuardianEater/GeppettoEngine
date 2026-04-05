@@ -1106,6 +1106,11 @@ namespace Client
         const ImVec2 imageSize = { 256 * ImGui::GetStyle().FontScaleMain, 256 * ImGui::GetStyle().FontScaleMain };
 
         static float exposure = 1.0f;
+
+        const Gep::FrameDrawStats& drawStats = mRenderer.GetFrameDrawStats();
+
+        ImGui::Text("Draw Calls: %llu", drawStats.drawCalls);
+
         if (ImGui::SliderFloat("Exposure", &exposure, 0, 10))
         {
             mRenderer.SetExposure(exposure);

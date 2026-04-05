@@ -202,6 +202,12 @@ namespace Gep
         std::optional<OutlineDrawInfo> outline = std::nullopt; // whether or not to render with an outline
     };
 
+    struct FrameDrawStats
+    {
+        uint64_t drawCalls = 0;
+        uint64_t vertexCount = 0; // amount of vertices currently in the world
+    };
+
     class OpenGLRenderer
     {
     public:
@@ -397,6 +403,9 @@ namespace Gep
 
         // loads everything at the given path including other referenced files.
         Gep::Model LoadModelFromFile(const std::filesystem::path& path);
+
+        // 
+        const FrameDrawStats& GetFrameDrawStats() const { return mStats; };
 
        
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -611,5 +620,7 @@ namespace Gep
         GLuint mLineVBO;
         GLuint mLineVAO;
         std::vector<LineGPUData> mLineUniforms;
+
+        FrameDrawStats mStats;
     };
 }

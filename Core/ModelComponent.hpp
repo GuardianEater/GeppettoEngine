@@ -25,7 +25,7 @@ namespace Client
     // high performance model component that will simply render the model
     struct StaticModelComponent
     {
-        uint64_t modelIdx = 0;
+        uint64_t modelIdx = 2; // cube
         std::vector<uint32_t> materialOverrides;
         bool selected = false;
     };

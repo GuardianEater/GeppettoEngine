@@ -493,15 +493,14 @@ namespace Gep
 
     void OpenGLRenderer::CommitObjects()
     {
-        // 2: loops over each model using the current shader
         for (const auto& [modelIdx, flagsToObjects] : mObjectDatas)
         {
             const auto& modelEntry = mModelLibrary.at(modelIdx);
 
-            // 3: loops over each active flag bucket
             for (const auto& [flags, objects] : flagsToObjects)
             {
-                for (auto& object : objects)
+                // add all per object instance data in instance order
+                for (const auto& object : objects)
                 {
                     ObjectInstanceDataGPU gpuData{
                         .modelMatrix = object.modelMatrix,
@@ -511,33 +510,32 @@ namespace Gep
                         .boneOffset = Gep::NumMax<int>()
                     };
 
-                    // add per object instance data
-                    mStaticObjectUniforms.push_back(gpuData); // push back object instance uniform data
-                    ObjectDrawInfo& di = mStaticObjectDrawInfo.emplace_back(); // add the draw information for this object instance
-                    di.count = objects.size(); // the amount of this object to be drawn
-                    di.vaos.reserve(modelEntry.meshes.size());
+                    mStaticObjectUniforms.push_back(gpuData);
+                }
 
-                    // add per mesh instance data, ordering memory like [0][0][0][0][1][1][1][1][2][2][2][2]
-                    for (uint32_t localMeshIdx = 0; localMeshIdx < modelEntry.meshes.size(); ++localMeshIdx) // mesh index local to the model
+                // one draw info entry per model
+                ObjectDrawInfo& di = mStaticObjectDrawInfo.emplace_back();
+                di.count = objects.size();
+                di.vaos.reserve(modelEntry.meshes.size());
+
+                // add per mesh instance data, ordering memory like [0][0][0][0][1][1][1][1][2][2][2][2]
+                for (uint32_t localMeshIdx = 0; localMeshIdx < modelEntry.meshes.size(); ++localMeshIdx)
+                {
+                    uint32_t meshIdx = modelEntry.meshes[localMeshIdx];
+                    auto& meshEntry = mMeshLibrary[meshIdx];
+                    di.vaos.push_back({ meshEntry.handle.mVertexArrayObject, meshEntry.handle.mIndexCount });
+
+                    // per mesh then per instance
+                    for (uint32_t instanceIdx = 0; instanceIdx < objects.size(); ++instanceIdx)
                     {
-                        uint32_t meshIdx = modelEntry.meshes[localMeshIdx];
-                        auto& meshEntry = mMeshLibrary[meshIdx];
-                        di.vaos.push_back({ meshEntry.handle.mVertexArrayObject, meshEntry.handle.mIndexCount }); // add the draw information for this mesh instance
+                        const auto& object = objects[instanceIdx];
 
-                        // loop over the instances of each mesh 
-                        for (uint32_t i = 0; i < objects.size(); ++i)
-                        {
-                            uint32_t matIdx = meshEntry.mesh.materialIndex;
-                            if (i < object.materialIdxs.size())
-                                matIdx = object.materialIdxs[i];
+                        uint32_t matIdx = meshEntry.mesh.materialIndex;
+                        if (localMeshIdx < object.materialIdxs.size())
+                            matIdx = object.materialIdxs[localMeshIdx];
 
-                            MeshGPUData meshData
-                            {
-                                .materialIndex = matIdx
-                            };
-
-                            mMeshUniforms.push_back(meshData); // push back mesh instance uniform data
-                        }
+                        MeshGPUData meshData{ .materialIndex = matIdx };
+                        mMeshUniforms.push_back(meshData);
                     }
                 }
             }
@@ -827,6 +825,9 @@ namespace Gep
         mCameraUniforms.clear();
         mBoneUniforms.clear();
         mMeshUniforms.clear();
+
+        mStats.drawCalls = 0;
+        mStats.vertexCount = 0;
     }
 
     void OpenGLRenderer::SetUpLineDrawing()
@@ -870,6 +871,7 @@ namespace Gep
 
                 mShader_GeometryStatic.SetUniform(3, meshBaseInstance);
 
+                mStats.drawCalls++;
                 glDrawElementsInstancedBaseInstance(
                     GL_TRIANGLES,
                     indexCount,
@@ -882,7 +884,7 @@ namespace Gep
                 meshBaseInstance += di.count;
 
             }
-            baseInstance += 1;
+            baseInstance += di.count;
         }
 
         Shader::Unbind();
@@ -905,6 +907,7 @@ namespace Gep
 
         glBindVertexArray(sphereHandle.mVertexArrayObject);
 
+        mStats.drawCalls++;
         mShader_PointLight.Bind(); // draw pass for lights that do not cast shadows
         glDrawElementsInstanced(
             GL_TRIANGLES,
@@ -913,7 +916,7 @@ namespace Gep
             0,
             static_cast<GLsizei>(mPointLightUniforms.size())
         );
-
+        mStats.drawCalls++;
         mShader_PointLightWithShadows.Bind(); // draw pass for lights that cast shadows
         glDrawElementsInstanced(
             GL_TRIANGLES,
@@ -951,6 +954,7 @@ namespace Gep
                 for (auto [vao, indexCount] : di.vaos)
                 {
                     glBindVertexArray(vao);
+                    mStats.drawCalls++;
                     glDrawElementsInstancedBaseInstance(
                         GL_TRIANGLES,
                         indexCount,
@@ -981,6 +985,7 @@ namespace Gep
         SetDrawFlags(flags);
 
         mShader_DirectionalLight.Bind();
+        mStats.drawCalls++;
         glDrawArraysInstanced(
             GL_TRIANGLES,
             0,
@@ -989,6 +994,7 @@ namespace Gep
         );
 
         mShader_DirectionalLightWithShadows.Bind();
+        mStats.drawCalls++;
         glDrawArraysInstanced(
             GL_TRIANGLES,
             0,
@@ -1024,6 +1030,7 @@ namespace Gep
                 for (auto [vao, indexCount] : di.vaos)
                 {
                     glBindVertexArray(vao);
+                    mStats.drawCalls++;
                     glDrawElementsInstancedBaseInstance(
                         GL_TRIANGLES,
                         indexCount,
@@ -1067,6 +1074,7 @@ namespace Gep
             );
 
             // draw all line segments in this set
+            mStats.drawCalls++;
             glDrawArrays(GL_LINES, 0, lineData.points.size() * 2);
         }
 
@@ -1099,6 +1107,7 @@ namespace Gep
         auto& cubeHandle = mMeshLibrary[mCubeMeshIndex].handle;
         glBindVertexArray(cubeHandle.mVertexArrayObject);
 
+        mStats.drawCalls++;
         glDrawElements(
             GL_TRIANGLES,
             cubeHandle.mIndexCount,
@@ -1128,6 +1137,7 @@ namespace Gep
         SetDrawFlags(flags);
 
         mShader_AmbientLight.Bind(); // draw pass for lights that do not cast shadows
+        mStats.drawCalls++;
         glDrawArrays(GL_TRIANGLES, 0, 3);
         
         Shader::Unbind();
@@ -1150,6 +1160,7 @@ namespace Gep
 
         mShader_Tonemap.Bind();
         glBindVertexArray(mLineVAO); // core profile requires a VAO bound even when using gl_VertexID
+        mStats.drawCalls++;
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);
 
@@ -1717,7 +1728,7 @@ namespace Gep
 
             auto& cubeHandle = mMeshLibrary.at(mCubeMeshIndex).handle;
             glBindVertexArray(cubeHandle.mVertexArrayObject);
-
+            mStats.drawCalls++;
             glDrawElements(
                 GL_TRIANGLES,
                 cubeHandle.mIndexCount,
@@ -1766,6 +1777,7 @@ namespace Gep
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glBindVertexArray(mLineVAO); // core profile requires a VAO bound even when using gl_VertexID
+        mStats.drawCalls++;
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);
 
@@ -1807,6 +1819,7 @@ namespace Gep
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glBindVertexArray(mLineVAO); // core profile requires a VAO bound even when using gl_VertexID
+        mStats.drawCalls++;
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);
 
@@ -1888,7 +1901,7 @@ namespace Gep
 
                 auto& cubeHandle = mMeshLibrary.at(mCubeMeshIndex).handle;
                 glBindVertexArray(cubeHandle.mVertexArrayObject);
-
+                mStats.drawCalls++;
                 glDrawElements(
                     GL_TRIANGLES,
                     cubeHandle.mIndexCount,
@@ -1961,7 +1974,7 @@ namespace Gep
 
             auto& cubeHandle = mMeshLibrary.at(mCubeMeshIndex).handle;
             glBindVertexArray(cubeHandle.mVertexArrayObject);
-
+            mStats.drawCalls++;
             glDrawElements(
                 GL_TRIANGLES,
                 cubeHandle.mIndexCount,
