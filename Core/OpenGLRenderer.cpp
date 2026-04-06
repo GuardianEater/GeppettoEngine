@@ -895,28 +895,17 @@ namespace Gep
         {
             for (auto [vao, indexCount] : di.vaos)
             {
-                glBindVertexArray(vao);
-
                 mShader_GeometryStatic.SetUniform(3, meshBaseInstance);
 
-                mStats.drawCalls++;
-                glDrawElementsInstancedBaseInstance(
-                    GL_TRIANGLES,
-                    indexCount,
-                    GL_UNSIGNED_INT,
-                    0,
-                    di.count,
-                    baseInstance
-                );
+                GLDraw(vao, indexCount, di.count, baseInstance);
 
                 meshBaseInstance += di.count;
-
             }
             baseInstance += di.count;
         }
 
         Shader::Unbind();
-        mGeometryFrameBuffer.Unbind();
+        FrameBuffer::Unbind();
     }
 
     void OpenGLRenderer::PointLightPass(Gep::FrameBuffer& targetFrameBuffer)
@@ -933,26 +922,11 @@ namespace Gep
 
         auto& sphereHandle = mMeshLibrary[mSphereMeshIndex].handle;
 
-        glBindVertexArray(sphereHandle.mVertexArrayObject);
-
-        mStats.drawCalls++;
         mShader_PointLight.Bind(); // draw pass for lights that do not cast shadows
-        glDrawElementsInstanced(
-            GL_TRIANGLES,
-            sphereHandle.mIndexCount,
-            GL_UNSIGNED_INT,
-            0,
-            static_cast<GLsizei>(mPointLightUniforms.size())
-        );
-        mStats.drawCalls++;
+        GLDraw(sphereHandle.mVertexArrayObject, sphereHandle.mIndexCount, mPointLightUniforms.size(), 0);
+
         mShader_PointLightWithShadows.Bind(); // draw pass for lights that cast shadows
-        glDrawElementsInstanced(
-            GL_TRIANGLES,
-            sphereHandle.mIndexCount,
-            GL_UNSIGNED_INT,
-            0,
-            static_cast<GLsizei>(mPointLightShadowUniforms.size())
-        );
+        GLDraw(sphereHandle.mVertexArrayObject, sphereHandle.mIndexCount, mPointLightShadowUniforms.size(), 0);
 
         Shader::Unbind();
     }
@@ -980,18 +954,8 @@ namespace Gep
             for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
             {
                 for (auto [vao, indexCount] : di.vaos)
-                {
-                    glBindVertexArray(vao);
-                    mStats.drawCalls++;
-                    glDrawElementsInstancedBaseInstance(
-                        GL_TRIANGLES,
-                        indexCount,
-                        GL_UNSIGNED_INT,
-                        0,
-                        di.count,
-                        baseInstance
-                    );
-                }
+                    GLDraw(vao, indexCount, di.count, baseInstance);
+
                 baseInstance += di.count;
             }
         }
