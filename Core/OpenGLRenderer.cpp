@@ -1278,6 +1278,9 @@ namespace Gep
 
                 for (const auto& [flags, objects] : flagsToObjects)
                 {
+                    bool hasOutLine = (flags & RenderFlags::Highlight) == RenderFlags::Highlight;
+
+                    if (hasOutLine)
                     for (uint64_t meshIdx : modelEntry.meshes)
                     {
                         const auto& meshHandle = mMeshLibrary[meshIdx].handle;
