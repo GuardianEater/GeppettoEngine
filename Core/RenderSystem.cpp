@@ -984,8 +984,6 @@ namespace Client
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
             const Gep::Model& internalModel = mRenderer.GetModel(model.modelIdx);
 
-            std::string targetShader = "PBR-Static";
-
             // if the model also has an animation compute its final pose and pass all bone info to the gpu
             int previousBoneOffset = boneOffset;
             bool hasRealBones = false;
@@ -993,10 +991,6 @@ namespace Client
             for (uint32_t i = 0; i < model.pose.size() && i < internalModel.skeleton.bones.size(); ++i)
             {
                 const Gep::Bone& b = internalModel.skeleton.bones[i];
-
-                // if any bone is real switch to skinned shader
-                if (b.isRealBone)
-                    hasRealBones = true;
 
                 Gep::BoneGPUData boneData{
                     .offsetMatrix = Gep::ToMat4(model.pose[i] * b.inverseBind)
@@ -1006,25 +1000,19 @@ namespace Client
                 ++boneOffset;
             }
 
-            if (hasRealBones)
-                targetShader = "PBR-Skinned";
-
-
             if (mDrawBones)
             {
                 DrawSkeleton(internalModel.skeleton, modelMatrix, model.pose, skeletonLines);
             }
-
 
             Gep::AddObjectInfo info
             {
                 .modelIdx = (uint32_t)model.modelIdx,
                 .modelMatrix = modelMatrix,
                 .normalMatrix = normal,
-                .bones = internalModel.skeleton.bones, // only used in the PBR-Skinned shader
+                .boneOffset = (uint32_t)previousBoneOffset, // only used in the PBR-Skinned shader
             };
 
-            Gep::RenderFlags flags = Gep::RenderFlags::None;
             if (mWireframeMode)
                 info.wireframe = glm::vec3{1.0f, 1.0, 0.0f};
 

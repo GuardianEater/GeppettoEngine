@@ -157,6 +157,13 @@ namespace Gep
         NoBackfaceCull = 1 << 4, // wether or not to backface cull
     };
 
+    enum class ShaderType
+    {
+        None = 0, // doesnt render probably not useful
+        Rigged, // animated/ik
+        Static,
+    };
+
     // enable bitwise ops for the enum
     inline RenderFlags operator|(RenderFlags a, RenderFlags b)
     {
@@ -196,7 +203,7 @@ namespace Gep
         glm::mat4 modelMatrix;
         glm::mat3 normalMatrix;
         std::vector<uint32_t> materialIdxs;
-        std::vector<Bone> bones;
+        uint32_t boneOffset = Gep::NumMax<uint32_t>();
 
         std::optional<glm::vec3> wireframe = std::nullopt; // whether or not to render in wireframe mode; specifies color
         std::optional<OutlineDrawInfo> outline = std::nullopt; // whether or not to render with an outline
@@ -613,7 +620,6 @@ namespace Gep
             std::vector<std::pair<GLuint, size_t>> vaos; // all of the meshes to draw with that object
         };
     
-        std::vector<ObjectDrawInfo> mStaticObjectDrawInfo; // synced with object uniforms stores addition meta information
         Gep::gpu_vector<ObjectInstanceDataGPU, 0> mStaticObjectUniforms;          // copied into u_objects on the gpu
         Gep::gpu_vector<PointLightGPUData, 1> mPointLightUniforms;              // copied into u_pointLights on the gpu
         Gep::gpu_vector<CameraGPUData, 2> mCameraUniforms;                      // copied into u_cams on the gpu
@@ -627,8 +633,8 @@ namespace Gep
         std::vector<FrameBuffer> mPointLightShadowMaps; // index corresponds to the point light shadow uniform at the same index in mPointLightShadowUniforms
         std::vector<FrameBuffer> mDirectionalLightShadowMaps; // index corresponds to the directional light shadow uniform at the same index in mPointLightShadowUniforms
 
-        // modelIdx -> flags -> objects
-        std::map<uint64_t, std::map<RenderFlags, std::vector<AddObjectInfo>>> mObjectDatas;
+        // shaderType -> modelIdx -> flags -> objects
+        std::map<ShaderType, std::map<uint64_t, std::map<RenderFlags, std::vector<AddObjectInfo>>>> mObjectDatas;
 
         // used to store vertices for drawing lines
         GLuint mLineVBO;

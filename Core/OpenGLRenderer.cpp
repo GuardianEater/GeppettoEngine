@@ -447,6 +447,7 @@ namespace Gep
         }
 
         RenderFlags flags = RenderFlags::None;
+        ShaderType type = (drawInfo.boneOffset == Gep::NumMax<uint32_t>()) ? ShaderType::Static : ShaderType::Rigged;
 
         if (drawInfo.outline.has_value())
             flags |= RenderFlags::Highlight;
@@ -454,7 +455,7 @@ namespace Gep
         if (drawInfo.wireframe.has_value())
             flags |= RenderFlags::Wireframe;
 
-        mObjectDatas[drawInfo.modelIdx][flags].push_back(drawInfo);
+        mObjectDatas[type][drawInfo.modelIdx][flags].push_back(drawInfo);
     }
 
     //void OpenGLRenderer::AddObject(uint64_t modelIdx, const ObjectInstanceDataGPU& gpuData, RenderFlags flags)
@@ -507,7 +508,8 @@ namespace Gep
 
     void OpenGLRenderer::CommitObjects()
     {
-        for (const auto& [modelIdx, flagsToObjects] : mObjectDatas)
+        for (const auto& [shaderType, models] : mObjectDatas)
+        for (const auto& [modelIdx, flagsToObjects] : models)
         {
             const auto& modelEntry = mModelLibrary.at(modelIdx);
 
@@ -527,19 +529,11 @@ namespace Gep
                     mStaticObjectUniforms.push_back(gpuData);
                 }
 
-                // one draw info entry per model
-                ObjectDrawInfo& di = mStaticObjectDrawInfo.emplace_back();
-                di.outline = ((flags & RenderFlags::Highlight) == RenderFlags::Highlight);
-                di.count = objects.size();
-
-                di.vaos.reserve(modelEntry.meshes.size());
-
                 // add per mesh instance data, ordering memory like [0][0][0][0][1][1][1][1][2][2][2][2]
                 for (uint32_t localMeshIdx = 0; localMeshIdx < modelEntry.meshes.size(); ++localMeshIdx)
                 {
                     uint32_t meshIdx = modelEntry.meshes[localMeshIdx];
                     auto& meshEntry = mMeshLibrary[meshIdx];
-                    di.vaos.push_back({ meshEntry.handle.mVertexArrayObject, meshEntry.handle.mIndexCount });
 
                     // per mesh then per instance
                     for (uint32_t instanceIdx = 0; instanceIdx < objects.size(); ++instanceIdx)
@@ -633,7 +627,10 @@ namespace Gep
             UnloadMesh(meshIdx);
         }
 
-        mObjectDatas.erase(modelIdx);
+        for (auto& [shaderType, models] : mObjectDatas)
+        {
+            models.erase(modelIdx);
+        }
         mModelLibrary.erase(modelIdx);
     }
 
@@ -848,7 +845,6 @@ namespace Gep
         mDirectionalLightShadowUniforms.clear();
 
         mStaticObjectUniforms.clear();
-        mStaticObjectDrawInfo.clear();
         mCameraUniforms.clear();
         mBoneUniforms.clear();
         mMeshUniforms.clear();
@@ -889,19 +885,33 @@ namespace Gep
         uint32_t meshBaseInstance = 0;
 
         mShader_Geometry.Bind();
-        mShader_Geometry.SetUniform(5, false); // enable rigged
 
-        for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
+        for (const auto& [shaderType, models] : mObjectDatas)
         {
-            for (auto [vao, indexCount] : di.vaos)
+            if (shaderType == ShaderType::Rigged)
+                mShader_Geometry.SetUniform(5, true); // enable rigged
+            else //if (shaderType == ShaderType::Static)
+                mShader_Geometry.SetUniform(5, false);
+
+            for (const auto& [modelIdx, flagsToObjects] : models)
             {
-                mShader_Geometry.SetUniform(3, meshBaseInstance);
+                const auto& modelEntry = mModelLibrary.at(modelIdx);
 
-                GLDraw(vao, indexCount, di.count, baseInstance);
+                for (const auto& [flags, objects] : flagsToObjects)
+                {
+                    for (uint64_t meshIdx : modelEntry.meshes)
+                    {
+                        const auto& meshHandle = mMeshLibrary[meshIdx].handle;
 
-                meshBaseInstance += di.count;
+                        mShader_Geometry.SetUniform(3, meshBaseInstance);
+
+                        GLDraw(meshHandle.mVertexArrayObject, meshHandle.mIndexCount, objects.size(), baseInstance);
+
+                        meshBaseInstance += objects.size();
+                    }
+                    baseInstance += objects.size();
+                }
             }
-            baseInstance += di.count;
         }
 
         Shader::Unbind();
@@ -951,12 +961,28 @@ namespace Gep
             uint32_t baseInstance = 0;
             mShader_PointLightShadowDepth.SetUniform(2, lightIndex++);
 
-            for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
+            for (const auto& [shaderType, models] : mObjectDatas)
             {
-                for (auto [vao, indexCount] : di.vaos)
-                    GLDraw(vao, indexCount, di.count, baseInstance);
+                if (shaderType == ShaderType::Rigged)
+                    mShader_PointLightShadowDepth.SetUniform(5, true); // enable rigged
+                else //if (shaderType == ShaderType::Static)
+                    mShader_PointLightShadowDepth.SetUniform(5, false);
 
-                baseInstance += di.count;
+                for (const auto& [modelIdx, flagsToObjects] : models)
+                {
+                    const auto& modelEntry = mModelLibrary.at(modelIdx);
+
+                    for (const auto& [flags, objects] : flagsToObjects)
+                    {
+                        for (uint64_t meshIdx : modelEntry.meshes)
+                        {
+                            const auto& meshHandle = mMeshLibrary[meshIdx].handle;
+
+                            GLDraw(meshHandle.mVertexArrayObject, meshHandle.mIndexCount, objects.size(), baseInstance);
+                        }
+                        baseInstance += objects.size();
+                    }
+                }
             }
         }
 
@@ -1017,22 +1043,28 @@ namespace Gep
             uint32_t baseInstance = 0;
             mShader_DirectionalLightShadowDepth.SetUniform(2, lightIndex++);
 
-            for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
+            for (const auto& [shaderType, models] : mObjectDatas)
             {
-                for (auto [vao, indexCount] : di.vaos)
+                if (shaderType == ShaderType::Rigged)
+                    mShader_DirectionalLightShadowDepth.SetUniform(5, true); // enable rigged
+                else //if (shaderType == ShaderType::Static)
+                    mShader_DirectionalLightShadowDepth.SetUniform(5, false);
+
+                for (const auto& [modelIdx, flagsToObjects] : models)
                 {
-                    glBindVertexArray(vao);
-                    mStats.drawCalls++;
-                    glDrawElementsInstancedBaseInstance(
-                        GL_TRIANGLES,
-                        indexCount,
-                        GL_UNSIGNED_INT,
-                        0,
-                        di.count,
-                        baseInstance
-                    );
+                    const auto& modelEntry = mModelLibrary.at(modelIdx);
+
+                    for (const auto& [flags, objects] : flagsToObjects)
+                    {
+                        for (uint64_t meshIdx : modelEntry.meshes)
+                        {
+                            const auto& meshHandle = mMeshLibrary[meshIdx].handle;
+
+                            GLDraw(meshHandle.mVertexArrayObject, meshHandle.mIndexCount, objects.size(), baseInstance);
+                        }
+                        baseInstance += objects.size();
+                    }
                 }
-                baseInstance += di.count;
             }
         }
 
@@ -1143,8 +1175,8 @@ namespace Gep
     void OpenGLRenderer::OutlinePass(Gep::FrameBuffer& targetFrameBuffer)
     {
         GLDrawFlags sceneMaskFlags{
-            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
-            .cullMode = GL_BACK,
+            .depthFuncMask = std::nullopt,
+            .cullMode = std::nullopt,
             .blendFuncSD = std::nullopt
         };
 
@@ -1180,18 +1212,32 @@ namespace Gep
         SetDrawFlags(sceneMaskFlags);
         
         uint32_t baseInstance = 0;
-        uint32_t meshBaseInstance = 0;
-        for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
+        for (const auto& [shaderType, models] : mObjectDatas)
         {
-            if (di.outline)
+            if (shaderType == ShaderType::Rigged)
+                mShader_OutlineMask.SetUniform(5, true); // enable rigged
+            else //if (shaderType == ShaderType::Static)
+                mShader_OutlineMask.SetUniform(5, false);
+
+            for (const auto& [modelIdx, flagsToObjects] : models)
             {
-                for (auto [vao, indexCount] : di.vaos)
-                    GLDraw(vao, indexCount, di.count, baseInstance);
+                const auto& modelEntry = mModelLibrary.at(modelIdx);
+
+                for (const auto& [flags, objects] : flagsToObjects)
+                {
+                    bool hasOutLine = (flags & RenderFlags::Highlight) == RenderFlags::Highlight;
+
+                    if (hasOutLine)
+                    for (uint64_t meshIdx : modelEntry.meshes)
+                    {
+                        const auto& meshHandle = mMeshLibrary[meshIdx].handle;
+
+                        GLDraw(meshHandle.mVertexArrayObject, meshHandle.mIndexCount, objects.size(), baseInstance);
+                    }
+                    baseInstance += objects.size();
+                }
             }
-
-            baseInstance += di.count;
         }
-
         //// draw the object dialated horizontal //////////////////////////////////////////
         mFBO_OutlineDilation.Bind();
         mShader_OutlineDilation.Bind();
@@ -1219,16 +1265,28 @@ namespace Gep
 
         SetDrawFlags(sceneMaskFlags);
         baseInstance = 0;
-        meshBaseInstance = 0;
-        for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
+        for (const auto& [shaderType, models] : mObjectDatas)
         {
-            if (di.outline)
-            {
-                for (auto [vao, indexCount] : di.vaos)
-                    GLDraw(vao, indexCount, di.count, baseInstance);
-            }
+            if (shaderType == ShaderType::Rigged)
+                mShader_OutlineMask.SetUniform(5, true); // enable rigged
+            else //if (shaderType == ShaderType::Static)
+                mShader_OutlineMask.SetUniform(5, false);
 
-            baseInstance += di.count;
+            for (const auto& [modelIdx, flagsToObjects] : models)
+            {
+                const auto& modelEntry = mModelLibrary.at(modelIdx);
+
+                for (const auto& [flags, objects] : flagsToObjects)
+                {
+                    for (uint64_t meshIdx : modelEntry.meshes)
+                    {
+                        const auto& meshHandle = mMeshLibrary[meshIdx].handle;
+
+                        GLDraw(meshHandle.mVertexArrayObject, meshHandle.mIndexCount, objects.size(), baseInstance);
+                    }
+                    baseInstance += objects.size();
+                }
+            }
         }
 
         // composite the outline mask over the final scene /////////////////////////////////////////////
