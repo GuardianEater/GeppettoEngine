@@ -190,7 +190,7 @@ namespace Gep
         mShader_OutlineDilation = Shader::FromFile("shaders/Dilation.vert", "shaders/Dilation.frag");
         mShader_OutlineMask = Shader::FromFile("shaders/Mask.vert", "shaders/Mask.frag");
         mShader_OutlineComposite = Shader::FromFile("shaders/Dilation.vert", "shaders/Outline-Composite.frag");
-        mShader_OutlineComposite.SetUniform("u_outlineColor", glm::vec4{ 1.0f, 0.1f, 0.1f, 1.0f });
+        mShader_OutlineComposite.SetUniform("u_outlineColor", glm::vec4{ 1.0f, 0.5f, 0.1f, 1.0f });
 
         mShader_Prefilter = Shader::FromFile("shaders/IBL/Cubemap.vert", "shaders/IBL/Prefilter.frag");
         mShader_Prefilter.SetUniform("u_environmentMap", 0);
@@ -447,7 +447,15 @@ namespace Gep
             return;
         }
 
-        mObjectDatas[drawInfo.modelIdx][RenderFlags::None].push_back(drawInfo);
+        RenderFlags flags = RenderFlags::None;
+
+        if (drawInfo.outline.has_value())
+            flags |= RenderFlags::Highlight;
+
+        if (drawInfo.wireframe.has_value())
+            flags |= RenderFlags::Wireframe;
+
+        mObjectDatas[drawInfo.modelIdx][flags].push_back(drawInfo);
     }
 
     //void OpenGLRenderer::AddObject(uint64_t modelIdx, const ObjectInstanceDataGPU& gpuData, RenderFlags flags)
@@ -522,7 +530,9 @@ namespace Gep
 
                 // one draw info entry per model
                 ObjectDrawInfo& di = mStaticObjectDrawInfo.emplace_back();
+                di.outline = ((flags & RenderFlags::Highlight) == RenderFlags::Highlight);
                 di.count = objects.size();
+
                 di.vaos.reserve(modelEntry.meshes.size());
 
                 // add per mesh instance data, ordering memory like [0][0][0][0][1][1][1][1][2][2][2][2]
@@ -804,9 +814,9 @@ namespace Gep
         FrameBuffer::Unbind();
 
         // render to depth cube buffer here
-        //DrawLines();
         PointLightShadowDepthPass();            // renders all scene geometry for each point light that casts shadows to the corresponding shadow map
         DirectionalLightShadowDepthPass();
+        DrawLines(hdrSceneFrameBuffer);
         GeometryPass(hdrSceneFrameBuffer);   // renders all scene geometry to the gbuffer
         DirectionalLightPass(hdrSceneFrameBuffer);
         PointLightPass(hdrSceneFrameBuffer); // renders all point lights as light volumes, using the gbuffer for shading
@@ -1066,7 +1076,7 @@ namespace Gep
         FrameBuffer::Unbind();
     }
 
-    void OpenGLRenderer::DrawLines()
+    void OpenGLRenderer::DrawLines(Gep::FrameBuffer& targetFrameBuffer)
     {
         GLDrawFlags flags{
             .depthFuncMask = std::nullopt,
@@ -1075,6 +1085,7 @@ namespace Gep
         };
         SetDrawFlags(flags);
 
+        targetFrameBuffer.Bind();
         mShader_Line.Bind();
 
         glBindVertexArray(mLineVAO);
@@ -1108,80 +1119,60 @@ namespace Gep
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFrameBuffer.GetFrameBufferID());
         glBlitFramebuffer(0, 0, targetSize.x, targetSize.y, 0, 0, targetSize.x, targetSize.y, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
-        targetFrameBuffer.Bind();          // draw to the target framebuffer
-
         GLDrawFlags flags{
             .depthFuncMask = std::make_pair(GL_LEQUAL, GL_FALSE),
             .cullMode = std::nullopt,
             .blendFuncSD = std::nullopt
         };
-        SetDrawFlags(flags);
+
+        targetFrameBuffer.Bind();
 
         mShader_Background.Bind();
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, backgroundCubeMap.id);
+        mShader_Background.SetTextureCube(0, backgroundCubeMap.id);
 
         // draw cube
         auto& cubeHandle = mMeshLibrary[mCubeMeshIndex].handle;
-        glBindVertexArray(cubeHandle.mVertexArrayObject);
 
-        mStats.drawCalls++;
-        glDrawElements(
-            GL_TRIANGLES,
-            cubeHandle.mIndexCount,
-            GL_UNSIGNED_INT,
-            nullptr
-        );
-
-        glBindVertexArray(0);
+        SetDrawFlags(flags);
+        GLDraw(cubeHandle.mVertexArrayObject, cubeHandle.mIndexCount, 1, 0);
     }
 
     void OpenGLRenderer::AmbientPass(Gep::FrameBuffer& targetFrameBuffer)
     {
-        targetFrameBuffer.Bind(); // draw to the target framebuffer
-        mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
-        glActiveTexture(GL_TEXTURE0 + mGeometryFrameBuffer.GetTextureCount() + 0);
-        glBindTexture(GL_TEXTURE_2D, mBRDFLUT.id);
-        glActiveTexture(GL_TEXTURE0 + mGeometryFrameBuffer.GetTextureCount() + 1);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, mPrefilterCubeMap.id);
-        glActiveTexture(GL_TEXTURE0 + mGeometryFrameBuffer.GetTextureCount() + 2);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, mIrradianceCubeMap.id);
-
         GLDrawFlags flags{
-            .depthFuncMask = std::nullopt, // do not use depth
-            .cullMode = std::nullopt, // front face culling
-            .blendFuncSD = std::make_pair(GL_ONE, GL_ONE) // one one blending
+            .depthFuncMask = std::nullopt,
+            .cullMode = std::nullopt,
+            .blendFuncSD = std::make_pair(GL_ONE, GL_ONE)
         };
-        SetDrawFlags(flags);
 
-        mShader_AmbientLight.Bind(); // draw pass for lights that do not cast shadows
-        mStats.drawCalls++;
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        
+        targetFrameBuffer.Bind();
+        mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
+
+        mShader_AmbientLight.Bind();
+        mShader_AmbientLight.SetTexture2D  (mGeometryFrameBuffer.GetTextureCount() + 0, mBRDFLUT.id);
+        mShader_AmbientLight.SetTextureCube(mGeometryFrameBuffer.GetTextureCount() + 1, mPrefilterCubeMap.id);
+        mShader_AmbientLight.SetTextureCube(mGeometryFrameBuffer.GetTextureCount() + 2, mIrradianceCubeMap.id);
+
+        SetDrawFlags(flags);
+        GLDrawQuad();
         Shader::Unbind();
     }
 
     void OpenGLRenderer::TonemapPass(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer)
     {
-        // tone map pass
-        ldrFrameBuffer.Bind();
-        ldrFrameBuffer.UpdateViewport();
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, hdrFrameBuffer.GetTexture(0));
-
         GLDrawFlags flags{
             .depthFuncMask = std::nullopt,
             .cullMode = std::nullopt,
             .blendFuncSD = std::nullopt
         };
-        SetDrawFlags(flags);
 
+        // tone map pass
+        ldrFrameBuffer.Bind();
         mShader_Tonemap.Bind();
-        glBindVertexArray(mLineVAO); // core profile requires a VAO bound even when using gl_VertexID
-        mStats.drawCalls++;
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        glBindVertexArray(0);
+        mShader_Tonemap.SetTexture2D(0, hdrFrameBuffer.GetTexture(0));
 
+        SetDrawFlags(flags);
+        GLDrawQuad();
         Shader::Unbind();
     }
 
@@ -1228,8 +1219,11 @@ namespace Gep
         uint32_t meshBaseInstance = 0;
         for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
         {
-            for (auto [vao, indexCount] : di.vaos)
-                GLDraw(vao, indexCount, di.count, baseInstance);
+            if (di.outline)
+            {
+                for (auto [vao, indexCount] : di.vaos)
+                    GLDraw(vao, indexCount, di.count, baseInstance);
+            }
 
             baseInstance += di.count;
         }
@@ -1264,8 +1258,11 @@ namespace Gep
         meshBaseInstance = 0;
         for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
         {
-            for (auto [vao, indexCount] : di.vaos)
-                GLDraw(vao, indexCount, di.count, baseInstance);
+            if (di.outline)
+            {
+                for (auto [vao, indexCount] : di.vaos)
+                    GLDraw(vao, indexCount, di.count, baseInstance);
+            }
 
             baseInstance += di.count;
         }
@@ -1958,13 +1955,13 @@ namespace Gep
             return;
         }
 
-        glBindVertexArray(vao);
         mStats.drawCalls++;
+        glBindVertexArray(vao);
         glDrawElementsInstancedBaseInstance(
             GL_TRIANGLES,
             indexCount,
             GL_UNSIGNED_INT,
-            0,
+            nullptr,
             instanceCount,
             objectBaseInstance
         );

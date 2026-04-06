@@ -49,6 +49,7 @@ namespace Gep
         void SetUniform(size_t location, uint32_t v);
         void SetUniform(size_t location, uint64_t v);
         void SetTexture2D(uint32_t unit, GLuint textureid);
+        void SetTextureCube(uint32_t unit, GLuint textureid);
 
         // recompiles the shader
         void Reload();

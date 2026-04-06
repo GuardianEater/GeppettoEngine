@@ -3,7 +3,7 @@
 // uniform /////////////////////////////////////////////////////////////////////
 layout(location=0) uniform float u_exposure;
 
-uniform sampler2D u_sceneTexture; // HDR scene texture
+layout(binding=0) uniform sampler2D u_sceneTexture; // HDR scene texture
 
 // out /////////////////////////////////////////////////////////////////////////
 layout(location=0) out vec4 f_color;

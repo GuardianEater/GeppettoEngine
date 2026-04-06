@@ -162,6 +162,13 @@ namespace Gep
 		glBindTexture(GL_TEXTURE_2D, textureId);
 	}
 
+	void Shader::SetTextureCube(uint32_t unit, GLuint textureId)
+	{
+		Bind();
+		glActiveTexture(GL_TEXTURE0 + unit);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, textureId);
+	}
+
 	void Shader::SetUniform(size_t location, const glm::vec2& v)
 	{
 		Bind();

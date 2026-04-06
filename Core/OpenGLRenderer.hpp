@@ -521,7 +521,7 @@ namespace Gep
         void PointLightShadowDepthPass(); // renders the depth map for each point light that casts shadows
         void DirectionalLightPass(Gep::FrameBuffer& targetFrameBuffer);
         void DirectionalLightShadowDepthPass(); // renders the depth map for each direcational light that casts shadows
-        void DrawLines();
+        void DrawLines(Gep::FrameBuffer& targetFrameBuffer);
         void BackgroundPass(Gep::FrameBuffer& targetFrameBuffer, const Gep::Texture& backgroundCubeMap);
         void AmbientPass(Gep::FrameBuffer& targetFrameBuffer);
         void TonemapPass(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer);

@@ -287,7 +287,7 @@ namespace Client
         //glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 
         // Create window with graphics context
-        mPrimaryWindow = glfwCreateWindow(1200, 720, "Engine", nullptr, nullptr);
+        mPrimaryWindow = glfwCreateWindow(1200, 720, "Geppetto Engine", nullptr, nullptr);
         if (!mPrimaryWindow)
         {
             glfwTerminate();
