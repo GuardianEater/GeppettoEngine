@@ -487,8 +487,7 @@ namespace Gep
         auto GetAllShaders()
         {
             return std::tie(
-                mShader_GeometryStatic,
-                mShader_GeometrySkinned,
+                mShader_Geometry,
                 mShader_Line,
 
                 mShader_PointLight,
@@ -551,8 +550,7 @@ namespace Gep
         void GLDrawQuad();
     private:
         // when creating shaders make sure to add them to GetAllShaders
-        Shader mShader_GeometryStatic;  // shader used for geometry pass of static models
-        Shader mShader_GeometrySkinned; // shader used for geometry pass of animated models
+        Shader mShader_Geometry;  // shader used for geometry pass of static models
         Shader mShader_Line;            // shader used for drawing lines
 
         Shader mShader_PointLight;            // shader used for simple point lights

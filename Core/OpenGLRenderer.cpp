@@ -106,9 +106,8 @@ namespace Gep
         mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT2, GL_RGB8, GL_RGB, GL_FLOAT); // ao + roughness + metalness
 
         // setup geometry shaders
-        mShader_GeometryStatic  = Shader::FromFile("shaders/Geometry-Static.vert",  "shaders/Geometry.frag");
-        mShader_GeometrySkinned = Shader::FromFile("shaders/Geometry-Skinned.vert", "shaders/Geometry.frag");
-        mShader_Line            = Shader::FromFile("shaders/Line.vert", "shaders/Line.frag");
+        mShader_Geometry  = Shader::FromFile("shaders/Geometry.vert",  "shaders/Geometry.frag");
+        mShader_Line      = Shader::FromFile("shaders/Line.vert", "shaders/Line.frag");
 
         // setup pointlight shaders
         mShader_PointLight            = Shader::FromFile("shaders/Point/Lighting-Point.vert",  "shaders/Point/Lighting-Point.frag");
@@ -889,13 +888,14 @@ namespace Gep
         uint32_t baseInstance = 0;
         uint32_t meshBaseInstance = 0;
 
-        mShader_GeometryStatic.Bind();
+        mShader_Geometry.Bind();
+        mShader_Geometry.SetUniform(5, false); // enable rigged
 
         for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
         {
             for (auto [vao, indexCount] : di.vaos)
             {
-                mShader_GeometryStatic.SetUniform(3, meshBaseInstance);
+                mShader_Geometry.SetUniform(3, meshBaseInstance);
 
                 GLDraw(vao, indexCount, di.count, baseInstance);
 
