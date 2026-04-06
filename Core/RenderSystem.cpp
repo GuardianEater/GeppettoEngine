@@ -275,66 +275,65 @@ namespace Client
 
     void RenderSystem::OnRiggedModelEditorRender(const Gep::Event::ComponentEditorRender<RiggedModelComponent>& event)
     {
-        //std::span<RiggedModelComponent*> models = event.components;
+        const std::span<RiggedModelComponent*> models = event.components;
 
-        //Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
-        //std::vector<std::string> loadedModels = mRenderer.GetLoadedModels();
+        Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
+        std::vector<std::string> loadedModels = mRenderer.GetLoadedModelNames();
 
-        //std::string selectedModelName = models[0]->name; // in this event call there is guaranteed to be at least one component
+        const uint64_t selectedModelIdx = models[0]->modelIdx; // in this event call there is guaranteed to be at least one component
 
-        //// if all selected models have the same name, show it
-        //bool allSame = true;
-        //for (size_t i = 1; i < models.size(); ++i)
-        //{
-        //    if (models[i]->name != selectedModelName)
-        //    {
-        //        allSame = false;
-        //        break;
-        //    }
-        //}
+        // if all selected models have the same name, show it
+        bool allSame = true;
+        for (size_t i = 1; i < models.size(); ++i)
+        {
+            if (models[i]->modelIdx != selectedModelIdx)
+            {
+                allSame = false;
+                break;
+            }
+        }
 
-        //// drop down for selecting a model
-        //bool modelsOpen = ImGui::BeginCombo("Models", allSame ? selectedModelName.c_str() : "-");
+        // drop down for selecting a model
+        std::string modelIdxStr = std::to_string(selectedModelIdx);
+        bool modelsOpen = ImGui::BeginCombo("Models", allSame ? modelIdxStr.c_str() : "-");
 
-        //const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
+        const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
 
-        //er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
-        //{
-        //    if (!mRenderer.IsModelLoaded(droppedPath.string()))
-        //    {
-        //        mRenderer.AddModelFromFile(droppedPath.string());
-        //    }
+        er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
+        {
+            auto maybeIndex = mRenderer.FindModel(droppedPath.string());
+            if (!maybeIndex) // if there is no model then load it
+            {
+                maybeIndex = mRenderer.AddModel(mRenderer.LoadModelFromFile(droppedPath));
+            }
 
-        //    for (RiggedModelComponent* model : models)
-        //    {
-        //        model->name = droppedPath.string();
-        //        const Gep::Model& internalModel = mRenderer.GetModel(model->name);
-        //        InitializeModelPose(*model, internalModel);
-        //    }
-        //});
+            for (RiggedModelComponent* model : models)
+            {
+                model->modelIdx = *maybeIndex;
+            }
+        });
 
-        //if (modelsOpen)
-        //{
-        //    for (const std::string& modelName : loadedModels)
-        //    {
-        //        const bool isSelected = allSame && modelName == selectedModelName;
-        //        if (ImGui::Selectable(modelName.c_str(), isSelected))
-        //        {
-        //            const Gep::Model& internalModel = mRenderer.GetModel(modelName);
-        //            for (RiggedModelComponent* model : models)
-        //            {
-        //                model->name = modelName;
-        //                InitializeModelPose(*model, internalModel);
-        //            }
-        //        }
+        if (modelsOpen)
+        {
+            for (const std::string& modelName : loadedModels)
+            {
+                const bool isSelected = allSame && modelName == mRenderer.GetModel(selectedModelIdx).name;
+                if (ImGui::Selectable(modelName.c_str(), isSelected))
+                {
+                    for (RiggedModelComponent* model : models)
+                    {
+                        auto modelIdx = mRenderer.FindModel(modelName);
+                        model->modelIdx = *modelIdx;
+                    }
+                }
 
-        //        if (isSelected)
-        //        {
-        //            ImGui::SetItemDefaultFocus();
-        //        }
-        //    }
-        //    ImGui::EndCombo();
-        //}
+                if (isSelected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
     }
 
     void RenderSystem::OnStaticModelEditorRender(const Gep::Event::ComponentEditorRender<StaticModelComponent>& event)
