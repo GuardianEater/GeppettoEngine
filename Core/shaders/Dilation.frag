@@ -4,7 +4,8 @@
 layout(location=0) uniform vec2 u_direction;   // (1,0) for horizontal, (0,1) for vertical
 layout(location=1) uniform int u_radius;
 
-uniform sampler2D u_maskTexture;
+// textures ////////////////////////////////////////////////////////////////////
+layout(binding=0) uniform sampler2D u_maskTexture;
 
 // out /////////////////////////////////////////////////////////////////////////
 layout(location=0) out vec4 f_color;

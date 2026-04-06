@@ -506,6 +506,7 @@ namespace Gep
 
                 mShader_OutlineMask,
                 mShader_OutlineDilation,
+                mShader_OutlineDilationVertical,
                 mShader_OutlineComposite,
 
                 mShader_Prefilter,
@@ -545,6 +546,9 @@ namespace Gep
         Texture GenerateIrradianceMap(const Texture& environmentCubemap);
 
         Texture GenerateBRDFLUT();
+
+        void GLDraw(GLuint vao, uint32_t indexCount, uint32_t instanceCount, uint32_t baseInstance);
+        void GLDrawQuad();
     private:
         // when creating shaders make sure to add them to GetAllShaders
         Shader mShader_GeometryStatic;  // shader used for geometry pass of static models
@@ -567,6 +571,7 @@ namespace Gep
         Shader mShader_Tonemap;
         Shader mShader_OutlineMask;
         Shader mShader_OutlineDilation;
+        Shader mShader_OutlineDilationVertical;
         Shader mShader_OutlineComposite;
         Shader mShader_Prefilter;
         Shader mShader_GenerateBRDFLUT;
@@ -598,8 +603,8 @@ namespace Gep
         std::mutex mTextureLoadingMutex{};
 
         FrameBuffer mGeometryFrameBuffer;
-        FrameBuffer mOutlineMaskFrameBuffer;
-        FrameBuffer mOutlineDilationFrameBuffer;
+        FrameBuffer mFBO_OutlineMask;
+        FrameBuffer mFBO_OutlineDilation;
 
         struct ObjectDrawInfo
         {

@@ -155,6 +155,13 @@ namespace Gep
 		SetUniform(glGetUniformLocation(mProgram, name.c_str()), v);
 	}
 
+	void Shader::SetTexture2D(uint32_t unit, GLuint textureId)
+	{
+		Bind();
+		glActiveTexture(GL_TEXTURE0 + unit);
+		glBindTexture(GL_TEXTURE_2D, textureId);
+	}
+
 	void Shader::SetUniform(size_t location, const glm::vec2& v)
 	{
 		Bind();

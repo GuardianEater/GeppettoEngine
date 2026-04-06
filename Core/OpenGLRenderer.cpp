@@ -187,9 +187,10 @@ namespace Gep
         mShader_Tonemap = Shader::FromFile("shaders/Tonemap.vert", "shaders/Tonemap.frag");
         mShader_Tonemap.SetUniform("u_sceneTexture", 0);
 
-        mShader_OutlineMask = Shader::FromFile("shaders/Mask.vert", "shaders/Mask.frag");
         mShader_OutlineDilation = Shader::FromFile("shaders/Dilation.vert", "shaders/Dilation.frag");
+        mShader_OutlineMask = Shader::FromFile("shaders/Mask.vert", "shaders/Mask.frag");
         mShader_OutlineComposite = Shader::FromFile("shaders/Dilation.vert", "shaders/Outline-Composite.frag");
+        mShader_OutlineComposite.SetUniform("u_outlineColor", glm::vec4{ 1.0f, 0.1f, 0.1f, 1.0f });
 
         mShader_Prefilter = Shader::FromFile("shaders/IBL/Cubemap.vert", "shaders/IBL/Prefilter.frag");
         mShader_Prefilter.SetUniform("u_environmentMap", 0);
@@ -199,8 +200,8 @@ namespace Gep
 
         mShader_GenerateBRDFLUT = Shader::FromFile("shaders/IBL/GenerateBRDFLUT.vert", "shaders/IBL/GenerateBRDFLUT.frag");
 
-        mOutlineMaskFrameBuffer = FrameBuffer::CreateMask({ 128, 128 });
-        mOutlineDilationFrameBuffer = FrameBuffer::CreateMask({ 128, 128 });
+        mFBO_OutlineMask = FrameBuffer::CreateMask({ 128, 128 });
+        mFBO_OutlineDilation = FrameBuffer::CreateMask({ 128, 128 });
 
 
         //// load hdr environment map
@@ -743,10 +744,20 @@ namespace Gep
         GetAllShaders());
 
         mShader_EquirectangularToCubemap.SetUniform("u_equirectangularMap", 0);
+        mShader_CubemapToEquirectangular.SetUniform("u_cubeMap", 0);
         mShader_Background.SetUniform("u_environmentMap", 0);
 
         mShader_Tonemap.SetUniform("u_sceneTexture", 0);
         SetExposure(1.0f);
+
+        const uint32_t outlineSize = 2;
+        mShader_OutlineDilation.SetUniform("u_direction", glm::vec2{ 0,1 });
+        mShader_OutlineDilation.SetUniform("u_radius", outlineSize);
+
+        mShader_OutlineDilationVertical.SetUniform("u_direction", glm::vec2{ 1,0 });
+        mShader_OutlineDilationVertical.SetUniform("u_radius", outlineSize);
+
+        mShader_OutlineComposite.SetUniform("u_outlineColor", glm::vec4{ 1.0f, 0.1f, 0.1f, 1.0f });
 
         // gbuffer access in shader
         mShader_PointLight.SetUniform("u_depthTexture", 0);
@@ -1188,145 +1199,84 @@ namespace Gep
             .blendFuncSD = std::nullopt
         };
 
-        FrameBuffer& mask = mOutlineMaskFrameBuffer;
-        mask.Bind();
-        mask.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
-        mask.UpdateViewport();
-        mask.Clear();
-        FrameBuffer::Unbind();
+        GLDrawFlags compositeFlags{
+            .depthFuncMask = std::nullopt,
+            .cullMode = std::nullopt,
+            .blendFuncSD = std::make_pair(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        };
 
-        FrameBuffer& dilation = mOutlineDilationFrameBuffer;
-        dilation.Bind();
-        dilation.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
-        dilation.UpdateViewport();
-        dilation.Clear();
-        FrameBuffer::Unbind();
+        // setup outline mask fb
+        mFBO_OutlineMask.Bind();
+        mFBO_OutlineMask.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
+        mFBO_OutlineMask.UpdateViewport();
+        mFBO_OutlineMask.Clear();
 
-        Shader& maskShader = mShader_OutlineMask;
-        Shader& dilationShader = mShader_OutlineDilation;
-        Shader& compositeShader = mShader_OutlineComposite;
+        // setup dilation fb
+        mFBO_OutlineDilation.Bind();
+        mFBO_OutlineDilation.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
+        mFBO_OutlineDilation.UpdateViewport();
+        mFBO_OutlineDilation.Clear();
 
         // draw the object mask ///////////////////////////////////////////////////////////
-        mask.Bind();
+        mFBO_OutlineMask.Bind();
+        mShader_OutlineMask.Bind();
+        mShader_OutlineMask.SetUniform("u_color", glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
+
         SetDrawFlags(sceneMaskFlags);
-        maskShader.Bind();
-        maskShader.SetUniform("u_color", glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
         
         uint32_t baseInstance = 0;
         uint32_t meshBaseInstance = 0;
         for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
         {
             for (auto [vao, indexCount] : di.vaos)
-            {
-                glBindVertexArray(vao);
-                mStats.drawCalls++;
-                glDrawElementsInstancedBaseInstance(
-                    GL_TRIANGLES,
-                    indexCount,
-                    GL_UNSIGNED_INT,
-                    0,
-                    di.count,
-                    baseInstance
-                );
+                GLDraw(vao, indexCount, di.count, baseInstance);
 
-                meshBaseInstance += di.count;
-            }
             baseInstance += di.count;
         }
-        Shader::Unbind();
-        FrameBuffer::Unbind();
 
         //// draw the object dialated horizontal //////////////////////////////////////////
-        dilation.Bind();
+        mFBO_OutlineDilation.Bind();
+        mShader_OutlineDilation.Bind();
+        mShader_OutlineDilation.SetTexture2D(0, mFBO_OutlineMask.GetTexture(0));
+        mShader_OutlineDilation.SetUniform("u_direction", glm::vec2{ 0,1 });
+        mShader_OutlineDilation.SetUniform("u_radius", 2);
+
         SetDrawFlags(postProcessFlags);
-        dilationShader.Bind();
-        dilationShader.SetUniform("u_direction", glm::vec2{ 1,0 });
-        dilationShader.SetUniform("u_radius", 2);
-        dilationShader.SetUniform("u_maskTexture", 0);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, mask.GetTexture(0));
-
-        mStats.drawCalls++;
-        glBindVertexArray(mLineVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        glBindVertexArray(0);
-
-        Shader::Unbind();
-        FrameBuffer::Unbind();
+        GLDrawQuad();
 
         // draw the object dialated vertical //////////////////////////////////////////////////
-        mask.Bind();
+        mFBO_OutlineMask.Bind();
+        mShader_OutlineDilation.Bind();
+        mShader_OutlineDilation.SetTexture2D(0, mFBO_OutlineDilation.GetTexture(0));
+        mShader_OutlineDilation.SetUniform("u_direction", glm::vec2{ 1,0 });
+        mShader_OutlineDilation.SetUniform("u_radius", 2);
+
         SetDrawFlags(postProcessFlags);
-        dilationShader.Bind();
-        dilationShader.SetUniform("u_direction", glm::vec2{ 0,1 });
-        dilationShader.SetUniform("u_radius", 2);
-        dilationShader.SetUniform("u_maskTexture", 0);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, dilation.GetTexture(0));
-
-        mStats.drawCalls++;
-        glBindVertexArray(mLineVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        glBindVertexArray(0);
-
-        Shader::Unbind();
-        FrameBuffer::Unbind();
+        GLDrawQuad();
 
         // draw the object again but inverted so it cookie cutters ///////////////////////////////
-        mask.Bind();
+        mFBO_OutlineMask.Bind();
+        mShader_OutlineMask.Bind();
+        mShader_OutlineMask.SetUniform("u_color", glm::vec4{ 0.0f, 0.0f, 0.0f, 0.0f });
+
         SetDrawFlags(sceneMaskFlags);
-        maskShader.Bind();
-        maskShader.SetUniform("u_color", glm::vec4{ 0.0f, 0.0f, 0.0f, 0.0f });
         baseInstance = 0;
         meshBaseInstance = 0;
         for (ObjectDrawInfo& di : mStaticObjectDrawInfo)
         {
             for (auto [vao, indexCount] : di.vaos)
-            {
-                glBindVertexArray(vao);
-                mStats.drawCalls++;
-                glDrawElementsInstancedBaseInstance(
-                    GL_TRIANGLES,
-                    indexCount,
-                    GL_UNSIGNED_INT,
-                    0,
-                    di.count,
-                    baseInstance
-                );
+                GLDraw(vao, indexCount, di.count, baseInstance);
 
-                meshBaseInstance += di.count;
-
-            }
             baseInstance += di.count;
         }
-        glBindVertexArray(0);
-        Shader::Unbind();
-        FrameBuffer::Unbind();
 
         // composite the outline mask over the final scene /////////////////////////////////////////////
         targetFrameBuffer.Bind();
-        targetFrameBuffer.UpdateViewport();
+        mShader_OutlineComposite.Bind();
+        mShader_OutlineComposite.SetTexture2D(0, mFBO_OutlineMask.GetTexture(0));
 
-        GLDrawFlags flags{
-            .depthFuncMask = std::nullopt,
-            .cullMode = std::nullopt,
-            .blendFuncSD = std::make_pair(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        };
-        SetDrawFlags(flags);
-
-        compositeShader.Bind();
-        compositeShader.SetUniform("u_outlineMask", 0);
-        compositeShader.SetUniform("u_outlineColor", glm::vec4{ 1.0f, 0.1f, 0.1f, 1.0f });
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, mask.GetTexture(0));
-
-        mStats.drawCalls++;
-        glBindVertexArray(mLineVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        glBindVertexArray(0);
+        SetDrawFlags(compositeFlags);
+        GLDrawQuad();
 
         Shader::Unbind();
         FrameBuffer::Unbind();
@@ -1991,6 +1941,42 @@ namespace Gep
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         return brdflut;
+    }
+
+    void OpenGLRenderer::GLDraw(GLuint vao, uint32_t indexCount, uint32_t instanceCount, uint32_t objectBaseInstance)
+    {
+        if (instanceCount < 1)
+            return;
+        if (indexCount < 1)
+        {
+            Gep::Log::Error("Attempting to draw with no indicies");
+            return;
+        }
+        if (vao == 0)
+        {
+            Gep::Log::Error("Attempting to draw with an invalid vao");
+            return;
+        }
+
+        glBindVertexArray(vao);
+        mStats.drawCalls++;
+        glDrawElementsInstancedBaseInstance(
+            GL_TRIANGLES,
+            indexCount,
+            GL_UNSIGNED_INT,
+            0,
+            instanceCount,
+            objectBaseInstance
+        );
+        glBindVertexArray(0);
+    }
+
+    void OpenGLRenderer::GLDrawQuad()
+    {
+        mStats.drawCalls++;
+        glBindVertexArray(mLineVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
     }
 
     Texture OpenGLRenderer::GeneratePrefilterMap(const Texture& environmentCubemap)
