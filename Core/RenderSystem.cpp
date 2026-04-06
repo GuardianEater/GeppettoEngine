@@ -601,7 +601,7 @@ namespace Client
             ImGui::Image(camera.renderTarget.GetTexture(0), contentRegionSize, ImVec2(0, 1), ImVec2(1, 0)); // flipped uvs
 
             // if movement is enabled do not do any gizmos
-            if (movementEnabled || !ImGui::IsWindowFocused())
+            if (movementEnabled || !ImGui::IsWindowHovered())
             {
                 ImGui::End();
                 return;
