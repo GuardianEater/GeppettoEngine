@@ -87,15 +87,9 @@ namespace Client
                 std::string displayName = GetEntityDisplayName(entity);
                 ImGui::Text(displayName.c_str());
 
-                if (mManager.HasComponent<RiggedModelComponent>(entity))
+                if (mManager.HasComponent<ModelComponent>(entity))
                 {
-                    Client::RiggedModelComponent& model = mManager.GetComponent<Client::RiggedModelComponent>(entity);
-                    model.selected = true;
-                }
-
-                if (mManager.HasComponent<StaticModelComponent>(entity))
-                {
-                    Client::StaticModelComponent& model = mManager.GetComponent<Client::StaticModelComponent>(entity);
+                    Client::ModelComponent& model = mManager.GetComponent<Client::ModelComponent>(entity);
                     model.selected = true;
                 }
             }
@@ -190,15 +184,9 @@ namespace Client
 
         ImGui::Dummy({ 0.0f, 10.0f });
 
-        if (mManager.HasComponent<RiggedModelComponent>(entity))
+        if (mManager.HasComponent<ModelComponent>(entity))
         {
-            Client::RiggedModelComponent& model = mManager.GetComponent<Client::RiggedModelComponent>(entity);
-            model.selected = true;
-        }
-
-        if (mManager.HasComponent<StaticModelComponent>(entity))
-        {
-            Client::StaticModelComponent& model = mManager.GetComponent<Client::StaticModelComponent>(entity);
+            Client::ModelComponent& model = mManager.GetComponent<Client::ModelComponent>(entity);
             model.selected = true;
         }
 
@@ -455,7 +443,7 @@ namespace Client
                         t.world.position = pos;
 
                         Gep::Entity e = mManager.CreateEntity(name);
-                        mManager.AddComponent(e, t, Client::StaticModelComponent{}); // defaults to cube
+                        mManager.AddComponent(e, t, Client::ModelComponent{}); // defaults to cube
                         mManager.AttachEntity(parent, e);
 
                         cubes.push_back(e);
@@ -630,7 +618,7 @@ namespace Client
                         Client::Transform t;
                         t.world.position = position;
 
-                        Client::StaticModelComponent model{ .modelIdx = 1 /*sphere*/};
+                        Client::ModelComponent model{ .modelIdx = 1 /*sphere*/};
                         const bool needsRigidBody = !(pinTopLayer && y == width - 1);
 
                         Gep::Entity point = mManager.CreateEntity("Point (" + std::to_string(x) + "," + std::to_string(y) + "," + std::to_string(z) + ")");
@@ -859,7 +847,7 @@ namespace Client
                         lights.push_back(light);
                         mManager.AddComponent(light, 
                             t, 
-                            Client::StaticModelComponent{ .modelIdx = 3 /*sphere*/ },
+                            Client::ModelComponent{ .modelIdx = 3 /*sphere*/ },
                             Client::Light{.intensity = 1000 }
                         );
                         mManager.AttachEntity(parent, light);
@@ -890,7 +878,7 @@ namespace Client
                         t.world.position = pos;
 
                         Gep::Entity e = mManager.CreateEntity(name);
-                        mManager.AddComponent(e, t, Client::StaticModelComponent{.modelIdx = 3 /*sphere*/, .materialOverrides = { matIdx }});
+                        mManager.AddComponent(e, t, Client::ModelComponent{.modelIdx = 3 /*sphere*/, .materialOverrides = { matIdx }});
                         mManager.AttachEntity(parent, e);
 
                         cubes.push_back(e);
@@ -1657,7 +1645,7 @@ namespace Client
                 if (ImGui::MenuItem("Cube"))
                 {
                     Gep::Entity entity = mManager.CreateEntity("Cube");
-                    mManager.AddComponent(entity, StaticModelComponent{ 2 /*"Cube"*/ }
+                    mManager.AddComponent(entity, ModelComponent{ 2 /*"Cube"*/ }
                                                 , Transform{}
                                                 , CubeCollider{});
                     mEditorResource.SelectEntity(entity);
@@ -1665,7 +1653,7 @@ namespace Client
                 if (ImGui::MenuItem("Sphere"))
                 {
                     Gep::Entity entity = mManager.CreateEntity("Icosphere");
-                    mManager.AddComponent(entity, StaticModelComponent{ 3 /*"Icosphere"*/ }
+                    mManager.AddComponent(entity, ModelComponent{ 3 /*"Icosphere"*/ }
                                                 , Transform{}
                                                 , SphereCollider{});
                     mEditorResource.SelectEntity(entity);
@@ -1673,7 +1661,7 @@ namespace Client
                 if (ImGui::MenuItem("Light"))
                 {
                     Gep::Entity entity = mManager.CreateEntity("Light");
-                    mManager.AddComponent(entity, StaticModelComponent{ 1 /*"Sphere"*/ }
+                    mManager.AddComponent(entity, ModelComponent{ 1 /*"Sphere"*/ }
                                                 , Transform{}
                                                 , Light{}
                                                 , SphereCollider{});

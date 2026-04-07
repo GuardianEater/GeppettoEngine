@@ -86,7 +86,7 @@ struct ObjectUniforms
   mat4 modelMatrix;
   mat3 normalMatrix;
 
-  int boneOffset;
+  uint boneOffset;
   int pad[3];
 };
 

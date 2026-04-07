@@ -56,14 +56,12 @@ namespace Client
 
     void RenderSystem::Initialize()
     {
-        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<RiggedModelComponent>>(this, &RenderSystem::OnRiggedModelAdded);
-        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<StaticModelComponent>>(this, &RenderSystem::OnStaticModelAdded);
+        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<ModelComponent>>(this, &RenderSystem::OnStaticModelAdded);
 
-        mManager.SubscribeToEvent<Gep::Event::ComponentSerializing<StaticModelComponent>>(this, &RenderSystem::OnStaticModelSerializing);
-        mManager.SubscribeToEvent<Gep::Event::ComponentDeserializing<StaticModelComponent>>(this, &RenderSystem::OnStaticModelDeserializing);
+        mManager.SubscribeToEvent<Gep::Event::ComponentSerializing<ModelComponent>>(this, &RenderSystem::OnStaticModelSerializing);
+        mManager.SubscribeToEvent<Gep::Event::ComponentDeserializing<ModelComponent>>(this, &RenderSystem::OnStaticModelDeserializing);
 
-        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<RiggedModelComponent>>(this, &RenderSystem::OnRiggedModelEditorRender);
-        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<StaticModelComponent>>(this, &RenderSystem::OnStaticModelEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<ModelComponent>>(this, &RenderSystem::OnStaticModelEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Light>>(this, &RenderSystem::OnPointLightEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<ShadowCasterComponent>>(this, &RenderSystem::OnShadowCasterEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<DirectionalLight>>(this, &RenderSystem::OnDirectionalLightEditorRender);
@@ -93,7 +91,6 @@ namespace Client
         // send all things added to the gpu
         renderer.CommitLights();
         renderer.CommitCameras();
-        renderer.CommitBones();
         renderer.CommitObjects();
 
 
@@ -116,12 +113,7 @@ namespace Client
             cam.renderTarget.Unbind();
         });
 
-        mManager.ForEachArchetype([&](Gep::Entity entity, RiggedModelComponent& model, Transform& transform)
-        {
-            model.selected = false;
-        });
-
-        mManager.ForEachArchetype([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
+        mManager.ForEachArchetype([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
         {
             model.selected = false;
         });
@@ -209,48 +201,42 @@ namespace Client
             isShaderReload = false; // Reset when key is released
     }
 
-    void RenderSystem::OnRiggedModelAdded(const Gep::Event::ComponentAdded<RiggedModelComponent>& event)
+    void RenderSystem::OnSkeletonAdded(const Gep::Event::ComponentAdded<SkeletonComponent>& event)
     {
-        //Gep::OpenGLRenderer& renderer = mRenderer;
+        Gep::OpenGLRenderer& renderer = mRenderer;
 
-        //RiggedModelComponent& model = event.component;
+        if (mManager.HasComponent<ModelComponent>(event.entity))
+        {
+            auto& model = mManager.GetComponent<ModelComponent>(event.entity);
+            const Gep::Model& internalModel = mRenderer.GetModel(model.modelIdx);
 
-        //// if the model is not loaded when this component is added attempt load it
-        //if (!renderer.IsModelLoaded(model.modelIdx))
-        //{
-        //    if (std::filesystem::exists(model.name))
-        //    {
-        //        renderer.AddModelFromFile(model.name);
-        //    }
-        //    else
-        //    {
-        //        const std::string defaultName = RiggedModelComponent{}.name; // re-initializes the meshname to the default value
-        //        Gep::Log::Warning("A model component was created with an invalid name/location: [", model.name, "] doesn't exist. It will be changed to the error mesh: [", defaultName, "] instead.");
-        //        model.name = defaultName;
-        //    }
-        //}
-
-        //const Gep::Model& internalModel = mRenderer.GetModel(model.name);
-
-        //InitializeModelPose(model, internalModel);
+            InitializeSkeleton(event.component, internalModel);
+        }
     }
 
-    void RenderSystem::OnStaticModelAdded(const Gep::Event::ComponentAdded<StaticModelComponent>& event)
+    void RenderSystem::OnStaticModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event)
     {
+        if (mManager.HasComponent<SkeletonComponent>(event.entity))
+        {
+            auto& skel = mManager.GetComponent<SkeletonComponent>(event.entity);
+            const Gep::Model& internalModel = mRenderer.GetModel(event.component.modelIdx);
+
+            InitializeSkeleton(skel, internalModel);
+        }
     }
 
-    void RenderSystem::OnStaticModelSerializing(const Gep::Event::ComponentSerializing<StaticModelComponent>& event)
+    void RenderSystem::OnStaticModelSerializing(const Gep::Event::ComponentSerializing<ModelComponent>& event)
     {
-        const StaticModelComponent& modelComponent = event.component;
+        const ModelComponent& modelComponent = event.component;
 
         const std::string& modelName = mRenderer.GetModel(modelComponent.modelIdx).name;
 
         event.componentJson["name"] = modelName;
     }
 
-    void RenderSystem::OnStaticModelDeserializing(const Gep::Event::ComponentDeserializing<StaticModelComponent>& event)
+    void RenderSystem::OnStaticModelDeserializing(const Gep::Event::ComponentDeserializing<ModelComponent>& event)
     {
-        StaticModelComponent& modelComponent = event.component;
+        ModelComponent& modelComponent = event.component;
 
         if (!event.componentJson.contains("name"))
             return;
@@ -273,72 +259,9 @@ namespace Client
         }
     }
 
-    void RenderSystem::OnRiggedModelEditorRender(const Gep::Event::ComponentEditorRender<RiggedModelComponent>& event)
+    void RenderSystem::OnStaticModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event)
     {
-        const std::span<RiggedModelComponent*> models = event.components;
-
-        Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
-        std::vector<std::string> loadedModels = mRenderer.GetLoadedModelNames();
-
-        const uint64_t selectedModelIdx = models[0]->modelIdx; // in this event call there is guaranteed to be at least one component
-
-        // if all selected models have the same name, show it
-        bool allSame = true;
-        for (size_t i = 1; i < models.size(); ++i)
-        {
-            if (models[i]->modelIdx != selectedModelIdx)
-            {
-                allSame = false;
-                break;
-            }
-        }
-
-        // drop down for selecting a model
-        std::string modelIdxStr = std::to_string(selectedModelIdx);
-        bool modelsOpen = ImGui::BeginCombo("Models", allSame ? modelIdxStr.c_str() : "-");
-
-        const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
-
-        er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
-        {
-            auto maybeIndex = mRenderer.FindModel(droppedPath.string());
-            if (!maybeIndex) // if there is no model then load it
-            {
-                maybeIndex = mRenderer.AddModel(mRenderer.LoadModelFromFile(droppedPath));
-            }
-
-            for (RiggedModelComponent* model : models)
-            {
-                model->modelIdx = *maybeIndex;
-            }
-        });
-
-        if (modelsOpen)
-        {
-            for (const std::string& modelName : loadedModels)
-            {
-                const bool isSelected = allSame && modelName == mRenderer.GetModel(selectedModelIdx).name;
-                if (ImGui::Selectable(modelName.c_str(), isSelected))
-                {
-                    for (RiggedModelComponent* model : models)
-                    {
-                        auto modelIdx = mRenderer.FindModel(modelName);
-                        model->modelIdx = *modelIdx;
-                    }
-                }
-
-                if (isSelected)
-                {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-            ImGui::EndCombo();
-        }
-    }
-
-    void RenderSystem::OnStaticModelEditorRender(const Gep::Event::ComponentEditorRender<StaticModelComponent>& event)
-    {
-        const std::span<StaticModelComponent*> models = event.components;
+        const std::span<ModelComponent*> models = event.components;
 
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
         std::vector<std::string> loadedModels = mRenderer.GetLoadedModelNames();
@@ -370,7 +293,7 @@ namespace Client
                 maybeIndex = mRenderer.AddModel(mRenderer.LoadModelFromFile(droppedPath));
             }
             
-            for (StaticModelComponent* model : models)
+            for (ModelComponent* model : models)
             {
                 model->modelIdx = *maybeIndex;
             }
@@ -383,7 +306,7 @@ namespace Client
                 const bool isSelected = allSame && modelName == mRenderer.GetModel(selectedModelIdx).name;
                 if (ImGui::Selectable(modelName.c_str(), isSelected))
                 {
-                    for (StaticModelComponent* model : models)
+                    for (ModelComponent* model : models)
                     {
                         auto modelIdx = mRenderer.FindModel(modelName);
                         model->modelIdx = *modelIdx;
@@ -977,40 +900,33 @@ namespace Client
         skeletonLines.color = { 1.0f, 0.5f, 0.5f };
         int boneOffset = 0;
 
-        mManager.ForEachArchetype([&](Gep::Entity entity, RiggedModelComponent& model, Transform& transform)
+        mManager.ForEachArchetype([&](Gep::Entity entity, ModelComponent& model, SkeletonComponent& skeleton, Transform& transform)
         {
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
             const Gep::Model& internalModel = mRenderer.GetModel(model.modelIdx);
-
-            // if the model also has an animation compute its final pose and pass all bone info to the gpu
-            int previousBoneOffset = boneOffset;
-            bool hasRealBones = false;
-
-            for (uint32_t i = 0; i < model.pose.size() && i < internalModel.skeleton.bones.size(); ++i)
-            {
-                const Gep::Bone& b = internalModel.skeleton.bones[i];
-
-                Gep::BoneGPUData boneData{
-                    .offsetMatrix = Gep::ToMat4(model.pose[i] * b.inverseBind)
-                };
-
-                mRenderer.AddBone(boneData);
-                ++boneOffset;
-            }
-
-            if (mDrawBones)
-            {
-                DrawSkeleton(internalModel.skeleton, modelMatrix, model.pose, skeletonLines);
-            }
 
             Gep::AddObjectInfo info
             {
                 .modelIdx = (uint32_t)model.modelIdx,
                 .modelMatrix = modelMatrix,
                 .normalMatrix = normal,
-                .boneOffset = (uint32_t)previousBoneOffset, // only used in the PBR-Skinned shader
+                .materialIdxs = model.materialOverrides
             };
+
+            for (uint32_t i = 0; i < skeleton.pose.size() && i < internalModel.skeleton.bones.size(); ++i)
+            {
+                const Gep::Bone& b = internalModel.skeleton.bones[i];
+                const glm::mat4 boneMatrix = Gep::ToMat4(skeleton.pose[i] * b.inverseBind);
+
+                info.boneMatrices.push_back(boneMatrix);
+            }
+
+            if (mDrawBones)
+            {
+                DrawSkeleton(internalModel.skeleton, modelMatrix, skeleton.pose, skeletonLines);
+            }
+
 
             if (mWireframeMode)
                 info.wireframe = glm::vec3{1.0f, 1.0, 0.0f};
@@ -1028,8 +944,11 @@ namespace Client
             mRenderer.AddObject(info);
         });
 
-        mManager.ForEachArchetype([&](Gep::Entity entity, StaticModelComponent& model, Transform& transform)
+        mManager.ForEachArchetype([&](Gep::Entity entity, ModelComponent& model, Transform& transform)
         {
+            if (mManager.HasComponent<SkeletonComponent>(entity))
+                return;
+
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
             const Gep::Model& internalModel = mRenderer.GetModel(model.modelIdx);
@@ -1063,15 +982,15 @@ namespace Client
 
     }
 
-    void RenderSystem::InitializeModelPose(RiggedModelComponent& modelComponent, const Gep::Model& internalModel)
+    void RenderSystem::InitializeSkeleton(SkeletonComponent& skeleton, const Gep::Model& internalModel)
     {
-        modelComponent.pose.clear();
-        modelComponent.pose.resize(internalModel.skeleton.bones.size());
+        skeleton.pose.clear();
+        skeleton.pose.resize(internalModel.skeleton.bones.size());
 
         // initialize with the default skeleton
-        for (size_t i = 0; i < modelComponent.pose.size(); ++i)
+        for (size_t i = 0; i < skeleton.pose.size(); ++i)
         {
-            modelComponent.pose[i] = internalModel.skeleton.bones[i].transformation; // at this point .pose is in local space
+            skeleton.pose[i] = internalModel.skeleton.bones[i].transformation; // at this point .pose is in local space
         }
 
         // calculate the global pose
@@ -1079,7 +998,7 @@ namespace Client
         {
             uint32_t parent = internalModel.skeleton.bones[i].parentIndex;
 
-            modelComponent.pose[i] = modelComponent.pose[parent] * modelComponent.pose[i];
+            skeleton.pose[i] = skeleton.pose[parent] * skeleton.pose[i];
         }
     }
 

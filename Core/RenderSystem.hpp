@@ -34,8 +34,8 @@ namespace Gep::Event
 // fwd
 namespace Client
 {
-    struct RiggedModelComponent;
-    struct StaticModelComponent;
+    struct SkeletonComponent;
+    struct ModelComponent;
     struct Texture;
     struct Light;
     struct Camera;
@@ -70,14 +70,13 @@ namespace Client
 
         // events //////////
         // on added
-        void OnRiggedModelAdded(const Gep::Event::ComponentAdded<RiggedModelComponent>& event);
-        void OnStaticModelAdded(const Gep::Event::ComponentAdded<StaticModelComponent>& event);
-        void OnStaticModelSerializing(const Gep::Event::ComponentSerializing<StaticModelComponent>& event);
-        void OnStaticModelDeserializing(const Gep::Event::ComponentDeserializing<StaticModelComponent>& event);
+        void OnStaticModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event);
+        void OnSkeletonAdded(const Gep::Event::ComponentAdded<SkeletonComponent>& event);
+        void OnStaticModelSerializing(const Gep::Event::ComponentSerializing<ModelComponent>& event);
+        void OnStaticModelDeserializing(const Gep::Event::ComponentDeserializing<ModelComponent>& event);
 
         // on editor render
-        void OnRiggedModelEditorRender(const Gep::Event::ComponentEditorRender<RiggedModelComponent>& event);
-        void OnStaticModelEditorRender(const Gep::Event::ComponentEditorRender<StaticModelComponent>& event);
+        void OnStaticModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event);
         void OnPointLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event);
         void OnShadowCasterEditorRender(const Gep::Event::ComponentEditorRender<ShadowCasterComponent>& event);
         void OnDirectionalLightEditorRender(const Gep::Event::ComponentEditorRender<DirectionalLight>& event);
@@ -92,7 +91,7 @@ namespace Client
         void AddObjects();
 
         // when a model is changed 
-        void InitializeModelPose(RiggedModelComponent& modelComponent, const Gep::Model& internalModel);
+        void InitializeSkeleton(SkeletonComponent& modelComponent, const Gep::Model& internalModel);
 
         void ImGuiUpdate();
 

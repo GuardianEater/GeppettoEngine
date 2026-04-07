@@ -14,16 +14,13 @@
 namespace Client
 {
     // this model variant is used with models that have rigging or armature. Needed for animations or IK
-    struct RiggedModelComponent
+    struct SkeletonComponent
     {
-        uint64_t modelIdx = 0; // defaults to cube
-        bool selected = false;
-
         std::vector<Gep::VQS> pose; // the bone offsets of the current model 
     };
 
     // high performance model component that will simply render the model
-    struct StaticModelComponent
+    struct ModelComponent
     {
         uint64_t modelIdx = 2; // cube
         std::vector<uint32_t> materialOverrides;

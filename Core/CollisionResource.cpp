@@ -26,11 +26,9 @@
 
 namespace Client
 {
-    template <typename ModelComponentType>
-        requires requires (ModelComponentType& m) { m.modelIdx; }
     static void ModelComponentTest(Gep::EngineManager& em, const Gep::Ray& ray, std::vector<std::pair<float, Gep::Entity>>& hits)
     {
-        em.ForEachArchetype([&](Gep::Entity entity, Client::Transform& transform, ModelComponentType& model, Client::MeshCollider& collider)
+        em.ForEachArchetype([&](Gep::Entity entity, Client::Transform& transform, ModelComponent& model, Client::MeshCollider& collider)
         {
             Gep::OpenGLRenderer& renderer = em.GetResource<Gep::OpenGLRenderer>();
             const Gep::Model& internalModel = renderer.GetModel(model.modelIdx);
@@ -104,8 +102,7 @@ namespace Client
             }
         });
 
-        ModelComponentTest<Client::StaticModelComponent>(em, ray, hits);
-        ModelComponentTest<Client::RiggedModelComponent>(em, ray, hits);
+        ModelComponentTest(em, ray, hits);
 
         // sort by time hit
         std::sort(hits.begin(), hits.end(), [](const auto& a, const auto& b) 

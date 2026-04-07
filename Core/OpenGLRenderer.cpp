@@ -447,7 +447,7 @@ namespace Gep
         }
 
         RenderFlags flags = RenderFlags::None;
-        ShaderType type = (drawInfo.boneOffset == Gep::NumMax<uint32_t>()) ? ShaderType::Static : ShaderType::Rigged;
+        ShaderType type = drawInfo.boneMatrices.empty() ? ShaderType::Static : ShaderType::Rigged;
 
         if (drawInfo.outline.has_value())
             flags |= RenderFlags::Highlight;
@@ -515,7 +515,7 @@ namespace Gep
 
             for (const auto& [flags, objects] : flagsToObjects)
             {
-                // add all per object instance data in instance order
+                uint32_t boneOffset = static_cast<uint32_t>(mBoneUniforms.size());
                 for (const auto& object : objects)
                 {
                     ObjectInstanceDataGPU gpuData{
@@ -523,8 +523,12 @@ namespace Gep
                         .normalMatrixCol0 = object.normalMatrix[0],
                         .normalMatrixCol1 = object.normalMatrix[1],
                         .normalMatrixCol2 = object.normalMatrix[2],
-                        .boneOffset = Gep::NumMax<int>()
+                        .boneOffset = boneOffset
                     };
+
+                    boneOffset += object.boneMatrices.size();
+                    for (const auto& om : object.boneMatrices)
+                        mBoneUniforms.push_back({ .offsetMatrix = om });
 
                     mStaticObjectUniforms.push_back(gpuData);
                 }
@@ -536,10 +540,8 @@ namespace Gep
                     auto& meshEntry = mMeshLibrary[meshIdx];
 
                     // per mesh then per instance
-                    for (uint32_t instanceIdx = 0; instanceIdx < objects.size(); ++instanceIdx)
+                    for (const auto& object : objects)
                     {
-                        const auto& object = objects[instanceIdx];
-
                         uint32_t matIdx = meshEntry.mesh.materialIndex;
                         if (localMeshIdx < object.materialIdxs.size())
                             matIdx = object.materialIdxs[localMeshIdx];
@@ -552,6 +554,7 @@ namespace Gep
         }
 
         // copies instance information to the gpu
+        mBoneUniforms.commit();
         mStaticObjectUniforms.commit();
         mMeshUniforms.commit();
     }
@@ -559,11 +562,6 @@ namespace Gep
     void OpenGLRenderer::CommitCameras()
     {
         mCameraUniforms.commit();
-    }
-
-    void OpenGLRenderer::CommitBones()
-    {
-        mBoneUniforms.commit();
     }
 
     void OpenGLRenderer::CommitLights()
@@ -812,7 +810,7 @@ namespace Gep
         // render to depth cube buffer here
         PointLightShadowDepthPass();            // renders all scene geometry for each point light that casts shadows to the corresponding shadow map
         DirectionalLightShadowDepthPass();
-        DrawLines(hdrSceneFrameBuffer);
+        //DrawLines(hdrSceneFrameBuffer);
         GeometryPass(hdrSceneFrameBuffer);   // renders all scene geometry to the gbuffer
         DirectionalLightPass(hdrSceneFrameBuffer);
         PointLightPass(hdrSceneFrameBuffer); // renders all point lights as light volumes, using the gbuffer for shading
@@ -1429,6 +1427,7 @@ namespace Gep
             ? static_cast<float>(assimpAnimation->mTicksPerSecond)
             : 25.0f; // Assimp default
 
+        animation.name = parentPath + ":" + assimpAnimation->mName.C_Str();
         animation.tracks.reserve(assimpAnimation->mNumChannels);
 
         for (uint32_t i = 0; i < assimpAnimation->mNumChannels; i++)
@@ -1575,8 +1574,8 @@ namespace Gep
             aiColor3D outColor(1.f, 1.f, 1.f);
             if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, outColor))
                 material.color = { outColor.r, outColor.g, outColor.b, 1.0f };
-            if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_COLOR_AMBIENT, outColor))
-                material.ao = outColor.r;
+            //if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_COLOR_AMBIENT, outColor))
+            //    material.ao = outColor.r;
             if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_METALLIC_FACTOR, outColor))
                 material.metalness = outColor.r;
             if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, outColor))

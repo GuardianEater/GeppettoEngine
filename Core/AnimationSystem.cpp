@@ -63,7 +63,7 @@ namespace Client
 
     void AnimationSystem::Update(float dt)
     {
-        mManager.ForEachArchetype([&](Gep::Entity entity, AnimationComponent& animationComponent, RiggedModelComponent& modelComponent, const Transform& transform)
+        mManager.ForEachArchetype([&](Gep::Entity entity, AnimationComponent& animationComponent, ModelComponent& modelComponent, SkeletonComponent& skeletonComponent, const Transform& transform)
         {
             if (!mRenderer.IsAnimationLoaded(animationComponent.animIdx))
                 return;
@@ -84,12 +84,12 @@ namespace Client
 
             // I dont really understand why the clear has to be here but if I remove it there are strange anomalies sometimes.
             const uint32_t boneCount = static_cast<uint32_t>(model.skeleton.bones.size());
-            modelComponent.pose.clear();
-            modelComponent.pose.resize(boneCount);
+            skeletonComponent.pose.clear();
+            skeletonComponent.pose.resize(boneCount);
 
-            EvaluateAnimation(animation, animationComponent.currentTime, modelComponent.pose);
+            EvaluateAnimation(animation, animationComponent.currentTime, skeletonComponent.pose);
 
-            CalculateGlobalPose(model.skeleton, modelComponent.pose);
+            CalculateGlobalPose(model.skeleton, skeletonComponent.pose);
         });
     }
 

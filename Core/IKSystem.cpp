@@ -57,17 +57,19 @@ namespace Client
         {
             const Gep::Entity skeletonEntity = mManager.FindEntity(iktarget.targetEntity);
             if (!mManager.EntityExists(skeletonEntity)) return;
-            if (!mManager.HasComponent<Client::RiggedModelComponent>(skeletonEntity)) return;
+            if (!mManager.HasComponent<Client::SkeletonComponent>(skeletonEntity)) return;
+            if (!mManager.HasComponent<Client::ModelComponent>(skeletonEntity)) return;
             if (!mManager.HasComponent<Client::Transform>(skeletonEntity)) return;
 
             Client::Transform& skeletonTransform = mManager.GetComponent<Client::Transform>(skeletonEntity);
-            Client::RiggedModelComponent& modelComponent = mManager.GetComponent<Client::RiggedModelComponent>(skeletonEntity);
+            Client::ModelComponent& modelComponent = mManager.GetComponent<Client::ModelComponent>(skeletonEntity);
+            Client::SkeletonComponent& skeletonComponent = mManager.GetComponent<Client::SkeletonComponent>(skeletonEntity);
 
-            if (modelComponent.pose.empty()) return;
+            if (skeletonComponent.pose.empty()) return;
 
             // Validate bone indices
-            if (iktarget.endBone >= modelComponent.pose.size()) return;
-            if (iktarget.startBone >= modelComponent.pose.size()) return;
+            if (iktarget.endBone >= skeletonComponent.pose.size()) return;
+            if (iktarget.startBone >= skeletonComponent.pose.size()) return;
 
             const uint32_t anchorBoneIdx = iktarget.startBone;
             const uint32_t effectorBoneIdx = iktarget.endBone;
@@ -79,7 +81,7 @@ namespace Client
             const Gep::Model& internalModel = mRenderer.GetModel(modelComponent.modelIdx);
             const Gep::Skeleton& skeleton = internalModel.skeleton;
 
-            if (skeleton.bones.size() != modelComponent.pose.size())
+            if (skeleton.bones.size() != skeletonComponent.pose.size())
             {
                 Gep::Log::Error("Skeleton bones and model pose size do not match");
                 return;
@@ -91,14 +93,14 @@ namespace Client
             // the models pose is in global space, this is a copy in local space. static for working memory reducing the excess amounts of allocations
             static std::vector<Gep::VQS> localPose; 
             localPose.clear(); 
-            localPose.resize(modelComponent.pose.size());
+            localPose.resize(skeletonComponent.pose.size());
             {
-                localPose[0] = modelComponent.pose[0];
-                for (size_t i = 1; i < modelComponent.pose.size(); ++i)
+                localPose[0] = skeletonComponent.pose[0];
+                for (size_t i = 1; i < skeletonComponent.pose.size(); ++i)
                 {
                     uint32_t parent = skeleton.bones[i].parentIndex;
 
-                    localPose[i] = Gep::Inverse(modelComponent.pose[parent]) * modelComponent.pose[i];
+                    localPose[i] = Gep::Inverse(skeletonComponent.pose[parent]) * skeletonComponent.pose[i];
                 }
             }
 
@@ -117,7 +119,7 @@ namespace Client
 
             for (uint32_t iteration = 0; iteration < kMaxIterations; ++iteration)
             {
-                glm::vec3 effectorPos = modelComponent.pose[effectorBoneIdx].position;
+                glm::vec3 effectorPos = skeletonComponent.pose[effectorBoneIdx].position;
                 float distanceToTarget = glm::distance(effectorPos, targetPos);
                 if (distanceToTarget <= epsilon) break;
 
@@ -131,9 +133,9 @@ namespace Client
                 {
                     jointIdx = skeleton.bones[jointIdx].parentIndex;
                         
-                    glm::vec3 jointPos = modelComponent.pose[jointIdx].position;
+                    glm::vec3 jointPos = skeletonComponent.pose[jointIdx].position;
 
-                    glm::vec3 toEffector = modelComponent.pose[effectorBoneIdx].position - jointPos;
+                    glm::vec3 toEffector = skeletonComponent.pose[effectorBoneIdx].position - jointPos;
                     glm::vec3 toTarget = targetPos - jointPos;
 
                     toEffector = glm::normalize(toEffector);
@@ -170,7 +172,7 @@ namespace Client
                     // convert global delta into local frame so don't accumulate drift
                     glm::quat parentGlobalRot = (jointIdx == 0)
                         ? glm::quat(1, 0, 0, 0)
-                        : modelComponent.pose[skeleton.bones[jointIdx].parentIndex].rotation;
+                        : skeletonComponent.pose[skeleton.bones[jointIdx].parentIndex].rotation;
 
                     glm::quat localDelta = glm::inverse(parentGlobalRot) * deltaRot * parentGlobalRot;
 
@@ -180,7 +182,7 @@ namespace Client
 
                     localPose[jointIdx].rotation = newLocalRot;
 
-                    RecalculateGlobal(modelComponent.pose);
+                    RecalculateGlobal(skeletonComponent.pose);
                 }
             }
         });
@@ -188,7 +190,7 @@ namespace Client
 
     void IKSystem::OnIKTargetEditorRender(const Gep::Event::ComponentEditorRender<Client::IKTarget>& event)
     {
-        bool valid = mEditor.DrawEntityDragDropTarget<Client::RiggedModelComponent, Client::Transform>(mManager, "Target Entity", event.components,
+        bool valid = mEditor.DrawEntityDragDropTarget<Client::SkeletonComponent, Client::ModelComponent, Client::Transform>(mManager, "Target Entity", event.components,
             [&](Client::IKTarget* ikt) -> gtl::uuid& { return ikt->targetEntity; }
         );
 
@@ -199,7 +201,7 @@ namespace Client
             [&](Client::IKTarget* ikt) -> uint64_t 
             {
                 const Gep::Entity targetEntity = mManager.FindEntity(ikt->targetEntity);
-                const RiggedModelComponent& targetModel = mManager.GetComponent<RiggedModelComponent>(targetEntity);
+                const ModelComponent& targetModel = mManager.GetComponent<ModelComponent>(targetEntity);
                 return targetModel.modelIdx; 
             }
         );
@@ -223,7 +225,7 @@ namespace Client
             for (Client::IKTarget* iktarget : event.components)
             {
                 Gep::Entity targetEntity = mManager.FindEntity(iktarget->targetEntity);
-                iktarget->startBone = glm::clamp<uint32_t>(iktarget->startBone, 0, mManager.GetComponent<RiggedModelComponent>(targetEntity).pose.size() - 1);
+                iktarget->startBone = glm::clamp<uint32_t>(iktarget->startBone, 0, mManager.GetComponent<SkeletonComponent>(targetEntity).pose.size() - 1);
                 if (iktarget->startBone > iktarget->endBone)
                     iktarget->startBone = iktarget->endBone;
             }
@@ -238,7 +240,7 @@ namespace Client
             for (Client::IKTarget* iktarget : event.components)
             {
                 Gep::Entity targetEntity = mManager.FindEntity(iktarget->targetEntity);
-                iktarget->endBone = glm::clamp<uint32_t>(iktarget->endBone, 0, mManager.GetComponent<RiggedModelComponent>(targetEntity).pose.size() - 1);
+                iktarget->endBone = glm::clamp<uint32_t>(iktarget->endBone, 0, mManager.GetComponent<SkeletonComponent>(targetEntity).pose.size() - 1);
                 if (iktarget->startBone > iktarget->endBone)
                     iktarget->startBone = iktarget->endBone;
             }

@@ -62,7 +62,7 @@ namespace Gep
         glm::vec3 normalMatrixCol1; float pad1;
         glm::vec3 normalMatrixCol2; float pad2;
 
-        int boneOffset; // should be added to this objects vertices boneindices to locate the correct bone matrices 
+        uint32_t boneOffset; // should be added to this objects vertices boneindices to locate the correct bone matrices 
         int pad[3];
     };
 
@@ -203,7 +203,7 @@ namespace Gep
         glm::mat4 modelMatrix;
         glm::mat3 normalMatrix;
         std::vector<uint32_t> materialIdxs;
-        uint32_t boneOffset = Gep::NumMax<uint32_t>();
+        std::vector<glm::mat4> boneMatrices;
 
         std::optional<glm::vec3> wireframe = std::nullopt; // whether or not to render in wireframe mode; specifies color
         std::optional<OutlineDrawInfo> outline = std::nullopt; // whether or not to render with an outline
@@ -375,9 +375,6 @@ namespace Gep
 
         // moves all of the added camera data from the cpu to the gpu
         void CommitCameras();
-
-        // moves all of the added bone data from the cpu to the gpu
-        void CommitBones();
 
         // moves all of the added light data from the cpu to the gpu
         void CommitLights();
