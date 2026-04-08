@@ -2,13 +2,14 @@
 #include "PBR.glsl"
 
 // uniforms ////////////////////////////////////////////////////////////////////
-uniform sampler2D u_depthTexture;
-uniform sampler2D u_normalTexture;
-uniform sampler2D u_colorTexture;
-uniform sampler2D u_armTexture;
+layout(binding=0) uniform sampler2D u_depthTexture;
+layout(binding=1) uniform sampler2D u_normalTexture;
+layout(binding=2) uniform sampler2D u_colorTexture;
+layout(binding=3) uniform sampler2D u_armTexture;
 
 // in variables ////////////////////////////////////////////////////////////////
-layout(location=0) flat in uint v_InstanceID;
+layout(location=0) in vec2 v_uv;
+layout(location=1) flat in uint v_InstanceID;
 
 // out /////////////////////////////////////////////////////////////////////////
 layout(location=0) out vec4 f_color; // the resulting pixel color
@@ -31,8 +32,7 @@ void main(void)
 
   // reconstructs uv from frag position and texture size
   // (any texture from the gbuffer would work they are all the same size)
-  vec2 uv = gl_FragCoord.xy / vec2(textureSize(u_depthTexture, 0));
-  float depth = texture(u_depthTexture, uv).x;  
+  float depth = texture(u_depthTexture, v_uv).x;  
   if (depth >= 1.0) 
   {
     f_color = vec4(0.0, 0.0, 0.0, 1.0);
@@ -40,16 +40,16 @@ void main(void)
   }
 
   // reconstructs position from uv and depth
-  vec3 position = GetPosition(uv, depth);
+  vec3 position = GetPosition(v_uv, depth);
   DirectionalLightShadowUniforms lShadow = u_directionalLightShadows[v_InstanceID];
   DirectionalLightUniforms l = lShadow.light;
 
   // extracts materials from the gbuffer
-  vec3 arm = texture(u_armTexture, uv).xyz;
-  vec3 normal = texture(u_normalTexture, uv).xyz;
+  vec3 arm = texture(u_armTexture, v_uv).xyz;
+  vec3 normal = texture(u_normalTexture, v_uv).xyz;
 
   MaterialSample mat;
-  mat.color     = texture(u_colorTexture, uv);
+  mat.color     = texture(u_colorTexture, v_uv);
   mat.ao        = arm.x;
   mat.roughness = arm.y;
   mat.metallic  = arm.z;

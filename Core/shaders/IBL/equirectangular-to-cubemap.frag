@@ -7,7 +7,7 @@ layout(location=0) in vec3 v_position;
 layout(location=0) out vec4 f_color;
 
 // uniform /////////////////////////////////////////////////////////////////////
-uniform sampler2D u_equirectangularMap;
+layout(binding=0) uniform sampler2D u_equirectangularMap;
 
 // constants ///////////////////////////////////////////////////////////////////
 const vec2 c_invAtan = vec2(0.1591, 0.3183);

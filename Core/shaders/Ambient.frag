@@ -2,13 +2,16 @@
 #include "PBR.glsl"
 
 // uniforms ////////////////////////////////////////////////////////////////////
-uniform sampler2D u_depthTexture;
-uniform sampler2D u_normalTexture;
-uniform sampler2D u_colorTexture;
-uniform sampler2D u_armTexture;
-uniform sampler2D u_brdflut;
-uniform samplerCube u_prefilterMap;
-uniform samplerCube u_irradianceMap;
+layout(binding=0) uniform sampler2D u_depthTexture;
+layout(binding=1) uniform sampler2D u_normalTexture;
+layout(binding=2) uniform sampler2D u_colorTexture;
+layout(binding=3) uniform sampler2D u_armTexture;
+layout(binding=4) uniform sampler2D u_brdflut;
+layout(binding=5) uniform samplerCube u_prefilterMap;
+layout(binding=6) uniform samplerCube u_irradianceMap;
+
+// in //////////////////////////////////////////////////////////////////////////
+layout(location=0) in vec2 v_uv;
 
 // out /////////////////////////////////////////////////////////////////////////
 layout(location=0) out vec4 f_color; // the resulting pixel color
@@ -26,8 +29,7 @@ vec3 GetPosition(vec2 uv, float depth)
 
 void main()
 {
-	vec2 uv = gl_FragCoord.xy / vec2(textureSize(u_depthTexture, 0));
-	float depth = texture(u_depthTexture, uv).x;
+	float depth = texture(u_depthTexture, v_uv).x;
 
 	// No geometry was written to this pixel in the gbuffer.
 	if (depth >= 1.0)
@@ -36,14 +38,14 @@ void main()
 		return;
 	}
 
-	vec3 arm = texture(u_armTexture, uv).xyz;
-	vec3 normal = normalize(texture(u_normalTexture, uv).xyz);
-	vec3 position = GetPosition(uv, depth);
+	vec3 arm = texture(u_armTexture, v_uv).xyz;
+	vec3 normal = normalize(texture(u_normalTexture, v_uv).xyz);
+	vec3 position = GetPosition(v_uv, depth);
 	vec3 view = normalize(u_cams[u_camIndex].position.xyz - position);
   vec3 reflection = reflect(-view, normal);
 
 	MaterialSample mat;
-	mat.color     = texture(u_colorTexture, uv);
+	mat.color     = texture(u_colorTexture, v_uv);
 	mat.ao        = arm.x;
 	mat.roughness = arm.y;
 	mat.metallic  = arm.z;

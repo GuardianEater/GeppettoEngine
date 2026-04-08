@@ -6,7 +6,7 @@ layout(location=8) uniform float u_roughness;
 layout(location=9) uniform uint u_faceResolution;
 layout(location=10) uniform uint u_sampleCount;
 
-uniform samplerCube u_environmentMap;
+layout(binding=0) uniform samplerCube u_environmentMap;
 
 // in //////////////////////////////////////////////////////////////////////////
 layout(location=0) in vec3 v_position;

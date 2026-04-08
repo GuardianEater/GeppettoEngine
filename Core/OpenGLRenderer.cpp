@@ -115,8 +115,8 @@ namespace Gep
         mShader_PointLightShadowDepth = Shader::FromFile("shaders/Point/Shadows-Point.vert",   "shaders/Point/Shadows-Point.frag", "shaders/Point/Shadows-Point.geom");
 
         // setup directional light shaders
-        mShader_DirectionalLight            = Shader::FromFile("shaders/Directional/Lighting-Directional.vert", "shaders/Directional/Lighting-Directional.frag");
-        mShader_DirectionalLightWithShadows = Shader::FromFile("shaders/Directional/Lighting-Directional.vert", "shaders/Directional/Lighting-Directional-Shaded.frag");
+        mShader_DirectionalLight            = Shader::FromFile("shaders/Quad.vert", "shaders/Directional/Lighting-Directional.frag");
+        mShader_DirectionalLightWithShadows = Shader::FromFile("shaders/Quad.vert", "shaders/Directional/Lighting-Directional-Shaded.frag");
         mShader_DirectionalLightShadowDepth = Shader::FromFile("shaders/Directional/Shadows-Directional.vert",  "shaders/Directional/Shadows-Directional.frag");
 
         Gep::Material defaultMat{};
@@ -173,31 +173,25 @@ namespace Gep
 
         //// setup skybox
         mShader_EquirectangularToCubemap = Shader::FromFile("shaders/IBL/Cubemap.vert", "shaders/IBL/Equirectangular-To-Cubemap.frag");
-        mShader_EquirectangularToCubemap.SetUniform("u_equirectangularMap", 0);
 
-        mShader_CubemapToEquirectangular = Shader::FromFile("shaders/IBL/Cubemap-To-Equirectangular.vert", "shaders/IBL/Cubemap-To-Equirectangular.frag");
-        mShader_CubemapToEquirectangular.SetUniform("u_cubeMap", 0);
+        mShader_CubemapToEquirectangular = Shader::FromFile("shaders/Quad.vert", "shaders/IBL/Cubemap-To-Equirectangular.frag");
 
         mShader_Background = Shader::FromFile("shaders/IBL/Background.vert", "shaders/IBL/Background.frag");
-        mShader_Background.SetUniform("u_environmentMap", 0);
 
-        mShader_AmbientLight = Shader::FromFile("shaders/Ambient.vert", "shaders/Ambient.frag");
+        mShader_AmbientLight = Shader::FromFile("shaders/Quad.vert", "shaders/Ambient.frag");
 
-        mShader_Tonemap = Shader::FromFile("shaders/Tonemap.vert", "shaders/Tonemap.frag");
-        mShader_Tonemap.SetUniform("u_sceneTexture", 0);
+        mShader_Tonemap = Shader::FromFile("shaders/Quad.vert", "shaders/Tonemap.frag");
 
-        mShader_OutlineDilation = Shader::FromFile("shaders/Dilation.vert", "shaders/Dilation.frag");
+        mShader_OutlineDilation = Shader::FromFile("shaders/Quad.vert", "shaders/Dilation.frag");
         mShader_OutlineMask = Shader::FromFile("shaders/Mask.vert", "shaders/Mask.frag");
-        mShader_OutlineComposite = Shader::FromFile("shaders/Dilation.vert", "shaders/Outline-Composite.frag");
+        mShader_OutlineComposite = Shader::FromFile("shaders/Quad.vert", "shaders/Outline-Composite.frag");
         mShader_OutlineComposite.SetUniform("u_outlineColor", glm::vec4{ 1.0f, 0.5f, 0.1f, 1.0f });
 
         mShader_Prefilter = Shader::FromFile("shaders/IBL/Cubemap.vert", "shaders/IBL/Prefilter.frag");
-        mShader_Prefilter.SetUniform("u_environmentMap", 0);
 
         mShader_GenerateIrradianceMap = Shader::FromFile("shaders/IBL/Cubemap.vert", "shaders/IBL/GenerateIrradianceMap.frag");
-        mShader_GenerateIrradianceMap.SetUniform("u_environmentMap", 0);
 
-        mShader_GenerateBRDFLUT = Shader::FromFile("shaders/IBL/GenerateBRDFLUT.vert", "shaders/IBL/GenerateBRDFLUT.frag");
+        mShader_GenerateBRDFLUT = Shader::FromFile("shaders/Quad.vert", "shaders/IBL/GenerateBRDFLUT.frag");
 
         mFBO_OutlineMask = FrameBuffer::CreateMask({ 128, 128 });
         mFBO_OutlineDilation = FrameBuffer::CreateMask({ 128, 128 });
@@ -225,35 +219,6 @@ namespace Gep
 
         mBRDFLUT = GenerateBRDFLUT();
         AddTexture(mBRDFLUT);
-
-        // gbuffer access in shader
-        mShader_PointLight.SetUniform("u_depthTexture", 0);
-        mShader_PointLight.SetUniform("u_normalTexture", 1);
-        mShader_PointLight.SetUniform("u_colorTexture", 2);
-        mShader_PointLight.SetUniform("u_armTexture", 3);
-
-        mShader_PointLightWithShadows.SetUniform("u_depthTexture", 0);
-        mShader_PointLightWithShadows.SetUniform("u_normalTexture", 1);
-        mShader_PointLightWithShadows.SetUniform("u_colorTexture", 2);
-        mShader_PointLightWithShadows.SetUniform("u_armTexture", 3);
-
-        mShader_DirectionalLight.SetUniform("u_depthTexture", 0);
-        mShader_DirectionalLight.SetUniform("u_normalTexture", 1);
-        mShader_DirectionalLight.SetUniform("u_colorTexture", 2);
-        mShader_DirectionalLight.SetUniform("u_armTexture", 3);
-
-        mShader_DirectionalLightWithShadows.SetUniform("u_depthTexture", 0);
-        mShader_DirectionalLightWithShadows.SetUniform("u_normalTexture", 1);
-        mShader_DirectionalLightWithShadows.SetUniform("u_colorTexture", 2);
-        mShader_DirectionalLightWithShadows.SetUniform("u_armTexture", 3);
-
-        mShader_AmbientLight.SetUniform("u_depthTexture", 0);
-        mShader_AmbientLight.SetUniform("u_normalTexture", 1);
-        mShader_AmbientLight.SetUniform("u_colorTexture", 2);
-        mShader_AmbientLight.SetUniform("u_armTexture", 3);
-        mShader_AmbientLight.SetUniform("u_brdflut", 4);
-        mShader_AmbientLight.SetUniform("u_prefilterMap", 5);
-        mShader_AmbientLight.SetUniform("u_irradianceMap", 6);
 
         SetExposure(1.0f);
 
@@ -769,11 +734,6 @@ namespace Gep
         }, 
         GetAllShaders());
 
-        mShader_EquirectangularToCubemap.SetUniform("u_equirectangularMap", 0);
-        mShader_CubemapToEquirectangular.SetUniform("u_cubeMap", 0);
-        mShader_Background.SetUniform("u_environmentMap", 0);
-
-        mShader_Tonemap.SetUniform("u_sceneTexture", 0);
         SetExposure(1.0f);
 
         const uint32_t outlineSize = 2;
@@ -786,33 +746,6 @@ namespace Gep
         mShader_OutlineComposite.SetUniform("u_outlineColor", glm::vec4{ 1.0f, 0.1f, 0.1f, 1.0f });
 
         // gbuffer access in shader
-        mShader_PointLight.SetUniform("u_depthTexture", 0);
-        mShader_PointLight.SetUniform("u_normalTexture", 1);
-        mShader_PointLight.SetUniform("u_colorTexture", 2);
-        mShader_PointLight.SetUniform("u_armTexture", 3);
-
-        mShader_PointLightWithShadows.SetUniform("u_depthTexture", 0);
-        mShader_PointLightWithShadows.SetUniform("u_normalTexture", 1);
-        mShader_PointLightWithShadows.SetUniform("u_colorTexture", 2);
-        mShader_PointLightWithShadows.SetUniform("u_armTexture", 3);
-
-        mShader_DirectionalLight.SetUniform("u_depthTexture", 0);
-        mShader_DirectionalLight.SetUniform("u_normalTexture", 1);
-        mShader_DirectionalLight.SetUniform("u_colorTexture", 2);
-        mShader_DirectionalLight.SetUniform("u_armTexture", 3);
-
-        mShader_DirectionalLightWithShadows.SetUniform("u_depthTexture", 0);
-        mShader_DirectionalLightWithShadows.SetUniform("u_normalTexture", 1);
-        mShader_DirectionalLightWithShadows.SetUniform("u_colorTexture", 2);
-        mShader_DirectionalLightWithShadows.SetUniform("u_armTexture", 3);
-
-        mShader_AmbientLight.SetUniform("u_depthTexture", 0);
-        mShader_AmbientLight.SetUniform("u_normalTexture", 1);
-        mShader_AmbientLight.SetUniform("u_colorTexture", 2);
-        mShader_AmbientLight.SetUniform("u_armTexture", 3);
-        mShader_AmbientLight.SetUniform("u_brdflut", 4);
-        mShader_AmbientLight.SetUniform("u_prefilterMap", 5);
-        mShader_AmbientLight.SetUniform("u_irradianceMap", 6);
     }
 
     void OpenGLRenderer::SetExposure(float exposure)

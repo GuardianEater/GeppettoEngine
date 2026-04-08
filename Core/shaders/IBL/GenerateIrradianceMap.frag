@@ -7,7 +7,7 @@ layout(location=0) in vec3 v_position;
 layout(location=0) out vec4 f_color;
 
 // uniform /////////////////////////////////////////////////////////////////////
-uniform samplerCube u_environmentMap;
+layout(binding=0) uniform samplerCube u_environmentMap;
 
 void main()
 {		

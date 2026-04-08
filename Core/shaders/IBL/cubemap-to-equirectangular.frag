@@ -1,13 +1,13 @@
 #include "Common.glsl"
 
 // in //////////////////////////////////////////////////////////////////////////
-layout (location = 0) in vec2 v_uv;
+layout(location=0) in vec2 v_uv;
 
 // out /////////////////////////////////////////////////////////////////////////
-layout (location = 0) out vec4 f_color;
+layout(location=0) out vec4 f_color;
 
 // uniform /////////////////////////////////////////////////////////////////////
-uniform samplerCube u_cubeMap;
+layout(binding=0) uniform samplerCube u_cubeMap;
 
 vec3 EquirectangularToDirection(vec2 uv)
 {

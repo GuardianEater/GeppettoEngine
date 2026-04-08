@@ -2,10 +2,10 @@
 #include "PBR.glsl"
 
 // uniforms ////////////////////////////////////////////////////////////////////
-uniform sampler2D u_depthTexture;
-uniform sampler2D u_normalTexture;
-uniform sampler2D u_colorTexture;
-uniform sampler2D u_armTexture;
+layout(binding=0) uniform sampler2D u_depthTexture;
+layout(binding=1) uniform sampler2D u_normalTexture;
+layout(binding=2) uniform sampler2D u_colorTexture;
+layout(binding=3) uniform sampler2D u_armTexture;
 
 // in variables ////////////////////////////////////////////////////////////////
 layout(location=0) flat in uint v_InstanceID;
