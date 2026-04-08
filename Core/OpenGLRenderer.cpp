@@ -1772,16 +1772,7 @@ namespace Gep
             // draw cube
 
             auto& cubeHandle = mMeshLibrary.at(mCubeMeshIndex).handle;
-            glBindVertexArray(cubeHandle.mVertexArrayObject);
-            mStats.drawCalls++;
-            glDrawElements(
-                GL_TRIANGLES,
-                cubeHandle.mIndexCount,
-                GL_UNSIGNED_INT,
-                nullptr
-            );
-
-            glBindVertexArray(0); // holy shit found it. make sure to unbind vao
+            GLDraw(cubeHandle.mVertexArrayObject, cubeHandle.mIndexCount, 1, 0);
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -1821,10 +1812,7 @@ namespace Gep
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glBindVertexArray(mLineVAO); // core profile requires a VAO bound even when using gl_VertexID
-        mStats.drawCalls++;
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        glBindVertexArray(0);
+        GLDrawQuad();
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -1863,10 +1851,7 @@ namespace Gep
         mShader_GenerateBRDFLUT.Bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glBindVertexArray(mLineVAO); // core profile requires a VAO bound even when using gl_VertexID
-        mStats.drawCalls++;
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        glBindVertexArray(0);
+        GLDrawQuad();
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -2031,16 +2016,7 @@ namespace Gep
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 auto& cubeHandle = mMeshLibrary.at(mCubeMeshIndex).handle;
-                glBindVertexArray(cubeHandle.mVertexArrayObject);
-                mStats.drawCalls++;
-                glDrawElements(
-                    GL_TRIANGLES,
-                    cubeHandle.mIndexCount,
-                    GL_UNSIGNED_INT,
-                    nullptr
-                );
-
-                glBindVertexArray(0); // holy shit found it. make sure to unbind vao
+                GLDraw(cubeHandle.mVertexArrayObject, cubeHandle.mIndexCount, 1, 0);
             }
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -2091,9 +2067,7 @@ namespace Gep
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         mShader_GenerateIrradianceMap.Bind();
-        mShader_GenerateIrradianceMap.SetUniform("u_environmentMap", 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, environmentCubemap.id);
+        mShader_GenerateIrradianceMap.SetTextureCube(0, environmentCubemap.id);
 
         glViewport(0, 0, captureSize, captureSize);
         glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
@@ -2104,16 +2078,7 @@ namespace Gep
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             auto& cubeHandle = mMeshLibrary.at(mCubeMeshIndex).handle;
-            glBindVertexArray(cubeHandle.mVertexArrayObject);
-            mStats.drawCalls++;
-            glDrawElements(
-                GL_TRIANGLES,
-                cubeHandle.mIndexCount,
-                GL_UNSIGNED_INT,
-                nullptr
-            );
-
-            glBindVertexArray(0); // holy shit found it. make sure to unbind vao
+            GLDraw(cubeHandle.mVertexArrayObject, cubeHandle.mIndexCount, 1, 0);
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
