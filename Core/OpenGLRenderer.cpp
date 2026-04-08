@@ -1117,15 +1117,23 @@ namespace Gep
 
     void OpenGLRenderer::DrawPass_AmbientOcclusion(Gep::FrameBuffer& targetFrameBuffer)
     {
+        GLDrawFlags flags{
+            .depthFuncMask = std::nullopt,
+            .cullMode = std::nullopt,
+            .blendFuncSD = std::nullopt
+        };
+
         mFBO_SSAO.Bind();
         mFBO_SSAO.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
         mFBO_SSAO.UpdateViewport();
         mFBO_SSAO.Clear();
 
-        mShader_SSAO.Bind();
-
         mFBO_Geometry.BindTextures();
-        mShader_SSAO.SetTexture2D(mFBO_Geometry.GetTextureCount(), mSSAONoise.id);
+
+        mShader_SSAO.Bind();
+        mShader_SSAO.SetTexture2D(mFBO_Geometry.GetTextureCount() + 0, mSSAONoise.id);
+
+        SetDrawFlags(flags);
         GLDrawQuad();
 
         //mFBO_SSAOBlur.Bind();
@@ -1139,7 +1147,7 @@ namespace Gep
 
         ImGui::Begin("AO");
 
-        ImGui::Image(mFBO_SSAO.GetTexture(0), ImVec2{ 256, 256 }, ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::Image(mFBO_SSAO.GetTexture(0), ImVec2{ 256 * 4, 256 * 4 }, ImVec2(0, 1), ImVec2(1, 0));
 
         ImGui::End();
 

@@ -14,7 +14,7 @@ layout(location = 0) in vec2 v_uv;
 // out /////////////////////////////////////////////////////////////////////////
 layout(location=0) out vec4 f_color; // the resulting pixel color
 
-vec3 GetPosition(vec2 uv, float depth)
+vec3 GetWorldPosition(vec2 uv, float depth)
 {
   vec2 ndcXY = uv * 2.0 - 1.0;
   float ndcZ = depth * 2.0 - 1.0;
@@ -23,6 +23,13 @@ vec3 GetPosition(vec2 uv, float depth)
   world /= world.w;
 
   return world.xyz;
+}
+
+vec3 GetViewPosition(vec2 uv, float depth)
+{
+  vec3 worldPos = GetWorldPosition(uv, depth);
+  vec4 viewPos = u_cams[u_camIndex].view * vec4(worldPos, 1.0);
+  return viewPos.xyz;
 }
 
 const int kernelSize = 64;
@@ -37,8 +44,15 @@ void main()
 
   // get input for SSAO algorithm
   float depth = texture(u_depthTexture, v_uv).x;  
-  vec3 position = GetPosition(v_uv, depth);
-  vec3 normal = normalize(texture(u_normalTexture, v_uv).rgb);
+  if (depth >= 1.0)
+  {
+    f_color = vec4(1.0);
+    return;
+  }
+
+  vec3 position = GetViewPosition(v_uv, depth);
+  vec3 normalWorld = normalize(texture(u_normalTexture, v_uv).rgb);
+  vec3 normal = normalize(mat3(u_cams[u_camIndex].view) * normalWorld);
   vec3 randomVec = normalize(texture(u_noiseTexture, v_uv * noiseScale).xyz);
 
   // create TBN change-of-basis matrix: from tangent-space to view-space
@@ -62,10 +76,11 @@ void main()
     
     // get sample depth
     float sampleDepth = texture(u_depthTexture, offset.xy).r; // get depth value of kernel sample
+    vec3 sampleDepthPos = GetViewPosition(offset.xy, sampleDepth);
     
     // range check & accumulate
-    float rangeCheck = smoothstep(0.0, 1.0, radius / abs(position.z - sampleDepth));
-    occlusion += (sampleDepth >= samplePos.z + bias ? 1.0 : 0.0) * rangeCheck;           
+    float rangeCheck = smoothstep(0.0, 1.0, radius / abs(position.z - sampleDepthPos.z));
+    occlusion += (sampleDepthPos.z >= samplePos.z + bias ? 1.0 : 0.0) * rangeCheck;
   }
   occlusion = 1.0 - (occlusion / kernelSize);
   
