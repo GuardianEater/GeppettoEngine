@@ -76,7 +76,7 @@ namespace Client
         void OnStaticModelDeserializing(const Gep::Event::ComponentDeserializing<ModelComponent>& event);
 
         // on editor render
-        void OnStaticModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event);
+        void OnModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event);
         void OnPointLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event);
         void OnShadowCasterEditorRender(const Gep::Event::ComponentEditorRender<ShadowCasterComponent>& event);
         void OnDirectionalLightEditorRender(const Gep::Event::ComponentEditorRender<DirectionalLight>& event);

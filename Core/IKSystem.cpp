@@ -216,7 +216,7 @@ namespace Client
         const Client::IKTarget& firstIKTarget = *event.components[0];
         const Gep::Entity firstTargetEntity = mManager.FindEntity(firstIKTarget.targetEntity);
 
-        bool startChanged = Gep::ImGui::MultiInputScalarX("Start Bone (Anchor)", event.components, 
+        bool startChanged = Gep::Gui::MultiInputScalarX("Start Bone (Anchor)", event.components, 
             [&](Client::IKTarget* ikt) -> uint32_t& { return ikt->startBone; }
         );
 
@@ -231,7 +231,7 @@ namespace Client
             }
         }
 
-        bool endChanged = Gep::ImGui::MultiInputScalarX("End Bone (Effector)", event.components,
+        bool endChanged = Gep::Gui::MultiInputScalarX("End Bone (Effector)", event.components,
             [&](Client::IKTarget* ikt) -> uint32_t& { return ikt->endBone; }
         );
 

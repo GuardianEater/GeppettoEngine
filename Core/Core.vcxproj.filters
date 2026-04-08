@@ -264,6 +264,9 @@
     <ClCompile Include="Material.cpp">
       <Filter>Backend\Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="ImGuiHelp2.cpp">
+      <Filter>Backend\Tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.hpp">
@@ -521,6 +524,9 @@
     <ClInclude Include="Material.hpp">
       <Filter>Backend\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="ImGuiHelp2.hpp">
+      <Filter>Client</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="EngineManager.inl">
@@ -544,5 +550,6 @@
     <None Include="GPUVector.inl">
       <Filter>Client</Filter>
     </None>
+    <None Include="shaders\Outline-Composite.frag" />
   </ItemGroup>
 </Project>

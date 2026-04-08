@@ -12,7 +12,7 @@ typedef int ImGuiSliderFlags;
 typedef int ImGuiColorEditFlags;
 typedef int ImGuiDataType;
 
-namespace Gep::ImGui::Detail
+namespace Gep::Gui::Detail
 {
     // helper for for MultiInputScalar used for creating a inputable field
     template <typename T, typename GetterFunction>
@@ -25,7 +25,7 @@ namespace Gep::ImGui::Detail
     inline bool MultiDragScalar_Field(std::span<T> values, GetterFunction&& get);
 }
 
-namespace Gep::ImGui
+namespace Gep::Gui
 {
     // wrappers for common imgui functions ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -37,17 +37,17 @@ namespace Gep::ImGui
     // templated wrapper for imguis input scalar function
     template <typename T>
         requires std::is_arithmetic_v<T>
-    inline bool InputScalar(const std::string& label, T* v, const std::string& format = ::ImGui::DataTypeGetInfo(Gep::ImGui::ImGuiTypeID<T>())->PrintFmt, ImGuiInputTextFlags flags = 0);
+    inline bool InputScalar(const std::string& label, T* v, const std::string& format = ::ImGui::DataTypeGetInfo(Gep::Gui::ImGuiTypeID<T>())->PrintFmt, ImGuiInputTextFlags flags = 0);
 
     // templated wrapper for imguis drag scalar function
     template <typename T>
         requires std::is_arithmetic_v<T>
-    inline bool DragScalar(const std::string& label, T* v, float v_speed = 1.0f, T v_min = 0, T v_max = 0, const std::string& format = ::ImGui::DataTypeGetInfo(Gep::ImGui::ImGuiTypeID<T>())->PrintFmt, ImGuiSliderFlags flags = 0);
+    inline bool DragScalar(const std::string& label, T* v, float v_speed = 1.0f, T v_min = 0, T v_max = 0, const std::string& format = ::ImGui::DataTypeGetInfo(Gep::Gui::ImGuiTypeID<T>())->PrintFmt, ImGuiSliderFlags flags = 0);
 
     // templated wrapper for imguis slider scalar function
     template <typename T>
         requires std::is_arithmetic_v<T>
-    inline bool SliderScalar(const std::string& label, T* v, T v_min, T v_max, const std::string& format = ::ImGui::DataTypeGetInfo(Gep::ImGui::ImGuiTypeID<T>())->PrintFmt, ImGuiSliderFlags flags = 0);
+    inline bool SliderScalar(const std::string& label, T* v, T v_min, T v_max, const std::string& format = ::ImGui::DataTypeGetInfo(Gep::Gui::ImGuiTypeID<T>())->PrintFmt, ImGuiSliderFlags flags = 0);
 
 
     // helpers used for generalized multi-input/drag scalar functions ///////////////////////////////////////////////////////

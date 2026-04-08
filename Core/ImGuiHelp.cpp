@@ -4,7 +4,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-namespace Gep::ImGui
+namespace Gep::Gui
 {
 
-} // namespace Gep::ImGui
+} // namespace Gep::Gui

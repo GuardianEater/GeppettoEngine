@@ -410,25 +410,25 @@ namespace Client
         // if the needed checks failed dont continue with the ui
         if (!valid) return;
 
-        Gep::ImGui::MultiDragFloat("Animation Offset", event.components,
+        Gep::Gui::MultiDragFloat("Animation Offset", event.components,
             [](Client::PathFollowerComponent* pfc) -> float& { return pfc->speedAdjust; }
         );
 
-        Gep::ImGui::MultiDragFloat("Pace", event.components,
+        Gep::Gui::MultiDragFloat("Pace", event.components,
             [](Client::PathFollowerComponent* pfc) -> float& { return pfc->pace; }
         );
 
-        Gep::ImGui::MultiCheckbox("Looping", event.components,
+        Gep::Gui::MultiCheckbox("Looping", event.components,
             [](Client::PathFollowerComponent* pfc) -> bool& { return pfc->looping; }
         );
 
         bool tChanged = false;
 
-        tChanged |= Gep::ImGui::MultiSliderScalar("t0", event.components, 0.0f, 1.0f,
+        tChanged |= Gep::Gui::MultiSliderScalar("t0", event.components, 0.0f, 1.0f,
             [](Client::PathFollowerComponent* pfc) -> float& { return pfc->easeTimes.first; }
         );
 
-        tChanged |= Gep::ImGui::MultiSliderScalar("t1", event.components, 0.0f, 1.0f,
+        tChanged |= Gep::Gui::MultiSliderScalar("t1", event.components, 0.0f, 1.0f,
             [](Client::PathFollowerComponent* pfc) -> float& { return pfc->easeTimes.second; }
         );
 

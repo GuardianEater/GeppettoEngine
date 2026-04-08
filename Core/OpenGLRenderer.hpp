@@ -364,9 +364,6 @@ namespace Gep
         // adds a directional light to the render pass. this WILL cast shadows
         void AddDirectionalLightShadow(const DirectionalLightShadowGPUData& uniforms, const FrameBuffer& fbo);
 
-        // adds a bone to the render pass. In a frame user must keep track of bone index and pass it it RiggedObjectUniforms.
-        void AddBone(const BoneGPUData& boneData);
-
         // adds a line to the render pass. Mainly useful for debug
         void AddLine(const LineGPUData& lines);
 
@@ -551,7 +548,7 @@ namespace Gep
         Texture GenerateBRDFLUT();
 
         void GLDraw(GLuint vao, uint32_t indexCount, uint32_t instanceCount, uint32_t baseInstance);
-        void GLDrawQuad();
+        void GLDrawQuad(uint32_t instanceCount = 1);
     private:
         // when creating shaders make sure to add them to GetAllShaders
         Shader mShader_Geometry;  // shader used for geometry pass of static models
@@ -608,16 +605,21 @@ namespace Gep
         FrameBuffer mFBO_OutlineMask;
         FrameBuffer mFBO_OutlineDilation;
 
-        struct ObjectDrawInfo
+        struct MeshDrawBatch
         {
-            // the amount of objects to draw
-            uint64_t count = 0;
-            // vao and index count
-            bool outline = false;
-            std::vector<std::pair<GLuint, size_t>> vaos; // all of the meshes to draw with that object
+            GLuint vao = 0;
+            uint32_t indexCount = 0;
+            uint32_t instanceCount = 0;
+
+            uint32_t objectBaseInstance = 0;
+            uint32_t meshBaseInstance = 0;
+
+            ShaderType type = ShaderType::None;
+            RenderFlags flags = RenderFlags::None;
         };
     
-        Gep::gpu_vector<ObjectInstanceDataGPU, 0> mStaticObjectUniforms;          // copied into u_objects on the gpu
+        std::vector<MeshDrawBatch> mDrawBatches;
+        Gep::gpu_vector<ObjectInstanceDataGPU, 0> mObjectUniforms;          // copied into u_objects on the gpu
         Gep::gpu_vector<PointLightGPUData, 1> mPointLightUniforms;              // copied into u_pointLights on the gpu
         Gep::gpu_vector<CameraGPUData, 2> mCameraUniforms;                      // copied into u_cams on the gpu
         Gep::gpu_vector<BoneGPUData, 3> mBoneUniforms;                          // copied into u_bones on the gpu

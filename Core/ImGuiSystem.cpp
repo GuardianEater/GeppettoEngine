@@ -724,7 +724,7 @@ namespace Client
             static uint64_t count = 50;
 
             // will cause a stack overflow if too high
-            Gep::ImGui::InputScalar("Amount", &count);
+            Gep::Gui::InputScalar("Amount", &count);
 
             if (ImGui::Button("Start Test"))
             {

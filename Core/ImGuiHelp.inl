@@ -13,7 +13,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-namespace Gep::ImGui::Detail
+namespace Gep::Gui::Detail
 {
     template <typename T, typename GetterFunction>
         requires std::is_invocable_v<GetterFunction, T&>
@@ -29,7 +29,7 @@ namespace Gep::ImGui::Detail
         if (uniform)
         {
             ScalarType front = get(values.front());
-            changed = Gep::ImGui::DragScalar("", &front, ScalarType(0.1f));
+            changed = Gep::Gui::DragScalar("", &front, ScalarType(0.1f));
             if (changed)
             {
                 for (T& v : values)
@@ -39,7 +39,7 @@ namespace Gep::ImGui::Detail
         else
         {
             ScalarType delta = 0;
-            changed = Gep::ImGui::DragScalar("", &delta, ScalarType(0.1f), ScalarType(0), ScalarType(0), "-");
+            changed = Gep::Gui::DragScalar("", &delta, ScalarType(0.1f), ScalarType(0), ScalarType(0), "-");
 
             if (changed)
             {
@@ -73,7 +73,7 @@ namespace Gep::ImGui::Detail
         if (uniform)
         {
             ScalarType front = get(values.front());
-            changed = Gep::ImGui::InputScalar("", &front);
+            changed = Gep::Gui::InputScalar("", &front);
             if (changed)
             {
                 for (T& v : values)
@@ -83,7 +83,7 @@ namespace Gep::ImGui::Detail
         else
         {
             ScalarType delta = 0;
-            changed = Gep::ImGui::InputScalar("", &delta, "-");
+            changed = Gep::Gui::InputScalar("", &delta, "-");
 
             if (changed)
             {
@@ -105,7 +105,7 @@ namespace Gep::ImGui::Detail
     }
 }
 
-namespace Gep::ImGui
+namespace Gep::Gui
 {
     template <typename T>
         requires std::is_arithmetic_v<T>
@@ -137,21 +137,21 @@ namespace Gep::ImGui
         requires std::is_arithmetic_v<T>
     inline bool DragScalar(const std::string& label, T* v, float v_speed, T min, T max, const std::string& format, ImGuiSliderFlags flags)
     {
-        return ::ImGui::DragScalar(label.c_str(), Gep::ImGui::ImGuiTypeID<T>(), static_cast<void*>(v), v_speed, static_cast<void*>(&min), static_cast<void*>(&max), format.c_str(), flags);
+        return ::ImGui::DragScalar(label.c_str(), Gep::Gui::ImGuiTypeID<T>(), static_cast<void*>(v), v_speed, static_cast<void*>(&min), static_cast<void*>(&max), format.c_str(), flags);
     }
 
     template<typename T>
         requires std::is_arithmetic_v<T>
     inline bool SliderScalar(const std::string& label, T* v, T v_min, T v_max, const std::string& format, ImGuiSliderFlags flags)
     {
-        return ::ImGui::SliderScalar(label.c_str(), Gep::ImGui::ImGuiTypeID<T>(), static_cast<void*>(v), static_cast<void*>(&v_min), static_cast<void*>(&v_max), format.c_str(), flags);
+        return ::ImGui::SliderScalar(label.c_str(), Gep::Gui::ImGuiTypeID<T>(), static_cast<void*>(v), static_cast<void*>(&v_min), static_cast<void*>(&v_max), format.c_str(), flags);
     }
 
     template <typename T>
         requires std::is_arithmetic_v<T>
     inline bool InputScalar(const std::string& label, T* v, const std::string& format, ImGuiInputTextFlags flags)
     {
-        return ::ImGui::InputScalar(label.c_str(), Gep::ImGui::ImGuiTypeID<T>(), static_cast<void*>(v), nullptr, nullptr, format.c_str(), flags | ImGuiInputTextFlags_EnterReturnsTrue);
+        return ::ImGui::InputScalar(label.c_str(), Gep::Gui::ImGuiTypeID<T>(), static_cast<void*>(v), nullptr, nullptr, format.c_str(), flags | ImGuiInputTextFlags_EnterReturnsTrue);
     }
 
     template <typename T, typename... GetterFunctions>
@@ -171,7 +171,7 @@ namespace Gep::ImGui
             if (i > 0)
                 ::ImGui::SameLine(0, ::ImGui::GetStyle().ItemInnerSpacing.x);
 
-            anyChanged |= Gep::ImGui::Detail::MultiDragScalar_Field(values, get);
+            anyChanged |= Gep::Gui::Detail::MultiDragScalar_Field(values, get);
             ::ImGui::PopItemWidth();
 
             ::ImGui::PopID();
@@ -204,7 +204,7 @@ namespace Gep::ImGui
         if (uniform)
         {
             ScalarType front = get(values.front());
-            changed = Gep::ImGui::SliderScalar(label.c_str(), &front, min, max);
+            changed = Gep::Gui::SliderScalar(label.c_str(), &front, min, max);
             if (changed)
             {
                 for (T& v : values)
@@ -214,7 +214,7 @@ namespace Gep::ImGui
         else
         {
             ScalarType delta = min;
-            changed = Gep::ImGui::SliderScalar(label.c_str(), &delta, min, max, "-");
+            changed = Gep::Gui::SliderScalar(label.c_str(), &delta, min, max, "-");
             if (changed)
             {
                 for (T& v : values)
@@ -242,7 +242,7 @@ namespace Gep::ImGui
             if (i > 0)
                 ::ImGui::SameLine(0, ::ImGui::GetStyle().ItemInnerSpacing.x);
 
-            anyChanged |= Gep::ImGui::Detail::MultiInputScalar_Field(values, get);
+            anyChanged |= Gep::Gui::Detail::MultiInputScalar_Field(values, get);
             ::ImGui::PopItemWidth();
 
             ::ImGui::PopID();
@@ -312,28 +312,28 @@ namespace Gep::ImGui
         requires std::is_invocable_r_v<float&, GetterFunction, T&>
     inline bool MultiDragFloat(const std::string& label, std::span<T> values, GetterFunction&& get)
     {
-        return Gep::ImGui::MultiDragScalarX(label, values, std::forward<GetterFunction>(get));
+        return Gep::Gui::MultiDragScalarX(label, values, std::forward<GetterFunction>(get));
     }
 
     template <typename T, typename GetterFunction0, typename GetterFunction1>
         requires std::is_invocable_r_v<float&, GetterFunction0, T&>&& std::is_invocable_r_v<float&, GetterFunction1, T&>
     inline bool MultiDragFloat2(const std::string& label, std::span<T> values, GetterFunction0&& get0, GetterFunction1&& get1)
     {
-        return Gep::ImGui::MultiDragScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1));
+        return Gep::Gui::MultiDragScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1));
     }
 
     template <typename T, typename GetterFunction0, typename GetterFunction1, typename GetterFunction2>
         requires std::is_invocable_r_v<float&, GetterFunction0, T&>&& std::is_invocable_r_v<float&, GetterFunction1, T&>&& std::is_invocable_r_v<float&, GetterFunction2, T&>
     inline bool MultiDragFloat3(const std::string& label, std::span<T> values, GetterFunction0&& get0, GetterFunction1&& get1, GetterFunction2&& get2)
     {
-        return Gep::ImGui::MultiDragScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1), std::forward<GetterFunction2>(get2));
+        return Gep::Gui::MultiDragScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1), std::forward<GetterFunction2>(get2));
     }
 
     template <typename T, typename GetterFunction0, typename GetterFunction1, typename GetterFunction2, typename GetterFunction3>
         requires std::is_invocable_r_v<float&, GetterFunction0, T&>&& std::is_invocable_r_v<float&, GetterFunction1, T&>&& std::is_invocable_r_v<float&, GetterFunction2, T&>&& std::is_invocable_r_v<float&, GetterFunction3, T&>
     inline bool MultiDragFloat4(const std::string& label, std::span<T> values, GetterFunction0&& get0, GetterFunction1&& get1, GetterFunction2&& get2, GetterFunction3&& get3)
     {
-        return Gep::ImGui::MultiDragScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1), std::forward<GetterFunction2>(get2), std::forward<GetterFunction3>(get3));
+        return Gep::Gui::MultiDragScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1), std::forward<GetterFunction2>(get2), std::forward<GetterFunction3>(get3));
     }
 
 
@@ -341,28 +341,28 @@ namespace Gep::ImGui
         requires std::is_invocable_r_v<int&, GetterFunction, T&>
     inline bool MultiDragInt(const std::string& label, std::span<T> values, GetterFunction&& get)
     {
-        return Gep::ImGui::MultiDragScalarX(label, values, std::forward<GetterFunction>(get));
+        return Gep::Gui::MultiDragScalarX(label, values, std::forward<GetterFunction>(get));
     }
 
     template <typename T, typename GetterFunction0, typename GetterFunction1>
         requires std::is_invocable_r_v<int&, GetterFunction0, T&>&& std::is_invocable_r_v<int&, GetterFunction1, T&>
     inline bool MultiDragInt2(const std::string& label, std::span<T> values, GetterFunction0&& get0, GetterFunction1&& get1)
     {
-        return Gep::ImGui::MultiDragScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1));
+        return Gep::Gui::MultiDragScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1));
     }
 
     template <typename T, typename GetterFunction0, typename GetterFunction1, typename GetterFunction2>
         requires std::is_invocable_r_v<int&, GetterFunction0, T&>&& std::is_invocable_r_v<int&, GetterFunction1, T&>&& std::is_invocable_r_v<int&, GetterFunction2, T&>
     inline bool MultiDragInt3(const std::string& label, std::span<T> values, GetterFunction0&& get0, GetterFunction1&& get1, GetterFunction2&& get2)
     {
-        return Gep::ImGui::MultiDragScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1), std::forward<GetterFunction2>(get2));
+        return Gep::Gui::MultiDragScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1), std::forward<GetterFunction2>(get2));
     }
 
     template <typename T, typename GetterFunction0, typename GetterFunction1, typename GetterFunction2, typename GetterFunction3>
         requires std::is_invocable_r_v<int&, GetterFunction0, T&>&& std::is_invocable_r_v<int&, GetterFunction1, T&>&& std::is_invocable_r_v<int&, GetterFunction2, T&>&& std::is_invocable_r_v<int&, GetterFunction3, T&>
     inline bool MultiDragInt4(const std::string& label, std::span<T> values, GetterFunction0&& get0, GetterFunction1&& get1, GetterFunction2&& get2, GetterFunction3&& get3)
     {
-        return Gep::ImGui::MultiDragScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1), std::forward<GetterFunction2>(get2), std::forward<GetterFunction3>(get3));
+        return Gep::Gui::MultiDragScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1), std::forward<GetterFunction2>(get2), std::forward<GetterFunction3>(get3));
     }
 
 
@@ -370,28 +370,28 @@ namespace Gep::ImGui
         requires std::is_invocable_r_v<int&, GetterFunction, T&>
     inline bool MultiInputInt(const std::string& label, std::span<T> values, GetterFunction&& get)
     {
-        return Gep::ImGui::MultiInputScalarX(label, values, std::forward<GetterFunction>(get));
+        return Gep::Gui::MultiInputScalarX(label, values, std::forward<GetterFunction>(get));
     }
 
     template <typename T, typename GetterFunction0, typename GetterFunction1>
         requires std::is_invocable_r_v<int&, GetterFunction0, T&> && std::is_invocable_r_v<int&, GetterFunction1, T&>
     inline bool MultiInputInt2(const std::string& label, std::span<T> values, GetterFunction0&& get0, GetterFunction1&& get1)
     {
-        return Gep::ImGui::MultiInputScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1));
+        return Gep::Gui::MultiInputScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1));
     }
 
     template <typename T, typename GetterFunction0, typename GetterFunction1, typename GetterFunction2>
         requires std::is_invocable_r_v<int&, GetterFunction0, T&> && std::is_invocable_r_v<int&, GetterFunction1, T&> && std::is_invocable_r_v<int&, GetterFunction2, T&>
     inline bool MultiInputInt3(const std::string& label, std::span<T> values, GetterFunction0&& get0, GetterFunction1&& get1, GetterFunction2&& get2)
     {
-        return Gep::ImGui::MultiInputScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1), std::forward<GetterFunction2>(get2));
+        return Gep::Gui::MultiInputScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1), std::forward<GetterFunction2>(get2));
     }
 
     template <typename T, typename GetterFunction0, typename GetterFunction1, typename GetterFunction2, typename GetterFunction3>
         requires std::is_invocable_r_v<int&, GetterFunction0, T&> && std::is_invocable_r_v<int&, GetterFunction1, T&> && std::is_invocable_r_v<int&, GetterFunction2, T&> && std::is_invocable_r_v<int&, GetterFunction3, T&>
     inline bool MultiInputInt4(const std::string& label, std::span<T> values, GetterFunction0&& get0, GetterFunction1&& get1, GetterFunction2&& get2, GetterFunction3&& get3)
     {
-        return Gep::ImGui::MultiInputScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1), std::forward<GetterFunction2>(get2), std::forward<GetterFunction3>(get3));
+        return Gep::Gui::MultiInputScalarX(label, values, std::forward<GetterFunction0>(get0), std::forward<GetterFunction1>(get1), std::forward<GetterFunction2>(get2), std::forward<GetterFunction3>(get3));
     }
 
-} // namespace Gep::ImGui
+} // namespace Gep::Gui

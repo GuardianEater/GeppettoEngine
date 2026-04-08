@@ -496,11 +496,6 @@ namespace Gep
         mDirectionalLightShadowMaps.push_back(fbo);
     }
 
-    void OpenGLRenderer::AddBone(const BoneGPUData& boneData)
-    {
-        mBoneUniforms.push_back(boneData);
-    }
-
     void OpenGLRenderer::AddLine(const LineGPUData& lines)
     {
         mLineUniforms.push_back(lines);
@@ -508,6 +503,11 @@ namespace Gep
 
     void OpenGLRenderer::CommitObjects()
     {
+        mDrawBatches.clear();
+        mBoneUniforms.clear();
+        mObjectUniforms.clear();
+        mMeshUniforms.clear();
+
         for (const auto& [shaderType, models] : mObjectDatas)
         for (const auto& [modelIdx, flagsToObjects] : models)
         {
@@ -515,22 +515,22 @@ namespace Gep
 
             for (const auto& [flags, objects] : flagsToObjects)
             {
+                uint32_t objectBase = static_cast<uint32_t>(mObjectUniforms.size());
                 uint32_t boneOffset = static_cast<uint32_t>(mBoneUniforms.size());
                 for (const auto& object : objects)
                 {
-                    ObjectInstanceDataGPU gpuData{
+                    mObjectUniforms.push_back({
                         .modelMatrix = object.modelMatrix,
                         .normalMatrixCol0 = object.normalMatrix[0],
                         .normalMatrixCol1 = object.normalMatrix[1],
                         .normalMatrixCol2 = object.normalMatrix[2],
                         .boneOffset = boneOffset
-                    };
+                    });
 
                     boneOffset += object.boneMatrices.size();
                     for (const auto& om : object.boneMatrices)
                         mBoneUniforms.push_back({ .offsetMatrix = om });
 
-                    mStaticObjectUniforms.push_back(gpuData);
                 }
 
                 // add per mesh instance data, ordering memory like [0][0][0][0][1][1][1][1][2][2][2][2]
@@ -538,6 +538,7 @@ namespace Gep
                 {
                     uint32_t meshIdx = modelEntry.meshes[localMeshIdx];
                     auto& meshEntry = mMeshLibrary[meshIdx];
+                    uint32_t meshBase = static_cast<uint32_t>(mMeshUniforms.size());
 
                     // per mesh then per instance
                     for (const auto& object : objects)
@@ -546,16 +547,27 @@ namespace Gep
                         if (localMeshIdx < object.materialIdxs.size())
                             matIdx = object.materialIdxs[localMeshIdx];
 
-                        MeshGPUData meshData{ .materialIndex = matIdx };
-                        mMeshUniforms.push_back(meshData);
+                        mMeshUniforms.push_back({ 
+                            .materialIndex = matIdx 
+                        });
                     }
+
+                    mDrawBatches.push_back({
+                        .vao = meshEntry.handle.mVertexArrayObject,
+                        .indexCount = static_cast<uint32_t>(meshEntry.handle.mIndexCount),
+                        .instanceCount = static_cast<uint32_t>(objects.size()),
+                        .objectBaseInstance = objectBase,
+                        .meshBaseInstance = meshBase,
+                        .type = shaderType,
+                        .flags = flags
+                    });
                 }
             }
         }
 
         // copies instance information to the gpu
         mBoneUniforms.commit();
-        mStaticObjectUniforms.commit();
+        mObjectUniforms.commit();
         mMeshUniforms.commit();
     }
 
@@ -842,7 +854,7 @@ namespace Gep
         mDirectionalLightUniforms.clear();
         mDirectionalLightShadowUniforms.clear();
 
-        mStaticObjectUniforms.clear();
+        mObjectUniforms.clear();
         mCameraUniforms.clear();
         mBoneUniforms.clear();
         mMeshUniforms.clear();
@@ -879,37 +891,17 @@ namespace Gep
         };
         SetDrawFlags(flags);
 
-        uint32_t baseInstance = 0;
-        uint32_t meshBaseInstance = 0;
-
         mShader_Geometry.Bind();
 
-        for (const auto& [shaderType, models] : mObjectDatas)
+        for (const auto& batch : mDrawBatches)
         {
-            if (shaderType == ShaderType::Rigged)
+            if (batch.type == ShaderType::Rigged)
                 mShader_Geometry.SetUniform(5, true); // enable rigged
             else //if (shaderType == ShaderType::Static)
                 mShader_Geometry.SetUniform(5, false);
 
-            for (const auto& [modelIdx, flagsToObjects] : models)
-            {
-                const auto& modelEntry = mModelLibrary.at(modelIdx);
-
-                for (const auto& [flags, objects] : flagsToObjects)
-                {
-                    for (uint64_t meshIdx : modelEntry.meshes)
-                    {
-                        const auto& meshHandle = mMeshLibrary[meshIdx].handle;
-
-                        mShader_Geometry.SetUniform(3, meshBaseInstance);
-
-                        GLDraw(meshHandle.mVertexArrayObject, meshHandle.mIndexCount, objects.size(), baseInstance);
-
-                        meshBaseInstance += objects.size();
-                    }
-                    baseInstance += objects.size();
-                }
-            }
+            mShader_Geometry.SetUniform(3, batch.meshBaseInstance);
+            GLDraw(batch.vao, batch.indexCount, batch.instanceCount, batch.objectBaseInstance);
         }
 
         Shader::Unbind();
@@ -959,28 +951,14 @@ namespace Gep
             uint32_t baseInstance = 0;
             mShader_PointLightShadowDepth.SetUniform(2, lightIndex++);
 
-            for (const auto& [shaderType, models] : mObjectDatas)
+            for (const auto& batch : mDrawBatches)
             {
-                if (shaderType == ShaderType::Rigged)
+                if (batch.type == ShaderType::Rigged)
                     mShader_PointLightShadowDepth.SetUniform(5, true); // enable rigged
                 else //if (shaderType == ShaderType::Static)
                     mShader_PointLightShadowDepth.SetUniform(5, false);
 
-                for (const auto& [modelIdx, flagsToObjects] : models)
-                {
-                    const auto& modelEntry = mModelLibrary.at(modelIdx);
-
-                    for (const auto& [flags, objects] : flagsToObjects)
-                    {
-                        for (uint64_t meshIdx : modelEntry.meshes)
-                        {
-                            const auto& meshHandle = mMeshLibrary[meshIdx].handle;
-
-                            GLDraw(meshHandle.mVertexArrayObject, meshHandle.mIndexCount, objects.size(), baseInstance);
-                        }
-                        baseInstance += objects.size();
-                    }
-                }
+                GLDraw(batch.vao, batch.indexCount, batch.instanceCount, batch.objectBaseInstance);
             }
         }
 
@@ -1001,22 +979,10 @@ namespace Gep
         SetDrawFlags(flags);
 
         mShader_DirectionalLight.Bind();
-        mStats.drawCalls++;
-        glDrawArraysInstanced(
-            GL_TRIANGLES,
-            0,
-            3,
-            static_cast<GLsizei>(mDirectionalLightUniforms.size())
-        );
+        GLDrawQuad(mDirectionalLightUniforms.size());
 
         mShader_DirectionalLightWithShadows.Bind();
-        mStats.drawCalls++;
-        glDrawArraysInstanced(
-            GL_TRIANGLES,
-            0,
-            3,
-            static_cast<GLsizei>(mDirectionalLightShadowUniforms.size())
-        );
+        GLDrawQuad(mDirectionalLightShadowUniforms.size());
 
         Shader::Unbind();
     }
@@ -1038,31 +1004,16 @@ namespace Gep
             shadowMap.UpdateViewport();
             glClear(GL_DEPTH_BUFFER_BIT);
 
-            uint32_t baseInstance = 0;
             mShader_DirectionalLightShadowDepth.SetUniform(2, lightIndex++);
 
-            for (const auto& [shaderType, models] : mObjectDatas)
+            for (const auto& batch : mDrawBatches)
             {
-                if (shaderType == ShaderType::Rigged)
+                if (batch.type == ShaderType::Rigged)
                     mShader_DirectionalLightShadowDepth.SetUniform(5, true); // enable rigged
                 else //if (shaderType == ShaderType::Static)
                     mShader_DirectionalLightShadowDepth.SetUniform(5, false);
 
-                for (const auto& [modelIdx, flagsToObjects] : models)
-                {
-                    const auto& modelEntry = mModelLibrary.at(modelIdx);
-
-                    for (const auto& [flags, objects] : flagsToObjects)
-                    {
-                        for (uint64_t meshIdx : modelEntry.meshes)
-                        {
-                            const auto& meshHandle = mMeshLibrary[meshIdx].handle;
-
-                            GLDraw(meshHandle.mVertexArrayObject, meshHandle.mIndexCount, objects.size(), baseInstance);
-                        }
-                        baseInstance += objects.size();
-                    }
-                }
+                GLDraw(batch.vao, batch.indexCount, batch.instanceCount, batch.objectBaseInstance);
             }
         }
 
@@ -1209,33 +1160,20 @@ namespace Gep
 
         SetDrawFlags(sceneMaskFlags);
         
-        uint32_t baseInstance = 0;
-        for (const auto& [shaderType, models] : mObjectDatas)
+        for (const auto& batch : mDrawBatches)
         {
-            if (shaderType == ShaderType::Rigged)
+            if (batch.type == ShaderType::Rigged)
                 mShader_OutlineMask.SetUniform(5, true); // enable rigged
             else //if (shaderType == ShaderType::Static)
                 mShader_OutlineMask.SetUniform(5, false);
 
-            for (const auto& [modelIdx, flagsToObjects] : models)
-            {
-                const auto& modelEntry = mModelLibrary.at(modelIdx);
+            bool hasOutLine = (batch.flags & RenderFlags::Highlight) == RenderFlags::Highlight;
+            if (!hasOutLine)
+                continue;
 
-                for (const auto& [flags, objects] : flagsToObjects)
-                {
-                    bool hasOutLine = (flags & RenderFlags::Highlight) == RenderFlags::Highlight;
-
-                    if (hasOutLine)
-                    for (uint64_t meshIdx : modelEntry.meshes)
-                    {
-                        const auto& meshHandle = mMeshLibrary[meshIdx].handle;
-
-                        GLDraw(meshHandle.mVertexArrayObject, meshHandle.mIndexCount, objects.size(), baseInstance);
-                    }
-                    baseInstance += objects.size();
-                }
-            }
+            GLDraw(batch.vao, batch.indexCount, batch.instanceCount, batch.objectBaseInstance);
         }
+
         //// draw the object dialated horizontal //////////////////////////////////////////
         mFBO_OutlineDilation.Bind();
         mShader_OutlineDilation.Bind();
@@ -1262,32 +1200,18 @@ namespace Gep
         mShader_OutlineMask.SetUniform("u_color", glm::vec4{ 0.0f, 0.0f, 0.0f, 0.0f });
 
         SetDrawFlags(sceneMaskFlags);
-        baseInstance = 0;
-        for (const auto& [shaderType, models] : mObjectDatas)
+        for (const auto& batch : mDrawBatches)
         {
-            if (shaderType == ShaderType::Rigged)
+            if (batch.type == ShaderType::Rigged)
                 mShader_OutlineMask.SetUniform(5, true); // enable rigged
             else //if (shaderType == ShaderType::Static)
                 mShader_OutlineMask.SetUniform(5, false);
 
-            for (const auto& [modelIdx, flagsToObjects] : models)
-            {
-                const auto& modelEntry = mModelLibrary.at(modelIdx);
+            bool hasOutLine = (batch.flags & RenderFlags::Highlight) == RenderFlags::Highlight;
+            if (!hasOutLine)
+                continue;
 
-                for (const auto& [flags, objects] : flagsToObjects)
-                {
-                    bool hasOutLine = (flags & RenderFlags::Highlight) == RenderFlags::Highlight;
-
-                    if (hasOutLine)
-                    for (uint64_t meshIdx : modelEntry.meshes)
-                    {
-                        const auto& meshHandle = mMeshLibrary[meshIdx].handle;
-
-                        GLDraw(meshHandle.mVertexArrayObject, meshHandle.mIndexCount, objects.size(), baseInstance);
-                    }
-                    baseInstance += objects.size();
-                }
-            }
+            GLDraw(batch.vao, batch.indexCount, batch.instanceCount, batch.objectBaseInstance);
         }
 
         // composite the outline mask over the final scene /////////////////////////////////////////////
@@ -1950,7 +1874,7 @@ namespace Gep
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, captureSize, captureSize);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdflut.id, 0);
-        glViewport(0, 0, 512, 512);
+        glViewport(0, 0, captureSize, captureSize);
         mShader_GenerateBRDFLUT.Bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -1992,11 +1916,14 @@ namespace Gep
         glBindVertexArray(0);
     }
 
-    void OpenGLRenderer::GLDrawQuad()
+    void OpenGLRenderer::GLDrawQuad(uint32_t instanceCount)
     {
+        if (instanceCount < 1)
+            return;
+
         mStats.drawCalls++;
         glBindVertexArray(mLineVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 3, instanceCount);
         glBindVertexArray(0);
     }
 

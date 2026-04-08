@@ -37,6 +37,7 @@
 #include "Conversion.hpp"
 #include "STLHelp.hpp"
 #include "ImGuiHelp.hpp"
+#include "ImGuiHelp2.hpp"
 #include "GLMHelp.hpp"
 
 namespace Client
@@ -61,7 +62,7 @@ namespace Client
         mManager.SubscribeToEvent<Gep::Event::ComponentSerializing<ModelComponent>>(this, &RenderSystem::OnStaticModelSerializing);
         mManager.SubscribeToEvent<Gep::Event::ComponentDeserializing<ModelComponent>>(this, &RenderSystem::OnStaticModelDeserializing);
 
-        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<ModelComponent>>(this, &RenderSystem::OnStaticModelEditorRender);
+        mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<ModelComponent>>(this, &RenderSystem::OnModelEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<Light>>(this, &RenderSystem::OnPointLightEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<ShadowCasterComponent>>(this, &RenderSystem::OnShadowCasterEditorRender);
         mManager.SubscribeToEvent<Gep::Event::ComponentEditorRender<DirectionalLight>>(this, &RenderSystem::OnDirectionalLightEditorRender);
@@ -259,7 +260,7 @@ namespace Client
         }
     }
 
-    void RenderSystem::OnStaticModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event)
+    void RenderSystem::OnModelEditorRender(const Gep::Event::ComponentEditorRender<ModelComponent>& event)
     {
         const std::span<ModelComponent*> models = event.components;
 
@@ -320,23 +321,45 @@ namespace Client
             }
             ImGui::EndCombo();
         }
+
+        if (allSame)
+        if (ImGui::TreeNode("Meshes"))
+        {
+            const Gep::Model& internalModel = mRenderer.GetModel(selectedModelIdx);
+
+            ImGui::Indent();
+            for (const Gep::Mesh& mesh : internalModel.meshes)
+            {
+                std::string id = std::to_string(reinterpret_cast<ptrdiff_t>(&mesh));
+                if (ImGui::TreeNode(mesh.name.c_str()))
+                {
+                    Gep::Material mat = mRenderer.GetMaterial(mesh.materialIndex);
+
+                    Gep::Gui::DrawMaterial(mat);
+                    ImGui::TreePop();
+                }
+            }
+            ImGui::Unindent();
+
+            ImGui::TreePop();
+        }
     }
 
     void RenderSystem::OnPointLightEditorRender(const Gep::Event::ComponentEditorRender<Light>& event)
     {
         std::span<Light*> lights = event.components;
 
-        Gep::ImGui::MultiDragFloat3("Color", lights,
+        Gep::Gui::MultiDragFloat3("Color", lights,
             [](Light* light) -> float& { return light->color.r; },
             [](Light* light) -> float& { return light->color.g; },
             [](Light* light) -> float& { return light->color.b; }
         );
 
-        Gep::ImGui::MultiDragFloat("Intensity", lights,
+        Gep::Gui::MultiDragFloat("Intensity", lights,
             [](Light* light) -> float& { return light->intensity; }
         );
 
-        Gep::ImGui::MultiCheckbox("Enabled", lights,
+        Gep::Gui::MultiCheckbox("Enabled", lights,
             [](Light* light) -> bool& { return light->enabled; }
         );
     }
@@ -358,17 +381,17 @@ namespace Client
     {
         std::span<DirectionalLight*> lights = event.components;
 
-        Gep::ImGui::MultiDragFloat3("Color", lights,
+        Gep::Gui::MultiDragFloat3("Color", lights,
             [](DirectionalLight* light) -> float& { return light->color.r; },
             [](DirectionalLight* light) -> float& { return light->color.g; },
             [](DirectionalLight* light) -> float& { return light->color.b; }
         );
 
-        Gep::ImGui::MultiDragFloat("Intensity", lights,
+        Gep::Gui::MultiDragFloat("Intensity", lights,
             [](DirectionalLight* light) -> float& { return light->intensity; }
         );
 
-        Gep::ImGui::MultiCheckbox("Enabled", lights,
+        Gep::Gui::MultiCheckbox("Enabled", lights,
             [](DirectionalLight* light) -> bool& { return light->enabled; }
         );
     }
@@ -378,9 +401,9 @@ namespace Client
         std::span<Camera*> cameras = event.components;
         EditorResource& er = mManager.GetResource<EditorResource>();
 
-        Gep::ImGui::MultiDragFloat("Near Plane", cameras, [](Camera* cam) -> float& { return cam->nearPlane; });
-        Gep::ImGui::MultiDragFloat("Far Plane",  cameras, [](Camera* cam) -> float& { return cam->farPlane; });
-        Gep::ImGui::MultiDragFloat("FOV",        cameras, [](Camera* cam) -> float& { return cam->fov; });
+        Gep::Gui::MultiDragFloat("Near Plane", cameras, [](Camera* cam) -> float& { return cam->nearPlane; });
+        Gep::Gui::MultiDragFloat("Far Plane",  cameras, [](Camera* cam) -> float& { return cam->farPlane; });
+        Gep::Gui::MultiDragFloat("FOV",        cameras, [](Camera* cam) -> float& { return cam->fov; });
 
 
         bool uniform = Gep::IsUniform(cameras, [&](Camera* cam) { return cam->renderToImGui; });
@@ -1008,7 +1031,7 @@ namespace Client
 
         const auto& textures = mRenderer.GetLoadedTextures();
         const auto& gBufferTextures = mRenderer.GetGeometryFrameBuffer().GetTextureAttachments();
-        const auto& materials = mRenderer.GetMaterials();
+        auto materials = mRenderer.GetMaterials();
         const ImVec2 imageSize = { 256 * ImGui::GetStyle().FontScaleMain, 256 * ImGui::GetStyle().FontScaleMain };
 
         static float exposure = 1.0f;
@@ -1046,100 +1069,12 @@ namespace Client
         if (ImGui::CollapsingHeader("Materials"))
         {
             int id = 0;
-            for (const auto& mat : materials)
+            for (auto& mat : materials)
             {
                 ImGui::PushID(id);
                 id++;
                 // ao
-                ImGui::Text("Ambient Occlusion");
-                if (mat.aoTexture.id)
-                {
-                    // display the texture id and the texture
-                    std::string aoTextureIdStr = std::to_string(mat.aoTexture.id);
-                    ImGui::Text(aoTextureIdStr.c_str());
-                    ImGui::Image(mat.aoTexture.id, imageSize);
-                }
-                else
-                {
-                    // display the value
-                    std::string aoStr = std::to_string(mat.ao);
-                    ImGui::Text(aoStr.c_str());
-
-                    ImVec4 color{ mat.ao, mat.ao, mat.ao, 1.0f };
-                    ImGui::ColorButton("ao", color, 0, imageSize);
-                }
-
-                // diffuse
-                ImGui::Text("Diffuse");
-                if (mat.diffuseTexture.id)
-                {
-                    // display the texture id and the texture
-                    std::string diffuseTextureIdStr = std::to_string(mat.diffuseTexture.id);
-                    ImGui::Text(diffuseTextureIdStr.c_str());
-                    ImGui::Image(mat.diffuseTexture.id, imageSize);
-                }
-                else
-                {
-                    // display the value
-                    std::string diffuseStr = 
-                        "(" + std::to_string(mat.color.r) +
-                        "," + std::to_string(mat.color.g) +
-                        "," + std::to_string(mat.color.b) +
-                        "," + std::to_string(mat.color.a) + ")";
-
-                    ImGui::Text(diffuseStr.c_str());
-
-                    ImVec4 color{mat.color.r, mat.color.g, mat.color.b, mat.color.a};
-                    ImGui::ColorButton("diffuse", color, 0, imageSize);
-                }
-
-                // metalness
-                ImGui::Text("Metalness");
-                if (mat.metalnessTexture.id)
-                {
-                    std::string metalnessTextureIdStr = std::to_string(mat.metalnessTexture.id);
-                    ImGui::Text(metalnessTextureIdStr.c_str());
-                    ImGui::Image(mat.metalnessTexture.id, imageSize);
-                }
-                else
-                {
-                    std::string metalnessStr = std::to_string(mat.metalness);
-                    ImGui::Text(metalnessStr.c_str());
-
-                    ImVec4 color{ mat.metalness, mat.metalness, mat.metalness, 1.0f };
-                    ImGui::ColorButton("metalness", color, 0, imageSize);
-                }
-
-                // normals
-                if (mat.normalTexture.id)
-                {
-                    ImGui::Text("Normals");
-                    std::string normalTextureIdStr = std::to_string(mat.normalTexture.id);
-                    ImGui::Text(normalTextureIdStr.c_str());
-                    ImGui::Image(mat.normalTexture.id, imageSize);
-                }
-                else
-                {
-                    // display nothing if no normal texture
-                }
-
-                // roughness
-                ImGui::Text("Roughness");
-                if (mat.roughnessTexture.id)
-                {
-                    std::string roughnessTextureIdStr = std::to_string(mat.roughnessTexture.id);
-                    ImGui::Text(roughnessTextureIdStr.c_str());
-                    ImGui::Image(mat.roughnessTexture.id, imageSize);
-                }
-                else
-                {
-                    std::string roughnessStr = std::to_string(mat.roughness);
-                    ImGui::Text(roughnessStr.c_str());
-
-                    ImVec4 color{ mat.roughness, mat.roughness, mat.roughness, 1.0f };
-                    ImGui::ColorButton("roughness", color, 0, imageSize);
-                }
-
+                Gep::Gui::DrawMaterial(mat);
                 ImGui::Spacing();
                 ImGui::Separator();
                 ImGui::PopID();

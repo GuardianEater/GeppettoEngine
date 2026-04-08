@@ -83,19 +83,19 @@ namespace Client
     {
         std::span<Transform*> transforms = event.components;
 
-        Gep::ImGui::MultiDragFloat3("Position", transforms, 
+        Gep::Gui::MultiDragFloat3("Position", transforms, 
             [](Transform* t) -> float& { return t->local.position.x; },
             [](Transform* t) -> float& { return t->local.position.y; },
             [](Transform* t) -> float& { return t->local.position.z; }
         );
 
-        Gep::ImGui::MultiDragFloat3("Scale", transforms,
+        Gep::Gui::MultiDragFloat3("Scale", transforms,
             [](Transform* t) -> float& { return t->local.scale.x; },
             [](Transform* t) -> float& { return t->local.scale.y; },
             [](Transform* t) -> float& { return t->local.scale.z; }
         );
 
-        Gep::ImGui::MultiDragFloat4("Rotation", transforms,
+        Gep::Gui::MultiDragFloat4("Rotation", transforms,
             [](Transform* t) -> float& { return t->local.rotation.x; },
             [](Transform* t) -> float& { return t->local.rotation.y; },
             [](Transform* t) -> float& { return t->local.rotation.z; },
@@ -106,17 +106,17 @@ namespace Client
         ImGui::Separator();
         ImGui::Spacing();
 
-        bool worldPositionChanged = Gep::ImGui::MultiDragFloat3("World Position", transforms,
+        bool worldPositionChanged = Gep::Gui::MultiDragFloat3("World Position", transforms,
             [](Transform* t) -> float& { return t->world.position.x; },
             [](Transform* t) -> float& { return t->world.position.y; },
             [](Transform* t) -> float& { return t->world.position.z; }
         );
-        bool worldScaleChanged = Gep::ImGui::MultiDragFloat3("World Scale", transforms,
+        bool worldScaleChanged = Gep::Gui::MultiDragFloat3("World Scale", transforms,
             [](Transform* t) -> float& { return t->world.scale.x; },
             [](Transform* t) -> float& { return t->world.scale.y; },
             [](Transform* t) -> float& { return t->world.scale.z; }
         );
-        bool worldRotationChanged = Gep::ImGui::MultiDragFloat4("World Rotation", transforms,
+        bool worldRotationChanged = Gep::Gui::MultiDragFloat4("World Rotation", transforms,
             [](Transform* t) -> float& { return t->world.rotation.x; },
             [](Transform* t) -> float& { return t->world.rotation.y; },
             [](Transform* t) -> float& { return t->world.rotation.z; },
@@ -149,19 +149,19 @@ namespace Client
     {
         std::span<RigidBody*> rbs = event.components;
 
-        Gep::ImGui::MultiDragFloat3("Velocity", rbs,
+        Gep::Gui::MultiDragFloat3("Velocity", rbs,
             [](RigidBody* rb) -> float& { return rb->linearVelocity.x; },
             [](RigidBody* rb) -> float& { return rb->linearVelocity.y; },
             [](RigidBody* rb) -> float& { return rb->linearVelocity.z; }
         );
 
-        Gep::ImGui::MultiDragFloat3("Angular Velocity", rbs,
+        Gep::Gui::MultiDragFloat3("Angular Velocity", rbs,
             [](RigidBody* rb) -> float& { return rb->angularVelocity.x; },
             [](RigidBody* rb) -> float& { return rb->angularVelocity.y; },
             [](RigidBody* rb) -> float& { return rb->angularVelocity.z; }
         );
 
-        bool massChanged = Gep::ImGui::MultiDragFloat("Mass", rbs,
+        bool massChanged = Gep::Gui::MultiDragFloat("Mass", rbs,
             [](RigidBody* rb) -> float& { return rb->mass; }
         );
 
@@ -498,15 +498,15 @@ namespace Client
             }
         }
 
-        bool restLengthChanged = Gep::ImGui::MultiDragFloat("Rest Length", event.components,
+        bool restLengthChanged = Gep::Gui::MultiDragFloat("Rest Length", event.components,
             [](Spring* s) -> float& { return s->restLength; }
         );
 
-        bool stiffnessChanged = Gep::ImGui::MultiDragFloat("Stiffness", event.components,
+        bool stiffnessChanged = Gep::Gui::MultiDragFloat("Stiffness", event.components,
             [](Spring* s) -> float& { return s->stiffness; }
         );
 
-        bool dampingChanged = Gep::ImGui::MultiDragFloat("Damping", event.components,
+        bool dampingChanged = Gep::Gui::MultiDragFloat("Damping", event.components,
             [](Spring* s) -> float& { return s->damping; }
         );
 

@@ -203,6 +203,7 @@
     <ClCompile Include="IcosphereMesh.cpp" />
     <ClCompile Include="IKSystem.cpp" />
     <ClCompile Include="ImGuiHelp.cpp" />
+    <ClCompile Include="ImGuiHelp2.cpp" />
     <ClCompile Include="ImGuiSystem.cpp" />
     <ClCompile Include="JsonHelp.cpp" />
     <ClCompile Include="Logger.cpp" />
@@ -236,6 +237,7 @@
     <ClInclude Include="IKSystem.hpp" />
     <ClInclude Include="IKTarget.hpp" />
     <ClInclude Include="ImGuiHelp.hpp" />
+    <ClInclude Include="ImGuiHelp2.hpp" />
     <ClInclude Include="JsonHelp.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="MeshCollider.hpp" />
