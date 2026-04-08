@@ -19,14 +19,6 @@
 #include "IcosphereMesh.hpp"
 #include "CubeMesh.hpp"
 
-
-#define WIN32_LEAN_AND_MEAN
-#include "Windows.h"
-#include "shellapi.h"
-#undef LoadImage
-#undef min
-#undef max
-
 namespace Gep
 {
     struct GLDrawFlags
@@ -63,34 +55,6 @@ namespace Gep
         else
             glDisable(GL_BLEND);
     }
-
-    enum GLVertexAttributeLocation : GLint
-    {
-        Position,
-        Normal,
-        TexCoord
-    };
-    enum GLUniformLocation : GLint
-    {
-        Perspective, // perspective projection matrix
-        ViewMatrix,
-        ModelMatrix,
-        NormalMatrix,
-        Eye,
-        DiffuseCoefficient,
-        SpecularCoefficient,
-        SpecularExponent,
-        AmbientColor,
-        TextureSampler,
-        UseTexture,
-
-        LightCount,
-        IsSolidColor,
-        SolidColor,
-
-        IsHighlighted,
-        IgnoreLight,
-    };
 
     void OpenGLRenderer::Initialize()
     {
@@ -753,32 +717,6 @@ namespace Gep
         mShader_Tonemap.SetUniform(0, exposure);
     }
 
-    void OpenGLRenderer::Draw(Gep::FrameBuffer& targetFrameBuffer)
-    {
-        static FrameBuffer hdrSceneFrameBuffer = FrameBuffer::CreateScreenHDR(targetFrameBuffer.GetSize());
-        hdrSceneFrameBuffer.Bind();
-        hdrSceneFrameBuffer.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
-        hdrSceneFrameBuffer.UpdateViewport();
-        hdrSceneFrameBuffer.Clear();
-        FrameBuffer::Unbind();
-
-        // pre pass
-        DrawPass_PointLightShadowDepth();
-        DrawPass_DirectionalLightShadowDepth();
-
-        //DrawPass_Lines(hdrSceneFrameBuffer);
-        DrawPass_Geometry(hdrSceneFrameBuffer); 
-        DrawPass_DirectionalLight(hdrSceneFrameBuffer);
-        DrawPass_PointLight(hdrSceneFrameBuffer);
-        DrawPass_AmbientLight(hdrSceneFrameBuffer);
-        DrawPass_Skybox(hdrSceneFrameBuffer, mEnvironmentCubeMap);
-        DrawPass_AmbientOcclusion(hdrSceneFrameBuffer);
-        DrawPass_Tonemap(targetFrameBuffer, hdrSceneFrameBuffer);
-
-        // draw postprocess effects, ie model outlines
-        DrawPass_Outline(targetFrameBuffer);
-    }
-
     void OpenGLRenderer::End()
     {
         mLineUniforms.clear();
@@ -819,6 +757,32 @@ namespace Gep
 
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
         glEnableVertexAttribArray(0);
+    }
+
+    void OpenGLRenderer::Draw(Gep::FrameBuffer& targetFrameBuffer)
+    {
+        static FrameBuffer hdrSceneFrameBuffer = FrameBuffer::CreateScreenHDR(targetFrameBuffer.GetSize());
+        hdrSceneFrameBuffer.Bind();
+        hdrSceneFrameBuffer.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
+        hdrSceneFrameBuffer.UpdateViewport();
+        hdrSceneFrameBuffer.Clear();
+        FrameBuffer::Unbind();
+
+        // pre pass
+        DrawPass_PointLightShadowDepth();
+        DrawPass_DirectionalLightShadowDepth();
+
+        //DrawPass_Lines(hdrSceneFrameBuffer);
+        DrawPass_Geometry(hdrSceneFrameBuffer); 
+        DrawPass_DirectionalLight(hdrSceneFrameBuffer);
+        DrawPass_PointLight(hdrSceneFrameBuffer);
+        DrawPass_AmbientLight(hdrSceneFrameBuffer);
+        DrawPass_Skybox(hdrSceneFrameBuffer, mEnvironmentCubeMap);
+        DrawPass_AmbientOcclusion(hdrSceneFrameBuffer);
+        DrawPass_Tonemap(targetFrameBuffer, hdrSceneFrameBuffer);
+
+        // draw postprocess effects, ie model outlines
+        DrawPass_Outline(targetFrameBuffer);
     }
 
     void OpenGLRenderer::DrawPass_Geometry(const Gep::FrameBuffer& targetFrameBuffer)
@@ -1292,7 +1256,7 @@ namespace Gep
 
     static std::unordered_map<std::string, BoneInfo> gBoneData;
 
-    Texture OpenGLRenderer::LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type)
+    Texture OpenGLRenderer::LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type) const
     {
         auto root = modelPath.parent_path();
 

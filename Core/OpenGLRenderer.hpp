@@ -534,7 +534,7 @@ namespace Gep
         void LoadAnimations(const std::string& name, Gep::Model& model, const aiScene* scene);
 
         // given information, will load textures onto the gpu that are needed by the given material. will return NumMax<GLuint>() if there is no texture loaded
-        Texture LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type);
+        Texture LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type) const;
 
         void LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton);
 
