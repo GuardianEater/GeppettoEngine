@@ -99,11 +99,11 @@ namespace Gep
         glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
         // gbuffer
-        mGeometryFrameBuffer = FrameBuffer::Create({128, 128});
-        mGeometryFrameBuffer.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT); // depth
-        mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGB16F, GL_RGB, GL_FLOAT); // normal
-        mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT1, GL_RGBA8, GL_RGBA, GL_FLOAT); // color
-        mGeometryFrameBuffer.AddTexture(GL_COLOR_ATTACHMENT2, GL_RGB8, GL_RGB, GL_FLOAT); // ao + roughness + metalness
+        mFBO_Geometry = FrameBuffer::Create({128, 128});
+        mFBO_Geometry.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT); // depth
+        mFBO_Geometry.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGB16F, GL_RGB, GL_FLOAT); // normal
+        mFBO_Geometry.AddTexture(GL_COLOR_ATTACHMENT1, GL_RGBA8, GL_RGBA, GL_FLOAT); // color
+        mFBO_Geometry.AddTexture(GL_COLOR_ATTACHMENT2, GL_RGB8, GL_RGB, GL_FLOAT); // ao + roughness + metalness
 
         // setup geometry shaders
         mShader_Geometry  = Shader::FromFile("shaders/Geometry.vert",  "shaders/Geometry.frag");
@@ -202,6 +202,11 @@ namespace Gep
         mFBO_OutlineMask = FrameBuffer::CreateMask({ 128, 128 });
         mFBO_OutlineDilation = FrameBuffer::CreateMask({ 128, 128 });
 
+        mFBO_SSAO = FrameBuffer::CreateMask({ 128, 128 });
+        mFBO_SSAOBlur = FrameBuffer::CreateMask({ 128, 128 });
+
+        mShader_SSAO = Shader::FromFile("shaders/Quad.vert", "shaders/SSAO/SSAO.frag");
+        mShader_SSAOBlur = Shader::FromFile("shaders/Quad.vert", "shaders/SSAO/SSAOBlur.frag");
 
         //// load hdr environment map
         Gep::Texture skyboxTextureEquirectangular = Texture::LoadHDR("assets/textures/HDR/Newport_Loft_Ref.hdr");
@@ -251,6 +256,11 @@ namespace Gep
         mShader_AmbientLight.SetUniform("u_irradianceMap", 6);
 
         SetExposure(1.0f);
+
+        InitializeSSAOKernel(64);
+
+        mSSAONoise = GenerateNoiseTexture({ 4, 4 });
+        AddTexture(mSSAONoise);
 
         Shader::Unbind();
     }
@@ -819,19 +829,21 @@ namespace Gep
         hdrSceneFrameBuffer.Clear();
         FrameBuffer::Unbind();
 
-        // render to depth cube buffer here
-        PointLightShadowDepthPass();            // renders all scene geometry for each point light that casts shadows to the corresponding shadow map
-        DirectionalLightShadowDepthPass();
-        //DrawLines(hdrSceneFrameBuffer);
-        GeometryPass(hdrSceneFrameBuffer);   // renders all scene geometry to the gbuffer
-        DirectionalLightPass(hdrSceneFrameBuffer);
-        PointLightPass(hdrSceneFrameBuffer); // renders all point lights as light volumes, using the gbuffer for shading
-        AmbientPass(hdrSceneFrameBuffer);
-        BackgroundPass(hdrSceneFrameBuffer, mEnvironmentCubeMap);
-        TonemapPass(targetFrameBuffer, hdrSceneFrameBuffer);
+        // pre pass
+        DrawPass_PointLightShadowDepth();
+        DrawPass_DirectionalLightShadowDepth();
+
+        //DrawPass_Lines(hdrSceneFrameBuffer);
+        DrawPass_Geometry(hdrSceneFrameBuffer); 
+        DrawPass_DirectionalLight(hdrSceneFrameBuffer);
+        DrawPass_PointLight(hdrSceneFrameBuffer);
+        DrawPass_AmbientLight(hdrSceneFrameBuffer);
+        DrawPass_Skybox(hdrSceneFrameBuffer, mEnvironmentCubeMap);
+        DrawPass_AmbientOcclusion(hdrSceneFrameBuffer);
+        DrawPass_Tonemap(targetFrameBuffer, hdrSceneFrameBuffer);
 
         // draw postprocess effects, ie model outlines
-        OutlinePass(targetFrameBuffer);
+        DrawPass_Outline(targetFrameBuffer);
     }
 
     void OpenGLRenderer::End()
@@ -876,13 +888,13 @@ namespace Gep
         glEnableVertexAttribArray(0);
     }
 
-    void OpenGLRenderer::GeometryPass(const Gep::FrameBuffer& targetFrameBuffer)
+    void OpenGLRenderer::DrawPass_Geometry(const Gep::FrameBuffer& targetFrameBuffer)
     {
-        mGeometryFrameBuffer.Bind();
-        mGeometryFrameBuffer.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
-        mGeometryFrameBuffer.UpdateViewport();
-        mGeometryFrameBuffer.Clear();
-        mGeometryFrameBuffer.DrawBuffers();
+        mFBO_Geometry.Bind();
+        mFBO_Geometry.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
+        mFBO_Geometry.UpdateViewport();
+        mFBO_Geometry.Clear();
+        mFBO_Geometry.DrawBuffers();
 
         GLDrawFlags flags{
             .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
@@ -908,10 +920,10 @@ namespace Gep
         FrameBuffer::Unbind();
     }
 
-    void OpenGLRenderer::PointLightPass(Gep::FrameBuffer& targetFrameBuffer)
+    void OpenGLRenderer::DrawPass_PointLight(Gep::FrameBuffer& targetFrameBuffer)
     {
         targetFrameBuffer.Bind(); // draw to the target framebuffer
-        mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
+        mFBO_Geometry.BindTextures(); // bind gbuffer textures to texture units
 
         GLDrawFlags flags{
             .depthFuncMask = std::nullopt, // do not use depth
@@ -931,7 +943,7 @@ namespace Gep
         Shader::Unbind();
     }
 
-    void OpenGLRenderer::PointLightShadowDepthPass()
+    void OpenGLRenderer::DrawPass_PointLightShadowDepth()
     {
         GLDrawFlags flags{
             .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
@@ -966,10 +978,10 @@ namespace Gep
         FrameBuffer::Unbind();
     }
 
-    void OpenGLRenderer::DirectionalLightPass(Gep::FrameBuffer& targetFrameBuffer)
+    void OpenGLRenderer::DrawPass_DirectionalLight(Gep::FrameBuffer& targetFrameBuffer)
     {
         targetFrameBuffer.Bind();          // draw to the target framebuffer
-        mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
+        mFBO_Geometry.BindTextures(); // bind gbuffer textures to texture units
 
         GLDrawFlags flags{
             .depthFuncMask = std::nullopt,
@@ -987,7 +999,7 @@ namespace Gep
         Shader::Unbind();
     }
 
-    void OpenGLRenderer::DirectionalLightShadowDepthPass()
+    void OpenGLRenderer::DrawPass_DirectionalLightShadowDepth()
     {
         GLDrawFlags flags{
             .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
@@ -1021,7 +1033,7 @@ namespace Gep
         FrameBuffer::Unbind();
     }
 
-    void OpenGLRenderer::DrawLines(Gep::FrameBuffer& targetFrameBuffer)
+    void OpenGLRenderer::DrawPass_Lines(Gep::FrameBuffer& targetFrameBuffer)
     {
         GLDrawFlags flags{
             .depthFuncMask = std::nullopt,
@@ -1055,12 +1067,12 @@ namespace Gep
         mShader_Line.Unbind();
     }
 
-    void OpenGLRenderer::BackgroundPass(Gep::FrameBuffer& targetFrameBuffer, const Gep::Texture& backgroundCubeMap)
+    void OpenGLRenderer::DrawPass_Skybox(Gep::FrameBuffer& targetFrameBuffer, const Gep::Texture& backgroundCubeMap)
     {
         const glm::ivec2 targetSize = targetFrameBuffer.GetSize();
 
         // copies the depth buffer from the geometry buffer to the target frame buffer
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, mGeometryFrameBuffer.GetFrameBufferID());
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, mFBO_Geometry.GetFrameBufferID());
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFrameBuffer.GetFrameBufferID());
         glBlitFramebuffer(0, 0, targetSize.x, targetSize.y, 0, 0, targetSize.x, targetSize.y, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
@@ -1082,7 +1094,7 @@ namespace Gep
         GLDraw(cubeHandle.mVertexArrayObject, cubeHandle.mIndexCount, 1, 0);
     }
 
-    void OpenGLRenderer::AmbientPass(Gep::FrameBuffer& targetFrameBuffer)
+    void OpenGLRenderer::DrawPass_AmbientLight(Gep::FrameBuffer& targetFrameBuffer)
     {
         GLDrawFlags flags{
             .depthFuncMask = std::nullopt,
@@ -1091,19 +1103,51 @@ namespace Gep
         };
 
         targetFrameBuffer.Bind();
-        mGeometryFrameBuffer.BindTextures(); // bind gbuffer textures to texture units
+        mFBO_Geometry.BindTextures(); // bind gbuffer textures to texture units
 
         mShader_AmbientLight.Bind();
-        mShader_AmbientLight.SetTexture2D  (mGeometryFrameBuffer.GetTextureCount() + 0, mBRDFLUT.id);
-        mShader_AmbientLight.SetTextureCube(mGeometryFrameBuffer.GetTextureCount() + 1, mPrefilterCubeMap.id);
-        mShader_AmbientLight.SetTextureCube(mGeometryFrameBuffer.GetTextureCount() + 2, mIrradianceCubeMap.id);
+        mShader_AmbientLight.SetTexture2D  (mFBO_Geometry.GetTextureCount() + 0, mBRDFLUT.id);
+        mShader_AmbientLight.SetTextureCube(mFBO_Geometry.GetTextureCount() + 1, mPrefilterCubeMap.id);
+        mShader_AmbientLight.SetTextureCube(mFBO_Geometry.GetTextureCount() + 2, mIrradianceCubeMap.id);
 
         SetDrawFlags(flags);
         GLDrawQuad();
         Shader::Unbind();
     }
 
-    void OpenGLRenderer::TonemapPass(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer)
+    void OpenGLRenderer::DrawPass_AmbientOcclusion(Gep::FrameBuffer& targetFrameBuffer)
+    {
+        mFBO_SSAO.Bind();
+        mFBO_SSAO.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
+        mFBO_SSAO.UpdateViewport();
+        mFBO_SSAO.Clear();
+
+        mShader_SSAO.Bind();
+
+        mFBO_Geometry.BindTextures();
+        mShader_SSAO.SetTexture2D(mFBO_Geometry.GetTextureCount(), mSSAONoise.id);
+        GLDrawQuad();
+
+        //mFBO_SSAOBlur.Bind();
+        //mFBO_SSAOBlur.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
+        //mFBO_SSAOBlur.UpdateViewport();
+        //mFBO_SSAOBlur.Clear();
+
+        //mShader_SSAOBlur.Bind();
+        //mShader_SSAOBlur.SetTexture2D(0, mFBO_SSAO.GetTexture(0));
+        //GLDrawQuad();
+
+        ImGui::Begin("AO");
+
+        ImGui::Image(mFBO_SSAO.GetTexture(0), ImVec2{ 256, 256 }, ImVec2(0, 1), ImVec2(1, 0));
+
+        ImGui::End();
+
+        FrameBuffer::Unbind();
+        Shader::Unbind();
+    }
+
+    void OpenGLRenderer::DrawPass_Tonemap(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer)
     {
         GLDrawFlags flags{
             .depthFuncMask = std::nullopt,
@@ -1121,7 +1165,7 @@ namespace Gep
         Shader::Unbind();
     }
 
-    void OpenGLRenderer::OutlinePass(Gep::FrameBuffer& targetFrameBuffer)
+    void OpenGLRenderer::DrawPass_Outline(Gep::FrameBuffer& targetFrameBuffer)
     {
         GLDrawFlags sceneMaskFlags{
             .depthFuncMask = std::nullopt,
@@ -1886,6 +1930,53 @@ namespace Gep
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         return brdflut;
+    }
+
+    Texture OpenGLRenderer::GenerateNoiseTexture(const glm::uvec2 size) const
+    {
+        std::uniform_real_distribution<GLfloat> randomFloats(0.0, 1.0); // generates random floats between 0.0 and 1.0
+        std::default_random_engine generator;
+        std::vector<glm::vec3> ssaoKernel;
+
+        std::vector<glm::vec3> ssaoNoise(size.x * size.y);
+        for (uint32_t i = 0; i < ssaoNoise.size(); i++)
+        {
+            // rotate around z-axis tangent space
+            ssaoNoise[i] = { randomFloats(generator) * 2.0 - 1.0, randomFloats(generator) * 2.0 - 1.0, 0.0f };
+        }
+
+        Texture result;
+        glGenTextures(1, &result.id);
+        glBindTexture(GL_TEXTURE_2D, result.id);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, size.x, size.y, 0, GL_RGB, GL_FLOAT, &ssaoNoise[0]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        return result;
+    }
+
+    void OpenGLRenderer::InitializeSSAOKernel(const uint32_t size)
+    {
+        const uint32_t kernelSize = 64;
+        std::uniform_real_distribution<GLfloat> randomFloats(0.0, 1.0); // generates random floats between 0.0 and 1.0
+        std::default_random_engine generator;
+
+        for (uint32_t i = 0; i < kernelSize; ++i)
+        {
+            glm::vec3 sample(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator) * 2.0 - 1.0, randomFloats(generator));
+            sample = glm::normalize(sample);
+            sample *= randomFloats(generator);
+            float scale = float(i) / kernelSize;
+
+            // scale samples s.t. they're more aligned to center of kernel
+            scale = glm::lerp(0.1f, 1.0f, scale * scale);
+            sample *= scale;
+            mSSAOKernel.push_back(sample);
+        }
+
+        mSSAOKernel.commit();
     }
 
     void OpenGLRenderer::GLDraw(GLuint vao, uint32_t indexCount, uint32_t instanceCount, uint32_t objectBaseInstance)

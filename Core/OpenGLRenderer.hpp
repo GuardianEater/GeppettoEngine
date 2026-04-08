@@ -417,7 +417,7 @@ namespace Gep
         void SetExposure(float exposure);
 
 
-        FrameBuffer& GetGeometryFrameBuffer() { return mGeometryFrameBuffer; }
+        FrameBuffer& GetGeometryFrameBuffer() { return mFBO_Geometry; }
 
         // Start must be called before rendering and End must be called after rendering
         void Start(const glm::vec3& color = { 0, 0, 0 });
@@ -516,16 +516,17 @@ namespace Gep
         }
 
     private:
-        void GeometryPass(const Gep::FrameBuffer& targetFrameBuffer); // renders all geometry to the geometry framebuffer
-        void PointLightPass(Gep::FrameBuffer& targetFrameBuffer);     // renders all point light emissions to the target framebuffer, but doesnt draw the light itself
-        void PointLightShadowDepthPass(); // renders the depth map for each point light that casts shadows
-        void DirectionalLightPass(Gep::FrameBuffer& targetFrameBuffer);
-        void DirectionalLightShadowDepthPass(); // renders the depth map for each direcational light that casts shadows
-        void DrawLines(Gep::FrameBuffer& targetFrameBuffer);
-        void BackgroundPass(Gep::FrameBuffer& targetFrameBuffer, const Gep::Texture& backgroundCubeMap);
-        void AmbientPass(Gep::FrameBuffer& targetFrameBuffer);
-        void TonemapPass(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer);
-        void OutlinePass(Gep::FrameBuffer& targetFrameBuffer);
+        void DrawPass_Geometry(const Gep::FrameBuffer& targetFrameBuffer); // renders all geometry to the geometry framebuffer
+        void DrawPass_PointLight(Gep::FrameBuffer& targetFrameBuffer);     // renders all point light emissions to the target framebuffer, but doesnt draw the light itself
+        void DrawPass_PointLightShadowDepth(); // renders the depth map for each point light that casts shadows
+        void DrawPass_DirectionalLight(Gep::FrameBuffer& targetFrameBuffer);
+        void DrawPass_DirectionalLightShadowDepth(); // renders the depth map for each direcational light that casts shadows
+        void DrawPass_Lines(Gep::FrameBuffer& targetFrameBuffer);
+        void DrawPass_Skybox(Gep::FrameBuffer& targetFrameBuffer, const Gep::Texture& backgroundCubeMap);
+        void DrawPass_AmbientLight(Gep::FrameBuffer& targetFrameBuffer);
+        void DrawPass_AmbientOcclusion(Gep::FrameBuffer& targetFrameBuffer);
+        void DrawPass_Tonemap(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer);
+        void DrawPass_Outline(Gep::FrameBuffer& targetFrameBuffer);
 
         // helpers for loading assimp files
         void LoadMaterials(const std::filesystem::path& path, const aiScene* scene);
@@ -547,6 +548,9 @@ namespace Gep
 
         Texture GenerateBRDFLUT();
 
+        Texture GenerateNoiseTexture(const glm::uvec2 size) const;
+        void InitializeSSAOKernel(const uint32_t size);
+
         void GLDraw(GLuint vao, uint32_t indexCount, uint32_t instanceCount, uint32_t baseInstance);
         void GLDrawQuad(uint32_t instanceCount = 1);
     private:
@@ -562,24 +566,33 @@ namespace Gep
         Shader mShader_DirectionalLightWithShadows; // shader used for directional lights that cast shadows
         Shader mShader_DirectionalLightShadowDepth; // shader used to generate the depth map of directional lights
 
+        // utility
         Shader mShader_EquirectangularToCubemap;
         Shader mShader_CubemapToEquirectangular;
+        Shader mShader_Tonemap;
 
+        // IBL
         Shader mShader_Background;
         Shader mShader_AmbientLight;
-        Shader mShader_Tonemap;
+        Shader mShader_Prefilter;
+        Shader mShader_GenerateBRDFLUT;
+        Shader mShader_GenerateIrradianceMap;
+
+        // outline
         Shader mShader_OutlineMask;
         Shader mShader_OutlineDilation;
         Shader mShader_OutlineDilationVertical;
         Shader mShader_OutlineComposite;
-        Shader mShader_Prefilter;
-        Shader mShader_GenerateBRDFLUT;
-        Shader mShader_GenerateIrradianceMap;
+
+        // ambient occlusion
+        Shader mShader_SSAO;
+        Shader mShader_SSAOBlur;
 
         Texture mEnvironmentCubeMap;
         Texture mIrradianceCubeMap;
         Texture mPrefilterCubeMap;
         Texture mBRDFLUT;
+
 
         bool mDebug_ShowPrefilter = false;
 
@@ -601,9 +614,14 @@ namespace Gep
 
         std::mutex mTextureLoadingMutex{};
 
-        FrameBuffer mGeometryFrameBuffer;
+        FrameBuffer mFBO_Geometry;
         FrameBuffer mFBO_OutlineMask;
         FrameBuffer mFBO_OutlineDilation;
+
+        FrameBuffer mFBO_SSAO;
+        FrameBuffer mFBO_SSAOBlur;
+
+        Texture mSSAONoise;
 
         struct MeshDrawBatch
         {
@@ -628,6 +646,7 @@ namespace Gep
         Gep::gpu_vector<DirectionalLightGPUData, 6> mDirectionalLightUniforms;  // copied into u_directionalLights on the gpu
         Gep::gpu_vector<PointLightShadowGPUData, 7> mPointLightShadowUniforms;  // copied into u_pointLightShadows on the gpu
         Gep::gpu_vector<DirectionalLightShadowGPUData, 8> mDirectionalLightShadowUniforms;  // copied into u_pointLightShadows on the gpu
+        Gep::gpu_vector<glm::vec3, 9> mSSAOKernel;
 
         std::vector<FrameBuffer> mPointLightShadowMaps; // index corresponds to the point light shadow uniform at the same index in mPointLightShadowUniforms
         std::vector<FrameBuffer> mDirectionalLightShadowMaps; // index corresponds to the directional light shadow uniform at the same index in mPointLightShadowUniforms

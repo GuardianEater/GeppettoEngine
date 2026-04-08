@@ -155,6 +155,11 @@ layout(std430, binding=8) buffer DirectionalLightShadowUniformsBuffer
   DirectionalLightShadowUniforms u_directionalLightShadows[];
 };
 
+layout(std430, binding=9) buffer SSAOKernelBuffer
+{
+  vec3 u_ssaoSamples[];
+};
+
 // uniforms ////////////////////////////////////////////////////////////////////
 layout(location=0) uniform uint u_camIndex;           // the currently active camera in the u_cams array
 //layout(location=1)                                   // used by color in the line shader
