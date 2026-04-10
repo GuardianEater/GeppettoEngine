@@ -707,7 +707,7 @@ namespace Gep
         mShader_OutlineDilationVertical.SetUniform("u_direction", glm::vec2{ 1,0 });
         mShader_OutlineDilationVertical.SetUniform("u_radius", outlineSize);
 
-        mShader_OutlineComposite.SetUniform("u_outlineColor", glm::vec4{ 1.0f, 0.1f, 0.1f, 1.0f });
+        mShader_OutlineComposite.SetUniform("u_outlineColor", glm::vec4{ 1.0f, 0.5f, 0.1f, 1.0f });
 
         // gbuffer access in shader
     }
@@ -1028,7 +1028,6 @@ namespace Gep
         mFBO_Geometry.BindTextures();
 
         mShader_SSAO.Bind();
-        mShader_SSAO.SetTexture2D(mFBO_Geometry.GetTextureCount() + 0, mSSAONoise.id);
 
         SetDrawFlags(flags);
         GLDrawQuad();

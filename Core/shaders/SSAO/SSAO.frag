@@ -1,12 +1,10 @@
 #include "Common.glsl"
-#include "PBR.glsl"
 
 // uniforms ////////////////////////////////////////////////////////////////////
 layout(binding=0) uniform sampler2D u_depthTexture;
 layout(binding=1) uniform sampler2D u_normalTexture;
 layout(binding=2) uniform sampler2D u_colorTexture;
 layout(binding=3) uniform sampler2D u_armTexture;
-layout(binding=4) uniform sampler2D u_noiseTexture;
 
 // in //////////////////////////////////////////////////////////////////////////
 layout(location = 0) in vec2 v_uv;
@@ -32,57 +30,56 @@ vec3 GetViewPosition(vec2 uv, float depth)
   return viewPos.xyz;
 }
 
-const int kernelSize = 64;
-const float radius = 0.5;
-const float bias = 0.025;
+const float c_radius = 1.0;
+const uint c_samples = 10; // n (approx 10 to 20)
+const float c_scale = 2.0;
+const float c_contrast = 1.0;
 
-void main()
+void main() 
 {
-  const vec2 screenSize = vec2(textureSize(u_depthTexture, 0));
-  const vec2 noiseSize = vec2(textureSize(u_noiseTexture, 0));
-  const vec2 noiseScale = vec2(screenSize.x/noiseSize.x, screenSize.y/noiseSize.y); 
-
-  // get input for SSAO algorithm
-  float depth = texture(u_depthTexture, v_uv).x;  
-  if (depth >= 1.0)
+  float d = texture(u_depthTexture, v_uv).r;
+  if (d >= 1.0) 
   {
     f_color = vec4(1.0);
     return;
   }
 
-  vec3 position = GetViewPosition(v_uv, depth);
-  vec3 normalWorld = normalize(texture(u_normalTexture, v_uv).rgb);
-  vec3 normal = normalize(mat3(u_cams[u_camIndex].view) * normalWorld);
-  vec3 randomVec = normalize(texture(u_noiseTexture, v_uv * noiseScale).xyz);
+  vec3 P = GetWorldPosition(v_uv, d);
+  vec3 N = normalize(texture(u_normalTexture, v_uv).rgb);
 
-  // create TBN change-of-basis matrix: from tangent-space to view-space
-  vec3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
-  vec3 bitangent = cross(normal, tangent);
-  mat3 TBN = mat3(tangent, bitangent, normal);
+  float R = c_radius;
+  uint n = c_samples;
+  float c = 0.1 * R;
+  float c2 = c * c;
+  float delta = 0.001;
 
-  // iterate over the sample kernel and calculate occlusion factor
-  float occlusion = 0.0;
-  for(int i = 0; i < kernelSize; ++i)
+  float S = 0.0; // raw occlusion accumulator
+
+  uint xp = uint(gl_FragCoord.x);
+  uint yp = uint(gl_FragCoord.y);
+  uint phi = ((30u * xp) ^ yp) + 10u * xp * yp;
+
+  for (uint i = 0u; i < n; i++)
   {
-    // get sample position
-    vec3 samplePos = TBN * u_ssaoSamples[i]; // from tangent to view-space
-    samplePos = position + samplePos * radius; 
-    
-    // project sample position (to sample texture) (to get position on screen/texture)
-    vec4 offset = vec4(samplePos, 1.0);
-    offset = u_cams[u_camIndex].perspective * offset; // from view to clip-space
-    offset.xyz /= offset.w; // perspective divide
-    offset.xyz = offset.xyz * 0.5 + 0.5; // transform to range 0.0 - 1.0
-    
-    // get sample depth
-    float sampleDepth = texture(u_depthTexture, offset.xy).r; // get depth value of kernel sample
-    vec3 sampleDepthPos = GetViewPosition(offset.xy, sampleDepth);
-    
-    // range check & accumulate
-    float rangeCheck = smoothstep(0.0, 1.0, radius / abs(position.z - sampleDepthPos.z));
-    occlusion += (sampleDepthPos.z >= samplePos.z + bias ? 1.0 : 0.0) * rangeCheck;
+    float alpha = (float(i) + 0.5) / float(n);
+    float h = (alpha * R) / d;
+    float theta = 2.0 * PI * alpha * ((7.0 * float(n)) / 9.0) + float(phi);
+
+    vec2 uvi = v_uv + h * vec2(cos(theta), sin(theta));
+    float di = texture(u_depthTexture, uvi).r;
+    vec3 Pi = GetWorldPosition(uvi, di);
+
+    vec3 wi = Pi - P; 
+
+    float numerator = max(0.0, dot(N, wi) - (delta * di)) * step(0.0, R - length(wi));
+    float denominator = max(c2, dot(wi, wi));
+
+    S += numerator / denominator;
   }
-  occlusion = 1.0 - (occlusion / kernelSize);
-  
-  f_color = vec4(vec3(occlusion), 1.0);
+
+  S *= (2.0 * PI * c) / float(n);
+  float ao = clamp(1.0 - (c_scale * S), 0.0, 1.0);
+  ao = pow(ao, c_contrast);
+
+  f_color = vec4(vec3(ao), 1.0);
 }

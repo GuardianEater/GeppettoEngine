@@ -511,7 +511,9 @@ namespace Gep
 
                 mShader_Prefilter,
                 mShader_GenerateBRDFLUT,
-                mShader_GenerateIrradianceMap
+                mShader_GenerateIrradianceMap,
+
+                mShader_SSAO
             );
         }
 
