@@ -31,9 +31,9 @@ vec3 GetViewPosition(vec2 uv, float depth)
 }
 
 const float c_radius = 1.0;
-const uint c_samples = 10; // n (approx 10 to 20)
-const float c_scale = 2.0;
-const float c_contrast = 1.0;
+const uint c_samples = 32; // balanced samples with good jitter for smooth results
+const float c_scale = 1.0;
+const float c_contrast = 22.2;
 
 void main() 
 {

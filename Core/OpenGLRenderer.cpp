@@ -776,9 +776,9 @@ namespace Gep
         DrawPass_Geometry(hdrSceneFrameBuffer); 
         DrawPass_DirectionalLight(hdrSceneFrameBuffer);
         DrawPass_PointLight(hdrSceneFrameBuffer);
+        DrawPass_AmbientOcclusion(hdrSceneFrameBuffer);
         DrawPass_AmbientLight(hdrSceneFrameBuffer);
         DrawPass_Skybox(hdrSceneFrameBuffer, mEnvironmentCubeMap);
-        DrawPass_AmbientOcclusion(hdrSceneFrameBuffer);
         DrawPass_Tonemap(targetFrameBuffer, hdrSceneFrameBuffer);
 
         // draw postprocess effects, ie model outlines
@@ -1006,6 +1006,7 @@ namespace Gep
         mShader_AmbientLight.SetTexture2D  (mFBO_Geometry.GetTextureCount() + 0, mBRDFLUT.id);
         mShader_AmbientLight.SetTextureCube(mFBO_Geometry.GetTextureCount() + 1, mPrefilterCubeMap.id);
         mShader_AmbientLight.SetTextureCube(mFBO_Geometry.GetTextureCount() + 2, mIrradianceCubeMap.id);
+        mShader_AmbientLight.SetTexture2D  (mFBO_Geometry.GetTextureCount() + 3, mFBO_SSAOBlur.GetTexture(0));
 
         SetDrawFlags(flags);
         GLDrawQuad();
@@ -1032,18 +1033,20 @@ namespace Gep
         SetDrawFlags(flags);
         GLDrawQuad();
 
-        //mFBO_SSAOBlur.Bind();
-        //mFBO_SSAOBlur.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
-        //mFBO_SSAOBlur.UpdateViewport();
-        //mFBO_SSAOBlur.Clear();
+        mFBO_SSAOBlur.Bind();
+        mFBO_SSAOBlur.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
+        mFBO_SSAOBlur.UpdateViewport();
+        mFBO_SSAOBlur.Clear();
 
-        //mShader_SSAOBlur.Bind();
-        //mShader_SSAOBlur.SetTexture2D(0, mFBO_SSAO.GetTexture(0));
-        //GLDrawQuad();
+        mShader_SSAOBlur.Bind();
+        mFBO_Geometry.BindTextures();
+        mShader_SSAOBlur.SetTexture2D(mFBO_Geometry.GetTextureCount(), mFBO_SSAO.GetTexture(0));
+        GLDrawQuad();
 
         ImGui::Begin("AO");
 
         ImGui::Image(mFBO_SSAO.GetTexture(0), ImVec2{ 256 * 4, 256 * 4 }, ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::Image(mFBO_SSAOBlur.GetTexture(0), ImVec2{ 256 * 4, 256 * 4 }, ImVec2(0, 1), ImVec2(1, 0));
 
         ImGui::End();
 

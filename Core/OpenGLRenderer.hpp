@@ -513,7 +513,8 @@ namespace Gep
                 mShader_GenerateBRDFLUT,
                 mShader_GenerateIrradianceMap,
 
-                mShader_SSAO
+                mShader_SSAO,
+                mShader_SSAOBlur
             );
         }
 

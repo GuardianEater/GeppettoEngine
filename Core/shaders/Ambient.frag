@@ -9,6 +9,7 @@ layout(binding=3) uniform sampler2D u_armTexture;
 layout(binding=4) uniform sampler2D u_brdflut;
 layout(binding=5) uniform samplerCube u_prefilterMap;
 layout(binding=6) uniform samplerCube u_irradianceMap;
+layout(binding=7) uniform sampler2D u_ambientOcclusion;
 
 // in //////////////////////////////////////////////////////////////////////////
 layout(location=0) in vec2 v_uv;
@@ -68,7 +69,8 @@ void main()
   vec2 brdf  = texture(u_brdflut, vec2(max(dot(normal, view), 0.0), mat.roughness)).rg;
   vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
-  vec3 ambient = (kD * diffuse + specular) * mat.ao;
+  vec3 ambient = (kD * diffuse + specular) * texture(u_ambientOcclusion, v_uv).r;
+  //vec3 ambient = (kD * diffuse + specular) * mat.ao;
 
 	f_color = vec4(ambient, mat.color.a);
 }
