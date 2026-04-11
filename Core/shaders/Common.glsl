@@ -55,7 +55,7 @@ struct PBRMaterial
   float ao;       // ambientOcclusion
   float roughness;
   float metallic; 
-  float pad4;
+  float emission;
 
   vec4 color;     // diffuse
 
@@ -66,7 +66,7 @@ struct PBRMaterial
   uvec2 colorTextureHandle;
 
   uvec2 normalTextureHandle;
-  uvec2 pad8;
+  uvec2 emissionTextureHandle;
 };
 
 // stores all per camera data

@@ -4,7 +4,7 @@
 layout(binding=0) uniform sampler2D u_depthTexture;
 layout(binding=1) uniform sampler2D u_normalTexture;
 layout(binding=2) uniform sampler2D u_colorTexture;
-layout(binding=3) uniform sampler2D u_armTexture;
+layout(binding=3) uniform sampler2D u_armeTexture;
 layout(binding=4) uniform sampler2D u_ssaoTexture;
 
 // in //////////////////////////////////////////////////////////////////////////

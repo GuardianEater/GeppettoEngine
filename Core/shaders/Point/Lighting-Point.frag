@@ -5,7 +5,7 @@
 layout(binding=0) uniform sampler2D u_depthTexture;
 layout(binding=1) uniform sampler2D u_normalTexture;
 layout(binding=2) uniform sampler2D u_colorTexture;
-layout(binding=3) uniform sampler2D u_armTexture;
+layout(binding=3) uniform sampler2D u_armeTexture;
 layout(binding=4) uniform samplerCube u_irradianceMap;
 
 // in variables ////////////////////////////////////////////////////////////////
@@ -55,14 +55,15 @@ void main(void)
   }
 
   // extracts materials from the gbuffer
-  vec3 arm = texture(u_armTexture, uv).xyz;
+  vec4 arme = texture(u_armeTexture, uv);
   vec3 normal = texture(u_normalTexture, uv).xyz;
 
   MaterialSample mat;
   mat.color     = texture(u_colorTexture, uv);
-  mat.ao        = arm.x;
-  mat.roughness = arm.y;
-  mat.metallic  = arm.z;
+  mat.ao        = arme.x;
+  mat.roughness = arme.y;
+  mat.metallic  = arme.z;
+  mat.emission  = arme.w;
 
   // compute pbr
   vec3 direct = CalculatePBRPoint(l, mat, normal, position, u_cams[u_camIndex].position.xyz);

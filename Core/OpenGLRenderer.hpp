@@ -41,7 +41,7 @@ namespace Gep
         float ao = 0.8f;        // ambient occlusion. uniformly applied to the mesh. Will only be used if the ao texture handle is null
         float roughness = 0.8f; // diffuse roughness. uniformly applied to the mesh. Will only be used if the roughness texture handle is null
         float metalness = 0.8f; // uniformly applied to the mesh. Will only be used if the metalness texture handle is null
-        float __pad;     // used for allignment
+        float emission = 0.0f;     // used for allignment
 
         glm::vec4 color = { 0.2f, 1.0f, 0.2f, 1.0f }; // diffuse color. uniformly applied to the mesh. Will only be used if the color texture handle is null
         
@@ -50,7 +50,7 @@ namespace Gep
         GLuint64 metalnessTextureHandle = 0; // 64 bit gpu pointer, used to sample metalness texture on the gpu
         GLuint64 colorTextureHandle = 0;     // 64 bit gpu pointer, used to sample color texture on the gpu
         GLuint64 normalTextureHandle = 0;    // 64 bit gpu pointer, used to sample normal texture on the gpu
-        GLuint64 padding;
+        GLuint64 emissionTextureHandle = 0;
     };
 
     struct alignas(16) ObjectInstanceDataGPU

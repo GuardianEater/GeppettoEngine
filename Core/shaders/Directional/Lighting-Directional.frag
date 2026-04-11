@@ -5,7 +5,7 @@
 layout(binding=0) uniform sampler2D u_depthTexture;
 layout(binding=1) uniform sampler2D u_normalTexture;
 layout(binding=2) uniform sampler2D u_colorTexture;
-layout(binding=3) uniform sampler2D u_armTexture;
+layout(binding=3) uniform sampler2D u_armeTexture;
 
 // in variables ////////////////////////////////////////////////////////////////
 layout(location=0) in vec2 v_uv;
@@ -42,14 +42,15 @@ void main(void)
   DirectionalLightUniforms l = u_directionalLights[v_InstanceID];
 
   // extracts materials from the gbuffer
-  vec3 arm = texture(u_armTexture, v_uv).xyz;
+  vec4 arme = texture(u_armeTexture, v_uv);
   vec3 normal = texture(u_normalTexture, v_uv).xyz;
 
   MaterialSample mat;
   mat.color     = texture(u_colorTexture, v_uv);
-  mat.ao        = arm.x;
-  mat.roughness = arm.y;
-  mat.metallic  = arm.z;
+  mat.ao        = arme.x;
+  mat.roughness = arme.y;
+  mat.metallic  = arme.z;
+  mat.emission  = arme.w;
 
   // compute pbr
   vec3 finalColor = CalculatePBRDirectional(l, mat, normal, position, u_cams[u_camIndex].position.xyz);

@@ -8,16 +8,17 @@ layout(location=2) flat in uint v_matIndex; // the current material index into m
 // out /////////////////////////////////////////////////////////////////////////
 layout(location=0) out vec3 f_normal;
 layout(location=1) out vec4 f_color;
-layout(location=2) out vec3 f_arm;
+layout(location=2) out vec4 f_arme;
 
 void main()
 {
   const PBRMaterial mat = u_materials[v_matIndex];
 
-  f_arm.x = mat.aoTextureHandle        == uvec2(0,0) ? mat.ao        : texture(sampler2D(mat.aoTextureHandle), v_uv).r;
-  f_arm.y = mat.roughnessTextureHandle == uvec2(0,0) ? mat.roughness : texture(sampler2D(mat.roughnessTextureHandle), v_uv).g;
-  f_arm.z = mat.metallicTextureHandle  == uvec2(0,0) ? mat.metallic  : texture(sampler2D(mat.metallicTextureHandle), v_uv).b;
-  f_color = mat.colorTextureHandle     == uvec2(0,0) ? mat.color     : texture(sampler2D(mat.colorTextureHandle), v_uv);
+  f_arme.x = mat.aoTextureHandle        == uvec2(0,0) ? mat.ao        : texture(sampler2D(mat.aoTextureHandle), v_uv).r;
+  f_arme.y = mat.roughnessTextureHandle == uvec2(0,0) ? mat.roughness : texture(sampler2D(mat.roughnessTextureHandle), v_uv).g;
+  f_arme.z = mat.metallicTextureHandle  == uvec2(0,0) ? mat.metallic  : texture(sampler2D(mat.metallicTextureHandle), v_uv).b;
+  f_arme.w = mat.emissionTextureHandle  == uvec2(0,0) ? mat.emission  : texture(sampler2D(mat.emissionTextureHandle), v_uv).r;
+  f_color = mat.colorTextureHandle      == uvec2(0,0) ? mat.color     : texture(sampler2D(mat.colorTextureHandle), v_uv);
 
   f_normal = v_normal;
 

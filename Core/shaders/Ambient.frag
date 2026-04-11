@@ -5,7 +5,7 @@
 layout(binding=0) uniform sampler2D u_depthTexture;
 layout(binding=1) uniform sampler2D u_normalTexture;
 layout(binding=2) uniform sampler2D u_colorTexture;
-layout(binding=3) uniform sampler2D u_armTexture;
+layout(binding=3) uniform sampler2D u_armeTexture;
 layout(binding=4) uniform sampler2D u_brdflut;
 layout(binding=5) uniform samplerCube u_prefilterMap;
 layout(binding=6) uniform samplerCube u_irradianceMap;
@@ -39,7 +39,7 @@ void main()
 		return;
 	}
 
-	vec3 arm = texture(u_armTexture, v_uv).xyz;
+	vec4 arme = texture(u_armeTexture, v_uv);
 	vec3 normal = normalize(texture(u_normalTexture, v_uv).xyz);
 	vec3 position = GetPosition(v_uv, depth);
 	vec3 view = normalize(u_cams[u_camIndex].position.xyz - position);
@@ -47,9 +47,10 @@ void main()
 
 	MaterialSample mat;
 	mat.color     = texture(u_colorTexture, v_uv);
-	mat.ao        = arm.x;
-	mat.roughness = arm.y;
-	mat.metallic  = arm.z;
+	mat.ao        = arme.x;
+	mat.roughness = arme.y;
+	mat.metallic  = arme.z;
+  mat.emission  = arme.w;
 
   const float dielectricDefault = 0.04;
   vec3 F0 = vec3(dielectricDefault);
@@ -69,8 +70,8 @@ void main()
   vec2 brdf  = texture(u_brdflut, vec2(max(dot(normal, view), 0.0), mat.roughness)).rg;
   vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
-  vec3 ambient = (kD * diffuse + specular) * texture(u_ambientOcclusion, v_uv).r;
-  //vec3 ambient = (kD * diffuse + specular) * mat.ao;
+  //vec3 ambient = (kD * diffuse + specular) * texture(u_ambientOcclusion, v_uv).r;
+  vec3 ambient = (kD * diffuse + specular) * mat.ao;
 
 	f_color = vec4(ambient, mat.color.a);
 }

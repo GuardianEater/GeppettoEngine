@@ -5,7 +5,7 @@
 layout(binding=0) uniform sampler2D u_depthTexture;
 layout(binding=1) uniform sampler2D u_normalTexture;
 layout(binding=2) uniform sampler2D u_colorTexture;
-layout(binding=3) uniform sampler2D u_armTexture;
+layout(binding=3) uniform sampler2D u_armeTexture;
 
 // in variables ////////////////////////////////////////////////////////////////
 layout(location=0) in vec2 v_uv;
@@ -45,14 +45,15 @@ void main(void)
   DirectionalLightUniforms l = lShadow.light;
 
   // extracts materials from the gbuffer
-  vec3 arm = texture(u_armTexture, v_uv).xyz;
+  vec4 arme = texture(u_armeTexture, v_uv);
   vec3 normal = texture(u_normalTexture, v_uv).xyz;
 
   MaterialSample mat;
   mat.color     = texture(u_colorTexture, v_uv);
-  mat.ao        = arm.x;
-  mat.roughness = arm.y;
-  mat.metallic  = arm.z;
+  mat.ao        = arme.x;
+  mat.roughness = arme.y;
+  mat.metallic  = arme.z;
+  mat.emission  = arme.w;
 
   // calculate shadow
   vec4 fragPosLightSpace = lShadow.pvMatrix * vec4(position, 1.0);

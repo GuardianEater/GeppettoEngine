@@ -1661,7 +1661,12 @@ namespace Client
                 if (ImGui::MenuItem("Light"))
                 {
                     Gep::Entity entity = mManager.CreateEntity("Light");
-                    mManager.AddComponent(entity, ModelComponent{ 1 /*"Sphere"*/ }
+
+                    Gep::Material mat;
+                    mat.emission = 1.0f;
+                    uint32_t matIdx = mRenderer.AddMaterial(mat);
+
+                    mManager.AddComponent(entity, ModelComponent{ .modelIdx = 1 /*"Sphere"*/, .materialOverrides = { matIdx } }
                                                 , Transform{}
                                                 , Light{}
                                                 , SphereCollider{});

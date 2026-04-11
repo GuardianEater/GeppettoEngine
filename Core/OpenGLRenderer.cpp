@@ -67,7 +67,7 @@ namespace Gep
         mFBO_Geometry.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT); // depth
         mFBO_Geometry.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGB16F, GL_RGB, GL_FLOAT); // normal
         mFBO_Geometry.AddTexture(GL_COLOR_ATTACHMENT1, GL_RGBA8, GL_RGBA, GL_FLOAT); // color
-        mFBO_Geometry.AddTexture(GL_COLOR_ATTACHMENT2, GL_RGB8, GL_RGB, GL_FLOAT); // ao + roughness + metalness
+        mFBO_Geometry.AddTexture(GL_COLOR_ATTACHMENT2, GL_RGBA8, GL_RGBA, GL_FLOAT); // ao + roughness + metalness + emission
 
         // setup geometry shaders
         mShader_Geometry  = Shader::FromFile("shaders/Geometry.vert",  "shaders/Geometry.frag");
@@ -231,13 +231,15 @@ namespace Gep
             .ao = material.ao,
             .roughness = material.roughness,
             .metalness = material.metalness,
+            .emission = material.emission,
             .color = material.color,
 
             .aoTextureHandle = material.aoTexture.handle,
             .roughnessTextureHandle = material.roughnessTexture.handle,
             .metalnessTextureHandle = material.metalnessTexture.handle,
             .colorTextureHandle = material.diffuseTexture.handle,
-            .normalTextureHandle = material.normalTexture.handle
+            .normalTextureHandle = material.normalTexture.handle,
+            .emissionTextureHandle = material.emissionTexture.handle
         };
 
         MaterialLibraryEntry entry{
@@ -776,7 +778,7 @@ namespace Gep
         DrawPass_Geometry(hdrSceneFrameBuffer); 
         DrawPass_DirectionalLight(hdrSceneFrameBuffer);
         DrawPass_PointLight(hdrSceneFrameBuffer);
-        DrawPass_AmbientOcclusion(hdrSceneFrameBuffer);
+        //DrawPass_AmbientOcclusion(hdrSceneFrameBuffer);
         DrawPass_AmbientLight(hdrSceneFrameBuffer);
         DrawPass_Skybox(hdrSceneFrameBuffer, mEnvironmentCubeMap);
         DrawPass_Tonemap(targetFrameBuffer, hdrSceneFrameBuffer);

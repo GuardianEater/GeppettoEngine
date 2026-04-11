@@ -35,12 +35,14 @@ namespace Gep
         float ao = 1.0f; // ambient occlusion
         float roughness = 0.8f;
         float metalness = 0.0f;
-        glm::vec4 color = {1.0f, 0.2f, 0.2f, 1.0f};
+        float emission = 0.0f;
+        glm::vec4 color = { 0.8f, 0.8f, 0.8f, 1.0f };
 
         Texture aoTexture{};
         Texture roughnessTexture{};
         Texture metalnessTexture{};
         Texture diffuseTexture{};
         Texture normalTexture{};
+        Texture emissionTexture{};
     };
 }
