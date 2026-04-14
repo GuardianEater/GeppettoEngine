@@ -1663,7 +1663,7 @@ namespace Client
                     Gep::Entity entity = mManager.CreateEntity("Light");
 
                     Gep::Material mat;
-                    mat.emission = 1.0f;
+                    mat.emission = 1000.0f;
                     uint32_t matIdx = mRenderer.AddMaterial(mat);
 
                     mManager.AddComponent(entity, ModelComponent{ .modelIdx = 1 /*"Sphere"*/, .materialOverrides = { matIdx } }

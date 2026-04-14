@@ -747,7 +747,7 @@ namespace Client
             if (!l.enabled)
                 return; // skip disabled lights
 
-            float cutoff = 0.1f;              // chosen threshold
+            float cutoff = 0.01f;              // chosen threshold
             float radius = std::sqrt(l.intensity / cutoff);
 
             glm::mat4 modelMatrix{ 1.0f };

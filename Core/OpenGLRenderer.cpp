@@ -67,7 +67,7 @@ namespace Gep
         mFBO_Geometry.AddTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT); // depth
         mFBO_Geometry.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGB16F, GL_RGB, GL_FLOAT); // normal
         mFBO_Geometry.AddTexture(GL_COLOR_ATTACHMENT1, GL_RGBA8, GL_RGBA, GL_FLOAT); // color
-        mFBO_Geometry.AddTexture(GL_COLOR_ATTACHMENT2, GL_RGBA8, GL_RGBA, GL_FLOAT); // ao + roughness + metalness + emission
+        mFBO_Geometry.AddTexture(GL_COLOR_ATTACHMENT2, GL_RGBA32F, GL_RGBA, GL_FLOAT); // ao + roughness + metalness + emission
 
         // setup geometry shaders
         mShader_Geometry  = Shader::FromFile("shaders/Geometry.vert",  "shaders/Geometry.frag");

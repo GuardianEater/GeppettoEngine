@@ -46,7 +46,7 @@ void main(void)
 
   // check if the position is inside the light's radius
   float distToLight = length(l.position - position);
-  float cutoff = 0.1;              // chosen threshold
+  float cutoff = 0.01;              // chosen threshold
   float radius = sqrt(l.intensity / cutoff);
   if (distToLight > radius)
   {
