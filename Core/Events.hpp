@@ -164,6 +164,16 @@ namespace Gep
             Entity entity; // parent
         };
 
+        // event is called when the given component types become coexistant on an entity
+        // this is called after all of the respective components ComponentAdded event
+        template <typename... ComponentTypes>
+        struct ComponentsTogether
+        {
+            std::tuple<ComponentTypes&...> components;
+
+            Entity entity; // parent
+        };
+
         struct EngineStateChanged
         {
             EngineState previousState;
