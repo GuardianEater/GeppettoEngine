@@ -528,8 +528,11 @@ namespace Gep
         void DrawPass_Skybox(Gep::FrameBuffer& targetFrameBuffer, const Gep::Texture& backgroundCubeMap);
         void DrawPass_AmbientLight(Gep::FrameBuffer& targetFrameBuffer);
         void DrawPass_AmbientOcclusion(Gep::FrameBuffer& targetFrameBuffer);
+        void DrawPass_Brightness(const Gep::FrameBuffer& targetFrameBuffer); // renders all brightness to the brightness framebuffer, all lighting must be finished, but prior to tonemap
+        void DrawPass_Bloom(Gep::FrameBuffer& targetFrameBuffer);
         void DrawPass_Tonemap(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer);
         void DrawPass_Outline(Gep::FrameBuffer& targetFrameBuffer);
+
 
         // helpers for loading assimp files
         void LoadMaterials(const std::filesystem::path& path, const aiScene* scene);
@@ -553,18 +556,23 @@ namespace Gep
 
         Texture GenerateNoiseTexture(const glm::uvec2 size) const;
         void InitializeSSAOKernel(const uint32_t size);
+        void InitializeBloomFBO();
+
+        void ExtractBrightness(FrameBuffer& brightnessFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer);
 
         void GLDraw(GLuint vao, uint32_t indexCount, uint32_t instanceCount, uint32_t baseInstance);
         void GLDrawQuad(uint32_t instanceCount = 1);
     private:
-        // when creating shaders make sure to add them to GetAllShaders
+        // geometry
         Shader mShader_Geometry;  // shader used for geometry pass of static models
         Shader mShader_Line;            // shader used for drawing lines
 
+        // point
         Shader mShader_PointLight;            // shader used for simple point lights
         Shader mShader_PointLightWithShadows; // shader used for point lights that cast shadows
         Shader mShader_PointLightShadowDepth; // shader used to generate the depth cube map of shadow casting point lights
 
+        // directional
         Shader mShader_DirectionalLight;            // shader used for simple directional lights
         Shader mShader_DirectionalLightWithShadows; // shader used for directional lights that cast shadows
         Shader mShader_DirectionalLightShadowDepth; // shader used to generate the depth map of directional lights
@@ -591,10 +599,17 @@ namespace Gep
         Shader mShader_SSAO;
         Shader mShader_SSAOBlur;
 
+        // bloom
+        Shader mShader_BloomUpSample;
+        Shader mShader_BloomDownSample;
+        Shader mShader_ExtractBrightness; // takes all colors from a texture that exceed a threshhold
+
         Texture mEnvironmentCubeMap;
         Texture mIrradianceCubeMap;
         Texture mPrefilterCubeMap;
         Texture mBRDFLUT;
+
+        Texture mBloomTexture;
 
 
         bool mDebug_ShowPrefilter = false;
@@ -623,6 +638,9 @@ namespace Gep
 
         FrameBuffer mFBO_SSAO;
         FrameBuffer mFBO_SSAOBlur;
+
+        FrameBuffer mFBO_Brightness;
+        FrameBuffer mFBO_Bloom;
 
         Texture mSSAONoise;
 

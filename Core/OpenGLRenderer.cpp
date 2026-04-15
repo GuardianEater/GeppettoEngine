@@ -163,8 +163,17 @@ namespace Gep
         mFBO_SSAO = FrameBuffer::CreateMask({ 128, 128 });
         mFBO_SSAOBlur = FrameBuffer::CreateMask({ 128, 128 });
 
+        mFBO_Brightness = FrameBuffer::CreateScreenHDR({ 128, 128 });
+        InitializeBloomFBO();
+
         mShader_SSAO = Shader::FromFile("shaders/Quad.vert", "shaders/SSAO/SSAO.frag");
         mShader_SSAOBlur = Shader::FromFile("shaders/Quad.vert", "shaders/SSAO/SSAOBlur.frag");
+
+        mShader_BloomDownSample = Shader::FromFile("shaders/Quad.vert", "shaders/Bloom/downsample.frag");
+        mShader_BloomUpSample = Shader::FromFile("shaders/Quad.vert", "shaders/Bloom/upsample.frag");
+
+        mShader_ExtractBrightness = Shader::FromFile("shaders/Quad.vert", "shaders/Bloom/extractBrightness.frag");
+
 
         //// load hdr environment map
         Gep::Texture skyboxTextureEquirectangular = Texture::LoadHDR("assets/textures/HDR/Newport_Loft_Ref.hdr");
@@ -781,6 +790,7 @@ namespace Gep
         //DrawPass_AmbientOcclusion(hdrSceneFrameBuffer);
         DrawPass_AmbientLight(hdrSceneFrameBuffer);
         DrawPass_Skybox(hdrSceneFrameBuffer, mEnvironmentCubeMap);
+        DrawPass_Brightness(hdrSceneFrameBuffer);
         DrawPass_Tonemap(targetFrameBuffer, hdrSceneFrameBuffer);
 
         // draw postprocess effects, ie model outlines
@@ -1054,6 +1064,50 @@ namespace Gep
 
         FrameBuffer::Unbind();
         Shader::Unbind();
+    }
+
+    void OpenGLRenderer::DrawPass_Brightness(const Gep::FrameBuffer& targetFrameBuffer)
+    {
+        mFBO_Brightness.Bind();
+        mFBO_Brightness.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
+        mFBO_Brightness.UpdateViewport();
+        mFBO_Brightness.Clear();
+
+        mShader_ExtractBrightness.Bind();
+        mShader_ExtractBrightness.SetTexture2D(0, targetFrameBuffer.GetTexture(0));
+
+        GLDrawFlags flags{
+            .depthFuncMask = std::nullopt,
+            .cullMode = std::nullopt,
+            .blendFuncSD = std::nullopt
+        };
+        SetDrawFlags(flags);
+        GLDrawQuad();
+
+        ImGui::Begin("Brightness");
+
+        ImGui::Image(mFBO_Brightness.GetTexture(0), ImVec2{ 256 * 4, 256 * 4 }, ImVec2(0, 1), ImVec2(1, 0));
+
+        ImGui::End();
+
+
+        Shader::Unbind();
+        FrameBuffer::Unbind();
+    }
+
+    void OpenGLRenderer::DrawPass_Bloom(Gep::FrameBuffer& targetFrameBuffer)
+    {
+        // bind bloom fbo
+        mFBO_Bloom.Bind();
+        mFBO_Bloom.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
+        mFBO_Bloom.UpdateViewport();
+        mFBO_Bloom.Clear();
+
+        // render downsamples
+
+
+
+        // render upsamples
     }
 
     void OpenGLRenderer::DrawPass_Tonemap(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer)
@@ -1871,6 +1925,43 @@ namespace Gep
         }
 
         mSSAOKernel.commit();
+    }
+
+    void OpenGLRenderer::InitializeBloomFBO()
+    {
+        //mFBO_Bloom = FrameBuffer::CreateScreenHDR({ 128, 128 });
+
+        //int mipLevels = 1;
+        //for (int w = size.x, h = size.y; w > 1 || h > 1; ++mipLevels)
+        //{
+        //    w = std::max(1, w / 2);
+        //    h = std::max(1, h / 2);
+        //}
+
+        //glGenTextures(1, &mBloomTexture.id);
+        //glBindTexture(GL_TEXTURE_2D, mBloomTexture.id);
+        //glTexStorage2D(GL_TEXTURE_2D, mipLevels, GL_R11F_G11F_B10F, size.x, size.y);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        //glBindTexture(GL_TEXTURE_2D, 0);
+
+        //mFBO_Bloom.Bind();
+        //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mBloomTexture.id, 0);
+
+        //unsigned int attachments[1] = { GL_COLOR_ATTACHMENT0 };
+        //glDrawBuffers(1, attachments);
+
+        //const GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        //if (status != GL_FRAMEBUFFER_COMPLETE)
+        //{
+        //    Gep::Log::Error("InitializeBloomFBO() failed, framebuffer status: [", static_cast<uint32_t>(status), "]");
+        //    FrameBuffer::Unbind();
+        //    return;
+        //}
+
+        //FrameBuffer::Unbind();
     }
 
     void OpenGLRenderer::GLDraw(GLuint vao, uint32_t indexCount, uint32_t instanceCount, uint32_t objectBaseInstance)

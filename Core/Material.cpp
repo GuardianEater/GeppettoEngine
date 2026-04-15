@@ -214,5 +214,26 @@ namespace Gep
 
         return texture;
     }
+
+    Texture Texture::Gen2D(glm::uvec2 size, GLint internalFormat, GLenum format, GLenum type, GLint wrapParam)
+    {
+        Texture texture{};
+        glGenTextures(1, &texture.id);
+        glBindTexture(GL_TEXTURE_2D, texture.id);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, format, type, nullptr);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapParam);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapParam);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        texture.handle = glGetTextureHandleARB(texture.id);
+        glMakeTextureHandleResidentARB(texture.handle);
+
+        glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
+
+        return texture;
+    }
 }
 

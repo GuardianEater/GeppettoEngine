@@ -26,6 +26,8 @@ namespace Gep
 
         static Texture LoadHDR(const std::filesystem::path& path);
         static Texture LoadFromPixelsHDR(const float* pixelData, size_t width, size_t height, int requiredChannels);
+
+        static Texture Gen2D(glm::uvec2 size, GLint internalFormat = GL_RGBA32F, GLenum format = GL_RGBA, GLenum type = GL_FLOAT, GLint wrapParam = GL_CLAMP_TO_EDGE);
     };
 
     // contains material data for pbr rendering.
