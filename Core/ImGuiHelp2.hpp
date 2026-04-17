@@ -132,5 +132,28 @@ namespace Gep::Gui
             ImGui::EndGroup();
         }
 
+        if (mat.emissionTexture.id)
+        {
+            ImGui::Image(mat.emissionTexture.id, imageSize);
+            ImGui::SameLine();
+
+            std::string emissionTextureIdStr = std::to_string(mat.emissionTexture.id);
+            ImGui::BeginGroup();
+            ImGui::Text("Emission");
+            ImGui::Text(emissionTextureIdStr.c_str());
+            ImGui::EndGroup();
+        }
+        else
+        {
+            ImVec4 color{ mat.emission, mat.emission, mat.emission, 1.0f };
+            ImGui::ColorButton("emission", color, 0, imageSize);
+            ImGui::SameLine();
+
+            std::string emissionStr = std::to_string(mat.emission);
+            ImGui::BeginGroup();
+            ImGui::Text("Emission");
+            ImGui::Text(emissionStr.c_str());
+            ImGui::EndGroup();
+        }
     }
 }

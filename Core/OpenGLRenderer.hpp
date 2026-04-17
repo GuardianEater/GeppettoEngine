@@ -484,6 +484,12 @@ namespace Gep
             Gep::Animation animation;
         };
 
+        struct BloomMip
+        {
+            glm::uvec2 size;
+            GLuint texture;
+        };
+
 
         auto GetAllShaders()
         {
@@ -603,6 +609,8 @@ namespace Gep
         Shader mShader_BloomUpSample;
         Shader mShader_BloomDownSample;
         Shader mShader_ExtractBrightness; // takes all colors from a texture that exceed a threshhold
+
+        std::vector<BloomMip> mBloomMipChain;
 
         Texture mEnvironmentCubeMap;
         Texture mIrradianceCubeMap;

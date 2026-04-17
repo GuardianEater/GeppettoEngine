@@ -163,7 +163,8 @@ namespace Gep
         mFBO_SSAO = FrameBuffer::CreateMask({ 128, 128 });
         mFBO_SSAOBlur = FrameBuffer::CreateMask({ 128, 128 });
 
-        mFBO_Brightness = FrameBuffer::CreateScreenHDR({ 128, 128 });
+        mFBO_Brightness = FrameBuffer::Create({ 128, 128 });
+        mFBO_Brightness.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGB32F, GL_RGB, GL_FLOAT);
         InitializeBloomFBO();
 
         mShader_SSAO = Shader::FromFile("shaders/Quad.vert", "shaders/SSAO/SSAO.frag");
@@ -791,6 +792,7 @@ namespace Gep
         DrawPass_AmbientLight(hdrSceneFrameBuffer);
         DrawPass_Skybox(hdrSceneFrameBuffer, mEnvironmentCubeMap);
         DrawPass_Brightness(hdrSceneFrameBuffer);
+        DrawPass_Bloom(hdrSceneFrameBuffer);
         DrawPass_Tonemap(targetFrameBuffer, hdrSceneFrameBuffer);
 
         // draw postprocess effects, ie model outlines
@@ -1103,11 +1105,93 @@ namespace Gep
         mFBO_Bloom.UpdateViewport();
         mFBO_Bloom.Clear();
 
-        // render downsamples
+        const auto& mipChain = mFBO_Bloom.GetTextureAttachments();
+
+        const auto BindBloomDrawTexture = [](GLuint textureID)
+        {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID, 0);
+            constexpr GLenum drawBuffer = GL_COLOR_ATTACHMENT0;
+            glDrawBuffers(1, &drawBuffer);
+        };
+
+        for (uint32_t i = 1; i < mipChain.size(); ++i)
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
+
+        // render downsamples ///////////////////////////////////////////////////
+        mShader_BloomDownSample.Bind();
+        mShader_BloomDownSample.SetUniform(0, true);
+        mShader_BloomDownSample.SetTexture2D(0, mFBO_Brightness.GetTexture(0));
+
+        // Progressively downsample through the mip chain
+        for (uint32_t i = 0; i < mipChain.size(); i++)
+        {
+            const TextureAttachment& mip = mipChain[i];
+            glm::uvec2 mipSize = mFBO_Bloom.GetSize();
+            mipSize.x = std::max(1u, mipSize.x >> mip.mipLevel);
+            mipSize.y = std::max(1u, mipSize.y >> mip.mipLevel);
+
+            glViewport(0, 0, mipSize.x, mipSize.y);
+            BindBloomDrawTexture(mip.id);
+            GLDrawQuad();
+
+            mShader_BloomDownSample.SetTexture2D(0, mip.id);
+            // Disable Karis average for consequent downsamples
+            if (i == 0) { mShader_BloomDownSample.SetUniform(0, false); }
+        }
+
+
+        // render upsamples /////////////////////////////////////////////////////////
+
+        mShader_BloomUpSample.Bind();
+        mShader_BloomUpSample.SetUniform("u_filterRadius", 0.005f);
+
+        // Enable additive blending
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+        glBlendEquation(GL_FUNC_ADD);
+
+        for (int i = mipChain.size() - 1; i > 0; i--)
+        {
+            const TextureAttachment& mip = mipChain[i];
+            const TextureAttachment& nextMip = mipChain[i - 1];
+
+            glm::uvec2 nextMipSize = mFBO_Bloom.GetSize();
+            nextMipSize.x = std::max(1u, nextMipSize.x >> nextMip.mipLevel);
+            nextMipSize.y = std::max(1u, nextMipSize.y >> nextMip.mipLevel);
+
+            // Bind viewport and texture from where to read
+            mShader_BloomUpSample.SetTexture2D(0, mip.id);
+
+            // Set framebuffer render target (we write to this texture)
+            glViewport(0, 0, nextMipSize.x, nextMipSize.y);
+            BindBloomDrawTexture(nextMip.id);
+            GLDrawQuad();
+        }
+
+        // Disable additive blending
+        //glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_BLEND);
+
+        // reset original viewport
+        targetFrameBuffer.Bind();
+        targetFrameBuffer.UpdateViewport();
+
+        // composite ///////////////////////////////////////////////////////////////////////
 
 
 
-        // render upsamples
+        // debug ///////////////////////////////////////////////////////////////////////
+        ImGui::Begin("Bloom");
+        for (const auto& texture : mipChain)
+        {
+            std::string textureIdStr = std::to_string(texture.id);
+            ImGui::Text(textureIdStr.c_str());
+            ImGui::Image(texture.id, ImVec2{ 256 * 4, 256 * 4 }, ImVec2(0, 1), ImVec2(1, 0));
+        }
+
+        ImGui::End();
+
+        Shader::Unbind();
     }
 
     void OpenGLRenderer::DrawPass_Tonemap(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer)
@@ -1122,6 +1206,7 @@ namespace Gep
         ldrFrameBuffer.Bind();
         mShader_Tonemap.Bind();
         mShader_Tonemap.SetTexture2D(0, hdrFrameBuffer.GetTexture(0));
+        mShader_Tonemap.SetTexture2D(1, mFBO_Bloom.GetTexture(0));
 
         SetDrawFlags(flags);
         GLDrawQuad();
@@ -1512,11 +1597,20 @@ namespace Gep
             if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, outColor))
                 material.roughness = outColor.r;
 
+            float emissiveIntensity = 0.0f;
+            if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissiveIntensity))
+                material.emission = emissiveIntensity;
+            else if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, outColor))
+                material.emission = std::max(outColor.r, std::max(outColor.g, outColor.b));
+
             material.diffuseTexture   = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE);
             material.aoTexture        = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_AMBIENT_OCCLUSION);
             material.metalnessTexture = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_METALNESS);
             material.roughnessTexture = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE_ROUGHNESS);
             material.normalTexture    = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_NORMALS);
+            material.emissionTexture  = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_EMISSION_COLOR);
+            if (!material.emissionTexture.id)
+                material.emissionTexture = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_EMISSIVE);
 
             if (material.diffuseTexture.id)
                 AddTexture(material.diffuseTexture);
@@ -1528,6 +1622,8 @@ namespace Gep
                 AddTexture(material.roughnessTexture);
             if (material.normalTexture.id)
                 AddTexture(material.normalTexture);
+            if (material.emissionTexture.id)
+                AddTexture(material.emissionTexture);
 
             gAssimpMaterialIndexToMaterialIndex[i] = AddMaterial(material);
         }
@@ -1929,39 +2025,24 @@ namespace Gep
 
     void OpenGLRenderer::InitializeBloomFBO()
     {
-        //mFBO_Bloom = FrameBuffer::CreateScreenHDR({ 128, 128 });
+        const uint32_t mipChainLength = 7;
 
-        //int mipLevels = 1;
-        //for (int w = size.x, h = size.y; w > 1 || h > 1; ++mipLevels)
-        //{
-        //    w = std::max(1, w / 2);
-        //    h = std::max(1, h / 2);
-        //}
+        mFBO_Bloom = FrameBuffer::Create({ 128, 128 });
 
-        //glGenTextures(1, &mBloomTexture.id);
-        //glBindTexture(GL_TEXTURE_2D, mBloomTexture.id);
-        //glTexStorage2D(GL_TEXTURE_2D, mipLevels, GL_R11F_G11F_B10F, size.x, size.y);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        //glBindTexture(GL_TEXTURE_2D, 0);
+        // skips the full resolution
+        for (uint32_t i = 1; i <= mipChainLength; i++)
+            mFBO_Bloom.AddTexture(GL_COLOR_ATTACHMENT0 + i - 1u, GL_RGB32F, GL_RGB, GL_FLOAT, i);
 
-        //mFBO_Bloom.Bind();
-        //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mBloomTexture.id, 0);
+        // check completion status
+        int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_COMPLETE)
+        {
+            printf("gbuffer FBO error, status: 0x%x\n", status);
+            FrameBuffer::Unbind();
+            return;
+        }
 
-        //unsigned int attachments[1] = { GL_COLOR_ATTACHMENT0 };
-        //glDrawBuffers(1, attachments);
-
-        //const GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        //if (status != GL_FRAMEBUFFER_COMPLETE)
-        //{
-        //    Gep::Log::Error("InitializeBloomFBO() failed, framebuffer status: [", static_cast<uint32_t>(status), "]");
-        //    FrameBuffer::Unbind();
-        //    return;
-        //}
-
-        //FrameBuffer::Unbind();
+        FrameBuffer::Unbind();
     }
 
     void OpenGLRenderer::GLDraw(GLuint vao, uint32_t indexCount, uint32_t instanceCount, uint32_t objectBaseInstance)

@@ -889,6 +889,104 @@ namespace Client
             ImGui::TreePop();
         }
 
+        if (ImGui::TreeNode("Light Grid"))
+        {
+            static std::vector<Gep::Entity> lights;
+            static std::vector<uint64_t> materials;
+            static Gep::Entity parent;
+            static float spacing = 2.0f;
+            static int width = 10;
+            static float minEmission = 0.0f;
+            static float maxEmission = 20.0f;
+            static bool running = false;
+            static std::string buttonText;
+
+            buttonText = running ? "EndTest" : "StartTest";
+
+            ImGui::DragFloat("Spacing", &spacing, 0.1f, 0.1f, 100.0f);
+            ImGui::DragInt("Width", &width, 0.01f, 1, 50);
+            ImGui::DragFloat("Min Emission", &minEmission, 1.0f, 0.0f, 100000.0f);
+            ImGui::DragFloat("Max Emission", &maxEmission, 1.0f, 0.0f, 100000.0f);
+
+            if (ImGui::Button(buttonText.c_str()))
+            {
+                if (running)
+                {
+                    running = false;
+
+                    for (auto e : lights)
+                        mManager.DestroyEntity(e);
+
+                    for (auto mat : materials)
+                        mRenderer.UnloadMaterial(mat);
+
+                    if (mManager.EntityExists(parent))
+                        mManager.DestroyEntity(parent);
+
+                    lights.clear();
+                    materials.clear();
+                }
+                else
+                {
+                    running = true;
+                    width = std::max(1, width);
+                    spacing = std::max(0.1f, spacing);
+
+                    if (maxEmission < minEmission)
+                        std::swap(maxEmission, minEmission);
+
+                    const float halfExtent = (width - 1) * spacing * 0.5f;
+
+                    parent = mManager.CreateEntity("Light Grid Test");
+                    mManager.AddComponent(parent, Transform{});
+
+                    const float invRange = 1.0f / static_cast<float>(std::max(width - 1, 1));
+
+                    for (int x = 0; x < width; ++x)
+                    for (int y = 0; y < width; ++y)
+                    {
+                        const float tx = static_cast<float>(x) * invRange;
+                        const float ty = static_cast<float>(y) * invRange;
+
+                        const glm::vec3 lightColor{ tx, ty, 1.0f - tx };
+                        const float emission = glm::mix(minEmission, maxEmission, ty);
+
+                        Gep::Material mat;
+                        mat.color = glm::vec4(lightColor, 1.0f);
+                        mat.emission = emission;
+                        uint32_t matIdx = mRenderer.AddMaterial(mat);
+                        materials.push_back(matIdx);
+
+                        Client::Transform t;
+                        t.world.position = {
+                            x * spacing - halfExtent,
+                            y * spacing - halfExtent,
+                            0.0f
+                        };
+
+                        Client::Light light;
+                        light.color = lightColor;
+                        light.intensity = emission;
+
+                        const std::string name = "Light (" + std::to_string(x) + "," + std::to_string(y) + ")";
+                        Gep::Entity e = mManager.CreateEntity(name);
+                        mManager.AddComponent(e,
+                            t,
+                            Client::ModelComponent{ .modelIdx = 3 /*sphere*/, .materialOverrides = { matIdx } },
+                            light
+                        );
+                        mManager.AttachEntity(parent, e);
+
+                        lights.push_back(e);
+                    }
+                }
+            }
+
+            ImGui::TreePop();
+        }
+
+
+
         // output any feedback that occured during tests
         for (const auto& func : testOutput)
         {
@@ -1663,7 +1761,7 @@ namespace Client
                     Gep::Entity entity = mManager.CreateEntity("Light");
 
                     Gep::Material mat;
-                    mat.emission = 1000.0f;
+                    mat.emission = 2.0f;
                     uint32_t matIdx = mRenderer.AddMaterial(mat);
 
                     mManager.AddComponent(entity, ModelComponent{ .modelIdx = 1 /*"Sphere"*/, .materialOverrides = { matIdx } }

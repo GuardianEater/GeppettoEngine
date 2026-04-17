@@ -8,7 +8,7 @@ layout(location=0) uniform float u_threshold = 1.5;
 layout(location=0) in vec2 v_uv;
 
 // out /////////////////////////////////////////////////////////////////////////
-layout (location=0) out vec4 f_color;
+layout (location=0) out vec3 f_color;
 
 void main()
 {
@@ -17,7 +17,7 @@ void main()
   float brightness = dot(color, vec3(0.2126, 0.7152, 0.0722));
 
   if (brightness > u_threshold)
-    f_color = vec4(color, 1.0);
+    f_color = color;
   else
-    f_color = vec4(0.0);
+    f_color = vec3(0.0);
 }

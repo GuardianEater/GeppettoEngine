@@ -11,7 +11,7 @@
 
 namespace Gep
 {
-    [[nodiscard]] FrameBuffer FrameBuffer::CreateDepthCubeMap(const glm::ivec2 size)
+    [[nodiscard]] FrameBuffer FrameBuffer::CreateDepthCubeMap(const glm::uvec2 size)
     {
         FrameBuffer result = Create(size);
         TextureAttachment& texture = result.mTarget->textures.emplace_back();
@@ -51,21 +51,21 @@ namespace Gep
         return result;
     }
 
-    [[nodiscard]] FrameBuffer FrameBuffer::CreateDepthMap(const glm::ivec2 size)
+    [[nodiscard]] FrameBuffer FrameBuffer::CreateDepthMap(const glm::uvec2 size)
     {
         FrameBuffer fb = Create(size);
         fb.AddDepthMap();
         return fb;
     }
 
-    [[nodiscard]] FrameBuffer FrameBuffer::CreateMSMDepthMap(const glm::ivec2 size)
+    [[nodiscard]] FrameBuffer FrameBuffer::CreateMSMDepthMap(const glm::uvec2 size)
     {
         FrameBuffer fb = Create(size);
         fb.AddMSMDepthMap();
         return fb;
     }
 
-    [[nodiscard]] FrameBuffer FrameBuffer::Create(const glm::ivec2 size)
+    [[nodiscard]] FrameBuffer FrameBuffer::Create(const glm::uvec2 size)
     {
         FrameBuffer result;
         result.mTarget = std::make_shared<TargetData>();
@@ -81,7 +81,7 @@ namespace Gep
         return result;
     }
 
-    [[nodiscard]] FrameBuffer FrameBuffer::CreateScreenHDR(const glm::ivec2 size)
+    [[nodiscard]] FrameBuffer FrameBuffer::CreateScreenHDR(const glm::uvec2 size)
     {
         FrameBuffer fb = Create(size);
         fb.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGBA32F, GL_RGBA, GL_FLOAT);
@@ -89,7 +89,7 @@ namespace Gep
         return fb;
     }
 
-    [[nodiscard]] FrameBuffer FrameBuffer::CreateScreenLDR(const glm::ivec2 size)
+    [[nodiscard]] FrameBuffer FrameBuffer::CreateScreenLDR(const glm::uvec2 size)
     {
         FrameBuffer fb = Create(size);
         fb.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
@@ -97,14 +97,14 @@ namespace Gep
         return fb;
     }
 
-    [[nodiscard]] FrameBuffer FrameBuffer::CreateMask(const glm::ivec2 size)
+    [[nodiscard]] FrameBuffer FrameBuffer::CreateMask(const glm::uvec2 size)
     {
         FrameBuffer fb = Create(size);
         fb.AddTexture(GL_COLOR_ATTACHMENT0, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
         return fb;
     }
 
-    [[nodiscard]] FrameBuffer FrameBuffer::CreateWithTexture(const glm::ivec2 size, GLenum attachment, GLint internalFormat, GLint format, GLenum type)
+    [[nodiscard]] FrameBuffer FrameBuffer::CreateWithTexture(const glm::uvec2 size, GLenum attachment, GLint internalFormat, GLint format, GLenum type)
     {
         FrameBuffer fb = Create(size);
         fb.AddTexture(attachment, internalFormat, format, type);
@@ -118,7 +118,6 @@ namespace Gep
             FrameBuffer fb;
             fb.mTarget = std::make_shared<TargetData>();
             fb.mTarget->frameBuffer = 0;
-            fb.mTarget->depthBuffer = 0;
             return fb;
         }();
         
@@ -247,7 +246,7 @@ namespace Gep
 
     }
 
-    void FrameBuffer::AddTexture(GLenum attachment, GLint internalFormat, GLint format, GLenum type)
+    void FrameBuffer::AddTexture(GLenum attachment, GLint internalFormat, GLint format, GLenum type, uint32_t mipLevel)
     {
         if (!mTarget)
         {
@@ -267,12 +266,14 @@ namespace Gep
         texture.type = type;
         texture.attachment = attachment;
         texture.target = GL_TEXTURE_2D;
+        texture.mipLevel = mipLevel;
+        const glm::uvec2 mipSize = { std::max(1u, mSize.x >> mipLevel), std::max(1u, mSize.y >> mipLevel) };
 
         // generate texture
         glGenTextures(1, &texture.id);
         glBindTexture(texture.target, texture.id);
 
-        glTexImage2D(texture.target, 0, texture.internalFormat, mSize.x, mSize.y, 0, texture.format, texture.type, nullptr);
+        glTexImage2D(texture.target, 0, texture.internalFormat, mipSize.x, mipSize.y, 0, texture.format, texture.type, nullptr);
 
         // set texture parameters
         glTexParameteri(texture.target, GL_TEXTURE_MAX_LEVEL, 0);
@@ -338,6 +339,11 @@ namespace Gep
         return mTarget->textures;
     }
 
+    void FrameBuffer::SetCurrentDrawTarget(GLenum target)
+    {
+        glDrawBuffers(1, &target);
+    }
+
     // takes the texture attachments and binds them to the corresponding texture units
     void FrameBuffer::BindTextures() const
     {
@@ -379,7 +385,7 @@ namespace Gep
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void FrameBuffer::Resize(glm::ivec2 size)
+    void FrameBuffer::Resize(glm::uvec2 size)
     {
         if (!mTarget)
         {
@@ -402,7 +408,7 @@ namespace Gep
         for (const TextureAttachment& tex : mTarget->textures)
         {
             glBindTexture(tex.target, tex.id);
-            glTexImage2D(tex.target, 0, tex.internalFormat, size.x, size.y, 0, tex.format, tex.type, nullptr);
+            glTexImage2D(tex.target, 0, tex.internalFormat, std::max(1u, mSize.x >> tex.mipLevel), std::max(1u, mSize.y >> tex.mipLevel), 0, tex.format, tex.type, nullptr);
         }
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)

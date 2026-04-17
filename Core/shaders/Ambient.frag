@@ -56,7 +56,7 @@ void main()
   vec3 F0 = vec3(dielectricDefault);
   F0 = mix(F0, mat.color.rgb, mat.metallic);
 
-  vec3 F =  SchlickFresnelRoughness(max(dot(normal, view), 0.0), F0, mat.roughness); ;
+	vec3 F = SchlickFresnelRoughness(max(dot(normal, view), 0.0), F0, mat.roughness);
   
   vec3 kS = F;
   vec3 kD = 1.0 - kS;
@@ -70,8 +70,9 @@ void main()
   vec2 brdf  = texture(u_brdflut, vec2(max(dot(normal, view), 0.0), mat.roughness)).rg;
   vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
-  //vec3 ambient = (kD * diffuse + specular) * texture(u_ambientOcclusion, v_uv).r;
-  vec3 ambient = (kD * diffuse + specular) * mat.ao;
+	// Keep emissive contribution colorized so bloom inherits object hue.
+	vec3 emissiveColor = mat.color.rgb * mat.emission;
+	vec3 ambient = (kD * diffuse + specular) * mat.ao + emissiveColor;
 
 	f_color = vec4(ambient, mat.color.a);
 }
