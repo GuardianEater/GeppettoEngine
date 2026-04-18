@@ -948,7 +948,7 @@ namespace Client
                         const float tx = static_cast<float>(x) * invRange;
                         const float ty = static_cast<float>(y) * invRange;
 
-                        const glm::vec3 lightColor{ tx, ty, 1.0f - tx };
+                        const glm::vec3 lightColor{ tx, 0.0, 1.0f - tx };
                         const float emission = glm::mix(minEmission, maxEmission, ty);
 
                         Gep::Material mat;
@@ -966,7 +966,6 @@ namespace Client
 
                         Client::Light light;
                         light.color = lightColor;
-                        light.intensity = emission;
 
                         const std::string name = "Light (" + std::to_string(x) + "," + std::to_string(y) + ")";
                         Gep::Entity e = mManager.CreateEntity(name);

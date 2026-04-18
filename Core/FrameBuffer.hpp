@@ -65,7 +65,7 @@ namespace Gep
         void Resize(glm::uvec2 newSize);
         void UpdateViewport() const;
 
-        glm::ivec2 GetSize() const { return mSize; }
+        glm::uvec2 GetSize() const { return mSize; }
 
     private:
 

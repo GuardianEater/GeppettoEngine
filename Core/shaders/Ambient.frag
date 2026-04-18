@@ -48,6 +48,7 @@ void main()
 	MaterialSample mat;
 	mat.color     = texture(u_colorTexture, v_uv);
 	mat.ao        = arme.x;
+  //mat.ao        = texture(u_ambientOcclusion, v_uv).r;
 	mat.roughness = arme.y;
 	mat.metallic  = arme.z;
   mat.emission  = arme.w;

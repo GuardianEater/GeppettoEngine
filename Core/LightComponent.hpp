@@ -15,7 +15,7 @@ namespace Client
     struct Light
     {
         glm::vec3 color{1.0f, 1.0f, 1.0f};
-        float intensity{1.0f};
+        float intensity{10.0f};
 
         bool enabled = true;
     };

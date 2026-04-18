@@ -21,20 +21,37 @@
 
 namespace Gep
 {
+    struct GLBlendFlags
+    {
+        static const GLBlendFlags defaultFlags;
+        GLenum sFactor = GL_ONE;
+        GLenum dFactor = GL_ZERO;
+        GLenum equation = GL_FUNC_ADD;
+    };
+
+    struct GLDepthFlags
+    {
+        static const GLBlendFlags defaultFlags;
+        GLenum func = GL_LESS;
+        GLboolean mask = GL_TRUE;
+        glm::dvec2 range = { 0.0, 1.0 };
+    };
+
     struct GLDrawFlags
     {
-        std::optional<std::pair<GLenum, GLenum>> depthFuncMask;
-        std::optional<GLenum> cullMode;
-        std::optional<std::pair<GLenum, GLenum>> blendFuncSD;
+        std::optional<GLDepthFlags> depth = std::nullopt;
+        std::optional<GLenum> cullMode    = std::nullopt;
+        std::optional<GLBlendFlags> blend = std::nullopt;
     };
 
     static void SetDrawFlags(GLDrawFlags flags)
     {
-        if (flags.depthFuncMask)
+        if (flags.depth)
         {
             glEnable(GL_DEPTH_TEST);
-            glDepthFunc(flags.depthFuncMask->first);
-            glDepthMask(flags.depthFuncMask->second);
+            glDepthFunc(flags.depth->func);
+            glDepthMask(flags.depth->mask);
+            glDepthRange(flags.depth->range[0], flags.depth->range[1]);
         }
         else
             glDisable(GL_DEPTH_TEST);
@@ -47,10 +64,11 @@ namespace Gep
         else
             glDisable(GL_CULL_FACE);
 
-        if (flags.blendFuncSD)
+        if (flags.blend)
         {
             glEnable(GL_BLEND);
-            glBlendFunc(flags.blendFuncSD->first, flags.blendFuncSD->second);
+            glBlendEquation(flags.blend->equation);
+            glBlendFunc(flags.blend->sFactor, flags.blend->dFactor);
         }
         else
             glDisable(GL_BLEND);
@@ -780,12 +798,15 @@ namespace Gep
         hdrSceneFrameBuffer.Clear();
         FrameBuffer::Unbind();
 
+
         // pre pass
         DrawPass_PointLightShadowDepth();
         DrawPass_DirectionalLightShadowDepth();
 
         //DrawPass_Lines(hdrSceneFrameBuffer);
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         DrawPass_Geometry(hdrSceneFrameBuffer); 
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         DrawPass_DirectionalLight(hdrSceneFrameBuffer);
         DrawPass_PointLight(hdrSceneFrameBuffer);
         //DrawPass_AmbientOcclusion(hdrSceneFrameBuffer);
@@ -804,13 +825,12 @@ namespace Gep
         mFBO_Geometry.Bind();
         mFBO_Geometry.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
         mFBO_Geometry.UpdateViewport();
-        mFBO_Geometry.Clear();
+        mFBO_Geometry.Clear({ 0.0f, 0.0f, 0.0f, 0.0f });
         mFBO_Geometry.DrawBuffers();
 
         GLDrawFlags flags{
-            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
-            .cullMode = GL_BACK, // back face culling
-            .blendFuncSD = std::nullopt // no blending
+            .depth = GLDepthFlags{ GL_LEQUAL, GL_TRUE },
+            .cullMode = GL_BACK // back face culling
         };
         SetDrawFlags(flags);
 
@@ -837,9 +857,8 @@ namespace Gep
         mFBO_Geometry.BindTextures(); // bind gbuffer textures to texture units
 
         GLDrawFlags flags{
-            .depthFuncMask = std::nullopt, // do not use depth
             .cullMode = GL_FRONT, // front face culling
-            .blendFuncSD = std::make_pair(GL_ONE, GL_ONE) // one one blending
+            .blend = GLBlendFlags{ GL_ONE, GL_ONE } // one one blending
         };
         SetDrawFlags(flags);
 
@@ -857,9 +876,8 @@ namespace Gep
     void OpenGLRenderer::DrawPass_PointLightShadowDepth()
     {
         GLDrawFlags flags{
-            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
+            .depth = GLDepthFlags{ GL_LEQUAL, GL_TRUE },
             .cullMode = GL_BACK, // back face culling
-            .blendFuncSD = std::nullopt // no blending
         };
         SetDrawFlags(flags);
 
@@ -895,9 +913,8 @@ namespace Gep
         mFBO_Geometry.BindTextures(); // bind gbuffer textures to texture units
 
         GLDrawFlags flags{
-            .depthFuncMask = std::nullopt,
             .cullMode = GL_BACK, // back face culling
-            .blendFuncSD = std::make_pair(GL_ONE, GL_ONE)
+            .blend = GLBlendFlags{ GL_ONE, GL_ONE },
         };
         SetDrawFlags(flags);
 
@@ -913,9 +930,8 @@ namespace Gep
     void OpenGLRenderer::DrawPass_DirectionalLightShadowDepth()
     {
         GLDrawFlags flags{
-            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
+            .depth = GLDepthFlags{ GL_LEQUAL, GL_TRUE },
             .cullMode = GL_BACK, // back face culling
-            .blendFuncSD = std::nullopt
         };
         SetDrawFlags(flags);
 
@@ -946,12 +962,7 @@ namespace Gep
 
     void OpenGLRenderer::DrawPass_Lines(Gep::FrameBuffer& targetFrameBuffer)
     {
-        GLDrawFlags flags{
-            .depthFuncMask = std::nullopt,
-            .cullMode = std::nullopt,
-            .blendFuncSD = std::nullopt
-        };
-        SetDrawFlags(flags);
+        SetDrawFlags({}); // disable all flags
 
         targetFrameBuffer.Bind();
         mShader_Line.Bind();
@@ -988,9 +999,7 @@ namespace Gep
         glBlitFramebuffer(0, 0, targetSize.x, targetSize.y, 0, 0, targetSize.x, targetSize.y, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
         GLDrawFlags flags{
-            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_FALSE),
-            .cullMode = std::nullopt,
-            .blendFuncSD = std::nullopt
+            .depth = GLDepthFlags{ GL_LEQUAL, GL_FALSE },
         };
 
         targetFrameBuffer.Bind();
@@ -1008,9 +1017,7 @@ namespace Gep
     void OpenGLRenderer::DrawPass_AmbientLight(Gep::FrameBuffer& targetFrameBuffer)
     {
         GLDrawFlags flags{
-            .depthFuncMask = std::nullopt,
-            .cullMode = std::nullopt,
-            .blendFuncSD = std::make_pair(GL_ONE, GL_ONE)
+            .blend = GLBlendFlags{ GL_ONE, GL_ONE },
         };
 
         targetFrameBuffer.Bind();
@@ -1029,12 +1036,6 @@ namespace Gep
 
     void OpenGLRenderer::DrawPass_AmbientOcclusion(Gep::FrameBuffer& targetFrameBuffer)
     {
-        GLDrawFlags flags{
-            .depthFuncMask = std::nullopt,
-            .cullMode = std::nullopt,
-            .blendFuncSD = std::nullopt
-        };
-
         mFBO_SSAO.Bind();
         mFBO_SSAO.Resize(targetFrameBuffer.GetSize()); // make sure the gbuffer is the same size as the target framebuffer
         mFBO_SSAO.UpdateViewport();
@@ -1044,7 +1045,7 @@ namespace Gep
 
         mShader_SSAO.Bind();
 
-        SetDrawFlags(flags);
+        SetDrawFlags({}); // disable all flags
         GLDrawQuad();
 
         mFBO_SSAOBlur.Bind();
@@ -1077,18 +1078,14 @@ namespace Gep
 
         mShader_ExtractBrightness.Bind();
         mShader_ExtractBrightness.SetTexture2D(0, targetFrameBuffer.GetTexture(0));
+        mShader_ExtractBrightness.SetTexture2D(1, mFBO_Geometry.GetTexture(3));
 
-        GLDrawFlags flags{
-            .depthFuncMask = std::nullopt,
-            .cullMode = std::nullopt,
-            .blendFuncSD = std::nullopt
-        };
-        SetDrawFlags(flags);
+        SetDrawFlags({}); // disable all flags
         GLDrawQuad();
 
         ImGui::Begin("Brightness");
 
-        ImGui::Image(mFBO_Brightness.GetTexture(0), ImVec2{ 256 * 4, 256 * 4 }, ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::Image(mFBO_Brightness.GetTexture(0), ImVec2{ (float)targetFrameBuffer.GetSize().x, (float)targetFrameBuffer.GetSize().y }, ImVec2(0, 1), ImVec2(1, 0));
 
         ImGui::End();
 
@@ -1146,11 +1143,14 @@ namespace Gep
         mShader_BloomUpSample.SetUniform("u_filterRadius", 0.005f);
 
         // Enable additive blending
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE);
-        glBlendEquation(GL_FUNC_ADD);
 
-        for (int i = mipChain.size() - 1; i > 0; i--)
+        GLDrawFlags flags{
+            .blend = GLBlendFlags{ GL_ONE, GL_ONE, GL_FUNC_ADD },
+        };
+
+        SetDrawFlags(flags);
+
+        for (int i = mipChain.size() - 1; i > 1; i--)
         {
             const TextureAttachment& mip = mipChain[i];
             const TextureAttachment& nextMip = mipChain[i - 1];
@@ -1159,22 +1159,18 @@ namespace Gep
             nextMipSize.x = std::max(1u, nextMipSize.x >> nextMip.mipLevel);
             nextMipSize.y = std::max(1u, nextMipSize.y >> nextMip.mipLevel);
 
-            // Bind viewport and texture from where to read
             mShader_BloomUpSample.SetTexture2D(0, mip.id);
 
-            // Set framebuffer render target (we write to this texture)
             glViewport(0, 0, nextMipSize.x, nextMipSize.y);
             BindBloomDrawTexture(nextMip.id);
             GLDrawQuad();
         }
 
-        // Disable additive blending
-        //glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-        glDisable(GL_BLEND);
-
-        // reset original viewport
+        // render the last blur to the target frame buffer
+        mShader_BloomUpSample.SetTexture2D(0, mipChain[1].id);
         targetFrameBuffer.Bind();
         targetFrameBuffer.UpdateViewport();
+        GLDrawQuad();
 
         // composite ///////////////////////////////////////////////////////////////////////
 
@@ -1186,7 +1182,7 @@ namespace Gep
         {
             std::string textureIdStr = std::to_string(texture.id);
             ImGui::Text(textureIdStr.c_str());
-            ImGui::Image(texture.id, ImVec2{ 256 * 4, 256 * 4 }, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Image(texture.id, ImVec2{ (float)targetFrameBuffer.GetSize().x, (float)targetFrameBuffer.GetSize().y }, ImVec2(0, 1), ImVec2(1, 0));
         }
 
         ImGui::End();
@@ -1196,41 +1192,21 @@ namespace Gep
 
     void OpenGLRenderer::DrawPass_Tonemap(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer)
     {
-        GLDrawFlags flags{
-            .depthFuncMask = std::nullopt,
-            .cullMode = std::nullopt,
-            .blendFuncSD = std::nullopt
-        };
-
         // tone map pass
         ldrFrameBuffer.Bind();
         mShader_Tonemap.Bind();
         mShader_Tonemap.SetTexture2D(0, hdrFrameBuffer.GetTexture(0));
-        mShader_Tonemap.SetTexture2D(1, mFBO_Bloom.GetTexture(0));
+        //mShader_Tonemap.SetTexture2D(1, mFBO_Bloom.GetTexture(0));
 
-        SetDrawFlags(flags);
+        SetDrawFlags({}); // diable all flags
         GLDrawQuad();
         Shader::Unbind();
     }
 
     void OpenGLRenderer::DrawPass_Outline(Gep::FrameBuffer& targetFrameBuffer)
     {
-        GLDrawFlags sceneMaskFlags{
-            .depthFuncMask = std::nullopt,
-            .cullMode = std::nullopt,
-            .blendFuncSD = std::nullopt
-        };
-
-        GLDrawFlags postProcessFlags{
-            .depthFuncMask = std::nullopt,
-            .cullMode = std::nullopt,
-            .blendFuncSD = std::nullopt
-        };
-
         GLDrawFlags compositeFlags{
-            .depthFuncMask = std::nullopt,
-            .cullMode = std::nullopt,
-            .blendFuncSD = std::make_pair(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            .blend = GLBlendFlags{ GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA }
         };
 
         // setup outline mask fb
@@ -1250,7 +1226,7 @@ namespace Gep
         mShader_OutlineMask.Bind();
         mShader_OutlineMask.SetUniform("u_color", glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
 
-        SetDrawFlags(sceneMaskFlags);
+        SetDrawFlags({}); // disable all flags
         
         for (const auto& batch : mDrawBatches)
         {
@@ -1273,7 +1249,6 @@ namespace Gep
         mShader_OutlineDilation.SetUniform("u_direction", glm::vec2{ 0,1 });
         mShader_OutlineDilation.SetUniform("u_radius", 2);
 
-        SetDrawFlags(postProcessFlags);
         GLDrawQuad();
 
         // draw the object dialated vertical //////////////////////////////////////////////////
@@ -1283,7 +1258,6 @@ namespace Gep
         mShader_OutlineDilation.SetUniform("u_direction", glm::vec2{ 1,0 });
         mShader_OutlineDilation.SetUniform("u_radius", 2);
 
-        SetDrawFlags(postProcessFlags);
         GLDrawQuad();
 
         // draw the object again but inverted so it cookie cutters ///////////////////////////////
@@ -1291,7 +1265,6 @@ namespace Gep
         mShader_OutlineMask.Bind();
         mShader_OutlineMask.SetUniform("u_color", glm::vec4{ 0.0f, 0.0f, 0.0f, 0.0f });
 
-        SetDrawFlags(sceneMaskFlags);
         for (const auto& batch : mDrawBatches)
         {
             if (batch.type == ShaderType::Rigged)
@@ -1872,9 +1845,7 @@ namespace Gep
         glBindTexture(GL_TEXTURE_2D, texture.id);
 
         GLDrawFlags flags{
-            .depthFuncMask = std::make_pair(GL_LEQUAL, GL_TRUE),
-            .cullMode = std::nullopt,
-            .blendFuncSD = std::nullopt
+            .depth = GLDepthFlags{ GL_LEQUAL, GL_TRUE },
         };
         SetDrawFlags(flags);
 

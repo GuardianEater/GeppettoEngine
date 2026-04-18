@@ -328,14 +328,25 @@ namespace Client
             const Gep::Model& internalModel = mRenderer.GetModel(selectedModelIdx);
 
             ImGui::Indent();
-            for (const Gep::Mesh& mesh : internalModel.meshes)
+            for (size_t i = 0; i < internalModel.meshes.size(); i++)
             {
+                const Gep::Mesh& mesh = internalModel.meshes[i];
+
                 std::string id = std::to_string(reinterpret_cast<ptrdiff_t>(&mesh));
                 if (ImGui::TreeNode(mesh.name.c_str()))
                 {
-                    Gep::Material mat = mRenderer.GetMaterial(mesh.materialIndex);
+                    // display material override if applicable
+                    if (i < models[0]->materialOverrides.size())
+                    {
+                        Gep::Material mat = mRenderer.GetMaterial(models[0]->materialOverrides[i]);
+                        Gep::Gui::DrawMaterial(mat);
+                    }
+                    else
+                    {
+                        Gep::Material mat = mRenderer.GetMaterial(mesh.materialIndex);
+                        Gep::Gui::DrawMaterial(mat);
+                    }
 
-                    Gep::Gui::DrawMaterial(mat);
                     ImGui::TreePop();
                 }
             }

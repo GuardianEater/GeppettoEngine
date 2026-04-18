@@ -520,7 +520,11 @@ namespace Gep
                 mShader_GenerateIrradianceMap,
 
                 mShader_SSAO,
-                mShader_SSAOBlur
+                mShader_SSAOBlur,
+
+                mShader_BloomUpSample,
+                mShader_BloomDownSample,
+                mShader_ExtractBrightness
             );
         }
 
@@ -563,8 +567,6 @@ namespace Gep
         Texture GenerateNoiseTexture(const glm::uvec2 size) const;
         void InitializeSSAOKernel(const uint32_t size);
         void InitializeBloomFBO();
-
-        void ExtractBrightness(FrameBuffer& brightnessFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer);
 
         void GLDraw(GLuint vao, uint32_t indexCount, uint32_t instanceCount, uint32_t baseInstance);
         void GLDrawQuad(uint32_t instanceCount = 1);

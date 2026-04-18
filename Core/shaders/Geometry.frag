@@ -20,7 +20,7 @@ void main()
   f_arme.w = mat.emissionTextureHandle  == uvec2(0,0) ? mat.emission  : texture(sampler2D(mat.emissionTextureHandle), v_uv).r;
   f_color = mat.colorTextureHandle      == uvec2(0,0) ? mat.color     : texture(sampler2D(mat.colorTextureHandle), v_uv);
 
-  f_normal = v_normal;
+  f_normal = normalize(v_normal);
 
   // discard alpha if its small
   const float ALPHA_CUTOFF = 0.01;
