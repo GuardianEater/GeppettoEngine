@@ -1,150 +1,58 @@
 # Geppetto Engine
 # Overview
 
-This is a personal project of mine that follow an Entity-Component-System (ECS) architecture that makes writing high performance code easy. Its 'one line' modular, so a new system or new component can be registered and start running with a single line of code. Many features get generated through reflection, such as UI and serialization.
+This is a personal project aims to be a modular framework where I can implement anything I think sounds cool.
+
+- C++23
+- Visual Studio 2026
+- OpenGL
+- Windows
 
 ---
 ![Lighting](https://guardianeater.github.io/travis-c-gronvold/resources/lighting.png)
-# API
+# Features
 ---
-## Getting Started
-- Systems are where executable code occurs.
-- Components are where per entity data is stored.
-- Resources are where shared data is stored.
-### Adding a System
-- Per system memory is discouraged, use a resource instead.
-- The system must be default constructable.
 
-`MySystem.hpp`
-```cpp
-class MySystem : public Gep::ISystem
-{
-  void Initialize() override;
-  void Update(float dt) override;
-};
-```
-`main.cpp`
-```cpp
-int main()
-{
-  // ...
+## Rendering
+- Deferred rendering
+- PBR with image support for: ambient occlusion, roughness, metalness, and emission
+- Specular IBL
+- Physically based bloom
+- Shadows
+- HDR Pipeline
+- Directional lights
+- Point lights
+- Animations
+- Animation path matching
+- Complex models - support for many file types
 
-  gtl::type_list
-  <
-    // add all systems here
-    MySystem,
+## Engine
+- Custom archetype ECS approach for cache efficiency
+- Custom event system
+- Reflective code generation
 
-    // ...
-  > 
-  systemTypes;
+## Other Cool Stuff
+- Spatial Audio
+- Spring Physics
+- Inverse Kinematics
+- Cubic Splines
+- System Profiler
 
-  // ...
-}
-```
-### Adding a Component
-- Components should be relatively *simple structs*.
-- No custom constructors/destructors.
-- No private data.
+## Dependencies
+| Library | Purpose |
+|---------|---------|
+| [OpenGL](https://www.opengl.org/) | Graphics API |
+| [GLEW](https://glew.sourceforge.net/) | OpenGL Function Loader |
+| [GLFW](https://www.glfw.org/) | Window/Input |
+| [GLM](https://github.com/g-truc/glm) | Graphics Math |
+| [Eigen](https://github.com/jarikomppa/soloud) | Algebra |
+| [Assimp](https://github.com/assimp/assimp) | Model Loading |
+| [stb_image](https://github.com/nothings/stb) | Image Loading |
+| [Dear ImGui](https://github.com/ocornut/imgui) | Editor |
+| [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo) | Editor Gizmos |
+| [nlohmann/json](https://github.com/nlohmann/json) | JSON Parsing |
+| [reflect-cpp](https://github.com/getml/reflect-cpp) | Code Reflection |
+| [SoLoud](https://github.com/jarikomppa/soloud) | Spatial Audio |
 
-`MyComponent.hpp`
-```cpp
-struct MyComponent
-{
-  float myFloat = 0.0f;
-  int myInt = 1;
-  std::string myString = "HelloWorld"
-};
-```
-`main.cpp`
-```cpp
-int main()
-{
-  // ...
+## Showcase
 
-  gtl::type_list
-  <
-    // add all components here
-    MyComponent,
-
-    // ...
-  > 
-  componentTypes;
-
-  // ...
-}
-```
-### Adding a Resource
-- Resources are an *"anything goes"* structure, however running code is discouraged.
-
-`MyComponent.hpp`
-```cpp
-class MyResource
-{
-  std::unordered_map<std::string, std::vector<char>> mLoadedData;
-};
-```
-`main.cpp`
-```cpp
-int main()
-{
-  // ...
-  gtl::type_list
-  <
-    // add all resources here
-    MyResource,
-
-    // ...
-  > 
-  resourceTypes;
-  // ...
-}
-```
----
-## Basic workflow
-#### Getting a Resource:
-```cpp
-void MySystem::Initialize()
-{
-  MyResource& mr = mManager.GetResource<MyResource>();
-
-  auto& data = mr.mLoadedData;
-
-  // load all of the data into the resource
-}
-```
-#### Getting Components:
-The lamda passed to ForEachArchetype automatically queries for requested components.
-```cpp
-void MySystem::Update(float dt)
-{
-  mManager.ForEachArchetype([&](Gep::Entity e, MyComponent& mc)
-  {
-    mc.myFloat += 2.0f * dt;
-  });
-}
-```
-```cpp
-void MySystem::Update(float dt)
-{
-  mManager.ForEachArchetype([&](Gep::Entity e, const MyComponent& mc, Transform& t)
-  {
-    t.position.x += mc.myFloat;
-  });
-}
-```
-```cpp
-void MySystem::Update(float dt)
-{
-  mManager.ForEachArchetype([&](Gep::Entity e, MyComponent& mc, Transform& t)
-  {
-    t.position.x += mc.myFloat;
-    mc.myFloat += 2.0f * dt;
-
-    if (mManager.HasComponent<RigidBody>(e))
-    {
-      Rigidbody& rb = mManager.GetComponent<RigidBody>(e);
-      rb.velocity.x = 1.0f;
-    }
-  });
-}
-```
