@@ -413,6 +413,7 @@ namespace Gep
         bool mEnableAmbientOcclusion = false;
         bool mEnableSkyBox = true;
         bool mEnableAmbientLight = true;
+        bool mEnableEmission = true;
 
         // variables controlling ssao
         float mSSAO_radius = 10.0f;

@@ -1060,6 +1060,7 @@ namespace Client
         ImGui::Checkbox("Ambient Light", &mRenderer.mEnableAmbientLight);
         ImGui::Checkbox("Skybox", &mRenderer.mEnableSkyBox);
         ImGui::Checkbox("Bloom", &mRenderer.mEnableBloom);
+        ImGui::Checkbox("Emission", &mRenderer.mEnableEmission);
 
         // ssao uniforms
 

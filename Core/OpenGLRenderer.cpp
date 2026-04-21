@@ -818,7 +818,8 @@ namespace Gep
         if (mEnableAmbientLight)
             DrawPass_AmbientLight(hdrSceneFrameBuffer);
 
-        DrawPass_EmissiveLight(hdrSceneFrameBuffer);
+        if (mEnableEmission)
+            DrawPass_EmissiveLight(hdrSceneFrameBuffer);
 
         if (mEnableSkyBox)
             DrawPass_Skybox(hdrSceneFrameBuffer, mEnvironmentCubeMap);
