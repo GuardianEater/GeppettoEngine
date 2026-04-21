@@ -1056,6 +1056,39 @@ namespace Client
             mRenderer.SetExposure(exposure);
         }
 
+        // optional draw passes
+        ImGui::Checkbox("Ambient Light", &mRenderer.mEnableAmbientLight);
+        ImGui::Checkbox("Skybox", &mRenderer.mEnableSkyBox);
+        ImGui::Checkbox("Bloom", &mRenderer.mEnableBloom);
+
+        // ssao uniforms
+
+        ImGui::BeginDisabled();
+        ImGui::Checkbox("Ambient Occlusion", &mRenderer.mEnableAmbientOcclusion);
+        if (ImGui::TreeNode("SSAO Settings"))
+        {
+            //
+            ImGui::Text("SSAO Uniforms");
+            ImGui::Separator();
+
+            Gep::Gui::DragScalar("Radius", &mRenderer.mSSAO_radius);
+            Gep::Gui::DragScalar("Samples", &mRenderer.mSSAO_samples);
+            Gep::Gui::DragScalar("Scale", &mRenderer.mSSAO_scale);
+            Gep::Gui::DragScalar("Contrast", &mRenderer.mSSAO_contrast);
+
+            //
+            ImGui::Spacing();
+            ImGui::Text("SSAO Blur Uniforms");
+            ImGui::Separator();
+
+            Gep::Gui::DragScalar("Kernel Radius", &mRenderer.mSSAO_kernelRadius);
+            Gep::Gui::DragScalar("Spatial Sigma", &mRenderer.mSSAO_sigmaSpatial);
+            Gep::Gui::DragScalar("Range Sigma", &mRenderer.mSSAO_sigmaRange);
+
+            ImGui::TreePop();
+        }
+        ImGui::EndDisabled();
+
         if (ImGui::CollapsingHeader("GBuffer Textures"))
         {
             for (const auto& texture : gBufferTextures)

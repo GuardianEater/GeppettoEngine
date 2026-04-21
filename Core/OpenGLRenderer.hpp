@@ -408,6 +408,20 @@ namespace Gep
         // 
         const FrameDrawStats& GetFrameDrawStats() const { return mStats; };
 
+        // variables toggling certain features
+        bool mEnableBloom = true;
+        bool mEnableAmbientOcclusion = false;
+        bool mEnableSkyBox = true;
+        bool mEnableAmbientLight = true;
+
+        // variables controlling ssao
+        float mSSAO_radius = 10.0f;
+        uint32_t mSSAO_samples = 200u;
+        float mSSAO_scale = 10.0f;
+        float mSSAO_contrast = 10.0f;
+        int mSSAO_kernelRadius = 3;
+        float mSSAO_sigmaSpatial = 2.0f;
+        float mSSAO_sigmaRange = 0.01f;
        
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /// Shaders
@@ -537,6 +551,7 @@ namespace Gep
         void DrawPass_Lines(Gep::FrameBuffer& targetFrameBuffer);
         void DrawPass_Skybox(Gep::FrameBuffer& targetFrameBuffer, const Gep::Texture& backgroundCubeMap);
         void DrawPass_AmbientLight(Gep::FrameBuffer& targetFrameBuffer);
+        void DrawPass_EmissiveLight(Gep::FrameBuffer& targetFrameBuffer);
         void DrawPass_AmbientOcclusion(Gep::FrameBuffer& targetFrameBuffer);
         void DrawPass_Brightness(const Gep::FrameBuffer& targetFrameBuffer); // renders all brightness to the brightness framebuffer, all lighting must be finished, but prior to tonemap
         void DrawPass_Bloom(Gep::FrameBuffer& targetFrameBuffer);
@@ -612,6 +627,8 @@ namespace Gep
         Shader mShader_BloomDownSample;
         Shader mShader_ExtractBrightness; // takes all colors from a texture that exceed a threshhold
 
+        Shader mShader_Emissive;
+
         std::vector<BloomMip> mBloomMipChain;
 
         Texture mEnvironmentCubeMap;
@@ -620,9 +637,6 @@ namespace Gep
         Texture mBRDFLUT;
 
         Texture mBloomTexture;
-
-
-        bool mDebug_ShowPrefilter = false;
 
         glm::vec3 mSolidColor{};
 

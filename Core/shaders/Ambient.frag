@@ -72,8 +72,7 @@ void main()
   vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
 	// Keep emissive contribution colorized so bloom inherits object hue.
-	vec3 emissiveColor = mat.color.rgb * mat.emission;
-	vec3 ambient = (kD * diffuse + specular) * mat.ao + emissiveColor;
+	vec3 ambient = (kD * diffuse + specular) * mat.ao;
 
 	f_color = vec4(ambient, mat.color.a);
 }

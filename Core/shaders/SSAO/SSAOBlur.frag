@@ -6,6 +6,9 @@ layout(binding=1) uniform sampler2D u_normalTexture;
 layout(binding=2) uniform sampler2D u_colorTexture;
 layout(binding=3) uniform sampler2D u_armeTexture;
 layout(binding=4) uniform sampler2D u_ssaoTexture;
+uniform int u_kernelRadius = 3;
+uniform float u_sigmaSpatial = 2.0;
+uniform float u_sigmaRange = 0.01;  
 
 // in //////////////////////////////////////////////////////////////////////////
 layout(location=0) in vec2 v_uv;
@@ -14,9 +17,6 @@ layout(location=0) in vec2 v_uv;
 layout(location=0) out vec4 f_color;
 
 // constants ///////////////////////////////////////////////////////////////////
-const int c_kernelRadius = 3;
-const float c_sigmaSpatial = 2.0;
-const float c_sigmaRange = 0.01;
 
 float Gaussian(float x, float sigma)
 {
@@ -25,15 +25,15 @@ float Gaussian(float x, float sigma)
 
 float SpatialKernel(ivec2 offset)
 {
-  return Gaussian(length(vec2(offset)), c_sigmaSpatial);
+  return Gaussian(length(vec2(offset)), u_sigmaSpatial);
 }
 
 float RangeKernel(float d, float di, vec3 N, vec3 Ni)
 {
   float normalWeight = max(dot(Ni, N), 0.0);
   float depthDelta = di - d;
-  float depthWeight = exp(-(depthDelta * depthDelta) / (2.0 * c_sigmaRange));
-  float normalization = 1.0 / sqrt(2.0 * PI * c_sigmaRange);
+  float depthWeight = exp(-(depthDelta * depthDelta) / (2.0 * u_sigmaRange));
+  float normalization = 1.0 / sqrt(2.0 * PI * u_sigmaRange);
 
   return normalWeight * normalization * depthWeight;
 }
@@ -53,9 +53,9 @@ void main()
   float weightedSum = 0.0;
   float totalWeight = 0.0;
 
-  for (int y = -c_kernelRadius; y <= c_kernelRadius; ++y)
+  for (int y = -u_kernelRadius; y <= u_kernelRadius; ++y)
   {
-    for (int x = -c_kernelRadius; x <= c_kernelRadius; ++x)
+    for (int x = -u_kernelRadius; x <= u_kernelRadius; ++x)
     {
       vec2 sampleUV = v_uv + vec2(float(x), float(y)) * texelSize;
       sampleUV = clamp(sampleUV, vec2(0.0), vec2(1.0));

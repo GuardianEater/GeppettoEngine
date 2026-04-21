@@ -5,6 +5,10 @@ layout(binding=0) uniform sampler2D u_depthTexture;
 layout(binding=1) uniform sampler2D u_normalTexture;
 layout(binding=2) uniform sampler2D u_colorTexture;
 layout(binding=3) uniform sampler2D u_armeTexture;
+uniform float u_radius = 10.0;
+uniform uint u_samples = 2000;
+uniform float u_scale = 10.0;
+uniform float u_contrast = 100.2;
 
 // in //////////////////////////////////////////////////////////////////////////
 layout(location = 0) in vec2 v_uv;
@@ -30,11 +34,6 @@ vec3 GetViewPosition(vec2 uv, float depth)
   return viewPos.xyz;
 }
 
-const float c_radius = 10.0;
-const uint c_samples = 2000; // balanced samples with good jitter for smooth results
-const float c_scale = 10.0;
-const float c_contrast = 100.2;
-
 void main() 
 {
   float d = texture(u_depthTexture, v_uv).r;
@@ -47,8 +46,8 @@ void main()
   vec3 P = GetWorldPosition(v_uv, d);
   vec3 N = normalize(texture(u_normalTexture, v_uv).rgb);
 
-  float R = c_radius;
-  uint n = c_samples;
+  float R = u_radius;
+  uint n = u_samples;
   float c = 0.1 * R;
   float c2 = c * c;
   float delta = 0.001;
@@ -78,8 +77,8 @@ void main()
   }
 
   S *= (2.0 * PI * c) / float(n);
-  float ao = clamp(1.0 - (c_scale * S), 0.0, 1.0);
-  ao = pow(ao, c_contrast);
+  float ao = clamp(1.0 - (u_scale * S), 0.0, 1.0);
+  ao = pow(ao, u_contrast);
 
   f_color = vec4(vec3(ao), 1.0);
 }

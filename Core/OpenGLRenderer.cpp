@@ -193,6 +193,7 @@ namespace Gep
 
         mShader_ExtractBrightness = Shader::FromFile("shaders/Quad.vert", "shaders/Bloom/extractBrightness.frag");
 
+        mShader_Emissive = Shader::FromFile("shaders/Quad.vert", "shaders/Emissive.frag");
 
         //// load hdr environment map
         Gep::Texture skyboxTextureEquirectangular = Texture::LoadHDR("assets/textures/HDR/Newport_Loft_Ref.hdr");
@@ -809,11 +810,25 @@ namespace Gep
         //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         DrawPass_DirectionalLight(hdrSceneFrameBuffer);
         DrawPass_PointLight(hdrSceneFrameBuffer);
-        //DrawPass_AmbientOcclusion(hdrSceneFrameBuffer);
-        DrawPass_AmbientLight(hdrSceneFrameBuffer);
-        DrawPass_Skybox(hdrSceneFrameBuffer, mEnvironmentCubeMap);
-        DrawPass_Brightness(hdrSceneFrameBuffer);
-        DrawPass_Bloom(hdrSceneFrameBuffer);
+
+        
+        if (mEnableAmbientOcclusion)
+            DrawPass_AmbientOcclusion(hdrSceneFrameBuffer);
+
+        if (mEnableAmbientLight)
+            DrawPass_AmbientLight(hdrSceneFrameBuffer);
+
+        DrawPass_EmissiveLight(hdrSceneFrameBuffer);
+
+        if (mEnableSkyBox)
+            DrawPass_Skybox(hdrSceneFrameBuffer, mEnvironmentCubeMap);
+
+        if (mEnableBloom)
+        {
+            DrawPass_Brightness(hdrSceneFrameBuffer);
+            DrawPass_Bloom(hdrSceneFrameBuffer);
+        }
+
         DrawPass_Tonemap(targetFrameBuffer, hdrSceneFrameBuffer);
 
         // draw postprocess effects, ie model outlines
@@ -1034,6 +1049,22 @@ namespace Gep
         Shader::Unbind();
     }
 
+    void OpenGLRenderer::DrawPass_EmissiveLight(Gep::FrameBuffer& targetFrameBuffer)
+    {
+        GLDrawFlags flags{
+            .blend = GLBlendFlags{ GL_ONE, GL_ONE },
+        };
+
+        targetFrameBuffer.Bind();
+        mFBO_Geometry.BindTextures(); // bind gbuffer textures to texture units
+
+        mShader_Emissive.Bind();
+
+        SetDrawFlags(flags);
+        GLDrawQuad();
+        Shader::Unbind();
+    }
+
     void OpenGLRenderer::DrawPass_AmbientOcclusion(Gep::FrameBuffer& targetFrameBuffer)
     {
         mFBO_SSAO.Bind();
@@ -1044,6 +1075,10 @@ namespace Gep
         mFBO_Geometry.BindTextures();
 
         mShader_SSAO.Bind();
+        mShader_SSAO.SetUniform("u_radius", mSSAO_radius);
+        mShader_SSAO.SetUniform("u_samples", mSSAO_samples);
+        mShader_SSAO.SetUniform("u_scale", mSSAO_scale);
+        mShader_SSAO.SetUniform("u_contrast", mSSAO_contrast);
 
         SetDrawFlags({}); // disable all flags
         GLDrawQuad();
@@ -1054,11 +1089,15 @@ namespace Gep
         mFBO_SSAOBlur.Clear();
 
         mShader_SSAOBlur.Bind();
+        mShader_SSAO.SetUniform("u_kernelRadius", mSSAO_kernelRadius);
+        mShader_SSAO.SetUniform("u_sigmaSpatial", mSSAO_sigmaSpatial);
+        mShader_SSAO.SetUniform("u_sigmaRange", mSSAO_sigmaRange);
+
         mFBO_Geometry.BindTextures();
         mShader_SSAOBlur.SetTexture2D(mFBO_Geometry.GetTextureCount(), mFBO_SSAO.GetTexture(0));
         GLDrawQuad();
 
-        ImGui::Begin("AO");
+        ImGui::Begin("AO", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
 
         ImGui::Image(mFBO_SSAO.GetTexture(0), ImVec2{ 256 * 4, 256 * 4 }, ImVec2(0, 1), ImVec2(1, 0));
         ImGui::Image(mFBO_SSAOBlur.GetTexture(0), ImVec2{ 256 * 4, 256 * 4 }, ImVec2(0, 1), ImVec2(1, 0));
@@ -1083,7 +1122,7 @@ namespace Gep
         SetDrawFlags({}); // disable all flags
         GLDrawQuad();
 
-        ImGui::Begin("Brightness");
+        ImGui::Begin("Brightness", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
 
         ImGui::Image(mFBO_Brightness.GetTexture(0), ImVec2{ (float)targetFrameBuffer.GetSize().x, (float)targetFrameBuffer.GetSize().y }, ImVec2(0, 1), ImVec2(1, 0));
 
@@ -1177,7 +1216,7 @@ namespace Gep
 
 
         // debug ///////////////////////////////////////////////////////////////////////
-        ImGui::Begin("Bloom");
+        ImGui::Begin("Bloom", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
         for (const auto& texture : mipChain)
         {
             std::string textureIdStr = std::to_string(texture.id);
