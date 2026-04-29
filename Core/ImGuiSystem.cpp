@@ -1680,7 +1680,7 @@ namespace Client
         // Toggle pause/play button.
         if (paused)
         {
-            if (ImGui::Button("Play"))
+            if (ImGui::Button("Play") || ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_F5, false))
             {
                 paused = false;
             }
@@ -1824,7 +1824,7 @@ namespace Client
             // Toggle play/pause
             bool isPlaying = mManager.IsState(Gep::EngineState::Play);
             label = isPlaying ? "Pause" : "Play";
-            if (ImGui::Button(label.c_str(), buttonSize))
+            if (ImGui::Button(label.c_str(), buttonSize) || ImGui::IsKeyPressed(ImGuiKey_F5, false))
             {
                 if (isPlaying)
                     mManager.SetState(Gep::EngineState::Pause);
@@ -1841,7 +1841,7 @@ namespace Client
             ImGui::SameLine();
 
             // stop only works if in game
-            if (ImGui::Button("Stop")) 
+            if (ImGui::Button("Stop") || ImGui::IsKeyPressed(ImGuiKey_Escape, false))
             {
                 if (!mManager.IsState(Gep::EngineState::Edit))
                 {
