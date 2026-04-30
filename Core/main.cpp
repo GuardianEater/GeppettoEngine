@@ -51,8 +51,33 @@
 
 #include "OS.hpp"
 
+#include "ModelSerializer.hpp"
+
 int main()  
 {
+    Gep::Model model;
+    model.name = "Hello";
+    Gep::Mesh& mesh = model.meshes.emplace_back();
+    mesh.vertices.emplace_back().position.x = 1.0f;
+    mesh.vertices.emplace_back().position.y = 2.0f;
+
+    // write a model file out to disk
+    {
+        std::ofstream outFile{ "testModel.gep_model", std::ios::binary };
+        auto bytes = Gep::SerializeModel(model);
+        outFile << bytes;
+    }
+
+    // read model file from disk
+    {
+        std::ifstream inFile{ "testModel.gep_model", std::ios::binary };
+        gtl::binary_buffer bin;
+        inFile >> bin;
+        Gep::Model inModel = Gep::DeserializeModel(bin);
+    }
+
+
+    return 0;
     // initialize logging ////////////////////////////////////////////////////////////////////////////
     Gep::Log::SetPrintLevel(Gep::Log::LogLevel::Info);
     Gep::Log::SetOutputFile("log.txt");

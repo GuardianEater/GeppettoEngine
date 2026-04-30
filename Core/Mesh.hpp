@@ -11,6 +11,8 @@
 #include "VQS.hpp"
 #include "Shapes.hpp"
 #include "Core.hpp"
+#include <gtl/uuid.hpp>
+
 #include <limits>
 #include <array>
 
@@ -73,7 +75,7 @@ namespace Gep
         Gep::VQS inverseBind;
         uint32_t parentIndex;
 
-        bool isRealBone = false; // wether or not this bone was a bone inside of assimp
+        //bool isRealBone = false; // wether or not this bone was a bone inside of assimp
     };
 
     struct Skeleton

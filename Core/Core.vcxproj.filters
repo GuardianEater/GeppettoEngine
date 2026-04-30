@@ -67,6 +67,9 @@
     <Filter Include="Backend\Structures">
       <UniqueIdentifier>{63530754-b2c2-4a0f-9633-7cfc8f659e50}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Backend\Tools\Serializing">
+      <UniqueIdentifier>{ce70b90c-9fa1-4f19-9c4d-d073a95a2eaf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -266,6 +269,9 @@
     </ClCompile>
     <ClCompile Include="ImGuiHelp2.cpp">
       <Filter>Backend\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelSerializer.cpp">
+      <Filter>Backend\Tools\Serializing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -526,6 +532,9 @@
     </ClInclude>
     <ClInclude Include="ImGuiHelp2.hpp">
       <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelSerializer.hpp">
+      <Filter>Backend\Tools\Serializing</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

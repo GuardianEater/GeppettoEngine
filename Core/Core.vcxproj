@@ -210,6 +210,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="ModelSerializer.cpp" />
     <ClCompile Include="OS_Windows.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -241,6 +242,7 @@
     <ClInclude Include="JsonHelp.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="MeshCollider.hpp" />
+    <ClInclude Include="ModelSerializer.hpp" />
     <ClInclude Include="OS.hpp" />
     <ClInclude Include="PathFollowerComponent.hpp" />
     <ClInclude Include="FrameBuffer.hpp" />

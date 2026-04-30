@@ -1701,7 +1701,7 @@ namespace Gep
         bone.parentIndex = parentIndex;
         bone.transformation = ToVQS(node->mTransformation);
         bone.inverseBind = inverseBind;
-        bone.isRealBone = isRealBone;
+        //bone.isRealBone = isRealBone;
 
         // if its a bone add the index to the name association. Used when extracting vertex weights
         if (isRealBone) 
