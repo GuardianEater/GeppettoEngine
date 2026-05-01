@@ -70,10 +70,32 @@ namespace Gep
             static TextureAsset FromFile(const std::filesystem::path& path);
         };
 
+        struct BoneInfo
+        {
+            uint32_t index = 0;
+            Gep::VQS offset{};
+        };
+
     private:
 
-        gtl::uuid ExtractTexture(const std::filesystem::path& path, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type);
-        gtl::uuid ExtractMaterial(const std::filesystem::path& path, const aiScene* scene, const aiMaterial* assimpMaterial);
+        gtl::uuid ExtractTexture  (const std::filesystem::path& path, const aiScene* scene, const aiMaterial* assimpMaterial, const aiTextureType type);
+        gtl::uuid ExtractMaterial (const std::filesystem::path& path, const aiScene* scene, uint32_t assimpMaterialIdx);
+        gtl::uuid ExtractAnimation(const std::filesystem::path& path, const aiScene* scene, uint32_t assimpAnimIdx);
+        gtl::uuid ExtractSkeleton (const std::filesystem::path& path, const aiScene* scene);
+        gtl::uuid ExtractModel    (const std::filesystem::path& path, const aiScene* scene);
+
+        void ExtractBoneInfo(const aiScene* scene);
+
+        // returns the index of the node just created
+        uint32_t FillHierarchyStep(Gep::Skeleton& skeleton, const uint32_t parentIndex, const aiNode* node);
+
+        void FillVertices(Gep::Mesh& mesh, const aiMesh* aMesh);
+        void FillIndices(Gep::Mesh& mesh, const aiMesh* aMesh);
+
+        void SetVertexBoneData(Vertex& vertex, uint32_t boneID, float weight);
+
+        void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, const aiMesh* assimpMesh, const aiScene* scene);
+
 
     private:
 
@@ -83,5 +105,8 @@ namespace Gep
         std::unordered_map<gtl::uuid, TextureAsset>   mTextures;
         std::unordered_map<gtl::uuid, Gep::Animation> mAnimations;
         std::unordered_map<gtl::uuid, MaterialAsset>  mMaterials;
+        std::unordered_map<gtl::uuid, Gep::Skeleton>  mSkeletons;
+
+        std::unordered_map<std::string, BoneInfo> mBoneInfos;
     };
 }

@@ -1382,7 +1382,7 @@ namespace Client
         }
 
         DrawInspectorPanel();
-        DrawAssetBrowser();
+        //DrawAssetBrowser();
 
         ImGui::End(); // Entities
     }
@@ -1533,136 +1533,137 @@ namespace Client
             }
         }
     }
-    void ImGuiSystem::DrawAssetBrowser()
-    {
-        Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
 
-        ImGui::GetCurrentContext()->IO.ConfigDockingAlwaysTabBar = true;
-        ImGui::Begin("Asset Browser", nullptr, ImGuiWindowFlags_NoCollapse);
-
-        static const std::filesystem::path workingDir = std::filesystem::current_path();
-
-        const float imageSize = 64.0f * ImGui::GetStyle().FontScaleMain;
-        const ImVec2 contentRegion = ImGui::GetContentRegionAvail();
-        float spacing = ImGui::GetStyle().ItemSpacing.x;
-        const int imagesPerRow = static_cast<int>((contentRegion.x - ImGui::GetStyle().ScrollbarSize) / (imageSize + spacing));
-
-        if (imagesPerRow < 1)
-        {
-            ImGui::End();
-            return;
-        }
-
-        if (ImGui::Button("Back"))
-        {
-            SetAssetBrowserPath(mAssetBrowserPath.parent_path());
-        }
-        ImGui::SameLine();
-        ImGui::Text("%s", mAssetBrowserPath.string().c_str());
-
-
-        ImGui::BeginChild("AssetGrid");
-
-        // extension -> textureIdx
-        static std::unordered_map<std::string, uint64_t> sIconTextures;
-
-        for (size_t i = 0; i < mAssetBrowserEntries.size(); ++i)
-        {
-            const auto& entry = mAssetBrowserEntries[i];
-            const std::string filename = entry.path().filename().string();
-            const std::string filenameButHidden = "##" + filename;
-            const ImVec2 cursorPos = ImGui::GetCursorScreenPos();
-            const std::filesystem::path relativePath = entry.path().lexically_relative(workingDir);
-            const std::string entryExtension = relativePath.extension().string();
-
-            if (!sIconTextures.contains(entryExtension))
-            {
-                const Gep::Texture texture = Gep::Texture::LoadFileIcon(relativePath);
-                sIconTextures[entryExtension] = mRenderer.AddTexture(texture);
-            }
-
-            const uint64_t textureIdx = sIconTextures.at(entryExtension);
-            const Gep::Texture& texture = mRenderer.GetTexture(textureIdx);
-
-            constexpr float imageToTextDistance = 6.0f;
-
-            ImGui::PushID(static_cast<int>(i));
-            ImGui::BeginGroup();
-
-            // first draws an image for the thumpnail of the asset
-            ImGui::Image(texture.id, ImVec2(imageSize, imageSize));
-
-            // next draws the text under the file image
-            ImGui::SetCursorScreenPos(ImVec2(cursorPos.x, cursorPos.y + imageSize + imageToTextDistance));//
-            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + imageSize); // wrap at imageSize pixels
-            ImGui::TextWrapped("%s", filename.c_str());
-            ImGui::PopTextWrapPos();
-
-            // gets the size of the text after the wrapping is calculated
-            ImVec2 textSize = ImGui::GetItemRectSize();
-
-            // setsup the style of the button
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-            ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1, 1, 1, 0.2));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.3));
-
-            ImGui::SetCursorScreenPos(cursorPos);
-            ImGui::Button(filenameButHidden.c_str(), ImVec2(imageSize, imageSize + imageToTextDistance + textSize.y));
-            ImGui::PopStyleColor(4);
-            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
-            {
-                // Set the payload to carry the relative path
-                std::string pathStr = relativePath.string();
-                ImGui::SetDragDropPayload("ASSET_BROWSER", pathStr.c_str(), pathStr.size() + 1);
-
-                // Display the dragged item
-                ImGui::Image(texture.id, { imageSize * 2.0f, imageSize * 2.0f });
-                ImGui::TextWrapped("%s", entry.path().filename().string().c_str());
-                ImGui::EndDragDropSource();
-            }
-
-            mEditorResource.AssetBrowserDropTarget([&](const std::filesystem::path& droppedPath)
-            {
-                if (entry.is_directory())
-                {
-                    std::filesystem::path target = std::filesystem::current_path() / droppedPath;
-                    std::filesystem::path destination = entry.path() / droppedPath.filename();
-                    std::filesystem::rename(target, destination);
-                    ReloadAssetBrowser();
-                }
-            });
-
-            if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_::ImGuiMouseButton_Left)) 
-            {
-                if (entry.is_directory())
-                {
-                    SetAssetBrowserPath(entry.path());
-                    ImGui::EndGroup();
-                    ImGui::PopID();
-                    break;
-                }
-
-                mManager.SignalEvent(Gep::Event::AssetBrowserItemClicked{ entry.path(), entry.path().extension().string() });
-            }
-
-            ImGui::EndGroup();
-            ImGui::PopID();
-
-            // Move to next column
-            if ((i + 1) % imagesPerRow == 0) 
-            {
-                ImGui::NewLine();
-            }
-            else 
-            {
-                ImGui::SameLine();
-            }
-        }
-
-        ImGui::EndChild();
-        ImGui::End();
-    }
+    //void ImGuiSystem::DrawAssetBrowser()
+    //{
+    //    Gep::OpenGLRenderer& renderer = mManager.GetResource<Gep::OpenGLRenderer>();
+    //
+    //    ImGui::GetCurrentContext()->IO.ConfigDockingAlwaysTabBar = true;
+    //    ImGui::Begin("Asset Browser", nullptr, ImGuiWindowFlags_NoCollapse);
+    //
+    //    static const std::filesystem::path workingDir = std::filesystem::current_path();
+    //
+    //    const float imageSize = 64.0f * ImGui::GetStyle().FontScaleMain;
+    //    const ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+    //    float spacing = ImGui::GetStyle().ItemSpacing.x;
+    //    const int imagesPerRow = static_cast<int>((contentRegion.x - ImGui::GetStyle().ScrollbarSize) / (imageSize + spacing));
+    //
+    //    if (imagesPerRow < 1)
+    //    {
+    //        ImGui::End();
+    //        return;
+    //    }
+    //
+    //    if (ImGui::Button("Back"))
+    //    {
+    //        SetAssetBrowserPath(mAssetBrowserPath.parent_path());
+    //    }
+    //    ImGui::SameLine();
+    //    ImGui::Text("%s", mAssetBrowserPath.string().c_str());
+    //
+    //
+    //    ImGui::BeginChild("AssetGrid");
+    //
+    //    // extension -> textureIdx
+    //    static std::unordered_map<std::string, uint64_t> sIconTextures;
+    //
+    //    for (size_t i = 0; i < mAssetBrowserEntries.size(); ++i)
+    //    {
+    //        const auto& entry = mAssetBrowserEntries[i];
+    //        const std::string filename = entry.path().filename().string();
+    //        const std::string filenameButHidden = "##" + filename;
+    //        const ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+    //        const std::filesystem::path relativePath = entry.path().lexically_relative(workingDir);
+    //        const std::string entryExtension = relativePath.extension().string();
+    //
+    //        if (!sIconTextures.contains(entryExtension))
+    //        {
+    //            const Gep::Texture texture = Gep::Texture::LoadFileIcon(relativePath);
+    //            sIconTextures[entryExtension] = mRenderer.AddTexture(texture);
+    //        }
+    //
+    //        const uint64_t textureIdx = sIconTextures.at(entryExtension);
+    //        const Gep::Texture& texture = mRenderer.GetTexture(textureIdx);
+    //
+    //        constexpr float imageToTextDistance = 6.0f;
+    //
+    //        ImGui::PushID(static_cast<int>(i));
+    //        ImGui::BeginGroup();
+    //
+    //        // first draws an image for the thumpnail of the asset
+    //        ImGui::Image(texture.id, ImVec2(imageSize, imageSize));
+    //
+    //        // next draws the text under the file image
+    //        ImGui::SetCursorScreenPos(ImVec2(cursorPos.x, cursorPos.y + imageSize + imageToTextDistance));//
+    //        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + imageSize); // wrap at imageSize pixels
+    //        ImGui::TextWrapped("%s", filename.c_str());
+    //        ImGui::PopTextWrapPos();
+    //
+    //        // gets the size of the text after the wrapping is calculated
+    //        ImVec2 textSize = ImGui::GetItemRectSize();
+    //
+    //        // setsup the style of the button
+    //        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+    //        ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
+    //        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1, 1, 1, 0.2));
+    //        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.3));
+    //
+    //        ImGui::SetCursorScreenPos(cursorPos);
+    //        ImGui::Button(filenameButHidden.c_str(), ImVec2(imageSize, imageSize + imageToTextDistance + textSize.y));
+    //        ImGui::PopStyleColor(4);
+    //        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+    //        {
+    //            // Set the payload to carry the relative path
+    //            std::string pathStr = relativePath.string();
+    //            ImGui::SetDragDropPayload("ASSET_BROWSER", pathStr.c_str(), pathStr.size() + 1);
+    //
+    //            // Display the dragged item
+    //            ImGui::Image(texture.id, { imageSize * 2.0f, imageSize * 2.0f });
+    //            ImGui::TextWrapped("%s", entry.path().filename().string().c_str());
+    //            ImGui::EndDragDropSource();
+    //        }
+    //
+    //        mEditorResource.AssetBrowserDropTarget([&](const std::filesystem::path& droppedPath)
+    //        {
+    //            if (entry.is_directory())
+    //            {
+    //                std::filesystem::path target = std::filesystem::current_path() / droppedPath;
+    //                std::filesystem::path destination = entry.path() / droppedPath.filename();
+    //                std::filesystem::rename(target, destination);
+    //                ReloadAssetBrowser();
+    //            }
+    //        });
+    //
+    //        if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_::ImGuiMouseButton_Left)) 
+    //        {
+    //            if (entry.is_directory())
+    //            {
+    //                SetAssetBrowserPath(entry.path());
+    //                ImGui::EndGroup();
+    //                ImGui::PopID();
+    //                break;
+    //            }
+    //
+    //            mManager.SignalEvent(Gep::Event::AssetBrowserItemClicked{ entry.path(), entry.path().extension().string() });
+    //        }
+    //
+    //        ImGui::EndGroup();
+    //        ImGui::PopID();
+    //
+    //        // Move to next column
+    //        if ((i + 1) % imagesPerRow == 0) 
+    //        {
+    //            ImGui::NewLine();
+    //        }
+    //        else 
+    //        {
+    //            ImGui::SameLine();
+    //        }
+    //    }
+    //
+    //    ImGui::EndChild();
+    //    ImGui::End();
+    //}
 
     // Global state for pause/play
     bool paused = false;

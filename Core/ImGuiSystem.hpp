@@ -99,7 +99,7 @@ namespace Client
 
         // helpers //
         void DrawEntities(const std::vector<Gep::Entity>& entities, float dt);
-        void DrawAssetBrowser();
+        //void DrawAssetBrowser();
         void DrawToolbar();
         void ShowControlBar();
     };

@@ -38,6 +38,7 @@ namespace Gep
         uint32_t materialIndex{}; // the material inside of model that this 
         std::vector<uint32_t> boneIndices{}; // all of the bones that this mesh impacts in the model struct
         AABB boundingBox{};
+        gtl::uuid materialUUID;
 
         void CalculateBoundingBox()
         {
