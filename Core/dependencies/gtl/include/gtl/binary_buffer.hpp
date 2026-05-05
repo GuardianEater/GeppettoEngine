@@ -75,6 +75,8 @@ namespace gtl
         void add(const std::vector<Type>& types);
         template <typename Type, size_t SIZE>
         void add(const std::array<Type, SIZE>& types);
+        template <typename Type>
+        void add(const Type* types, size_t count);
 
         template <typename Type>
         void get(Type& type) const;
@@ -84,8 +86,11 @@ namespace gtl
         void get(std::vector<Type>& types) const;
         template <typename Type, size_t SIZE>
         void get(std::array<Type, SIZE>& types) const;
+        template <typename Type>
+        void get(Type* types, size_t count) const;
 
         void seek(size_t newCursor) const { mCursor = newCursor; }
+        size_t size() const { return mBytes.size(); }
 
         std::byte* data() { return mBytes.data(); }
         const std::byte* data() const { return mBytes.data(); }

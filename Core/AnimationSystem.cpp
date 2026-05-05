@@ -63,16 +63,14 @@ namespace Client
 
     void AnimationSystem::Update(float dt)
     {
-        mManager.ForEachArchetype([&](Gep::Entity entity, AnimationComponent& animationComponent, ModelComponent& modelComponent, SkeletonComponent& skeletonComponent, const Transform& transform)
+        mManager.ForEachArchetype([&](Gep::Entity entity, AnimationComponent& animationComponent, SkeletonComponent& skeletonComponent, const Transform& transform)
         {
             if (!mRenderer.IsAnimationLoaded(animationComponent.animIdx))
                 return;
-
-            const Gep::Model& model = mRenderer.GetModel(modelComponent.modelIdx);
-
-            if (model.skeleton.bones.empty()) // do not operate on a skeleton with no bones
+            if (!mRenderer.IsSkeletonLoaded(skeletonComponent.skeletonIdx))
                 return;
 
+            const Gep::Skeleton& skeleton = mRenderer.GetSkeleton(skeletonComponent.skeletonIdx);
             const Gep::Animation& animation = mRenderer.GetAnimation(animationComponent.animIdx);
 
             // progress the animation
@@ -83,13 +81,13 @@ namespace Client
             animationComponent.currentTime = Gep::WrapOrClamp(animationComponent.currentTime, 0.0f, animation.duration, animationComponent.looping);
 
             // I dont really understand why the clear has to be here but if I remove it there are strange anomalies sometimes.
-            const uint32_t boneCount = static_cast<uint32_t>(model.skeleton.bones.size());
+            const uint32_t boneCount = static_cast<uint32_t>(skeleton.bones.size());
             skeletonComponent.pose.clear();
             skeletonComponent.pose.resize(boneCount);
 
             EvaluateAnimation(animation, animationComponent.currentTime, skeletonComponent.pose);
 
-            CalculateGlobalPose(model.skeleton, skeletonComponent.pose);
+            CalculateGlobalPose(skeleton, skeletonComponent.pose);
         });
     }
 
@@ -97,32 +95,20 @@ namespace Client
     {
         AnimationComponent& animationComponent = *event.components[0];
 
-        Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
-        std::vector<std::string> loadedAnimations = mRenderer.GetLoadedAnimationNames();
+        const auto& animationLibrary = mRenderer.GetAnimationLibrary();
 
-        // drop down for selecting a model
-        std::string animIdxStr = std::to_string(animationComponent.animIdx);
-        bool animsOpen = ImGui::BeginCombo("Animations", animIdxStr.c_str());
+        std::string animName = mRenderer.IsAnimationLoaded(animationComponent.animIdx) ? mRenderer.GetAnimation(animationComponent.animIdx).name : "Unloaded";
 
-        const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
-
-        er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
-        {
-            //if (!mRenderer.IsModelLoaded(droppedPath.string()))
-            //{
-            //    mRenderer.AddModelFromFile(droppedPath.string());
-            //}
-        });
+        bool animsOpen = ImGui::BeginCombo("Animations", animName.c_str());
 
         if (animsOpen)
         {
-            for (const std::string& animationName : loadedAnimations)
+            for (const auto [animIdx, entry] : animationLibrary)
             {
-                bool isSelected = (animationName == mRenderer.GetAnimation(animationComponent.animIdx).name);
-                if (ImGui::Selectable(animationName.c_str(), isSelected))
+                bool isSelected = mRenderer.IsAnimationLoaded(animationComponent.animIdx) ? false : entry.animation.uuid == mRenderer.GetAnimation(animationComponent.animIdx).uuid;
+                if (ImGui::Selectable(entry.animation.name.c_str(), isSelected))
                 {
-                    auto newAnimIdx = mRenderer.FindAnimation(animationName);
-                    animationComponent.animIdx = *newAnimIdx;
+                    animationComponent.animIdx = animIdx;
                 }
                 if (isSelected)
                 {

@@ -46,6 +46,18 @@ namespace gtl
     }
 
     template <typename Type>
+    inline void binary_buffer::add(const Type* types, size_t count)
+    {
+        const size_t dataSize = count * sizeof(Type);
+
+        add(dataSize);
+
+        mBytes.resize(mBytes.size() + dataSize);
+        std::memcpy(mBytes.data() + mCursor, types, dataSize);
+        mCursor += dataSize;
+    }
+
+    template <typename Type>
     inline void binary_buffer::get(Type& type) const
     {
         if (mCursor >= mBytes.size())
@@ -96,4 +108,16 @@ namespace gtl
         mCursor += dataSize;
     }
 
+    template <typename Type>
+    inline void binary_buffer::get(Type* types, size_t count) const
+    {
+        if (mCursor >= mBytes.size())
+            throw std::out_of_range("get() error");
+
+        size_t dataSize = 0;
+        get(dataSize);
+
+        std::memcpy(types, mBytes.data() + mCursor, dataSize);
+        mCursor += dataSize;
+    }
 }

@@ -9,6 +9,7 @@
 #include "pch.hpp"
 
 #include "Material.hpp"
+#include "ModelSerializer.hpp"
 
 #include <Windows.h>
 
@@ -55,9 +56,13 @@ namespace OS
         }
 
         Gep::Texture texture;
+        texture.size.x = bm.bmWidth;
+        texture.size.y = bm.bmHeight;
+        texture.format = GL_RGBA;
+        texture.uuid = gtl::generate_uuid();
         glGenTextures(1, &texture.id);
         glBindTexture(GL_TEXTURE_2D, texture.id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bm.bmWidth, bm.bmHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixels.data());
+        glTexImage2D(GL_TEXTURE_2D, 0, texture.format, texture.size.x, texture.size.y, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixels.data());
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -82,6 +87,22 @@ namespace OS
 
 namespace Gep
 {
+    std::vector<std::byte> Texture::GetPixels(GLenum format, GLenum type, uint32_t channels) const
+    {
+        std::vector<std::byte> pixels(size.x * size.y * channels);
+
+        glGetTextureImage(
+            id,
+            0, // mip level
+            format,
+            type,
+            pixels.size(),
+            pixels.data()
+        );
+
+        return pixels;
+    }
+
     Texture Texture::LoadFileIcon(const std::filesystem::path& path)
     {
         HICON icon = OS::GetIcon(path);
@@ -127,13 +148,16 @@ namespace Gep
     Texture Texture::LoadFromPixels(const uint8_t* pixelData, size_t width, size_t height, int requiredChannels)
     {
         Texture texture{};
+        texture.size.x = width;
+        texture.size.y = height;
+        texture.uuid = gtl::generate_uuid();
         glGenTextures(1, &texture.id);
         glBindTexture(GL_TEXTURE_2D, texture.id);
 
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Ensure proper alignment
-        GLenum iformat = (requiredChannels == 4) ? GL_RGBA8 : GL_RGB8;
+        texture.format = (requiredChannels == 4) ? GL_RGBA8 : GL_RGB8;
         GLenum format = (requiredChannels == 4) ? GL_RGBA : GL_RGB;
-        glTexImage2D(GL_TEXTURE_2D, 0, iformat, width, height, 0, format, GL_UNSIGNED_BYTE, pixelData);
+        glTexImage2D(GL_TEXTURE_2D, 0, texture.format, texture.size.x, texture.size.y, 0, format, GL_UNSIGNED_BYTE, pixelData);
 
         glGenerateMipmap(GL_TEXTURE_2D);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -166,6 +190,18 @@ namespace Gep
         return tex;
     }
 
+    //Texture Texture::LoadFromUUID(const gtl::uuid& uuid)
+    //{
+    //    //Texture texture;
+
+    //    //std::filesystem::path path = "imported_assets\\" + uuid.to_string();
+
+    //    //std::ifstream inFile{ path };
+
+    //    //gtl::binary_buffer bin;
+    //    //inFile >> bin;
+    //}
+
     Texture Texture::LoadHDR(const std::filesystem::path& path)
     {
         if (!std::filesystem::exists(path))
@@ -195,12 +231,15 @@ namespace Gep
     Texture Texture::LoadFromPixelsHDR(const float* pixelData, size_t width, size_t height, int requiredChannels)
     {
         Texture texture;
+        texture.size.x = width;
+        texture.size.y = height;
+        texture.uuid = gtl::generate_uuid();
         glGenTextures(1, &texture.id);
         glBindTexture(GL_TEXTURE_2D, texture.id);
 
-        GLenum iformat = (requiredChannels == 4) ? GL_RGBA32F : GL_RGB32F;
+        texture.format = (requiredChannels == 4) ? GL_RGBA32F : GL_RGB32F;
         GLenum format = (requiredChannels == 4) ? GL_RGBA : GL_RGB;
-        glTexImage2D(GL_TEXTURE_2D, 0, iformat, width, height, 0, format, GL_FLOAT, pixelData);
+        glTexImage2D(GL_TEXTURE_2D, 0, texture.format, texture.size.x, texture.size.y, 0, format, GL_FLOAT, pixelData);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -218,10 +257,13 @@ namespace Gep
     Texture Texture::Gen2D(glm::uvec2 size, GLint internalFormat, GLenum format, GLenum type, GLint wrapParam)
     {
         Texture texture{};
+        texture.size = size;
+        texture.format = internalFormat;
+        texture.uuid = gtl::generate_uuid();
         glGenTextures(1, &texture.id);
         glBindTexture(GL_TEXTURE_2D, texture.id);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, format, type, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, texture.format, texture.size.x, texture.size.y, 0, format, type, nullptr);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapParam);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapParam);

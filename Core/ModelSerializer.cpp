@@ -15,6 +15,16 @@
 
 namespace Gep
 {
+    static std::filesystem::path PathFromUUID(const std::string& folder, const gtl::uuid& uuid)
+    {
+        return INTERNAL_ASSET_DIR + "\\" + folder + "\\" + uuid.to_string() + "." + folder;
+    }
+
+    bool IsAssetImported(const std::string& folder, const gtl::uuid& uuid)
+    {
+        return std::filesystem::exists(PathFromUUID(folder, uuid));
+    }
+
     gtl::binary_buffer Gep::SerializeModel(const Model& model)
     {
         gtl::binary_buffer bin;
@@ -33,9 +43,16 @@ namespace Gep
             bin.add(mesh.indices);
         }
 
+        return bin;
+    }
+
+    gtl::binary_buffer SerializeSkeleton(const Gep::Skeleton& skeleton)
+    {
+        gtl::binary_buffer bin;
+
         // write bones
-        bin.add(model.skeleton.bones.size());
-        for (const Bone& bone : model.skeleton.bones)
+        bin.add(skeleton.bones.size());
+        for (const Bone& bone : skeleton.bones)
         {
             bin.add(bone.childrenIndices);
             bin.add(bone.inverseBind);
@@ -45,6 +62,106 @@ namespace Gep
         }
 
         return bin;
+    }
+
+    gtl::binary_buffer SerializeMaterial(const Gep::Material& material)
+    {
+        gtl::binary_buffer bin;
+
+        bin.add(material.ao);
+        bin.add(material.roughness);
+        bin.add(material.metalness);
+        bin.add(material.emission);
+        bin.add(material.color);
+
+        bin.add(material.aoTexture.uuid);
+        bin.add(material.roughnessTexture.uuid);
+        bin.add(material.metalnessTexture.uuid);
+        bin.add(material.emissionTexture.uuid);
+        bin.add(material.diffuseTexture.uuid);
+
+        bin.add(material.normalTexture.uuid);
+
+        return bin;
+    }
+
+    gtl::binary_buffer SerializeTexture(const Gep::Texture& texture)
+    {
+        gtl::binary_buffer buffer;
+
+        const size_t channels = 4;
+        const size_t strideInBytes = texture.size.x * channels * sizeof(float);
+        auto pixels = texture.GetPixels(GL_RGBA, GL_UNSIGNED_BYTE, channels);
+
+        stbi_write_png_to_func(
+            [](void* context, void* data, int size)
+            {
+                gtl::binary_buffer& bin = *static_cast<gtl::binary_buffer*>(context);
+                bin.add(static_cast<std::byte*>(data), size);
+            },
+            &buffer,
+            texture.size.x,
+            texture.size.y,
+            channels,
+            pixels.data(),
+            strideInBytes
+        );
+
+        return buffer;
+    }
+
+    gtl::binary_buffer SerializeAnimation(const Gep::Animation& animation)
+    {
+        gtl::binary_buffer bin;
+
+        bin.add(animation.name);
+        bin.add(animation.duration);
+        bin.add(animation.ticksPerSecond);
+        bin.add(animation.tracks.size());
+        for (const Track& track : animation.tracks)
+        {
+            bin.add(track.boneIndex);
+            bin.add(track.positionKeyFrames);
+            bin.add(track.rotationKeyFrames);
+            bin.add(track.scaleKeyFrames);
+        }
+
+        return bin;
+    }
+
+    void SerializeModelToFile(const Gep::Model& model)
+    {
+        std::ofstream outFile{ PathFromUUID("model", model.uuid) };
+
+        outFile << SerializeModel(model);
+    }
+
+    void SerializeSkeletonToFile(const Gep::Skeleton& skeleton)
+    {
+        std::ofstream outFile{ PathFromUUID("skeleton", skeleton.uuid) };
+
+        outFile << SerializeSkeleton(skeleton);
+    }
+
+    void SerializeMaterialToFile(const Gep::Material& material)
+    {
+        std::ofstream outFile{ PathFromUUID("material", material.uuid) };
+
+        outFile << SerializeMaterial(material);
+    }
+
+    void SerializeTextureToFile(const Gep::Texture& texture)
+    {
+        std::ofstream outFile{ PathFromUUID("texture", texture.uuid) };
+
+        outFile << SerializeTexture(texture);
+    }
+
+    void SerializeAnimationToFile(const Gep::Animation& animation)
+    {
+        std::ofstream outFile{ PathFromUUID("animation", animation.uuid) };
+
+        outFile << SerializeAnimation(animation);
     }
 
     Model Gep::DeserializeModel(const gtl::binary_buffer& bin)
@@ -67,12 +184,19 @@ namespace Gep
             bin.get(mesh.indices);
         }
 
+        return model;
+    }
+
+    Gep::Skeleton DeserializeSkeleton(const gtl::binary_buffer& bin)
+    {
+        Gep::Skeleton skeleton;
+
         // read all bones
         size_t bonesSize = 0;
         bin.get(bonesSize);
         for (size_t i = 0; i < bonesSize; i++)
         {
-            Bone& bone = model.skeleton.bones.emplace_back();
+            Bone& bone = skeleton.bones.emplace_back();
             bin.get(bone.childrenIndices);
             bin.get(bone.inverseBind);
             bin.get(bone.name);
@@ -80,7 +204,131 @@ namespace Gep
             bin.get(bone.transformation);
         }
 
-        return model;
+        return skeleton;
+    }
+
+    Gep::Material DeserializeMaterial(const gtl::binary_buffer& bin)
+    {
+        Gep::Material material;
+
+        bin.get(material.ao);
+        bin.get(material.roughness);
+        bin.get(material.metalness);
+        bin.get(material.emission);
+        bin.get(material.color);
+
+        bin.get(material.aoTexture.uuid);
+        bin.get(material.roughnessTexture.uuid);
+        bin.get(material.metalnessTexture.uuid);
+        bin.get(material.emissionTexture.uuid);
+        bin.get(material.diffuseTexture.uuid);
+
+        bin.get(material.normalTexture.uuid);
+
+        return material;
+    }
+
+    Texture DeserializeTexture(const gtl::binary_buffer& bytes)
+    {
+        Texture tex = Texture::LoadFromMemory(reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size());
+
+        return tex;
+    }
+
+    Gep::Animation DeserializeAnimation(const gtl::binary_buffer& bin)
+    {
+        Gep::Animation animation;
+
+        bin.get(animation.name);
+        bin.get(animation.duration);
+        bin.get(animation.ticksPerSecond);
+        size_t tracksSize = 0;
+        bin.get(tracksSize);
+        for (size_t i = 0; i < tracksSize; ++i)
+        {
+            Track& track = animation.tracks.emplace_back();
+            bin.get(track.boneIndex);
+            bin.get(track.positionKeyFrames);
+            bin.get(track.rotationKeyFrames);
+            bin.get(track.scaleKeyFrames);
+        }
+
+        return animation;
+    }
+
+    Gep::Model DeserializeModelFromFile(const gtl::uuid& uuid)
+    {
+        if (IsAssetImported("model", uuid))
+        {
+            Gep::Log::Error("Requested asset: ", uuid.to_string(), " doesnt exist");
+            return {};
+        }
+
+        gtl::binary_buffer bin;
+        std::ifstream outFile{ PathFromUUID("model", uuid) };
+        outFile >> bin;
+
+        return DeserializeModel(bin);
+    }
+
+    Gep::Skeleton DeserializeSkeletonFromFile(const gtl::uuid& uuid)
+    {
+        if (IsAssetImported("skeleton", uuid))
+        {
+            Gep::Log::Error("Requested asset: ", uuid.to_string(), " doesnt exist");
+            return {};
+        }
+
+        gtl::binary_buffer bin;
+        std::ifstream outFile{ PathFromUUID("model", uuid) };
+        outFile >> bin;
+
+        return DeserializeSkeleton(bin);
+    }
+
+    Gep::Material DeserializeMaterialFromFile(const gtl::uuid& uuid)
+    {
+        if (IsAssetImported("material", uuid))
+        {
+            Gep::Log::Error("Requested asset: ", uuid.to_string(), " doesnt exist");
+            return {};
+        }
+
+        gtl::binary_buffer bin;
+        std::ifstream outFile{ PathFromUUID("model", uuid) };
+        outFile >> bin;
+
+        return DeserializeMaterial(bin);
+    }
+
+    Gep::Texture DeserializeTextureFromFile(const gtl::uuid& uuid)
+    {
+        if (IsAssetImported("texture", uuid))
+        {
+            Gep::Log::Error("Requested asset: ", uuid.to_string(), " doesnt exist");
+            return {};
+        }
+
+        gtl::binary_buffer bin;
+        std::ifstream outFile{ PathFromUUID("model", uuid) };
+        outFile >> bin;
+
+        return DeserializeTexture(bin);
+    }
+
+    Gep::Animation DeserializeAnimationFromFile(const gtl::uuid& uuid)
+    {
+        if (IsAssetImported("animation", uuid))
+        {
+            Gep::Log::Error("Requested asset: ", uuid.to_string(), " doesnt exist");
+            return {};
+        }
+
+        gtl::binary_buffer bin;
+        std::ifstream outFile{ PathFromUUID("model", uuid) };
+        outFile >> bin;
+
+        return DeserializeAnimation(bin);
     }
 
     void Importer::Import(const std::filesystem::path& path)
@@ -128,7 +376,7 @@ namespace Gep
         }
     }
 
-    gtl::uuid Importer::ExtractTexture(const std::filesystem::path& path, const aiScene* scene, const aiMaterial* assimpMaterial, const aiTextureType type)
+    Texture Importer::ExtractTexture(const std::filesystem::path& path, const aiScene* scene, const aiMaterial* assimpMaterial, const aiTextureType type)
     {
         aiString assimpTexturePath;
         if (aiReturn_SUCCESS != assimpMaterial->GetTexture(type, 0, &assimpTexturePath))
@@ -138,11 +386,9 @@ namespace Gep
 
         const auto it = mPathToUUID.find(texturePath);
         if (it != mPathToUUID.end())
-            return it->second;
+            return mTextures.at(it->second);
 
-        gtl::uuid textureUUID = gtl::generate_uuid();
-        mPathToUUID[texturePath] = textureUUID;
-
+        Texture tex;
         if (texturePath[0] == '*') // if the first character is a star it is embedded
         {
             int assimpTextureIndex = std::atoi(&texturePath[1]);
@@ -155,25 +401,32 @@ namespace Gep
                     reinterpret_cast<uint8_t*>(assimpTexture->pcData) + assimpTexture->mWidth
                 );
 
-                mTextures[textureUUID] = TextureAsset::FromMemory(bytes.data(), bytes.size());
+                tex = Texture::LoadFromMemory(
+                    bytes.data(), 
+                    bytes.size()
+                );
             }
             else
             {
-                const int assimpTextureChannels = 4;
-                mTextures[textureUUID] = TextureAsset::FromPixels(
-                    reinterpret_cast<uint8_t*>(assimpTexture->pcData), 
-                    assimpTexture->mWidth, 
-                    assimpTexture->mHeight, 
-                    assimpTextureChannels
+                tex = Texture::LoadFromPixels(
+                    reinterpret_cast<uint8_t*>(assimpTexture->pcData),
+                    assimpTexture->mWidth,
+                    assimpTexture->mHeight,
+                    4 // assimpTextureChannels
                 );
             }
         }
         else
         {
-            mTextures[textureUUID] = TextureAsset::FromFile(path.parent_path() / texturePath);
+            tex = Texture::Load(path.parent_path() / texturePath);
         }
 
-        return textureUUID;
+
+        tex.uuid = gtl::generate_uuid();
+        mPathToUUID[texturePath] = tex.uuid;
+        mTextures[tex.uuid] = tex;
+
+        return tex;
     }
 
     // cleared once per call to load materials. used to map assimp material indexes to the internal mMaterials indexes
@@ -186,8 +439,8 @@ namespace Gep
         if (it != mPathToUUID.end())
             return it->second;
 
-        MaterialAsset mat;
-        gtl::uuid matUUID = gtl::generate_uuid();
+        Material mat;
+        mat.uuid = gtl::generate_uuid();
 
         aiColor3D outColor(1.f, 1.f, 1.f);
         if (aiReturn_SUCCESS == assimpMat->Get(AI_MATKEY_COLOR_DIFFUSE, outColor))
@@ -211,12 +464,12 @@ namespace Gep
         mat.roughnessTexture = ExtractTexture(path, scene, assimpMat, aiTextureType_DIFFUSE_ROUGHNESS);
         mat.normalTexture    = ExtractTexture(path, scene, assimpMat, aiTextureType_NORMALS);
         mat.emissionTexture  = ExtractTexture(path, scene, assimpMat, aiTextureType_EMISSION_COLOR);
-        if (!mat.emissionTexture.is_valid())
+        if (mat.emissionTexture.id == NULL)
             mat.emissionTexture = ExtractTexture(path, scene, assimpMat, aiTextureType_EMISSIVE);
 
-        mMaterials[matUUID] = mat;
-        mPathToUUID[matName] = matUUID;
-        return matUUID;
+        mMaterials[mat.uuid] = mat;
+        mPathToUUID[matName] = mat.uuid;
+        return mat.uuid;
     }
 
     gtl::uuid Importer::ExtractSkeleton(const std::filesystem::path& path, const aiScene* scene)
@@ -237,13 +490,13 @@ namespace Gep
             return it->second;
 
         Skeleton skel;
-        gtl::uuid skelUUID = gtl::generate_uuid();
+        skel.uuid = gtl::generate_uuid();
 
         FillHierarchyStep(skel, NumMax<uint32_t>(), scene->mRootNode);
 
-        mSkeletons[skelUUID] = skel;
-        mPathToUUID[skelName] = skelUUID;
-        return skelUUID;
+        mSkeletons[skel.uuid] = skel;
+        mPathToUUID[skelName] = skel.uuid;
+        return skel.uuid;
     }
 
     gtl::uuid Importer::ExtractAnimation(const std::filesystem::path& path, const aiScene* scene, uint32_t aAnimationIdx)
@@ -254,10 +507,10 @@ namespace Gep
         if (it != mPathToUUID.end())
             return it->second;
 
-        const gtl::uuid animUUID = gtl::generate_uuid();
         const aiAnimation* aAnimation = scene->mAnimations[aAnimationIdx];
 
         Animation anim;
+        anim.uuid = gtl::generate_uuid();
         anim.duration = static_cast<float>(aAnimation->mDuration);
         anim.ticksPerSecond = aAnimation->mTicksPerSecond != 0.0 ? static_cast<float>(aAnimation->mTicksPerSecond) : 25.0f; // Assimp default
 
@@ -313,9 +566,9 @@ namespace Gep
             }
         }
 
-        mAnimations[animUUID] = anim;
-        mPathToUUID[animName] = animUUID;
-        return animUUID;
+        mAnimations[anim.uuid] = anim;
+        mPathToUUID[animName] = anim.uuid;
+        return anim.uuid;
     }
 
     void Importer::ExtractBoneInfo(const aiScene* scene)
@@ -411,7 +664,7 @@ namespace Gep
             return it->second;
 
         Model model;
-        gtl::uuid modelUUID = gtl::generate_uuid();
+        model.uuid = gtl::generate_uuid();
 
         model.meshes.reserve(scene->mNumMeshes);
 
@@ -428,10 +681,10 @@ namespace Gep
             ExtractBoneWeightForVertices(mesh.vertices, assimpMesh, scene);
         }
 
-        mModels[modelUUID] = model;
-        mPathToUUID[modelName] = modelUUID;
+        mModels[model.uuid] = model;
+        mPathToUUID[modelName] = model.uuid;
 
-        return modelUUID;
+        return model.uuid;
     }
 
     void Importer::SetVertexBoneData(Vertex& vertex, uint32_t boneID, float weight)

@@ -26,6 +26,8 @@
 
 #include "ImGuiHelp.hpp"
 
+#include "ModelSerializer.hpp"
+
 #include "OS.hpp"
 
 namespace Client
@@ -35,6 +37,206 @@ namespace Client
         , mEditorResource(em.GetResource<EditorResource>())
         , mRenderer(em.GetResource<Gep::OpenGLRenderer>())
     {
+    }
+
+    void ImGuiSystem::DrawAssetImportPopup()
+    {
+        if (mQueueAssetImportPopup)
+        {
+            ImGui::OpenPopup("Import Assets");
+            mQueueAssetImportPopup = false;
+        }
+
+        const ImVec2 popupSize = { 860.0f * ImGui::GetStyle().FontScaleMain, 520.0f * ImGui::GetStyle().FontScaleMain };
+        ImGui::SetNextWindowSize(popupSize, ImGuiCond_Appearing);
+
+        if (!ImGui::BeginPopupModal("Import Assets", nullptr, ImGuiWindowFlags_NoResize))
+            return;
+
+        ImGui::Text("Destination: %s", mAssetImportDestination.string().c_str());
+        ImGui::Separator();
+
+        if (ImGui::BeginTable("AssetImportColumns", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV))
+        {
+            ImGui::TableSetupColumn("Assets", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Result", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableHeadersRow();
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+
+            if (ImGui::BeginChild("AssetImportLeft", ImVec2(0.0f, 320.0f * ImGui::GetStyle().FontScaleMain), true))
+            {
+                for (const auto& entry : mAssetImportEntries)
+                {
+                    const std::string filename = entry.path.filename().string();
+                    if (entry.importable)
+                    {
+                        ImGui::Text("%s", filename.c_str());
+                    }
+                    else
+                    {
+                        ImGui::TextColored(ImVec4(1.0f, 0.65f, 0.15f, 1.0f), "%s", filename.c_str());
+                        ImGui::SameLine();
+                        ImGui::TextDisabled("(%s)", entry.reason.c_str());
+                    }
+                }
+            }
+            ImGui::EndChild();
+
+            ImGui::TableNextColumn();
+
+            if (ImGui::BeginChild("AssetImportRight", ImVec2(0.0f, 320.0f * ImGui::GetStyle().FontScaleMain), true))
+            {
+                for (const auto& entry : mAssetImportEntries)
+                {
+                    const std::string filename = entry.path.filename().string();
+                    const std::string result = entry.result.empty() ? (entry.importable ? "Pending" : "Skipped") : entry.result;
+                    ImVec4 color = entry.importable ? ImVec4(0.6f, 0.85f, 0.6f, 1.0f) : ImVec4(1.0f, 0.65f, 0.15f, 1.0f);
+                    if (!entry.result.empty() && entry.result == "Failed")
+                    {
+                        color = ImVec4(0.9f, 0.35f, 0.35f, 1.0f);
+                    }
+                    ImGui::TextColored(color, "%s", result.c_str());
+                    ImGui::SameLine();
+                    ImGui::TextDisabled("- %s", filename.c_str());
+                }
+            }
+            ImGui::EndChild();
+
+            ImGui::EndTable();
+        }
+
+        ImGui::Spacing();
+        ImGui::Text("Import summary");
+        const auto importableCount = std::count_if(mAssetImportEntries.begin(), mAssetImportEntries.end(), [](const auto& entry) { return entry.importable; });
+        ImGui::Text("%zu ready, %zu skipped", importableCount, mAssetImportEntries.size() - importableCount);
+
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        const float buttonWidth = 120.0f * ImGui::GetStyle().FontScaleMain;
+        const float spacing = ImGui::GetStyle().ItemSpacing.x;
+        const float totalWidth = buttonWidth * 2.0f + spacing;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - totalWidth);
+
+        if (ImGui::Button("Cancel", ImVec2(buttonWidth, 0.0f)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+
+        if (!mAssetImportApplied)
+        {
+            if (ImGui::Button("Import", ImVec2(buttonWidth, 0.0f)))
+            {
+                ApplyAssetImport();
+            }
+        }
+        else
+        {
+            if (ImGui::Button("Close", ImVec2(buttonWidth, 0.0f)))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+        }
+
+        ImGui::EndPopup();
+    }
+
+    void ImGuiSystem::ApplyAssetImport()
+    {
+        mAssetImportApplied = true;
+
+        for (auto& entry : mAssetImportEntries)
+        {
+            if (!entry.importable)
+            {
+                entry.result = "Skipped";
+                continue;
+            }
+
+            if (entry.path.has_filename())
+            {
+                entry.result = "Imported";
+            }
+            else
+            {
+                entry.result = "Failed";
+            }
+        }
+    }
+
+    void ImGuiSystem::DrawModelLibrary()
+    {
+        auto& modelLib = mRenderer.GetModelLibrary();
+
+        ImGui::Begin("Model Library");
+
+        float scale = ImGui::GetStyle().FontScaleMain;
+
+        for (auto [modelIdx, entry] : modelLib)
+        {
+            ImGui::PushID((int)modelIdx);
+
+            // Full-width selectable row
+            ImGui::Selectable("##row", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, 140 * scale));
+
+            // Draw content on top of the selectable
+            ImGui::SameLine();
+
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6 * scale);
+
+            ImGui::ColorButton("preview", { 1,1,1,1 }, 0, { 128 * scale, 128 * scale });
+
+            ImGui::SameLine();
+
+            ImGui::BeginGroup();
+            ImGui::Text("%s", entry.model.name.c_str());
+            ImGui::TextDisabled("%s", entry.model.uuid.to_string().c_str());
+            ImGui::EndGroup();
+
+            ImGui::PopID();
+        }
+
+        for (const auto& entry : mInternalAssets)
+        {
+            gtl::uuid uuid = gtl::to_uuid(entry.path().filename().stem().string());
+
+            auto idx = mRenderer.FindModel(uuid);
+
+            if (idx)
+            {
+                const Gep::Model& model = mRenderer.GetModel(*idx);
+                
+                ImGui::PushID((int)*idx);
+
+                // Full-width selectable row
+                ImGui::Selectable("##row", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, 140 * scale));
+
+                // Draw content on top of the selectable
+                ImGui::SameLine();
+
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6 * scale);
+
+                ImGui::ColorButton("preview", { 1,1,1,1 }, 0, { 128 * scale, 128 * scale });
+
+                ImGui::SameLine();
+
+                ImGui::BeginGroup();
+                ImGui::Text("%s", model.name.c_str());
+                ImGui::TextDisabled("%s", model.uuid.to_string().c_str());
+                ImGui::EndGroup();
+
+                ImGui::PopID();
+            }
+            else
+            {
+
+            }
+        }
+
+        ImGui::End();
     }
 
     std::string ImGuiSystem::GetEntityDisplayName(Gep::Entity entity)
@@ -1134,28 +1336,24 @@ namespace Client
 
     void ImGuiSystem::OnFileDropped(const Gep::Event::FileDropped& event)
     {
-        // checks if there are and duplicates, if there are any cancel the copy
+        mAssetImportEntries.clear();
+        mAssetImportEntries.reserve(event.droppedFiles.size());
+        mAssetImportDestination = mAssetBrowserPath;
+        mAssetImportApplied = false;
+
         for (const auto& path : event.droppedFiles)
         {
-            auto it = std::find_if(mAssetBrowserEntries.begin(), mAssetBrowserEntries.end(), [path](const auto& entry)
+            AssetImportEntry entry;
+            entry.path = path;
+            entry.importable = path.has_extension();
+            if (!entry.importable)
             {
-                return path.filename() == entry.path().filename();
-            });
-
-            if (it != mAssetBrowserEntries.end())
-            {
-                Gep::Log::Error("Cannot drop files, the file: ", path.filename().string(), " already exists in the current working directory. No files were copied.");
-                return;
+                entry.reason = "Missing extension";
             }
+            mAssetImportEntries.push_back(std::move(entry));
         }
 
-        for (const auto& path : event.droppedFiles)
-        {
-            const std::filesystem::path destination = mAssetBrowserPath / path.filename();
-            std::filesystem::copy(path, destination, std::filesystem::copy_options::recursive);
-        }
-
-        ReloadAssetBrowser();
+        mQueueAssetImportPopup = true;
     }
 
     void ImGuiSystem::OnEntityAttached(const Gep::Event::EntityAttached& event)
@@ -1181,6 +1379,11 @@ namespace Client
         for (const auto& entry : std::filesystem::directory_iterator(mAssetBrowserPath))
         {
             mAssetBrowserEntries.push_back(entry);
+        }
+
+        for (const auto& entry : std::filesystem::directory_iterator(Gep::INTERNAL_ASSET_DIR))
+        {
+            mInternalAssets.push_back(entry);
         }
 
         // auto generated by ImGui Style
@@ -1262,6 +1465,8 @@ namespace Client
         DrawToolbar();
         DrawQuickTest();
         DrawGBufferTextures();
+        DrawModelLibrary();
+        DrawAssetImportPopup();
 
         ImGui::Begin("Entities");
 

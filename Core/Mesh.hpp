@@ -81,6 +81,7 @@ namespace Gep
 
     struct Skeleton
     {
+        gtl::uuid uuid;
         std::vector<Bone> bones; // must always be sorted
     };
 
@@ -102,6 +103,7 @@ namespace Gep
 
     struct Animation
     {
+        gtl::uuid uuid;
         std::string name;
         float duration = 0.0f; // total duration of the animation in TICKS
         float ticksPerSecond = 0.0f; // how many ticks that should pass in a second

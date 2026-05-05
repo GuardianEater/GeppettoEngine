@@ -39,6 +39,7 @@
 #include "ImGuiHelp.hpp"
 #include "ImGuiHelp2.hpp"
 #include "GLMHelp.hpp"
+#include "ModelSerializer.hpp"
 
 namespace Client
 {
@@ -57,8 +58,6 @@ namespace Client
 
     void RenderSystem::Initialize()
     {
-        mManager.SubscribeToEvent<Gep::Event::ComponentAdded<ModelComponent>>(this, &RenderSystem::OnStaticModelAdded);
-
         mManager.SubscribeToEvent<Gep::Event::ComponentSerializing<ModelComponent>>(this, &RenderSystem::OnStaticModelSerializing);
         mManager.SubscribeToEvent<Gep::Event::ComponentDeserializing<ModelComponent>>(this, &RenderSystem::OnStaticModelDeserializing);
 
@@ -206,52 +205,39 @@ namespace Client
     {
         Gep::OpenGLRenderer& renderer = mRenderer;
 
-        if (mManager.HasComponent<ModelComponent>(event.entity))
-        {
-            auto& model = mManager.GetComponent<ModelComponent>(event.entity);
-            const Gep::Model& internalModel = mRenderer.GetModel(model.modelIdx);
+        const Gep::Skeleton& s = mRenderer.GetSkeleton(event.component.skeletonIdx);
 
-            InitializeSkeleton(event.component, internalModel);
-        }
-    }
-
-    void RenderSystem::OnStaticModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event)
-    {
-        if (mManager.HasComponent<SkeletonComponent>(event.entity))
-        {
-            auto& skel = mManager.GetComponent<SkeletonComponent>(event.entity);
-            const Gep::Model& internalModel = mRenderer.GetModel(event.component.modelIdx);
-
-            InitializeSkeleton(skel, internalModel);
-        }
+        InitializeSkeleton(event.component, s);
     }
 
     void RenderSystem::OnStaticModelSerializing(const Gep::Event::ComponentSerializing<ModelComponent>& event)
     {
         const ModelComponent& modelComponent = event.component;
 
-        const std::string& modelName = mRenderer.GetModel(modelComponent.modelIdx).name;
+        const auto& uuid = mRenderer.GetModel(modelComponent.modelIdx).uuid;
 
-        event.componentJson["name"] = modelName;
+        event.componentJson["uuid"] = uuid;
     }
 
     void RenderSystem::OnStaticModelDeserializing(const Gep::Event::ComponentDeserializing<ModelComponent>& event)
     {
         ModelComponent& modelComponent = event.component;
 
-        if (!event.componentJson.contains("name"))
+        if (!event.componentJson.contains("uuid"))
             return;
 
-        std::string path = event.componentJson.at("name").get<std::string>();
+        std::string uuidStr = event.componentJson.at("uuid").get<std::string>();
+        gtl::uuid uuid = gtl::to_uuid(uuidStr);
 
-        auto maybeIdx = mRenderer.FindModel(path);
+        // need to write the simple shapes to disk
+        auto maybeIdx = mRenderer.FindModel(uuid);
         if (maybeIdx)
         {
             modelComponent.modelIdx = *maybeIdx;
         }
-        else if (std::filesystem::exists(path))
+        else if (Gep::IsAssetImported("model", uuid))
         {
-            modelComponent.modelIdx = mRenderer.AddModel(mRenderer.LoadModelFromFile(path));
+            modelComponent.modelIdx = mRenderer.AddModel(Gep::DeserializeModelFromFile(uuid));
         }
         else
         {
@@ -265,7 +251,7 @@ namespace Client
         const std::span<ModelComponent*> models = event.components;
 
         Client::EditorResource& er = mManager.GetResource<Client::EditorResource>();
-        std::vector<std::string> loadedModels = mRenderer.GetLoadedModelNames();
+        const auto& modelLibrary = mRenderer.GetModelLibrary();
 
         const uint64_t selectedModelIdx = models[0]->modelIdx; // in this event call there is guaranteed to be at least one component
 
@@ -286,31 +272,30 @@ namespace Client
 
         const std::vector<std::string>& allowedExtensions = mRenderer.GetSupportedModelFormats();
 
-        er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
-        {
-            auto maybeIndex = mRenderer.FindModel(droppedPath.string());
-            if (!maybeIndex) // if there is no model then load it
-            {
-                maybeIndex = mRenderer.AddModel(mRenderer.LoadModelFromFile(droppedPath));
-            }
-            
-            for (ModelComponent* model : models)
-            {
-                model->modelIdx = *maybeIndex;
-            }
-        });
+        //er.AssetBrowserDropTarget(allowedExtensions, [&](const std::filesystem::path& droppedPath)
+        //{
+        //    auto maybeIndex = mRenderer.FindModel(droppedPath.string());
+        //    if (!maybeIndex) // if there is no model then load it
+        //    {
+        //        maybeIndex = mRenderer.AddModel(mRenderer.LoadModelFromFile(droppedPath));
+        //    }
+        //    
+        //    for (ModelComponent* model : models)
+        //    {
+        //        model->modelIdx = *maybeIndex;
+        //    }
+        //});
 
         if (modelsOpen)
         {
-            for (const std::string& modelName : loadedModels)
+            for (const auto [modelIdx, entry] : modelLibrary)
             {
-                const bool isSelected = allSame && modelName == mRenderer.GetModel(selectedModelIdx).name;
-                if (ImGui::Selectable(modelName.c_str(), isSelected))
+                const bool isSelected = allSame && entry.model.uuid == mRenderer.GetModel(selectedModelIdx).uuid;
+                if (ImGui::Selectable(entry.model.name.c_str(), isSelected))
                 {
                     for (ModelComponent* model : models)
                     {
-                        auto modelIdx = mRenderer.FindModel(modelName);
-                        model->modelIdx = *modelIdx;
+                        model->modelIdx = modelIdx;
                     }
                 }
 
@@ -939,6 +924,7 @@ namespace Client
             const glm::mat4 modelMatrix = Gep::ToMat4(transform.world);
             const glm::mat3 normal = Gep::NormalFromModel(modelMatrix);
             const Gep::Model& internalModel = mRenderer.GetModel(model.modelIdx);
+            const Gep::Skeleton& internalSkeleton = mRenderer.GetSkeleton(skeleton.skeletonIdx);
 
             Gep::AddObjectInfo info
             {
@@ -948,9 +934,9 @@ namespace Client
                 .materialIdxs = model.materialOverrides
             };
 
-            for (uint32_t i = 0; i < skeleton.pose.size() && i < internalModel.skeleton.bones.size(); ++i)
+            for (uint32_t i = 0; i < skeleton.pose.size() && i < internalSkeleton.bones.size(); ++i)
             {
-                const Gep::Bone& b = internalModel.skeleton.bones[i];
+                const Gep::Bone& b = internalSkeleton.bones[i];
                 const glm::mat4 boneMatrix = Gep::ToMat4(skeleton.pose[i] * b.inverseBind);
 
                 info.boneMatrices.push_back(boneMatrix);
@@ -958,7 +944,7 @@ namespace Client
 
             if (mDrawBones)
             {
-                DrawSkeleton(internalModel.skeleton, modelMatrix, skeleton.pose, skeletonLines);
+                DrawSkeleton(internalSkeleton, modelMatrix, skeleton.pose, skeletonLines);
             }
 
 
@@ -1016,21 +1002,21 @@ namespace Client
 
     }
 
-    void RenderSystem::InitializeSkeleton(SkeletonComponent& skeleton, const Gep::Model& internalModel)
+    void RenderSystem::InitializeSkeleton(SkeletonComponent& skeleton, const Gep::Skeleton& internalSkeleton)
     {
         skeleton.pose.clear();
-        skeleton.pose.resize(internalModel.skeleton.bones.size());
+        skeleton.pose.resize(internalSkeleton.bones.size());
 
         // initialize with the default skeleton
         for (size_t i = 0; i < skeleton.pose.size(); ++i)
         {
-            skeleton.pose[i] = internalModel.skeleton.bones[i].transformation; // at this point .pose is in local space
+            skeleton.pose[i] = internalSkeleton.bones[i].transformation; // at this point .pose is in local space
         }
 
         // calculate the global pose
-        for (uint32_t i = 1; i < internalModel.skeleton.bones.size(); ++i) // note skip the root bone
+        for (uint32_t i = 1; i < internalSkeleton.bones.size(); ++i) // note skip the root bone
         {
-            uint32_t parent = internalModel.skeleton.bones[i].parentIndex;
+            uint32_t parent = internalSkeleton.bones[i].parentIndex;
 
             skeleton.pose[i] = skeleton.pose[parent] * skeleton.pose[i];
         }
@@ -1042,7 +1028,7 @@ namespace Client
 
         const auto& textures = mRenderer.GetLoadedTextures();
         const auto& gBufferTextures = mRenderer.GetGeometryFrameBuffer().GetTextureAttachments();
-        auto materials = mRenderer.GetMaterials();
+        auto materials = mRenderer.GetMaterialLibrary();
         const ImVec2 imageSize = { 256 * ImGui::GetStyle().FontScaleMain, 256 * ImGui::GetStyle().FontScaleMain };
 
         static float exposure = 1.0f;
@@ -1114,12 +1100,12 @@ namespace Client
         if (ImGui::CollapsingHeader("Materials"))
         {
             int id = 0;
-            for (auto& mat : materials)
+            for (auto [matIdx, entry] : materials)
             {
                 ImGui::PushID(id);
                 id++;
                 // ao
-                Gep::Gui::DrawMaterial(mat);
+                Gep::Gui::DrawMaterial(entry.material);
                 ImGui::Spacing();
                 ImGui::Separator();
                 ImGui::PopID();

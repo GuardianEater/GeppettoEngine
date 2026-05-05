@@ -70,7 +70,6 @@ namespace Client
 
         // events //////////
         // on added
-        void OnStaticModelAdded(const Gep::Event::ComponentAdded<ModelComponent>& event);
         void OnSkeletonAdded(const Gep::Event::ComponentAdded<SkeletonComponent>& event);
         void OnStaticModelSerializing(const Gep::Event::ComponentSerializing<ModelComponent>& event);
         void OnStaticModelDeserializing(const Gep::Event::ComponentDeserializing<ModelComponent>& event);
@@ -91,7 +90,7 @@ namespace Client
         void AddObjects();
 
         // when a model is changed 
-        void InitializeSkeleton(SkeletonComponent& modelComponent, const Gep::Model& internalModel);
+        void InitializeSkeleton(SkeletonComponent& modelComponent, const Gep::Skeleton& internalModel);
 
         void ImGuiUpdate();
 

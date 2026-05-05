@@ -147,6 +147,54 @@ namespace Gep
         // formula??
     };
 
+    struct MeshGPUHandle
+    {
+        void GenVertexBuffer(const Mesh& mesh);
+        void GenIndexBuffer(const Mesh& mesh);
+        void BindBuffers();
+        void DeleteBuffers();
+
+        // handles used by opengl
+        GLuint mVertexArrayObject = NULL;
+        GLuint mVertexBuffer = NULL;
+        GLuint mIndexBuffer = NULL;
+        size_t mIndexCount{ 0 }; // the amount of indices in the index buffer
+    };
+
+    struct TextureLibraryEntry
+    {
+        std::string name;
+        Texture texture;
+    };
+
+    struct MaterialLibraryEntry
+    {
+        std::string name;
+        Material material;
+    };
+
+    struct MeshLibraryEntry
+    {
+        MeshGPUHandle handle;
+        Mesh mesh;
+    };
+
+    struct ModelLibraryEntry
+    {
+        std::vector<uint64_t> meshIdxs;
+        Gep::Model model;
+    };
+
+    struct AnimationLibraryEntry
+    {
+        Gep::Animation animation;
+    };
+
+    struct SkeletonLibraryEntry
+    {
+        Gep::Skeleton skeleton;
+    };
+
     enum class RenderFlags : uint32_t
     {
         None = 0, // no render flags will do nothing special when drawing this object
@@ -244,10 +292,13 @@ namespace Gep
         // adds an animation
         uint64_t AddAnimation(const Gep::Animation& animation);
 
+        // adds a skeleton
+        uint64_t AddSkeleton(const Gep::Skeleton& skeleton);
+
 
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// Get
+        /// Get One
 
         // gets data associated with the texIdx aquired from AddTexture()
         const Gep::Texture& GetTexture(uint64_t texIdx) const;
@@ -261,61 +312,77 @@ namespace Gep
         // gets data associated with the modelIdx aquired from AddModel()
         const Gep::Model& GetModel(uint64_t modelIdx) const;
 
-        // gets all of the meshes associated with a model
-        const std::vector<uint64_t>& GetModelMeshes(uint64_t modelIdx) const;
+        // gets data associated with the skelIdx aquired from AddSkeleton()
+        const Gep::Skeleton& GetSkeleton(uint64_t skelIdx) const;
 
         // gets data associated with the animIdx aquired from AddAnimation()
         const Gep::Animation& GetAnimation(uint64_t animIdx) const;
 
-        // gets the material container
-        std::vector<Gep::Material> GetMaterials() const
-        {
-            std::vector<Gep::Material> mats;
-            mats.reserve(mMaterialLibrary.size());
 
-            for (auto [matIdx, entry] : mMaterialLibrary)
-                mats.push_back(entry.material);
 
-            return mats;
-        }
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Get All
+
+        // gets all data add by AddTexture()
+        const gtl::keyed_vector<TextureLibraryEntry>& GetTextureLibrary() const;
+
+        // gets all data add by AddMaterial()
+        const gtl::keyed_vector<MaterialLibraryEntry>& GetMaterialLibrary() const;
+
+        // gets all data add by AddMesh()
+        const gtl::keyed_vector<MeshLibraryEntry>& GetMeshLibrary() const;
+
+        // gets all data add by AddModel()
+        const gtl::keyed_vector<ModelLibraryEntry>& GetModelLibrary() const;
+
+        // gets all data add by AddSkeleton()
+        const gtl::keyed_vector<SkeletonLibraryEntry>& GetSkeletonLibrary() const;
+
+        // gets all data add by AddAnimation()
+        const gtl::keyed_vector<AnimationLibraryEntry>& GetAnimationLibrary() const;
+
+
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /// Test
 
-        // gets data associated with the texture handle aquired from AddTexture()
+        // checks if texture is loaded with handle aquired from AddTexture()
         bool IsTextureLoaded(uint64_t texIdx);
 
-        // gets data associated with the texture handle aquired from AddTexture()
+        // checks if Material is loaded with handle aquired from AddTexture()
         bool IsMaterialLoaded(uint64_t matIdx);
 
-        // gets data associated with the texture handle aquired from AddTexture()
+        // checks if Mesh is loaded with handle aquired from AddTexture()
         bool IsMeshLoaded(uint64_t meshIdx);
 
-        // gets data associated with the texture handle aquired from AddTexture()
+        // checks if Model is loaded with handle aquired from AddTexture()
         bool IsModelLoaded(uint64_t modelIdx);
 
-        // gets data associated with the texture handle aquired from AddTexture()
+        //  checks if Animation is loaded with handle aquired from AddTexture()
         bool IsAnimationLoaded(uint64_t animIdx);
+
+        // checks if skeleton is loaded with the Skeleton handle aquired from AddTexture()
+        bool IsSkeletonLoaded(uint64_t skelIdx);
 
 
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /// Find
 
-        // searches for a texture by name and returns its idx
-        std::optional<uint64_t> FindTexture(const std::string& texName);
+        // searches for a texture by uuid and returns its idx
+        std::optional<uint64_t> FindTexture(const gtl::uuid& texUUID);
 
-        // searches for a material by name and returns its idx
-        std::optional<uint64_t> FindMaterial(const std::string& matName);
+        // searches for a material by uuid and returns its idx
+        std::optional<uint64_t> FindMaterial(const gtl::uuid& matUUID);
 
-        // searches for a mesh by name and returns its idx
-        std::optional<uint64_t> FindMesh(const std::string& meshName);
+        // searches for a mesh by uuid and returns its idx
+        std::optional<uint64_t> FindMesh(const gtl::uuid& meshUUID);
 
-        // searches for a model by name and returns its idx
-        std::optional<uint64_t> FindModel(const std::string& modelName);
+        // searches for a model by uuid and returns its idx
+        std::optional<uint64_t> FindModel(const gtl::uuid& modelUUID);
 
-        // searches for a animation by name and returns its idx
-        std::optional<uint64_t> FindAnimation(const std::string& animName);
+        // searches for a animation by uuid and returns its idx
+        std::optional<uint64_t> FindAnimation(const gtl::uuid& animUUID);
 
 
 
@@ -337,6 +404,8 @@ namespace Gep
         // unloads the animation
         void UnloadAnimation(uint64_t animIdx);
 
+        // unloads the given skeleton
+        void UnloadSkeleton(uint64_t skelIdx);
 
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -402,10 +471,7 @@ namespace Gep
         // gets all texture extensions that are accepted by stb in the format ".png"
         const std::vector<std::string>& GetSupportedTextureFormats() const;
 
-        // loads everything at the given path including other referenced files.
-        Gep::Model LoadModelFromFile(const std::filesystem::path& path);
-
-        // 
+ 
         const FrameDrawStats& GetFrameDrawStats() const { return mStats; };
 
         // variables toggling certain features
@@ -452,52 +518,7 @@ namespace Gep
             GLuint roughnessTexture = NumMax<GLuint>();
         };
 
-        struct MeshGPUHandle
-        {
-            void GenVertexBuffer(const Mesh& mesh);
-            void GenIndexBuffer(const Mesh& mesh);
-            void BindBuffers();
-            void DeleteBuffers();
 
-            // handles used by opengl
-            GLuint mVertexArrayObject = NULL;
-            GLuint mVertexBuffer = NULL;
-            GLuint mIndexBuffer = NULL;
-            size_t mIndexCount{0}; // the amount of indices in the index buffer
-        };
-
-        struct TextureLibraryEntry
-        {
-            std::string name;
-            Texture texture;
-        };
-
-        struct MaterialLibraryEntry
-        {
-            std::string name;
-            Material material;
-        };
-
-        struct MeshLibraryEntry
-        {
-            MeshGPUHandle handle;
-            Mesh mesh;
-        };
-
-        struct ModelLibraryEntry
-        {
-            std::string name;
-
-            std::vector<uint64_t> meshes;
-            Skeleton skeleton;
-
-            Gep::Model model;
-        };
-
-        struct AnimationLibraryEntry
-        {
-            Gep::Animation animation;
-        };
 
         struct BloomMip
         {
@@ -558,17 +579,6 @@ namespace Gep
         void DrawPass_Bloom(Gep::FrameBuffer& targetFrameBuffer);
         void DrawPass_Tonemap(Gep::FrameBuffer& ldrFrameBuffer, const Gep::FrameBuffer& hdrFrameBuffer);
         void DrawPass_Outline(Gep::FrameBuffer& targetFrameBuffer);
-
-
-        // helpers for loading assimp files
-        void LoadMaterials(const std::filesystem::path& path, const aiScene* scene);
-
-        void LoadAnimations(const std::string& name, Gep::Model& model, const aiScene* scene);
-
-        // given information, will load textures onto the gpu that are needed by the given material. will return NumMax<GLuint>() if there is no texture loaded
-        Texture LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type) const;
-
-        void LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton);
 
         // does not modify input texture, creates a new cubemap texture
         Texture EquirectangularToCubemap(const Texture& texture);
@@ -647,6 +657,7 @@ namespace Gep
         gtl::keyed_vector<MeshLibraryEntry>      mMeshLibrary;
         gtl::keyed_vector<ModelLibraryEntry>     mModelLibrary;
         gtl::keyed_vector<AnimationLibraryEntry> mAnimationLibrary;
+        gtl::keyed_vector<SkeletonLibraryEntry>  mSkeletonLibrary;
 
         Texture mErrorTexture{}; // always loaded, used when a texuture fails to load
         Material mErrorMaterial{};

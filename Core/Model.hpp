@@ -12,14 +12,14 @@
 #include "Material.hpp"
 
 #include <filesystem>
+#include <gtl/uuid.hpp>
 
 namespace Gep
 {
     struct Model
     {
+        gtl::uuid uuid;
         std::string name;
-
         std::vector<Mesh> meshes;
-        Skeleton skeleton;
     };
 }

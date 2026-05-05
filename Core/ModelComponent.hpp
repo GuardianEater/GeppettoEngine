@@ -16,6 +16,7 @@ namespace Client
     // this model variant is used with models that have rigging or armature. Needed for animations or IK
     struct SkeletonComponent
     {
+        uint64_t skeletonIdx = 0;
         std::vector<Gep::VQS> pose; // the bone offsets of the current model 
     };
 

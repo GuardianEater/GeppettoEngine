@@ -111,6 +111,7 @@ namespace Gep
             quad.name = "Quad";
             Gep::Model model;
             model.name = "Quad";
+            model.uuid = gtl::to_uuid(model.name);
             model.meshes.push_back(quad);
             AddModel(model);
         }
@@ -120,9 +121,10 @@ namespace Gep
             sphere.name = "Sphere";
             Gep::Model model;
             model.name = "Sphere";
+            model.uuid = gtl::to_uuid(model.name);
             model.meshes.push_back(sphere);
             uint64_t modelIdx = AddModel(model);
-            mSphereMeshIndex = GetModelMeshes(modelIdx)[0];
+            mSphereMeshIndex = GetModelLibrary()[modelIdx].meshIdxs[0];
         }
         {
             Gep::Mesh cube = Gep::CubeMesh();
@@ -130,9 +132,10 @@ namespace Gep
             cube.name = "Cube";
             Gep::Model model;
             model.name = "Cube";
+            model.uuid = gtl::to_uuid(model.name);
             model.meshes.push_back(cube);
             uint64_t modelIdx = AddModel(model);
-            mCubeMeshIndex = GetModelMeshes(modelIdx)[0];
+            mCubeMeshIndex = GetModelLibrary()[modelIdx].meshIdxs[0];
         }
         {
             Gep::Mesh icosphere = Gep::IcosphereMesh(3);
@@ -140,6 +143,7 @@ namespace Gep
             icosphere.name = "Icosphere";
             Gep::Model model;
             model.name = "Icosphere";
+            model.uuid = gtl::to_uuid(model.name);
             model.meshes.push_back(icosphere);
             AddModel(model);
         }
@@ -149,6 +153,7 @@ namespace Gep
             skybox.name = "Skybox";
             Gep::Model model;
             model.name = "Skybox";
+            model.uuid = gtl::to_uuid(model.name);
             model.meshes.push_back(skybox);
             AddModel(model);
         }
@@ -231,11 +236,10 @@ namespace Gep
         for (const Mesh& mesh : model.meshes)
         {
             uint64_t meshIdx = AddMesh(mesh);
-            entry.meshes.push_back(meshIdx);
+            entry.meshIdxs.push_back(meshIdx);
         }
 
         entry.model = model;
-        entry.name = model.name;
 
         return modelIdx;
     }
@@ -295,6 +299,16 @@ namespace Gep
         return animIdx;
     }
 
+    uint64_t OpenGLRenderer::AddSkeleton(const Gep::Skeleton& skeleton)
+    {
+        uint64_t skelIdx = mSkeletonLibrary.emplace();
+        auto& entry = mSkeletonLibrary[skelIdx];
+
+        entry.skeleton = skeleton;
+
+        return skelIdx;
+    }
+
     const Gep::Texture& OpenGLRenderer::GetTexture(uint64_t texIdx) const
     {
         return mTextureLibrary.at(texIdx).texture;
@@ -315,14 +329,44 @@ namespace Gep
         return mModelLibrary.at(modelIdx).model;
     }
 
-    const std::vector<uint64_t>& OpenGLRenderer::GetModelMeshes(uint64_t modelIdx) const
+    const Gep::Skeleton& OpenGLRenderer::GetSkeleton(uint64_t skelIdx) const
     {
-        return mModelLibrary.at(modelIdx).meshes;
+        return mSkeletonLibrary.at(skelIdx).skeleton;
     }
 
     const Gep::Animation& OpenGLRenderer::GetAnimation(uint64_t animIdx) const
     {
         return mAnimationLibrary.at(animIdx).animation;
+    }
+
+    const gtl::keyed_vector<TextureLibraryEntry>& OpenGLRenderer::GetTextureLibrary() const
+    {
+        return mTextureLibrary;
+    }
+
+    const gtl::keyed_vector<MaterialLibraryEntry>& OpenGLRenderer::GetMaterialLibrary() const
+    {
+        return mMaterialLibrary;
+    }
+
+    const gtl::keyed_vector<MeshLibraryEntry>& OpenGLRenderer::GetMeshLibrary() const
+    {
+        return mMeshLibrary;
+    }
+
+    const gtl::keyed_vector<ModelLibraryEntry>& OpenGLRenderer::GetModelLibrary() const
+    {
+        return mModelLibrary;
+    }
+
+    const gtl::keyed_vector<SkeletonLibraryEntry>& OpenGLRenderer::GetSkeletonLibrary() const
+    {
+        return mSkeletonLibrary;
+    }
+
+    const gtl::keyed_vector<AnimationLibraryEntry>& OpenGLRenderer::GetAnimationLibrary() const
+    {
+        return mAnimationLibrary;
     }
 
     bool OpenGLRenderer::IsTextureLoaded(uint64_t texIdx)
@@ -350,31 +394,36 @@ namespace Gep
         return mAnimationLibrary.contains(animIdx);
     }
 
-    std::optional<uint64_t> OpenGLRenderer::FindTexture(const std::string& texName)
+    bool OpenGLRenderer::IsSkeletonLoaded(uint64_t skelIdx)
+    {
+        return mSkeletonLibrary.contains(skelIdx);
+    }
+
+    std::optional<uint64_t> OpenGLRenderer::FindTexture(const gtl::uuid& texUUID)
     {
         Gep::Log::Critical("Not Implemented");
         return 0;
     }
 
-    std::optional<uint64_t> OpenGLRenderer::FindMaterial(const std::string& matName)
+    std::optional<uint64_t> OpenGLRenderer::FindMaterial(const gtl::uuid& matUUID)
     {
         Gep::Log::Critical("Not Implemented");
         return 0;
     }
 
-    std::optional<uint64_t> OpenGLRenderer::FindMesh(const std::string& meshName)
+    std::optional<uint64_t> OpenGLRenderer::FindMesh(const gtl::uuid& meshUUID)
     {
         Gep::Log::Critical("Not Implemented");
         return 0;
     }
 
-    std::optional<uint64_t> OpenGLRenderer::FindModel(const std::string& modelName)
+    std::optional<uint64_t> OpenGLRenderer::FindModel(const gtl::uuid& modelUUID)
     {
         auto it = std::find_if(mModelLibrary.begin(), mModelLibrary.end(), [&](auto pair) 
         {
             auto& [modelIdx, entry] = pair;
 
-            return (entry.model.name == modelName);
+            return (entry.model.uuid == modelUUID);
         });
 
         if (it == mModelLibrary.end())
@@ -383,13 +432,13 @@ namespace Gep
         return (*it).first;
     }
 
-    std::optional<uint64_t> OpenGLRenderer::FindAnimation(const std::string& animName)
+    std::optional<uint64_t> OpenGLRenderer::FindAnimation(const gtl::uuid& animUUID)
     {
         auto it = std::find_if(mAnimationLibrary.begin(), mAnimationLibrary.end(), [&](auto pair)
         {
             auto& [modelIdx, entry] = pair;
 
-            return (entry.animation.name == animName);
+            return (entry.animation.uuid == animUUID);
         });
 
         if (it == mAnimationLibrary.end())
@@ -504,9 +553,9 @@ namespace Gep
                 }
 
                 // add per mesh instance data, ordering memory like [0][0][0][0][1][1][1][1][2][2][2][2]
-                for (uint32_t localMeshIdx = 0; localMeshIdx < modelEntry.meshes.size(); ++localMeshIdx)
+                for (uint32_t localMeshIdx = 0; localMeshIdx < modelEntry.meshIdxs.size(); ++localMeshIdx)
                 {
-                    uint32_t meshIdx = modelEntry.meshes[localMeshIdx];
+                    uint32_t meshIdx = modelEntry.meshIdxs[localMeshIdx];
                     auto& meshEntry = mMeshLibrary[meshIdx];
                     uint32_t meshBase = static_cast<uint32_t>(mMeshUniforms.size());
 
@@ -602,7 +651,7 @@ namespace Gep
         auto& entry = mModelLibrary[modelIdx];
 
         // delete all meshes owned by the model
-        for (uint64_t meshIdx : entry.meshes)
+        for (uint64_t meshIdx : entry.meshIdxs)
         {
             UnloadMesh(meshIdx);
         }
@@ -634,6 +683,11 @@ namespace Gep
         mAnimationLibrary.erase(animIdx);
     }
 
+    void OpenGLRenderer::UnloadSkeleton(uint64_t skelIdx)
+    {
+        mAnimationLibrary.erase(skelIdx);
+    }
+
     void OpenGLRenderer::Start(const glm::vec3& color)
     {
         //glClearColor(color.r, color.g, color.b, 1);
@@ -647,7 +701,7 @@ namespace Gep
         modelNames.reserve(mModelLibrary.size());
 
         for (const auto [idx, entry] : mModelLibrary)
-            modelNames.emplace_back(entry.name);
+            modelNames.emplace_back(entry.model.name);
 
         return modelNames;
     }
@@ -1331,7 +1385,7 @@ namespace Gep
         FrameBuffer::Unbind();
     }
 
-    void OpenGLRenderer::MeshGPUHandle::GenVertexBuffer(const Mesh& mesh)
+    void MeshGPUHandle::GenVertexBuffer(const Mesh& mesh)
     {
         if (mesh.vertices.empty())
         {
@@ -1344,7 +1398,7 @@ namespace Gep
         glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh.vertices.size(), mesh.vertices.data(), GL_STATIC_DRAW);
     }
 
-    void OpenGLRenderer::MeshGPUHandle::GenIndexBuffer(const Mesh& mesh)
+    void MeshGPUHandle::GenIndexBuffer(const Mesh& mesh)
     {
         if (mesh.indices.empty())
         {
@@ -1359,7 +1413,7 @@ namespace Gep
         mIndexCount = mesh.indices.size();
     }
 
-    void OpenGLRenderer::MeshGPUHandle::BindBuffers()
+    void MeshGPUHandle::BindBuffers()
     {
         if (mVertexBuffer == NULL || mIndexBuffer == NULL)
         {
@@ -1391,7 +1445,7 @@ namespace Gep
         glBindVertexArray(0);
     }
 
-    void OpenGLRenderer::MeshGPUHandle::DeleteBuffers()
+    void MeshGPUHandle::DeleteBuffers()
     {
         glDeleteBuffers(1, &mIndexBuffer);
         glDeleteBuffers(1, &mVertexBuffer);
@@ -1402,111 +1456,6 @@ namespace Gep
         mVertexBuffer = NumMax<GLuint>();
         mIndexBuffer = NumMax<GLuint>();
 #endif // _DEBUG
-    }
-
-    struct BoneInfo
-    {
-        uint32_t index = 0;
-        Gep::VQS offset{};
-    };
-
-    static std::unordered_map<std::string, BoneInfo> gBoneData;
-
-    Texture OpenGLRenderer::LoadTexturesFromAssimpMaterial(const std::filesystem::path& modelPath, const aiMaterial* assimpMaterial, const aiScene* scene, const aiTextureType type) const
-    {
-        auto root = modelPath.parent_path();
-
-        aiString texPath;
-        if (aiReturn_SUCCESS != assimpMaterial->GetTexture(type, 0, &texPath))
-            return {}; // this material does not contain a texture of the given type
-
-        if (texPath.C_Str()[0] == '*') // if the first character is a star it is embedded
-        {
-            int assimpTextureIndex = std::atoi(texPath.C_Str() + 1);
-            aiTexture* assimpTexture = scene->mTextures[assimpTextureIndex];
-            std::string textureName = modelPath.string() + "_EMBEDDED_" + std::to_string(assimpTextureIndex);
-
-            if (assimpTexture->mHeight == 0) // if no height then it is compressed
-            {
-                std::vector<uint8_t> bytes(
-                    reinterpret_cast<uint8_t*>(assimpTexture->pcData),
-                    reinterpret_cast<uint8_t*>(assimpTexture->pcData) + assimpTexture->mWidth
-                );
-
-                return Texture::LoadFromMemory(bytes.data(), bytes.size());
-            }
-
-            const int assimpTextureChannels = 4;
-            // BGRA? format may cause issues remember this
-            Gep::Log::Critical("I'm not sure if this is ever used so this is going to crash if this is");
-            return Texture::LoadFromPixels(reinterpret_cast<uint8_t*>(assimpTexture->pcData), assimpTexture->mWidth, assimpTexture->mHeight, assimpTextureChannels);
-        }
-        
-        return Texture::Load(root / texPath.C_Str());
-    }
-
-    void OpenGLRenderer::LoadAnimation(const std::string& parentPath, const aiAnimation* assimpAnimation, const Skeleton& skeleton)
-    {
-        uint64_t animIdx = mAnimationLibrary.emplace();
-        auto& entry = mAnimationLibrary[animIdx];
-        auto& animation = entry.animation;
-
-        animation.duration = static_cast<float>(assimpAnimation->mDuration);
-        animation.ticksPerSecond = assimpAnimation->mTicksPerSecond != 0.0
-            ? static_cast<float>(assimpAnimation->mTicksPerSecond)
-            : 25.0f; // Assimp default
-
-        animation.name = parentPath + ":" + assimpAnimation->mName.C_Str();
-        animation.tracks.reserve(assimpAnimation->mNumChannels);
-
-        for (uint32_t i = 0; i < assimpAnimation->mNumChannels; i++)
-        {
-            const aiNodeAnim* channel = assimpAnimation->mChannels[i];
-
-            // find bone index in skeleton
-            auto it = std::find_if(skeleton.bones.begin(), skeleton.bones.end(), [&](const Bone& b)
-            {
-                return b.name == channel->mNodeName.C_Str();
-            });
-
-            if (it == skeleton.bones.end())
-            {
-                Gep::Log::Warning("Animation channel for bone '", channel->mNodeName.C_Str(), "' not found in skeleton");
-                continue;
-            }
-
-            uint32_t boneIndex = static_cast<uint32_t>(std::distance(skeleton.bones.begin(), it));
-
-            Track& track = animation.tracks.emplace_back();
-            track.boneIndex = boneIndex;
-
-            // loop through all keyframes reading in their time and position
-            track.positionKeyFrames.reserve(channel->mNumPositionKeys);
-            track.rotationKeyFrames.reserve(channel->mNumRotationKeys);
-            track.scaleKeyFrames.reserve(channel->mNumScalingKeys);
-
-            for (size_t k = 0; k < channel->mNumPositionKeys; k++)
-            {
-                auto& keyFrame = track.positionKeyFrames.emplace_back();
-
-                keyFrame.time = static_cast<float>(channel->mPositionKeys[k].mTime);
-                keyFrame.transform = ToVec3(channel->mPositionKeys[k].mValue);
-            }
-            for (size_t k = 0; k < channel->mNumRotationKeys; k++)
-            {
-                auto& keyFrame = track.rotationKeyFrames.emplace_back();
-
-                keyFrame.time = static_cast<float>(channel->mRotationKeys[k].mTime);
-                keyFrame.transform = glm::normalize(ToQuat(channel->mRotationKeys[k].mValue));
-            }
-            for (size_t k = 0; k < channel->mNumScalingKeys; k++)
-            {
-                auto& keyFrame = track.scaleKeyFrames.emplace_back();
-
-                keyFrame.time = static_cast<float>(channel->mScalingKeys[k].mTime);
-                keyFrame.transform = ToVec3(channel->mScalingKeys[k].mValue);
-            }
-        }
     }
 
     glm::quat OpenGLRenderer::InterpolateRotation(const Track& track, float time)
@@ -1585,258 +1534,6 @@ namespace Gep
         float factor = (time - k1.time) / (k2.time - k1.time);
 
         return glm::lerp(k1.transform, k2.transform, factor);
-    }
-
-    // cleared once per call to load materials. used to map assimp material indexes to the internal mMaterials indexes
-    static std::unordered_map<uint32_t, uint64_t> gAssimpMaterialIndexToMaterialIndex;
-
-    // moves all data from the aiScene into the internal model format
-    void OpenGLRenderer::LoadMaterials(const std::filesystem::path& path, const aiScene* scene)
-    {
-        gAssimpMaterialIndexToMaterialIndex.clear();
-
-        for (unsigned int i = 0; i < scene->mNumMaterials; ++i)
-        {
-            Gep::Material material;
-            const aiMaterial* assimpMaterial = scene->mMaterials[i];
-
-            aiColor3D outColor(1.f, 1.f, 1.f);
-            if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, outColor))
-                material.color = { outColor.r, outColor.g, outColor.b, 1.0f };
-            //if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_COLOR_AMBIENT, outColor))
-            //    material.ao = outColor.r;
-            if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_METALLIC_FACTOR, outColor))
-                material.metalness = outColor.r;
-            if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, outColor))
-                material.roughness = outColor.r;
-
-            float emissiveIntensity = 0.0f;
-            if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissiveIntensity))
-                material.emission = emissiveIntensity;
-            else if (aiReturn_SUCCESS == assimpMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, outColor))
-                material.emission = std::max(outColor.r, std::max(outColor.g, outColor.b));
-
-            material.diffuseTexture   = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE);
-            material.aoTexture        = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_AMBIENT_OCCLUSION);
-            material.metalnessTexture = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_METALNESS);
-            material.roughnessTexture = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_DIFFUSE_ROUGHNESS);
-            material.normalTexture    = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_NORMALS);
-            material.emissionTexture  = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_EMISSION_COLOR);
-            if (!material.emissionTexture.id)
-                material.emissionTexture = LoadTexturesFromAssimpMaterial(path, assimpMaterial, scene, aiTextureType_EMISSIVE);
-
-            if (material.diffuseTexture.id)
-                AddTexture(material.diffuseTexture);
-            if (material.aoTexture.id)
-                AddTexture(material.aoTexture);
-            if (material.metalnessTexture.id)
-                AddTexture(material.metalnessTexture);
-            if (material.roughnessTexture.id)
-                AddTexture(material.roughnessTexture);
-            if (material.normalTexture.id)
-                AddTexture(material.normalTexture);
-            if (material.emissionTexture.id)
-                AddTexture(material.emissionTexture);
-
-            gAssimpMaterialIndexToMaterialIndex[i] = AddMaterial(material);
-        }
-    }
-
-    void OpenGLRenderer::LoadAnimations(const std::string& name, Gep::Model& model, const aiScene* scene)
-    {
-        for (uint32_t i = 0; i < scene->mNumAnimations; ++i)
-        {
-            LoadAnimation(name, scene->mAnimations[i], model.skeleton);
-        }
-    }
-
-    static void LoadVertices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
-    {
-        mesh.vertices.reserve(assimpMesh->mNumVertices);
-
-        for (unsigned int i = 0; i < assimpMesh->mNumVertices; ++i)
-        {
-            Vertex& v = mesh.vertices.emplace_back();
-
-            v.position = { assimpMesh->mVertices[i].x, assimpMesh->mVertices[i].y, assimpMesh->mVertices[i].z };
-
-            if (assimpMesh->HasNormals())
-                v.normal = { assimpMesh->mNormals[i].x, assimpMesh->mNormals[i].y, assimpMesh->mNormals[i].z };
-
-            if (assimpMesh->HasTextureCoords(0))
-                v.texCoord = { assimpMesh->mTextureCoords[0][i].x, assimpMesh->mTextureCoords[0][i].y };
-        }
-    }
-
-    static void LoadIndices(Gep::Mesh& mesh, const aiMesh* assimpMesh)
-    {
-        for (unsigned int i = 0; i < assimpMesh->mNumFaces; ++i)
-        {
-            const aiFace& face = assimpMesh->mFaces[i];
-
-            for (unsigned int j = 0; j < face.mNumIndices; ++j)
-                mesh.indices.push_back(face.mIndices[j]);
-        }
-    }
-
-    // returns the index of the node just created
-    static uint32_t LoadHierarchyStep(Gep::Model& model, const uint32_t parentIndex, const aiNode* node)
-    {
-        // if the passed node is null return num max signaling that this is a leaf
-        if (!node) 
-            return NumMax<uint32_t>();
-
-        auto it = gBoneData.find(node->mName.C_Str());
-
-        // if node is a bone sets it inverse bind otherwise leave as identity
-        VQS inverseBind{};
-        const bool isRealBone = it != gBoneData.end();
-        if (isRealBone)
-            inverseBind = it->second.offset;
-        
-        // create an entry in the heirarchy. 
-        uint32_t index = model.skeleton.bones.size();
-        Gep::Bone& bone = model.skeleton.bones.emplace_back();
-        bone.name = node->mName.C_Str();
-        bone.parentIndex = parentIndex;
-        bone.transformation = ToVQS(node->mTransformation);
-        bone.inverseBind = inverseBind;
-        //bone.isRealBone = isRealBone;
-
-        // if its a bone add the index to the name association. Used when extracting vertex weights
-        if (isRealBone) 
-            it->second.index = index;
-
-        // do the same thing for each child
-        for (const aiNode* childNode : std::span(node->mChildren, node->mNumChildren))
-        {
-            uint32_t childIndex = LoadHierarchyStep(model, index, childNode);
-            if (childIndex != NumMax<uint32_t>())
-            {
-                //note: cant get a reference here because it could be stale after recursive calls
-                model.skeleton.bones.at(index).childrenIndices.push_back(childIndex);
-            }
-        }
-
-        return index;
-    }
-
-    // create hierary
-    static void LoadHierarchy(Gep::Model& model, const aiScene* scene)
-    {
-        // on the off chance a model doesn't have a root node?
-        //uint32_t index = model.skeleton.bones.size();
-        //Gep::Bone& bone = model.skeleton.bones.emplace_back();
-        //bone.name = "Root";
-        //bone.parentIndex = NumMax<uint32_t>();
-        //bone.transformation = Gep::VQS{};
-        //bone.inverseBind = Gep::VQS{};
-        //bone.isRealBone = false;
-
-        LoadHierarchyStep(model, NumMax<uint32_t>(), scene->mRootNode);
-    }
-
-    static void SetVertexBoneData(Vertex& vertex, uint32_t boneID, float weight)
-    {
-        for (int i = 0; i < vertex.boneIndices.size(); ++i)
-        {
-            if (vertex.boneIndices[i] == Vertex::INVALID_INDEX)
-            {
-                vertex.boneWeights[i] = weight;
-                vertex.boneIndices[i] = boneID;
-                break;
-            }
-        }
-    }
-
-    static void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, const aiMesh* assimpMesh, const aiScene* scene)
-    {
-        for (const aiBone* assimpBone : std::span(assimpMesh->mBones, assimpMesh->mNumBones))
-        {
-            const std::string boneName = assimpBone->mName.C_Str();
-            const uint32_t boneID = gBoneData.at(boneName).index; // index into the final bone heirarchy
-
-            for (const aiVertexWeight assimpWeight : std::span(assimpBone->mWeights, assimpBone->mNumWeights))
-            {
-                const uint32_t vertexId = assimpWeight.mVertexId;
-                const float weight = assimpWeight.mWeight;
-                
-                SetVertexBoneData(vertices[vertexId], boneID, weight);
-            }
-        }
-    }
-
-    static void LoadMeshes(Gep::Model& model, const aiScene* scene)
-    {
-        model.meshes.reserve(scene->mNumMeshes);
-
-        for (const aiMesh* assimpMesh : std::span(scene->mMeshes, scene->mNumMeshes))
-        {
-            Mesh& mesh = model.meshes.emplace_back();
-            mesh.name = assimpMesh->mName.C_Str();
-
-            LoadVertices(mesh, assimpMesh);
-            LoadIndices(mesh, assimpMesh);
-            mesh.CalculateBoundingBox(); //must be done after vertices are loaded
-
-            mesh.materialIndex = gAssimpMaterialIndexToMaterialIndex.at(assimpMesh->mMaterialIndex);
-            ExtractBoneWeightForVertices(mesh.vertices, assimpMesh, scene);
-        }
-    }
-
-    // maps the name of every bone to its inverse bind transformation
-    // also used for checking existance of a bone
-    static void LoadBoneData(const aiScene* scene)
-    {
-        for (const aiMesh* mesh : std::span(scene->mMeshes, scene->mNumMeshes))
-        {
-            for (const aiBone* bone : std::span(mesh->mBones, mesh->mNumBones))
-            {
-                const std::string name = bone->mName.C_Str();
-                gBoneData[name].offset = ToVQS(bone->mOffsetMatrix);
-            }
-        }
-    }
-
-    Model OpenGLRenderer::LoadModelFromFile(const std::filesystem::path& path)
-    {
-        gBoneData.clear();
-        Assimp::Importer importer;
-        const aiScene* scene = importer.ReadFile(path.string(),
-            aiProcess_Triangulate |
-            aiProcess_GenNormals |
-            aiProcess_FlipUVs |
-            aiProcess_JoinIdenticalVertices |
-            aiProcess_ImproveCacheLocality |
-            aiProcess_SortByPType |
-            aiProcess_OptimizeGraph |
-            aiProcess_OptimizeMeshes
-        );
-
-        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-        {
-            Gep::Log::Error("Assimp error: ", importer.GetErrorString());
-            return {};
-        }
-
-        Gep::Model model;
-
-        model.name = path.string();
-
-        // loads all of the materials out of this scene
-        LoadMaterials(path, scene);
-
-        // loads every bone name to its offset matrix in gBoneData
-        LoadBoneData(scene);
-
-        // fills in the skeleton of the model and the index field in gBoneData
-        LoadHierarchy(model, scene);
-
-        LoadMeshes(model, scene); //Broken?
-
-        LoadAnimations(path.string(), model, scene);
-
-        return model;
     }
 
     Texture OpenGLRenderer::EquirectangularToCubemap(const Texture& texture)

@@ -58,11 +58,9 @@ namespace Client
             const Gep::Entity skeletonEntity = mManager.FindEntity(iktarget.targetEntity);
             if (!mManager.EntityExists(skeletonEntity)) return;
             if (!mManager.HasComponent<Client::SkeletonComponent>(skeletonEntity)) return;
-            if (!mManager.HasComponent<Client::ModelComponent>(skeletonEntity)) return;
             if (!mManager.HasComponent<Client::Transform>(skeletonEntity)) return;
 
             Client::Transform& skeletonTransform = mManager.GetComponent<Client::Transform>(skeletonEntity);
-            Client::ModelComponent& modelComponent = mManager.GetComponent<Client::ModelComponent>(skeletonEntity);
             Client::SkeletonComponent& skeletonComponent = mManager.GetComponent<Client::SkeletonComponent>(skeletonEntity);
 
             if (skeletonComponent.pose.empty()) return;
@@ -76,10 +74,9 @@ namespace Client
             if (anchorBoneIdx > effectorBoneIdx) 
                 return; // the anchor should never appear after the child
 
-            if (!mRenderer.IsModelLoaded(modelComponent.modelIdx)) return;
+            if (!mRenderer.IsSkeletonLoaded(skeletonComponent.skeletonIdx)) return;
 
-            const Gep::Model& internalModel = mRenderer.GetModel(modelComponent.modelIdx);
-            const Gep::Skeleton& skeleton = internalModel.skeleton;
+            const Gep::Skeleton& skeleton = mRenderer.GetSkeleton(skeletonComponent.skeletonIdx);
 
             if (skeleton.bones.size() != skeletonComponent.pose.size())
             {
