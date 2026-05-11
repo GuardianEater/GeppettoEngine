@@ -9,6 +9,7 @@ This is a personal project aims to be a modular framework where I can implement 
 - Windows
 
 ---
+![Lighting](https://guardianeater.github.io/travis-c-gronvold/resources/updated/showcase_0.png)
 ![Lighting](https://guardianeater.github.io/travis-c-gronvold/resources/lighting.png)
 # Features
 ---
